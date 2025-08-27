@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "baselineDate": "2025-08-24T10:00:00.000Z",
+  "environment": "production",
+  
+  "metrics": {
+    "startup_time": 3200,
+    "memory_usage_mb": 256,
+    "first_paint_ms": 800,
+    "dom_content_loaded_ms": 1200,
+    "page_load_complete_ms": 2500
+  },
+  
+  "thresholds": {
+    "startup_time": {
+      "critical": 10000,
+      "warning": 5000,
+      "target": 3000
+    },
+    "memory_usage_mb": {
+      "critical": 1024,
+      "warning": 512,
+      "target": 256
+    },
+    "first_paint_ms": {
+      "critical": 2000,
+      "warning": 1500,
+      "target": 800
+    }
+  },
+  
+  "trends": {
+    "startup_time": {
+      "7d_avg": 3180,
+      "30d_avg": 3250,
+      "trend": "stable"
+    },
+    "memory_usage_mb": {
+      "7d_avg": 248,
+      "30d_avg": 252,
+      "trend": "improving"
+    }
+  },
+  
+  "lastChecked": "2025-08-24T10:00:00.000Z"
+}

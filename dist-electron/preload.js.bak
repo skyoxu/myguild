@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const electron_1 = require("electron");
+const preload_1 = require("@electron-toolkit/preload");
+if (process.contextIsolated) {
+    try {
+        electron_1.contextBridge.exposeInMainWorld('electron', preload_1.electronAPI);
+    }
+    catch (error) {
+        console.error(error);
+    }
+}
+else {
+    // @ts-ignore (define in dts)
+    window.electron = preload_1.electronAPI;
+}

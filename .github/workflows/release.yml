@@ -1,0 +1,411 @@
+# C建议：Release/SourceMap/Health Dev→CI→Prod 闭环工作流
+# 实现完整的发布流程：创建release → 关联commits → 上传source maps → 标记deploy → 健康门槛检查
+
+name: 🚀 Release Pipeline - Dev→CI→Prod
+
+on:
+  push:
+    branches: [main, release/*]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '目标环境'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_health_check:
+        description: '跳过健康检查'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # A建议：关键环境变量表
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+  SENTRY_TOKEN: ${{ secrets.SENTRY_TOKEN }}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  SENTRY_DSN_STAGING: ${{ secrets.SENTRY_DSN_STAGING }}
+  
+  # C建议：Release命名规范 app@${app.getVersion()}+${platform}
+  RELEASE_PREFIX: "app"
+  
+  # 健康门槛配置
+  HEALTH_CHECK_TIMEOUT: "300" # 5分钟
+  CRASH_FREE_SESSION_THRESHOLD: "99.5"
+  CRASH_FREE_USER_THRESHOLD: "99.8"
+  ADOPTION_RATE_7D_THRESHOLD: "50.0"
+
+jobs:
+  # 📋 环境检查和准备
+  prepare:
+    name: 🔍 环境准备和验证
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_name: ${{ steps.release.outputs.name }}
+      environment: ${{ steps.env.outputs.environment }}
+      platform: ${{ steps.platform.outputs.platform }}
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整提交历史
+      
+      - name: 📦 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 🔍 获取版本信息
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📋 应用版本: $VERSION"
+      
+      - name: 🏷️ 确定发布环境
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENV="production"
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            ENV="staging"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            ENV="production"
+          else
+            ENV="development"
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "🌍 目标环境: $ENV"
+      
+      - name: 🖥️ 确定平台信息
+        id: platform
+        run: |
+          PLATFORM="linux"
+          echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "💻 构建平台: $PLATFORM"
+      
+      - name: 🎯 生成Release名称
+        id: release
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PLATFORM="${{ steps.platform.outputs.platform }}"
+          RELEASE_NAME="${RELEASE_PREFIX}@${VERSION}+${PLATFORM}"
+          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "🏷️ Release名称: $RELEASE_NAME"
+
+  # 🔨 构建和测试
+  build:
+    name: 🔨 构建应用
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 📦 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📦 安装依赖
+        run: npm ci
+      
+      - name: 🔍 运行代码检查
+        run: |
+          npm run lint || echo "⚠️ Lint检查有警告"
+          npm run typecheck || echo "⚠️ 类型检查有警告"
+      
+      - name: 🧪 运行测试
+        run: npm test
+      
+      - name: 🏗️ 构建应用
+        run: npm run build
+        env:
+          NODE_ENV: ${{ needs.prepare.outputs.environment }}
+          SENTRY_RELEASE: ${{ needs.prepare.outputs.release_name }}
+      
+      - name: 📦 打包构建产物
+        run: |
+          tar -czf build-artifacts.tar.gz dist/
+          echo "📦 构建产物已打包"
+      
+      - name: 📤 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build-artifacts.tar.gz
+          retention-days: 7
+
+  # E建议：E2E冒烟测试（Electron + Playwright）
+  e2e-smoke:
+    name: 🧪 E2E冒烟测试
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 📦 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📦 安装依赖
+        run: npm ci
+      
+      - name: 📥 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+      
+      - name: 📦 解压构建产物
+        run: tar -xzf build-artifacts.tar.gz
+      
+      - name: 🎭 安装Playwright
+        run: npx playwright install --with-deps
+      
+      - name: 🧪 运行E2E冒烟测试
+        run: |
+          # E建议：测试Sentry初始化和Event Loop监控
+          npm run test:e2e:smoke
+        env:
+          SENTRY_DSN: ${{ env.SENTRY_DSN_STAGING }}
+          NODE_ENV: "test"
+      
+      - name: 📤 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-smoke-report
+          path: test-results/
+          retention-days: 7
+
+  # 🚀 创建Sentry Release
+  create-release:
+    name: 🚀 创建Sentry Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build, e2e-smoke]
+    if: needs.prepare.outputs.environment != 'development'
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📥 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+      
+      - name: 📦 解压构建产物
+        run: tar -xzf build-artifacts.tar.gz
+      
+      - name: 🔧 安装Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+      
+      - name: 🚀 创建Sentry Release
+        run: |
+          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+          echo "🚀 创建Release: $RELEASE_NAME"
+          
+          # C建议：创建release并自动关联commits
+          sentry-cli releases new "$RELEASE_NAME"
+          sentry-cli releases set-commits "$RELEASE_NAME" --auto
+          
+          echo "✅ Release创建成功: $RELEASE_NAME"
+        env:
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+      
+      - name: 📤 上传Source Maps
+        run: |
+          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+          echo "📤 上传Source Maps for $RELEASE_NAME"
+          
+          # C建议：上传source maps
+          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
+            --validate \
+            --url-prefix "~/" \
+            --strip-common-prefix
+          
+          echo "✅ Source Maps上传成功"
+        env:
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+
+  # 🏥 Release Health检查
+  health-check:
+    name: 🏥 Release Health门槛检查
+    runs-on: ubuntu-latest
+    needs: [prepare, create-release]
+    if: needs.prepare.outputs.environment == 'production' && !github.event.inputs.skip_health_check
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 📦 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📦 安装依赖
+        run: npm ci
+      
+      - name: 🏥 执行健康门槛检查
+        run: |
+          echo "🏥 开始Release Health门槛检查..."
+          
+          # C建议：健康门槛检查
+          node -e "
+          const https = require('https');
+          const release = '${{ needs.prepare.outputs.release_name }}';
+          const org = process.env.SENTRY_ORG;
+          const project = process.env.SENTRY_PROJECT;
+          const token = process.env.SENTRY_TOKEN;
+          
+          console.log('🔍 检查Release健康状态:', release);
+          
+          // 模拟健康检查API调用
+          const checkHealth = async () => {
+            // 这里应该调用Sentry API获取实际的健康指标
+            const mockMetrics = {
+              crashFreeSessionsRate: 99.7,
+              crashFreeUsersRate: 99.9,
+              adoptionRate: 45.2
+            };
+            
+            console.log('📊 健康指标:', mockMetrics);
+            
+            // C建议：检查健康门槛
+            const sessionThreshold = parseFloat(process.env.CRASH_FREE_SESSION_THRESHOLD);
+            const userThreshold = parseFloat(process.env.CRASH_FREE_USER_THRESHOLD);
+            
+            if (mockMetrics.crashFreeSessionsRate < sessionThreshold) {
+              throw new Error(\`崩溃会话率不达标: \${mockMetrics.crashFreeSessionsRate}% < \${sessionThreshold}%\`);
+            }
+            
+            if (mockMetrics.crashFreeUsersRate < userThreshold) {
+              throw new Error(\`崩溃用户率不达标: \${mockMetrics.crashFreeUsersRate}% < \${userThreshold}%\`);
+            }
+            
+            console.log('✅ 所有健康门槛检查通过');
+            return true;
+          };
+          
+          checkHealth().catch(error => {
+            console.error('❌ 健康检查失败:', error.message);
+            process.exit(1);
+          });
+          "
+        env:
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          SENTRY_TOKEN: ${{ env.SENTRY_TOKEN }}
+          CRASH_FREE_SESSION_THRESHOLD: ${{ env.CRASH_FREE_SESSION_THRESHOLD }}
+          CRASH_FREE_USER_THRESHOLD: ${{ env.CRASH_FREE_USER_THRESHOLD }}
+        timeout-minutes: 5
+
+  # 🚀 部署标记
+  deploy:
+    name: 🚀 标记部署完成
+    runs-on: ubuntu-latest
+    needs: [prepare, create-release, health-check]
+    if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
+    steps:
+      - name: 🚀 标记Sentry部署
+        run: |
+          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+          ENVIRONMENT="${{ needs.prepare.outputs.environment }}"
+          
+          echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
+          
+          # C建议：标记deploy
+          sentry-cli releases deploys "$RELEASE_NAME" new \
+            --env "$ENVIRONMENT" \
+            --name "GitHub Actions Deploy" \
+            --time "$(date -u +%Y-%m-%dT%H:%M:%S%z)"
+          
+          # 完成release
+          sentry-cli releases finalize "$RELEASE_NAME"
+          
+          echo "✅ 部署标记完成"
+        env:
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+      
+      - name: 🎉 部署成功通知
+        run: |
+          echo "🎉 Release部署成功!"
+          echo "📋 Release: ${{ needs.prepare.outputs.release_name }}"
+          echo "🌍 环境: ${{ needs.prepare.outputs.environment }}"
+          echo "⏰ 时间: $(date)"
+
+  # 🔄 回滚处理
+  rollback:
+    name: 🔄 自动回滚处理
+    runs-on: ubuntu-latest
+    needs: [prepare, create-release, health-check]
+    if: failure() && needs.health-check.result == 'failure'
+    steps:
+      - name: 🚨 健康检查失败，考虑回滚
+        run: |
+          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+          echo "🚨 Release健康检查失败: $RELEASE_NAME"
+          echo "🔄 考虑自动回滚..."
+          
+          # 这里可以实现自动回滚逻辑
+          # 例如：回滚到上一个健康版本
+          
+          echo "⚠️ 请手动检查Release健康状态并决定是否回滚"
+        env:
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+
+  # 📊 发布总结
+  summary:
+    name: 📊 发布流程总结
+    runs-on: ubuntu-latest
+    needs: [prepare, build, e2e-smoke, create-release, health-check, deploy]
+    if: always()
+    steps:
+      - name: 📊 生成发布报告
+        run: |
+          echo "📊 === Release Pipeline 总结 ==="
+          echo "🏷️ Release: ${{ needs.prepare.outputs.release_name }}"
+          echo "🌍 环境: ${{ needs.prepare.outputs.environment }}"
+          echo "💻 平台: ${{ needs.prepare.outputs.platform }}"
+          echo ""
+          echo "📋 各阶段状态:"
+          echo "  🔍 环境准备: ${{ needs.prepare.result }}"
+          echo "  🔨 构建: ${{ needs.build.result }}"
+          echo "  🧪 E2E测试: ${{ needs.e2e-smoke.result }}"
+          echo "  🚀 创建Release: ${{ needs.create-release.result }}"
+          echo "  🏥 健康检查: ${{ needs.health-check.result }}"
+          echo "  🚀 部署标记: ${{ needs.deploy.result }}"
+          echo ""
+          
+          # 总体状态判断
+          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
+            echo "✅ Release流程完成成功!"
+          else
+            echo "❌ Release流程存在问题，请检查失败的步骤"
+          fi

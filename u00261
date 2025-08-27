@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\buildgame\simple_demo.py", line 56, in <module>
+    test_unity_mcp()
+    ~~~~~~~~~~~~~~^^
+  File "C:\buildgame\simple_demo.py", line 13, in test_unity_mcp
+    print("\U0001f3ae Unity MCPÐ­×÷ÑÝÊ¾")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f3ae' in position 0: illegal multibyte sequence

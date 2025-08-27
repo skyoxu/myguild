@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "📝 验证提交信息格式..."
+
+# 验证提交信息格式（基本规则）
+commit_msg=$(cat "$1")
+
+# 检查提交信息长度
+if [ ${#commit_msg} -lt 10 ]; then
+    echo "❌ 提交信息过短，至少需要10个字符"
+    echo "💡 建议格式: feat: 添加用户登录功能"
+    exit 1
+fi
+
+# 检查提交信息是否包含意义内容（基本检查）
+if echo "$commit_msg" | grep -qE "^(WIP|wip|fix|feat|docs|style|refactor|test|chore|perf|build|ci|revert)"; then
+    echo "✅ 提交信息格式正确"
+else
+    echo "⚠️  建议使用约定式提交格式："
+    echo "   feat: 新功能"
+    echo "   fix: 修复bug"
+    echo "   docs: 文档更新"
+    echo "   style: 代码格式调整"
+    echo "   refactor: 重构"
+    echo "   test: 测试相关"
+    echo "   chore: 构建/工具相关"
+    echo "   perf: 性能优化"
+    echo ""
+    echo "当前提交信息: $commit_msg"
+fi
+
+echo "📝 提交信息验证完成"

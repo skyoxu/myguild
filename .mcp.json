@@ -1,0 +1,65 @@
+{
+  "mcpServers": {
+    "zen-mcp-server": {
+      "type": "stdio",
+      "command": "C:\\buildgame\\vitegame\\zen-mcp-server\\.zen_venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\buildgame\\vitegame\\zen-mcp-server\\run.py"
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\buildgame\\vitegame"
+      ],
+      "env": {}
+    },
+    "_task-master-ai_DISABLED": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--package=task-master-ai",
+        "task-master-ai"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w",
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+        "XAI_API_KEY": "${XAI_API_KEY}",
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "MISTRAL_API_KEY": "${MISTRAL_API_KEY}",
+        "AZURE_OPENAI_API_KEY": "${AZURE_OPENAI_API_KEY}",
+        "OLLAMA_API_KEY": "${OLLAMA_API_KEY}"
+      }
+    }
+  }
+}

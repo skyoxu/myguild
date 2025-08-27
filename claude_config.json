@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "mcpServers": {
+    "zen-mcp-server": {
+      "command": "C:\\buildgame\\vitegame\\zen-mcp-server\\.zen_venv\\Scripts\\python.exe",
+      "args": ["C:\\buildgame\\vitegame\\zen-mcp-server\\server.py"]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["@brave/brave-search-mcp-server"],
+      "env": {
+        "BRAVE_API_KEY": "BSAm1PctM5356BJkuQd_mJx9s6xOTyV"
+      }
+    }
+  }
+}

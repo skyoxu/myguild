@@ -1,0 +1,15 @@
+{
+  "allowlist": [],
+  "report-type": "full",
+  "advisories": [],
+  "whitelist": [],
+  "high": true,
+  "critical": true,
+  "medium": false,
+  "low": false,
+  "output-format": "json",
+  "pass-enoaudit": false,
+  "show-found": true,
+  "skip-dev": false,
+  "registry": "https://registry.npmjs.org/"
+}

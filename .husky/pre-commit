@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 运行预提交检查..."
+
+# 运行 lint-staged
+npx lint-staged
+
+# 检查 TypeScript 类型
+echo "🔧 检查 TypeScript 类型..."
+npm run build
+
+# 运行安全检查（针对修改的文件）
+echo "🛡️ 运行安全检查..."
+npm run security:check
+
+echo "✅ 预提交检查通过！"

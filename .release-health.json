@@ -1,0 +1,65 @@
+{
+  "$schema": "./schemas/release-health-schema.json",
+  "version": "1.0",
+  "description": "Release Health门禁配置 - ADR-0003可观测性策略",
+  "thresholds": {
+    "sentry": {
+      "minCrashFreeUsers": 99.5,
+      "minCrashFreeSessions": 99.0,
+      "maxErrorRate": 0.5,
+      "noRegression": true
+    },
+    "performance": {
+      "maxStartupTime": 3000,
+      "maxMemoryUsage": 512,
+      "maxCpuUsage": 80
+    },
+    "quality": {
+      "minTestCoverage": 85,
+      "maxFailedBuilds": 0,
+      "maxSecurityViolations": 0
+    }
+  },
+  "gates": {
+    "pre-release": {
+      "enabled": true,
+      "required": ["crashFreeUsers", "crashFreeSessions", "testCoverage"],
+      "timeout": 300000
+    },
+    "post-release": {
+      "enabled": true,
+      "monitoringPeriod": 86400000,
+      "rollbackThreshold": {
+        "crashFreeUsers": 98.0,
+        "errorRate": 1.0
+      }
+    }
+  },
+  "environments": {
+    "development": {
+      "monitoring": "minimal",
+      "gates": "disabled"
+    },
+    "staging": {
+      "monitoring": "full",
+      "gates": "warning-only"
+    },
+    "production": {
+      "monitoring": "full",
+      "gates": "enforce"
+    }
+  },
+  "integrations": {
+    "sentry": {
+      "project": "vitegame-electron",
+      "org": "vitegame-dev",
+      "auth_token_env": "SENTRY_AUTH_TOKEN",
+      "release_prefix": "vitegame@"
+    },
+    "ci": {
+      "provider": "github-actions",
+      "fail_on_violation": true,
+      "notify_on_success": false
+    }
+  }
+}

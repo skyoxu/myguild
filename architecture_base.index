@@ -1,0 +1,13 @@
+docs/architecture/base/01-introduction-and-goals-v2.md
+docs/architecture/base/02-security-baseline-electron-v2.md
+docs/architecture/base/03-observability-sentry-logging-v2.md
+docs/architecture/base/04-system-context-c4-event-flows-v2.md
+docs/architecture/base/05-data-models-and-storage-ports-v2.md
+docs/architecture/base/06-runtime-view-loops-state-machines-error-paths-v2.md
+docs/architecture/base/07-dev-build-and-gates-v2.md
+docs/architecture/base/09-performance-and-capacity-v2.md
+docs/architecture/base/10-i18n-ops-release-v2.md
+docs/architecture/base/11-risks-and-technical-debt-v2.md
+docs/architecture/base/12-glossary-v2.md
+docs/architecture/base/architecture-completeness-checklist.md
+docs/architecture/base/front-matter-standardization-example.md

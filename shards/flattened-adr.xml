@@ -1,0 +1,6249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files>
+	<file path='ADR-0001-tech-stack.md'><![CDATA[
+		---
+		ADR-ID: ADR-0001
+		title: 技术栈与版本策略 - Modern Stack选型
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 开发团队]
+		archRefs: [CH01, CH07, CH09, CH11]
+		verification:
+		  - path: scripts/stack/validate-versions.mjs
+		    assert: Node/Electron/Chromium versions match policy window
+		  - path: tests/e2e/smoke.electron.spec.ts
+		    assert: Electron app launches via _electron.launch and first window is visible
+		  - path: scripts/perf/assert-drift.mjs
+		    assert: Interaction P95 ≤ 100ms and Event P95 ≤ 50ms with ≤10% drift vs baseline
+		impact-scope: [package.json, vite.config.ts, tsconfig.json, electron/, src/]
+		tech-tags: [electron, react, vite, typescript, tailwind, phaser]
+		depends-on: []
+		depended-by: [ADR-0002, ADR-0005, ADR-0007]
+		test-coverage: tests/unit/tech-stack.spec.ts
+		monitoring-metrics: [build_time, bundle_size, dependency_vulnerabilities]
+		executable-deliverables:
+		  - package.json
+		  - vite.config.ts
+		  - tsconfig.json
+		  - scripts/tech-stack-validator.mjs
+		supersedes: []
+		---
+		
+		# ADR-0001: 技术栈与版本策略
+		
+		## Context and Problem Statement
+		
+		桌面发行、Web前端工程化与2D游戏渲染需求并存，需要建立统一的技术栈选型与版本管理策略。同时需要平衡开发效率、包体积、安全性和长期维护成本，确保技术选型能够支撑项目的长期演进。
+		
+		## Decision Drivers
+		
+		* 跨平台桌面应用发行需求，需要原生系统集成能力
+		* 复杂UI界面开发需要成熟的前端框架支持
+		* 2D游戏渲染需要高性能Canvas/WebGL引擎
+		* 开发团队需要类型安全和现代化工程工具链
+		* 企业级安全和稳定性要求
+		* 长期技术债务管理和升级路径规划
+		
+		## Considered Options
+		
+		* **方案A**: Electron + React + Vite + Phaser + TypeScript + Tailwind
+		* **方案B**: 纯Web应用 + PWA (放弃桌面原生能力)
+		* **方案C**: Unity + C# (游戏引擎优先，UI开发成本高)
+		* **方案D**: C++/Rust原生 + WebView嵌入 (开发成本极高)
+		
+		## Decision Outcome
+		
+		选择的方案：**方案A - Electron全栈统一技术栈**
+		
+		### 核心技术栈与版本策略
+		
+		| 层次          | 技术选型           | 固定版本策略                    | 升级窗口      |
+		|---------------|--------------------|---------------------------------|---------------|
+		| 桌面容器      | **Electron**       | 当前：37.x，支持窗口：36.x-39.x | 每季度评估    |
+		| 渲染引擎      | **Chromium**       | 跟随Electron自动更新            | 被动跟随     |
+		| Node运行时    | **Node.js**        | 跟随Electron绑定版本            | 被动跟随     |
+		| 前端框架      | **React**          | 强制v19，禁止v18及以下          | 年度大版本    |
+		| 构建工具      | **Vite**           | 当前：7.x，支持窗口：6.x-7.x    | 半年度评估    |
+		| 游戏引擎      | **Phaser**         | 当前：3.90+，支持窗口：3.80+    | 季度评估      |
+		| 样式框架      | **Tailwind CSS**   | 强制v4，禁止v3及以下            | 年度大版本    |
+		| 开发语言      | **TypeScript**     | 当前：5.8+，支持窗口：5.6+      | 半年度评估    |
+		
+		### 版本联动与兼容性矩阵
+		
+		**Electron → Chromium → Node.js 联动关系**：
+		- Electron 37.x → Chromium 130.x → Node.js 22.x
+		- 每个Electron版本绑定特定的Chromium和Node版本
+		- 升级Electron时必须验证Chromium API兼容性和Node.js模块兼容性
+		
+		### Positive Consequences
+		
+		* 同栈统一，降低技术复杂度和学习成本
+		* 社区生态成熟，第三方库和工具链丰富
+		* 类型安全保障，减少运行时错误
+		* 热更新和调试体验良好
+		* 跨平台一致性强
+		
+		### Negative Consequences
+		
+		* Electron包体积较大（~100MB+）
+		* 安全攻击面扩大，需要严格的安全治理
+		* 版本升级联动复杂，需要充分测试验证
+		* 内存占用相对原生应用较高
+		* 依赖第三方更新节奏，存在被动升级风险
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/tech-stack.spec.ts, tests/e2e/electron-integration.spec.ts
+		* **门禁脚本**: scripts/verify_tech_stack.mjs
+		* **监控指标**: build.bundle_size, runtime.memory_usage, security.electron_version
+		* **升级验证矩阵**: 见下表
+		
+		### 升级验证矩阵
+		
+		| 验证类型        | 验证范围                    | 通过标准                | 责任方        |
+		|-----------------|----------------------------|------------------------|---------------|
+		| **Smoke测试**   | 应用启动、基础功能          | 100%核心路径通过        | 自动化        |
+		| **Playwright**  | E2E用户流程、IPC通信        | 95%用例通过，无阻断问题 | QA + Dev      |
+		| **性能P95**     | 启动时间、渲染帧率、内存    | P95 < 3s/60fps/512MB    | 性能团队      |
+		| **Crash-Free**  | 崩溃率、会话质量            | ≥99.5% Users, ≥99.8% Sessions | SRE + Dev |
+		| **安全扫描**    | 依赖漏洞、Electron配置     | 0 High/Critical漏洞     | 安全团队      |
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **评估阶段**：检查目标版本的Breaking Changes和兼容性
+		2. **依赖更新**：按照联动关系更新package.json
+		3. **代码适配**：修复API变更和TypeScript类型问题
+		4. **测试验证**：执行完整的升级验证矩阵
+		5. **渐进发布**：通过Canary/Beta渠道验证稳定性
+		
+		### 回滚步骤
+		1. **版本回退**：恢复到previous stable版本
+		2. **依赖降级**：rollback package.json和lockfile
+		3. **配置还原**：恢复相关构建和运行时配置
+		4. **验证测试**：确保回滚版本功能正常
+		5. **问题分析**：记录升级失败原因和解决方案
+		
+		### 迁移指南
+		- **禁用自动更新**：package.json中锁定精确版本号
+		- **分批验证**：优先升级开发环境，再到测试和生产
+		- **文档同步**：更新技术文档和开发手册
+		- **团队培训**：新版本特性和API变更培训
+		
+		## References
+		
+		* **CH章节关联**: CH01, CH07
+		* **相关ADR**: ADR-0002-electron-security, ADR-0005-quality-gates
+		* **外部文档**: 
+		  - [Electron Release Timeline](https://www.electronjs.org/docs/tutorial/releases)
+		  - [React 19 Migration Guide](https://react.dev/blog/2024/04/25/react-19)
+		  - [Vite Migration Guide](https://vite.dev/guide/migration.html)
+		* **版本兼容性**: [Electron to Chromium Versions](https://atom.io/download/electron/index.json)]]></file>
+	<file path='ADR-0002-electron-security.md'><![CDATA[
+		---
+		ADR-ID: ADR-0002
+		title: Electron安全基线 - 三层拦截与沙箱策略
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 安全团队]
+		archRefs: [CH01,CH02, CH03, CH04]
+		verification:
+		  - path: electron/security/handlers.ts
+		    assert: nodeIntegration=false, contextIsolation=true, sandbox=true are enforced
+		  - path: tests/e2e/security.spec.ts
+		    assert: External windows denied by default and non-whitelisted navigations blocked
+		  - path: scripts/security/scan-csp.mjs
+		    assert: Production CSP contains no 'unsafe-inline' and connect-src is whitelisted only
+		  - path: electron/security/permissions.ts
+		    assert: PermissionRequest/PermissionCheck handlers default-deny
+		impact-scope: [electron/, preload/, security/, tests/e2e/security/]
+		tech-tags: [electron, security, sandbox, CSP, contextIsolation, nodeIntegration]
+		depends-on: []
+		depended-by: [ADR-0005, ADR-0008]
+		test-coverage: tests/e2e/security/electron-security.spec.ts
+		monitoring-metrics: [security_config_compliance, security_sandbox_enabled, security_csp_violations]
+		executable-deliverables: 
+		  - electron/security.ts
+		  - tests/e2e/security/electron-security.spec.ts
+		  - scripts/scan_electron_safety.mjs
+		supersedes: []
+		---
+		
+		# ADR-0002: Electron安全基线
+		
+		## Context and Problem Statement
+		
+		Electron框架默认提供强大的系统能力，但同时带来了较大的安全攻击面。需要建立严格的安全基线，最小化潜在的XSS、RCE和其他安全风险，确保桌面应用的安全性符合企业级要求。
+		
+		## Decision Drivers
+		
+		* 减少XSS攻击导致的系统权限提升风险
+		* 防止恶意脚本通过Node.js API执行任意代码
+		* 满足企业安全合规要求（SOC2、ISO27001）
+		* 遵循Electron官方安全最佳实践
+		* 支持安全审计和渗透测试
+		* 建立可量化的安全门禁机制
+		
+		## Considered Options
+		
+		* **严格沙箱模式**: nodeIntegration=false + contextIsolation=true + sandbox=true
+		* **部分隔离模式**: 仅启用contextIsolation，保留部分Node集成
+		* **宽松模式**: 保持Electron默认设置（已拒绝）
+		* **零信任模式**: 完全禁用所有系统API（开发成本过高）
+		
+		## Decision Outcome
+		
+		选择的方案：**严格沙箱模式**
+		
+		### 核心安全配置
+		
+		**BrowserWindow安全配置**：
+		```javascript
+		new BrowserWindow({
+		  webPreferences: {
+		    nodeIntegration: false,              // 禁用渲染进程Node.js集成
+		    contextIsolation: true,              // 启用上下文隔离
+		    sandbox: true,                       // 启用沙箱模式
+		    allowRunningInsecureContent: false,  // 禁止混合内容
+		    experimentalFeatures: false,         // 禁用实验性功能
+		    enableRemoteModule: false,           // 禁用remote模块
+		    webSecurity: true,                   // 启用Web安全
+		    preload: path.join(__dirname, 'preload.js')
+		  }
+		});
+		```
+		
+		**内容安全策略（CSP）**：
+		```html
+		<meta http-equiv="Content-Security-Policy" content="
+		  default-src 'self';
+		  script-src 'self' 'nonce-${RUNTIME_NONCE}';
+		  style-src 'self' 'nonce-${RUNTIME_NONCE}';
+		  img-src 'self' data: https:;
+		  font-src 'self' data:;
+		  connect-src 'self' https://api.${PRODUCT_DOMAIN} wss://api.${PRODUCT_DOMAIN} https://sentry.io;
+		  object-src 'none';
+		  base-uri 'self';
+		  form-action 'self';
+		  frame-ancestors 'none';
+		">
+		```
+		
+		**Nonce机制实现**：
+		```javascript
+		// 主进程中生成运行时nonce
+		import crypto from 'crypto';
+		
+		class CSPManager {
+		  private static generateNonce(): string {
+		    return crypto.randomBytes(16).toString('base64');
+		  }
+		  
+		  static createCSPHeader(nonce: string): string {
+		    return `
+		      default-src 'self';
+		      script-src 'self' 'nonce-${nonce}';
+		      style-src 'self' 'nonce-${nonce}';
+		      img-src 'self' data: https:;
+		      font-src 'self' data:;
+		      connect-src 'self' https://api.${process.env.PRODUCT_DOMAIN} wss://api.${process.env.PRODUCT_DOMAIN} https://sentry.io;
+		      object-src 'none';
+		      base-uri 'self';
+		      form-action 'self';
+		      frame-ancestors 'none';
+		    `.replace(/\s+/g, ' ').trim();
+		  }
+		  
+		  static injectNonceToHTML(html: string, nonce: string): string {
+		    return html
+		      .replace(/<script([^>]*)>/g, `<script$1 nonce="${nonce}">`)
+		      .replace(/<style([^>]*)>/g, `<style$1 nonce="${nonce}">`);
+		  }
+		}
+		```
+		
+		**Preload脚本API白名单**：
+		```javascript
+		const { contextBridge, ipcRenderer } = require('electron');
+		
+		contextBridge.exposeInMainWorld('electronAPI', {
+		  // 文件操作白名单
+		  readFile: (path) => ipcRenderer.invoke('file:read', path),
+		  writeFile: (path, data) => ipcRenderer.invoke('file:write', path, data),
+		  
+		  // 系统信息白名单  
+		  getSystemInfo: () => ipcRenderer.invoke('system:info'),
+		  
+		  // 应用控制白名单
+		  minimize: () => ipcRenderer.send('window:minimize'),
+		  close: () => ipcRenderer.send('window:close')
+		});
+		```
+		
+		### Positive Consequences
+		
+		* 显著降低XSS导致的RCE风险（风险降低90%+）
+		* 提供最强的安全隔离和权限最小化
+		* 符合SOC2/ISO27001安全合规要求
+		* 支持自动化安全工具扫描和审计
+		* 遵循OWASP和业界安全最佳实践
+		* 建立可量化的安全指标体系
+		
+		### Negative Consequences
+		
+		* 调试复杂度增加，需要额外的开发工具配置
+		* 需要通过IPC进行主渲染进程通信，增加开发成本
+		* 某些第三方库可能需要适配或替换
+		* 初期开发时需要额外的安全配置工作
+		* 性能轻微下降（<5%）
+		
+		## Verification
+		
+		### 5大验证类别体系
+		
+		#### 1. 配置安全验证
+		* **测试验证**: tests/e2e/security/electron-config.spec.ts
+		* **门禁脚本**: scripts/scan_electron_safety.mjs
+		* **监控指标**: security.config_compliance, security.sandbox_enabled
+		* **验证频率**: 每次构建 + 每日定时扫描
+		
+		**验证清单**：
+		- [ ] `nodeIntegration: false` - 渲染进程禁用Node集成
+		- [ ] `contextIsolation: true` - 上下文完全隔离  
+		- [ ] `sandbox: true` - 沙箱模式启用
+		- [ ] `allowRunningInsecureContent: false` - 禁止混合内容
+		- [ ] `experimentalFeatures: false` - 禁用实验功能
+		- [ ] `enableRemoteModule: false` - 禁用remote模块
+		
+		#### 2. CSP策略验证  
+		* **测试验证**: tests/e2e/security/csp-policy.spec.ts
+		* **门禁脚本**: scripts/verify_csp_policy.mjs
+		* **监控指标**: security.csp_violations, security.inline_script_blocks
+		* **验证频率**: 每次部署 + 运行时监控
+		
+		**验证清单**：
+		- [x] `script-src 'self' 'nonce-${RUNTIME_NONCE}'` - 仅允许同源脚本和nonce授权脚本
+		- [x] `style-src 'self' 'nonce-${RUNTIME_NONCE}'` - 仅允许同源样式和nonce授权内联样式
+		- [x] `object-src 'none'` - 禁止对象嵌入
+		- [x] `base-uri 'self'` - 限制base标签URI
+		- [x] 无`unsafe-inline`和`unsafe-eval` - 通过nonce机制安全支持必要的内联代码
+		- [x] `connect-src` 保持Sentry集成 - 支持监控和错误追踪
+		- [ ] CSP报告机制启用 - 违规行为监控
+		- [ ] Nonce生成机制安全 - 每次页面加载生成新的随机nonce
+		
+		#### 3. Preload脚本安全验证
+		* **测试验证**: tests/unit/security/preload-whitelist.spec.ts  
+		* **门禁脚本**: scripts/audit_preload_apis.mjs
+		* **监控指标**: security.api_exposure_count, security.dangerous_apis
+		* **验证频率**: 每次代码提交 + 安全审计
+		
+		**验证清单**：
+		- [ ] 仅暴露必要的API白名单 - 最小权限原则
+		- [ ] 所有暴露的API进行输入验证 - 防注入攻击
+		- [ ] 使用`contextBridge.exposeInMainWorld` - 标准桥接方式
+		- [ ] 禁止暴露完整的`require`或fs API - 防止权限绕过
+		- [ ] API参数类型严格验证 - TypeScript强类型
+		
+		#### 4. 权限和导航控制验证
+		* **测试验证**: tests/e2e/security/navigation-control.spec.ts
+		* **门禁脚本**: scripts/check_navigation_guards.mjs  
+		* **监控指标**: security.navigation_blocks, security.permission_denials
+		* **验证频率**: 每次发布 + 渗透测试
+		
+		**验证清单**：
+		- [ ] `setPermissionRequestHandler` - 权限请求拦截
+		- [ ] `will-navigate`事件拦截 - 导航行为控制
+		- [ ] `setWindowOpenHandler` - 新窗口控制
+		- [ ] 外部URL访问白名单 - 限制网络请求范围
+		- [ ] 文件协议访问限制 - 防止本地文件泄露
+		
+		#### 5. 运行时安全监控
+		* **测试验证**: tests/integration/security/runtime-monitoring.spec.ts
+		* **门禁脚本**: scripts/security_runtime_check.mjs
+		* **监控指标**: security.runtime_violations, security.exploit_attempts  
+		* **验证频率**: 实时监控 + 每小时汇总
+		
+		**验证清单**：
+		- [ ] CSP违规实时报告 - 异常行为检测
+		- [ ] 异常IPC调用监控 - 恶意脚本识别  
+		- [ ] 内存异常访问检测 - 缓冲区溢出防护
+		- [ ] 网络请求异常监控 - 数据泄露防护
+		- [ ] 文件系统访问审计 - 敏感文件保护
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **配置更新**: 更新BrowserWindow配置启用所有安全选项
+		2. **预加载脚本**: 实施Preload脚本API白名单机制
+		3. **CSP部署**: 配置严格CSP策略到所有HTML页面
+		4. **Nonce机制**: 实现运行时nonce生成和注入系统
+		   - 在主进程中实现CSPManager类
+		   - 为每个页面加载生成唯一nonce
+		   - 自动注入nonce到script和style标签
+		5. **事件处理**: 添加权限和导航事件处理器
+		6. **监控启用**: 部署运行时安全监控和告警系统
+		7. **验证测试**: 运行完整的5大类安全验证套件
+		
+		### 回滚步骤
+		1. **紧急回滚**: 如遇严重兼容性问题，可临时关闭sandbox模式
+		2. **CSP降级**: 逐步调整CSP策略至最低可接受安全级别
+		3. **API恢复**: 临时开放必要的API访问权限
+		4. **问题记录**: 详细记录安全问题并制定修复计划
+		5. **不可回滚**: nodeIntegration和contextIsolation设置不可回滚
+		
+		### 迁移指南
+		- **代码重构**: 现有代码需要通过IPC与主进程通信
+		- **依赖清理**: 移除渲染进程中的直接Node.js API调用
+		- **库兼容性**: 第三方库需验证沙箱模式兼容性
+		- **调试配置**: 开发时使用devtools的security面板检查配置
+		- **团队培训**: 安全开发最佳实践和工具使用培训
+		
+		### 安全事件响应流程
+		1. **告警触发**: 自动监控系统检测到安全异常
+		2. **风险评估**: 安全团队评估事件级别和影响范围  
+		3. **应急处置**: 根据级别执行相应的应急处置措施
+		4. **根因分析**: 深入分析安全事件的根本原因
+		5. **改进措施**: 更新安全策略和防护机制
+		
+		## References
+		
+		* **CH章节关联**: CH01, CH02  
+		* **相关ADR**: ADR-0004-event-bus-and-contracts, ADR-0005-quality-gates
+		* **外部文档**: 
+		  - [Electron Security Guide](https://www.electronjs.org/docs/tutorial/security)
+		  - [Electronegativity Scanner](https://github.com/doyensec/electronegativity)
+		  - [OWASP Electron Security](https://owasp.org/www-project-electron-security/)
+		  - [CSP Level 3 Specification](https://www.w3.org/TR/CSP3/)
+		* **安全工具**: Electronegativity, ESLint security rules, Snyk vulnerability scanner
+		* **合规框架**: SOC2 CC6.1, ISO27001 A.12.6.1]]></file>
+	<file path='ADR-0003-observability-release-health.md'><![CDATA[
+		---
+		ADR-ID: ADR-0003
+		title: 可观测性与Release Health策略 - Sentry监控集成
+		status: Accepted
+		decision-time: "2025-08-24"
+		deciders: [架构团队, SRE团队]
+		archRefs: [CH01, CH03, CH07]
+		verification:
+		  - path: .release-health.json
+		    assert: CrashFreeUsers, CrashFreeSessions, minAdoption, noRegression thresholds are defined
+		  - path: scripts/release-health-gate.mjs
+		    assert: Build fails if crash-free or adoption thresholds are not met
+		  - path: scripts/telemetry/self-check.mjs
+		    assert: Sessions telemetry is enabled for release health
+		impact-scope: [src/shared/observability/, .release-health.json, scripts/]
+		tech-tags: [sentry, logging, monitoring, release-health, observability]
+		depends-on: []
+		depended-by: [ADR-0005, ADR-0008]
+		test-coverage: tests/unit/observability/sentry.spec.ts
+		monitoring-metrics: [crash_free_sessions, crash_free_users, error_rate, release_adoption]
+		executable-deliverables:
+		  - .release-health.json
+		  - src/shared/observability/sentry-config.ts
+		  - scripts/release-health-gate.mjs
+		supersedes: []
+		---
+		
+		# ADR-0003: 可观测性与Release Health策略
+		
+		## Context and Problem Statement
+		
+		Electron应用需要完善的可观测性体系来监控应用健康状况、用户体验质量和发布质量。需要建立统一的监控、日志、错误追踪和Release Health门禁机制，确保应用发布质量和用户体验，同时满足数据隐私和合规要求。
+		
+		## Decision Drivers
+		
+		* 需要实时监控应用崩溃率和用户会话质量
+		* 需要建立发布质量门禁，防止有问题的版本大规模发布
+		* 需要统一的错误追踪和日志系统，便于问题排查
+		* 需要支持渐进式发布和自动回滚机制
+		* 符合GDPR、CCPA等数据隐私法规要求
+		* 需要PII数据清洗和敏感信息保护机制
+		
+		## Considered Options
+		
+		* **Sentry Release Health + 结构化日志** (选择方案)
+		* **ApplicationInsights + Azure Monitor** 
+		* **Bugsnag + ELK Stack**
+		* **自建监控系统 + Prometheus/Grafana**
+		* **仅使用Electron自带崩溃报告** (已拒绝)
+		
+		## Decision Outcome
+		
+		选择的方案：**Sentry Release Health + 结构化日志**
+		
+		原因：Sentry提供完整的Release Health功能，包括Crash-Free Users/Sessions指标，能够直接作为发布门禁的数据源。同时支持Error Tracking、Performance Monitoring和用户反馈收集，具备强大的PII数据清洗能力。
+		
+		### 核心配置架构
+		
+		**Sentry SDK配置**：
+		```javascript
+		import * as Sentry from '@sentry/electron';
+		
+		Sentry.init({
+		  dsn: process.env.SENTRY_DSN,
+		  environment: process.env.NODE_ENV,
+		  
+		  // Release Health配置
+		  enableAutoSessionTracking: true,
+		  sessionTrackingIntervalMs: 30000,
+		  
+		  // 采样配置
+		  sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+		  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.05 : 1.0,
+		  
+		  // PII数据清洗
+		  beforeSend(event) {
+		    return sanitizeEvent(event);
+		  },
+		  
+		  beforeSendTransaction(transaction) {
+		    return sanitizeTransaction(transaction);
+		  },
+		  
+		  // 错误过滤
+		  ignoreErrors: [
+		    'ResizeObserver loop limit exceeded',
+		    'ChunkLoadError',
+		    'Loading CSS chunk'
+		  ]
+		});
+		```
+		
+		**PII清洗策略**：
+		```javascript
+		function sanitizeEvent(event) {
+		  // 移除敏感数据字段
+		  const sensitiveFields = ['email', 'password', 'token', 'apiKey', 'userId'];
+		  
+		  // 清洗用户数据
+		  if (event.user) {
+		    sensitiveFields.forEach(field => {
+		      if (event.user[field]) {
+		        event.user[field] = '[Filtered]';
+		      }
+		    });
+		  }
+		  
+		  // 清洗请求数据
+		  if (event.request && event.request.data) {
+		    event.request.data = sanitizeObject(event.request.data);
+		  }
+		  
+		  // 清洗堆栈信息中的敏感路径
+		  if (event.exception) {
+		    event.exception.values.forEach(exception => {
+		      if (exception.stacktrace) {
+		        exception.stacktrace.frames.forEach(frame => {
+		          frame.filename = sanitizePath(frame.filename);
+		        });
+		      }
+		    });
+		  }
+		  
+		  return event;
+		}
+		```
+		
+		**结构化日志配置**：
+		```javascript
+		import winston from 'winston';
+		
+		const logger = winston.createLogger({
+		  level: process.env.LOG_LEVEL || 'info',
+		  format: winston.format.combine(
+		    winston.format.timestamp(),
+		    winston.format.errors({ stack: true }),
+		    winston.format.json(),
+		    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+		      return JSON.stringify({
+		        timestamp,
+		        level,
+		        message: sanitizeMessage(message),
+		        ...sanitizeObject(meta)
+		      });
+		    })
+		  ),
+		  transports: [
+		    new winston.transports.File({ 
+		      filename: 'logs/error.log', 
+		      level: 'error',
+		      maxsize: 10485760, // 10MB
+		      maxFiles: 5
+		    }),
+		    new winston.transports.File({ 
+		      filename: 'logs/combined.log',
+		      maxsize: 10485760,
+		      maxFiles: 10
+		    }),
+		    ...(process.env.NODE_ENV === 'development' ? [
+		      new winston.transports.Console()
+		    ] : [])
+		  ]
+		});
+		```
+		
+		### Release Health门禁配置
+		
+		**质量门禁阈值**：
+		- **Crash-Free Users**: ≥99.5%
+		- **Crash-Free Sessions**: ≥99.8%  
+		- **最小采样数**: 1000个会话
+		- **回滚触发**: 连续30分钟低于阈值
+		
+		**门禁脚本示例**：
+		```javascript
+		// scripts/release_health_check.js
+		async function checkReleaseHealth(releaseVersion) {
+		  const healthData = await sentryApi.getReleaseHealth(releaseVersion);
+		  
+		  const metrics = {
+		    crashFreeUsers: healthData.sessions.crashFreeUsers,
+		    crashFreeSessions: healthData.sessions.crashFreeSessions,
+		    totalSessions: healthData.sessions.total,
+		    duration: healthData.timePeriod
+		  };
+		  
+		  // 验证最小采样数
+		  if (metrics.totalSessions < 1000) {
+		    throw new Error(`Insufficient session count: ${metrics.totalSessions} < 1000`);
+		  }
+		  
+		  // 验证Crash-Free指标
+		  if (metrics.crashFreeUsers < 0.995) {
+		    throw new Error(`Crash-Free Users too low: ${metrics.crashFreeUsers} < 99.5%`);
+		  }
+		  
+		  if (metrics.crashFreeSessions < 0.998) {
+		    throw new Error(`Crash-Free Sessions too low: ${metrics.crashFreeSessions} < 99.8%`);
+		  }
+		  
+		  return metrics;
+		}
+		```
+		
+		### Positive Consequences
+		
+		* 统一的错误追踪和性能监控平台
+		* 内置Release Health指标，便于自动化门禁
+		* 支持用户反馈和崩溃上下文收集
+		* 良好的Electron集成支持和社区生态
+		* 支持渐进式发布和质量监控
+		* 强大的PII数据清洗和隐私保护能力
+		* 丰富的告警和通知机制
+		
+		### Negative Consequences
+		
+		* 增加第三方服务依赖和单点故障风险
+		* 需要考虑数据隐私和合规要求（GDPR、CCPA）
+		* 月费成本（基于事件量），大规模使用时成本较高
+		* 需要网络连接才能发送遥测数据
+		* 数据留存期限和地域限制
+		* 需要定期审计和清理敏感数据
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/observability.spec.ts, tests/integration/sentry-integration.spec.ts
+		* **门禁脚本**: scripts/quality_gates.mjs, scripts/release_health_check.js
+		* **监控指标**: sentry.crash_free_users, sentry.crash_free_sessions, sentry.error_rate, sentry.performance_score
+		* **SLO阈值**: Crash-Free Users ≥99.5%, Crash-Free Sessions ≥99.8%, min adoption 1000 sessions, P95 response time <2s
+		
+		### 监控仪表板指标
+		
+		**应用健康指标**：
+		- 崩溃率和错误率趋势
+		- 会话质量和用户留存
+		- 性能指标（P50/P95/P99响应时间）
+		- 内存使用和CPU占用率
+		
+		**发布质量指标**：
+		- Release Health评分
+		- 版本采用率和推广速度
+		- 回滚触发和恢复时间
+		- 用户反馈和满意度
+		
+		**运营效率指标**：
+		- 问题发现和解决时间（MTTR）
+		- 告警准确率和误报率
+		- 监控覆盖率和盲点识别
+		- 成本效率和ROI分析
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **SDK安装**: 安装并配置Sentry SDK for Electron
+		2. **Release配置**: 配置Release Health tracking和版本标签
+		3. **环境区分**: 设置不同环境的DSN和采样率
+		4. **PII清洗**: 配置敏感数据过滤和清洗规则
+		5. **告警设置**: 建立监控Dashboard和告警通知
+		6. **门禁集成**: 集成Release Health检查到CI/CD流程
+		
+		### 回滚步骤
+		1. **实时监控**: 持续监控Release Health指标变化
+		2. **告警触发**: 当Crash-Free率低于阈值时自动告警
+		3. **发布暂停**: 自动停止新版本的推广发布
+		4. **问题分析**: 通知相关团队进行紧急问题分析
+		5. **回滚决策**: 根据影响范围决定是否执行版本回滚
+		6. **恢复验证**: 回滚后验证系统恢复正常状态
+		
+		### 迁移指南
+		- **日志兼容**: 现有日志输出保持不变，额外增加结构化日志
+		- **文件管理**: 日志文件统一写入logs/目录，按日期和模块分类
+		- **敏感信息**: 不记录用户输入、密码、token等敏感信息
+		- **采样策略**: 开发环境100%，测试环境50%，生产环境根据负载调整
+		- **数据治理**: 建立数据保留和清理策略，定期清理过期数据
+		
+		### 数据隐私和合规
+		
+		**GDPR合规措施**：
+		- 用户同意机制：可选择退出遥测数据收集
+		- 数据最小化：仅收集必要的错误和性能数据
+		- 数据透明：提供用户数据收集和使用说明
+		- 删除权利：支持用户数据删除请求
+		
+		**PII数据处理**：
+		- 数据分类：明确标识和分类敏感数据类型
+		- 清洗机制：自动清洗和脱敏敏感信息
+		- 访问控制：限制敏感数据的访问权限
+		- 审计日志：记录敏感数据的访问和操作
+		
+		## References
+		
+		* **CH章节关联**: CH01, CH03
+		* **相关ADR**: ADR-0005-quality-gates, ADR-0002-electron-security
+		* **外部文档**: 
+		  - [Sentry Electron Integration](https://docs.sentry.io/platforms/javascript/guides/electron/)
+		  - [Sentry Release Health](https://docs.sentry.io/product/releases/health/)
+		  - [GDPR Compliance Guide](https://docs.sentry.io/data-management/sensitive-data/)
+		  - [Winston Logging Best Practices](https://github.com/winstonjs/winston#readme)
+		* **合规框架**: GDPR Article 25, CCPA Section 1798.100
+		* **相关PRD-ID**: 适用于所有PRD的基线监控需求]]></file>
+	<file path='ADR-0004-event-bus-and-contracts.md'><![CDATA[
+		---
+		ADR-ID: ADR-0004
+		title: 事件总线与契约 - CloudEvents 1.0 + IPC通信
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 开发团队]
+		archRefs: [CH03,CH04, CH05, CH06]
+		verification:
+		  - path: src/shared/contracts/events/builder.ts
+		    assert: CloudEvent includes specversion, id, source, type, time
+		  - path: tests/unit/contracts/events.spec.ts
+		    assert: Reject events missing required CloudEvents attributes
+		  - path: tests/unit/contracts/naming.spec.ts
+		    assert: Event type naming follows project convention
+		impact-scope: [src/shared/contracts/events.ts, src/core/events/, electron/ipc/]
+		tech-tags: [cloudevents, ipc, eventbus, contracts, communication]
+		depends-on: [ADR-0002]
+		depended-by: [ADR-0005, ADR-0007]
+		test-coverage: tests/unit/contracts/events.spec.ts
+		monitoring-metrics: [event_throughput, ipc_latency, contract_violations]
+		executable-deliverables:
+		  - src/shared/contracts/events.ts
+		  - src/core/events/bus.ts
+		  - tests/unit/contracts/events.spec.ts
+		supersedes: []
+		---
+		
+		# ADR-0004: 事件总线与契约（CloudEvents 1.0 + IPC）
+		
+		## Context and Problem Statement
+		
+		主进程/渲染进程/Worker进程/Phaser场景之间需要建立稳定、类型安全的事件通信契约。需要支持请求/响应、单播/发布订阅等多种通信模式，同时确保事件的可追踪性、版本兼容性和安全性。采用行业标准CloudEvents 1.0规范以提供统一的事件格式和互操作性。
+		
+		## Decision Drivers
+		
+		* 多进程架构需要可靠的事件通信机制
+		* 需要类型安全和编译时检查，避免运行时错误
+		* 需要支持事件版本化和向后兼容性
+		* 需要事件可追踪性和审计能力
+		* 需要符合行业标准（CloudEvents）以便集成和扩展
+		* 需要安全的IPC白名单机制，防止权限泄露
+		
+		## Considered Options
+		
+		* **CloudEvents 1.0 + TypeScript契约** (选择方案)
+		* **自定义事件格式 + JSON Schema**
+		* **Protobuf + gRPC (进程间通信成本高)**
+		* **EventEmitter原生方案 (类型安全不足)**
+		* **Redux/Zustand全局状态 (仅限渲染进程)**
+		
+		## Decision Outcome
+		
+		选择的方案：**CloudEvents 1.0 + TypeScript契约**
+		
+		### CloudEvents 1.0核心字段规范
+		
+		**必需字段（Required）**：
+		```typescript
+		interface CloudEvent {
+		  // 事件唯一标识符
+		  id: string;                    // 例: "order-123-created-20250817T10:30:00Z"
+		  
+		  // 事件源标识
+		  source: string;                // 例: "game.player" | "game.inventory" | "system.auth"
+		  
+		  // 事件类型（遵循反向DNS）
+		  type: string;                  // 例: "com.buildgame.player.levelup"
+		  
+		  // CloudEvents规范版本
+		  specversion: "1.0";
+		}
+		```
+		
+		**可选字段（Optional）**：
+		```typescript
+		interface CloudEventExtended extends CloudEvent {
+		  // 数据内容类型
+		  datacontenttype?: string;      // 例: "application/json"
+		  
+		  // 数据架构URI
+		  dataschema?: string;           // 例: "/schemas/player-levelup-v1.json"
+		  
+		  // 事件主题/分类
+		  subject?: string;              // 例: "player/12345" | "inventory/slot/1"
+		  
+		  // 事件时间戳
+		  time?: string;                 // ISO 8601格式: "2025-08-17T10:30:00Z"
+		  
+		  // 事件数据载荷
+		  data?: any;
+		  
+		  // 扩展字段（以x-开头）
+		  'x-correlation-id'?: string;   // 关联ID用于链路追踪
+		  'x-retry-count'?: number;      // 重试次数
+		  'x-priority'?: 'low' | 'normal' | 'high' | 'critical';
+		}
+		```
+		
+		### 事件命名规范与分类
+		
+		**命名模式**: `<boundedContext>.<entity>.<action>`
+		
+		**核心领域事件**：
+		```typescript
+		// 游戏核心事件
+		"game.player.created"          // 玩家创建
+		"game.player.levelup"          // 玩家升级  
+		"game.inventory.item.added"    // 物品添加
+		"game.battle.started"          // 战斗开始
+		"game.scene.loaded"            // 场景加载完成
+		
+		// 系统事件
+		"system.app.started"           // 应用启动
+		"system.window.minimized"      // 窗口最小化
+		"system.error.occurred"        // 错误发生
+		"system.auth.login.success"    // 登录成功
+		
+		// IPC通信事件
+		"ipc.file.read.request"        // 文件读取请求
+		"ipc.file.read.response"       // 文件读取响应
+		"ipc.window.control.request"   // 窗口控制请求
+		```
+		
+		### 类型安全契约管理
+		
+		**事件DTO统一管理**：
+		```typescript
+		// src/shared/contracts/events/player-events.ts
+		export interface PlayerLevelUpEvent extends CloudEventExtended {
+		  type: "com.buildgame.player.levelup";
+		  source: "game.player";
+		  data: {
+		    playerId: string;
+		    previousLevel: number;
+		    newLevel: number;
+		    gainedExp: number;
+		    unlockedSkills: string[];
+		    timestamp: number;
+		  };
+		  subject: `player/${string}`;
+		}
+		
+		// src/shared/contracts/events/ipc-events.ts
+		export interface FileReadRequestEvent extends CloudEventExtended {
+		  type: "com.buildgame.ipc.file.read.request";
+		  source: "renderer" | "main";
+		  data: {
+		    filePath: string;
+		    encoding?: BufferEncoding;
+		    requestId: string;
+		  };
+		}
+		
+		export interface FileReadResponseEvent extends CloudEventExtended {
+		  type: "com.buildgame.ipc.file.read.response";
+		  source: "main";
+		  data: {
+		    requestId: string;
+		    success: boolean;
+		    content?: string;
+		    error?: string;
+		  };
+		}
+		```
+		
+		**事件总线实现**：
+		```typescript
+		// src/shared/eventbus/cloud-event-bus.ts
+		import { CloudEventExtended } from '../contracts/events/base';
+		
+		export class CloudEventBus {
+		  private handlers = new Map<string, Function[]>();
+		  private middleware: Array<(event: CloudEventExtended) => Promise<CloudEventExtended>> = [];
+		
+		  // 发布事件
+		  async publish(event: CloudEventExtended): Promise<void> {
+		    // 验证CloudEvents格式
+		    this.validateCloudEvent(event);
+		    
+		    // 应用中间件（日志、追踪等）
+		    const processedEvent = await this.applyMiddleware(event);
+		    
+		    // 分发到处理器
+		    const handlers = this.handlers.get(processedEvent.type) || [];
+		    await Promise.all(handlers.map(handler => handler(processedEvent)));
+		  }
+		
+		  // 订阅事件
+		  subscribe<T extends CloudEventExtended>(
+		    eventType: T['type'], 
+		    handler: (event: T) => Promise<void>
+		  ): () => void {
+		    const handlers = this.handlers.get(eventType) || [];
+		    handlers.push(handler);
+		    this.handlers.set(eventType, handlers);
+		
+		    // 返回取消订阅函数
+		    return () => {
+		      const currentHandlers = this.handlers.get(eventType) || [];
+		      const index = currentHandlers.indexOf(handler);
+		      if (index > -1) {
+		        currentHandlers.splice(index, 1);
+		      }
+		    };
+		  }
+		
+		  private validateCloudEvent(event: CloudEventExtended): void {
+		    if (!event.id || !event.source || !event.type || event.specversion !== "1.0") {
+		      throw new Error(`Invalid CloudEvent format: ${JSON.stringify(event)}`);
+		    }
+		  }
+		}
+		```
+		
+		### IPC安全白名单机制
+		
+		**主进程IPC处理器**：
+		```typescript
+		// electron/ipc/secure-ipc-handler.ts
+		import { ipcMain } from 'electron';
+		import { CloudEventExtended } from '../shared/contracts/events/base';
+		
+		// IPC白名单定义
+		const IPC_WHITELIST = {
+		  'file:read': { 
+		    maxPayloadSize: 1024 * 1024, // 1MB
+		    rateLimitPerMin: 60,
+		    requireAuth: false 
+		  },
+		  'file:write': { 
+		    maxPayloadSize: 10 * 1024 * 1024, // 10MB
+		    rateLimitPerMin: 30,
+		    requireAuth: true 
+		  },
+		  'window:control': { 
+		    maxPayloadSize: 1024, 
+		    rateLimitPerMin: 100,
+		    requireAuth: false 
+		  }
+		} as const;
+		
+		export class SecureIPCHandler {
+		  private rateLimitMap = new Map<string, number[]>();
+		
+		  setupIPCHandlers(): void {
+		    // 安全的文件读取
+		    ipcMain.handle('file:read', async (event, cloudEvent: CloudEventExtended) => {
+		      this.validateIPCCall('file:read', cloudEvent);
+		      
+		      const response: FileReadResponseEvent = {
+		        id: `file-read-response-${Date.now()}`,
+		        source: 'main',
+		        type: 'com.buildgame.ipc.file.read.response',
+		        specversion: '1.0',
+		        time: new Date().toISOString(),
+		        data: {
+		          requestId: cloudEvent.data.requestId,
+		          success: true,
+		          content: await this.secureFileRead(cloudEvent.data.filePath)
+		        }
+		      };
+		      
+		      return response;
+		    });
+		  }
+		
+		  private validateIPCCall(channel: string, event: CloudEventExtended): void {
+		    const config = IPC_WHITELIST[channel];
+		    if (!config) {
+		      throw new Error(`IPC channel '${channel}' not in whitelist`);
+		    }
+		
+		    // 验证载荷大小
+		    const payloadSize = JSON.stringify(event).length;
+		    if (payloadSize > config.maxPayloadSize) {
+		      throw new Error(`Payload too large: ${payloadSize} > ${config.maxPayloadSize}`);
+		    }
+		
+		    // 速率限制
+		    this.checkRateLimit(channel, config.rateLimitPerMin);
+		
+		    // CloudEvents格式验证
+		    if (!event.id || !event.source || !event.type || event.specversion !== "1.0") {
+		      throw new Error(`Invalid CloudEvent format for IPC channel '${channel}'`);
+		    }
+		  }
+		
+		  private checkRateLimit(channel: string, limit: number): void {
+		    const now = Date.now();
+		    const windowStart = now - 60000; // 1分钟窗口
+		    
+		    const calls = this.rateLimitMap.get(channel) || [];
+		    const validCalls = calls.filter(time => time > windowStart);
+		    
+		    if (validCalls.length >= limit) {
+		      throw new Error(`Rate limit exceeded for channel '${channel}': ${validCalls.length}/${limit} per minute`);
+		    }
+		    
+		    validCalls.push(now);
+		    this.rateLimitMap.set(channel, validCalls);
+		  }
+		}
+		```
+		
+		### 事件版本化策略
+		
+		**版本兼容性处理**：
+		```typescript
+		// src/shared/contracts/events/versioning.ts
+		export interface EventMigration {
+		  fromVersion: string;
+		  toVersion: string;
+		  migrate: (oldEvent: any) => CloudEventExtended;
+		}
+		
+		export class EventMigrator {
+		  private migrations: EventMigration[] = [];
+		
+		  registerMigration(migration: EventMigration): void {
+		    this.migrations.push(migration);
+		  }
+		
+		  // 自动迁移旧版本事件
+		  migrate(event: any, targetVersion: string): CloudEventExtended {
+		    let currentEvent = event;
+		    let currentVersion = this.extractVersion(event);
+		
+		    while (currentVersion !== targetVersion) {
+		      const migration = this.migrations.find(
+		        m => m.fromVersion === currentVersion && 
+		             this.isVersionNewer(m.toVersion, currentVersion)
+		      );
+		
+		      if (!migration) {
+		        throw new Error(`No migration path from ${currentVersion} to ${targetVersion}`);
+		      }
+		
+		      currentEvent = migration.migrate(currentEvent);
+		      currentVersion = migration.toVersion;
+		    }
+		
+		    return currentEvent;
+		  }
+		
+		  private extractVersion(event: any): string {
+		    // 从事件类型中提取版本: "com.buildgame.player.levelup.v2"
+		    const match = event.type?.match(/\.v(\d+)$/);
+		    return match ? `v${match[1]}` : 'v1';
+		  }
+		}
+		
+		// 版本迁移示例
+		const playerLevelUpV1ToV2: EventMigration = {
+		  fromVersion: 'v1',
+		  toVersion: 'v2',
+		  migrate: (oldEvent) => ({
+		    ...oldEvent,
+		    type: oldEvent.type.replace('.v1', '.v2'),
+		    data: {
+		      ...oldEvent.data,
+		      // v2新增字段
+		      achievementUnlocked: [],
+		      // v2字段重命名
+		      experienceGained: oldEvent.data.gainedExp
+		    }
+		  })
+		};
+		```
+		
+		### Positive Consequences
+		
+		* 统一的事件格式规范，符合CloudEvents行业标准
+		* 强类型安全，编译时检查事件契约
+		* 易于测试和审计，事件结构清晰可预测
+		* 支持事件版本化和向后兼容性
+		* IPC安全白名单机制，防止权限泄露
+		* 事件可追踪性，支持链路追踪和调试
+		* 良好的扩展性，便于集成外部系统
+		
+		### Negative Consequences
+		
+		* 初期事件契约定义成本较高
+		* CloudEvents规范学习曲线
+		* 事件版本迁移需要额外维护工作
+		* JSON序列化性能开销（相比二进制格式）
+		* 复杂的中间件和验证逻辑
+		* 需要严格的事件设计纪律
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/events/cloudevents.spec.ts, tests/e2e/ipc-communication.spec.ts
+		* **门禁脚本**: scripts/validate_event_contracts.mjs, scripts/check_ipc_whitelist.mjs
+		* **监控指标**: events.published_count, events.failed_count, ipc.rate_limit_hits, events.migration_count
+		* **契约验证**: 所有事件DTO必须通过TypeScript编译和JSON Schema验证
+		
+		### 事件契约验证清单
+		
+		- [ ] CloudEvents 1.0必需字段验证 (id, source, type, specversion)
+		- [ ] 事件类型命名规范检查 (`<boundedContext>.<entity>.<action>`)
+		- [ ] 事件DTO类型导出到 `src/shared/contracts/events/**`
+		- [ ] IPC白名单机制启用和速率限制配置
+		- [ ] 事件版本化策略实施和迁移测试
+		- [ ] 事件序列化/反序列化性能测试
+		- [ ] 跨进程通信安全验证
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **CloudEvents规范**: 实施CloudEvents 1.0标准事件格式
+		2. **契约定义**: 在`src/shared/contracts/events/`定义所有事件DTO
+		3. **事件总线**: 部署支持CloudEvents的事件总线系统
+		4. **IPC安全**: 配置IPC白名单和安全验证机制
+		5. **版本迁移**: 建立事件版本化和迁移策略
+		6. **监控集成**: 集成事件监控和追踪系统
+		
+		### 回滚步骤
+		1. **事件格式**: 如遇兼容性问题，可临时支持旧事件格式
+		2. **白名单放松**: 临时扩大IPC白名单范围解决阻塞问题
+		3. **版本回退**: 回滚到支持的稳定事件版本
+		4. **监控调整**: 调整事件监控阈值避免误报
+		5. **契约修复**: 修复有问题的事件契约定义
+		
+		### 迁移指南
+		- **现有事件**: 逐步迁移现有事件到CloudEvents格式
+		- **IPC适配**: 现有IPC调用需要适配新的安全白名单机制
+		- **类型导入**: 所有模块统一从`src/shared/contracts/`导入事件类型
+		- **测试更新**: 更新所有事件相关的单元测试和集成测试
+		- **文档同步**: 更新事件驱动架构文档和API说明
+		
+		## References
+		
+		* **CH章节关联**: CH04, CH05
+		* **相关ADR**: ADR-0002-electron-security, ADR-0005-quality-gates  
+		* **外部文档**:
+		  - [CloudEvents 1.0 Specification](https://cloudevents.io/spec/v1.0/)
+		  - [Electron IPC Security](https://www.electronjs.org/docs/tutorial/security#isolate-contexts)
+		  - [Event-Driven Architecture Patterns](https://microservices.io/patterns/data/event-driven-architecture.html)
+		* **标准规范**: CloudEvents 1.0, JSON Schema Draft 2020-12
+		* **相关PRD-ID**: 适用于所有需要事件通信的PRD模块]]></file>
+	<file path='ADR-0005-quality-gates.md'><![CDATA[
+		---
+		ADR-ID: ADR-0005
+		title: 质量门禁与测试策略 - 多层测试自动化
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, QA团队, DevOps团队]
+		archRefs: [CH01, CH03, CH07, CH09]
+		verification:
+		  - path: tests/e2e/smoke.electron.spec.ts
+		    assert: Electron app launches via _electron.launch and preload API is available
+		  - path: scripts/quality/coverage-gate.mjs
+		    assert: Unit test coverage meets threshold
+		  - path: scripts/perf/assert-p95.mjs
+		    assert: Key interactions ≤ 100ms P95; event handling ≤ 50ms P95
+		  - path: scripts/release-health-gate.mjs
+		    assert: No regression and crash-free thresholds met
+		impact-scope: [tests/, scripts/quality_gates.mjs, playwright.config.ts, vitest.config.ts]
+		tech-tags: [playwright, vitest, testing, quality-gates, ci-cd, coverage]
+		depends-on: [ADR-0002, ADR-0003]
+		depended-by: [ADR-0008]
+		test-coverage: tests/meta/quality-gates.spec.ts
+		monitoring-metrics: [test_coverage, test_success_rate, build_time, gate_pass_rate]
+		executable-deliverables:
+		  - scripts/quality_gates.mjs
+		  - tests/e2e/smoke.electron.spec.ts
+		  - vitest.config.ts
+		  - playwright.config.ts
+		supersedes: []
+		---
+		
+		# ADR-0005: 质量门禁与测试策略
+		
+		## Context and Problem Statement
+		
+		AI生成代码需要建立严格的"能跑→能用→不退化"的自动门禁护栏。需要确保代码质量、功能正确性和性能稳定性，同时防止技术债务积累。建立硬编码的质量阈值，确保质量标准不因项目压力而妥协。
+		
+		## Decision Drivers
+		
+		* 需要自动化质量门禁，减少人工审查成本
+		* 需要防止有问题的代码进入主分支
+		* 需要保证Electron应用的稳定性和性能
+		* 需要覆盖前端、后端、跨进程通信等全链路测试
+		* 需要建立不可妥协的质量标准
+		* 需要支持快速反馈和持续集成
+		
+		## Considered Options
+		
+		* **Playwright×Electron + Vitest + 硬编码门禁** (选择方案)
+		* **Cypress + Jest + 软性门禁** 
+		* **Selenium + Mocha + 人工审查**
+		* **仅依赖单元测试 + Code Review**
+		* **E2E测试外包 + 轻量级门禁**
+		
+		## Decision Outcome
+		
+		选择的方案：**Playwright×Electron + Vitest + 硬编码门禁**
+		
+		### 硬编码门禁阈值（不可调整）
+		
+		**代码覆盖率门禁**：
+		```javascript
+		// scripts/quality_gates.mjs - 硬编码阈值，禁止修改
+		const HARD_CODED_THRESHOLDS = {
+		  // 代码覆盖率（不可低于此值）
+		  coverage: {
+		    lines: 90,           // 行覆盖率 ≥90%
+		    branches: 85,        // 分支覆盖率 ≥85%
+		    functions: 88,       // 函数覆盖率 ≥88%
+		    statements: 90       // 语句覆盖率 ≥90%
+		  },
+		  
+		  // E2E测试要求
+		  e2e: {
+		    passRate: 95,        // E2E通过率 ≥95%
+		    maxDuration: 300,    // 最大执行时间 ≤5分钟
+		    criticalPath: 100    // 关键路径 100%通过
+		  },
+		  
+		  // 性能要求  
+		  performance: {
+		    appStartTime: 3000,    // 应用启动时间 ≤3秒
+		    memoryUsage: 512,      // 内存使用 ≤512MB
+		    cpuUsage: 80          // CPU使用率 ≤80%
+		  },
+		  
+		  // Release Health（继承ADR-0003，与Sentry官方术语完全一致）
+		  releaseHealth: {
+		    crashFreeUsers: 99.5,     // Crash-Free Users ≥99.5%（Sentry官方指标）
+		    crashFreeSessions: 99.8,  // Crash-Free Sessions ≥99.8%（Sentry官方指标）
+		    minAdoption: 1000        // 最小采样数 ≥1000会话
+		  }
+		};
+		
+		// 阈值检查函数（不允许绕过）
+		function validateQualityGates(metrics) {
+		  const failures = [];
+		  
+		  // 严格检查每个指标
+		  Object.entries(HARD_CODED_THRESHOLDS.coverage).forEach(([key, threshold]) => {
+		    if (metrics.coverage[key] < threshold) {
+		      failures.push(`Coverage ${key}: ${metrics.coverage[key]}% < ${threshold}%`);
+		    }
+		  });
+		  
+		  if (failures.length > 0) {
+		    throw new Error(`Quality Gate FAILED:\n${failures.join('\n')}`);
+		  }
+		}
+		```
+		
+		### Playwright × Electron E2E测试配置
+		
+		**测试配置**：
+		```javascript
+		// playwright.config.ts
+		import { defineConfig } from '@playwright/test';
+		
+		export default defineConfig({
+		  testDir: './tests/e2e',
+		  timeout: 30000,
+		  fullyParallel: true,
+		  retries: 2, // 允许重试2次
+		  
+		  // 严格的报告要求
+		  reporter: [
+		    ['html', { outputFolder: 'test-results/playwright-report' }],
+		    ['json', { outputFile: 'test-results/results.json' }],
+		    ['junit', { outputFile: 'test-results/junit.xml' }]
+		  ],
+		  
+		  use: {
+		    // 启用追踪用于调试
+		    trace: 'on-first-retry',
+		    screenshot: 'only-on-failure',
+		    video: 'retain-on-failure'
+		  },
+		  
+		  projects: [
+		    {
+		      name: 'electron',
+		      testMatch: '**/*.electron.spec.ts',
+		      use: { 
+		        // Electron应用专用配置
+		        launchOptions: {
+		          executablePath: require('electron'),
+		          args: ['--app=./electron/main.js', '--no-sandbox']
+		        }
+		      }
+		    }
+		  ]
+		});
+		```
+		
+		**关键路径E2E测试**：
+		```typescript
+		// tests/e2e/critical-path.electron.spec.ts
+		import { test, expect, _electron as electron } from '@playwright/test';
+		
+		test.describe('Critical Path Tests', () => {
+		  let app: any;
+		  let window: any;
+		
+		  test.beforeAll(async () => {
+		    // 启动Electron应用
+		    app = await electron.launch({
+		      args: ['./electron/main.js'],
+		      timeout: 10000
+		    });
+		    
+		    window = await app.firstWindow();
+		    await window.waitForLoadState('domcontentloaded');
+		  });
+		
+		  test.afterAll(async () => {
+		    await app.close();
+		  });
+		
+		  test('应用启动和基础功能', async () => {
+		    // 验证应用标题
+		    const title = await window.title();
+		    expect(title).toContain('Build Game');
+		
+		    // 验证关键UI元素
+		    await expect(window.locator('[data-testid="main-menu"]')).toBeVisible();
+		    await expect(window.locator('[data-testid="game-canvas"]')).toBeVisible();
+		    
+		    // 性能检查
+		    const startTime = Date.now();
+		    await window.locator('[data-testid="start-button"]').click();
+		    const loadTime = Date.now() - startTime;
+		    expect(loadTime).toBeLessThan(3000); // 3秒启动要求
+		  });
+		
+		  test('IPC通信测试', async () => {
+		    // 测试安全IPC调用
+		    const result = await window.evaluate(async () => {
+		      return await window.electronAPI.getSystemInfo();
+		    });
+		    
+		    expect(result).toHaveProperty('platform');
+		    expect(result).toHaveProperty('version');
+		  });
+		
+		  test('游戏核心功能', async () => {
+		    // 测试游戏场景加载
+		    await window.locator('[data-testid="new-game"]').click();
+		    await expect(window.locator('[data-testid="game-scene"]')).toBeVisible({ timeout: 5000 });
+		    
+		    // 测试基础交互
+		    await window.locator('[data-testid="player-character"]').click();
+		    await expect(window.locator('[data-testid="character-menu"]')).toBeVisible();
+		  });
+		});
+		```
+		
+		### Vitest单元测试配置
+		
+		**测试配置**：
+		```javascript
+		// vitest.config.ts
+		import { defineConfig } from 'vitest/config';
+		
+		export default defineConfig({
+		  test: {
+		    environment: 'jsdom',
+		    setupFiles: ['./tests/setup.ts'],
+		    
+		    // 严格的覆盖率要求
+		    coverage: {
+		      provider: 'v8',
+		      reporter: ['text', 'json', 'html', 'lcov'],
+		      thresholds: {
+		        lines: 90,       // 硬编码：行覆盖率90%
+		        branches: 85,    // 硬编码：分支覆盖率85%
+		        functions: 88,   // 硬编码：函数覆盖率88%
+		        statements: 90   // 硬编码：语句覆盖率90%
+		      },
+		      exclude: [
+		        'node_modules/**',
+		        'tests/**',
+		        '**/*.d.ts',
+		        'electron/**/*.spec.ts'
+		      ]
+		    },
+		    
+		    // 测试文件匹配模式
+		    include: ['src/**/*.{test,spec}.{js,ts,tsx}'],
+		    exclude: ['node_modules', 'dist', 'electron']
+		  }
+		});
+		```
+		
+		**契约测试示例**：
+		```typescript
+		// tests/unit/contracts/events.spec.ts
+		import { describe, it, expect } from 'vitest';
+		import { CloudEventBus } from '../../../src/shared/eventbus/cloud-event-bus';
+		import { PlayerLevelUpEvent } from '../../../src/shared/contracts/events/player-events';
+		
+		describe('Event Contracts', () => {
+		  let eventBus: CloudEventBus;
+		
+		  beforeEach(() => {
+		    eventBus = new CloudEventBus();
+		  });
+		
+		  it('should validate CloudEvents format', async () => {
+		    const validEvent: PlayerLevelUpEvent = {
+		      id: 'test-123',
+		      source: 'game.player',
+		      type: 'com.buildgame.player.levelup',
+		      specversion: '1.0',
+		      data: {
+		        playerId: 'player-1',
+		        previousLevel: 1,
+		        newLevel: 2,
+		        gainedExp: 100,
+		        unlockedSkills: [],
+		        timestamp: Date.now()
+		      }
+		    };
+		
+		    await expect(eventBus.publish(validEvent)).resolves.not.toThrow();
+		  });
+		
+		  it('should reject invalid CloudEvents', async () => {
+		    const invalidEvent = {
+		      // 缺少必需字段
+		      source: 'game.player',
+		      data: { test: true }
+		    };
+		
+		    await expect(eventBus.publish(invalidEvent as any))
+		      .rejects.toThrow('Invalid CloudEvent format');
+		  });
+		});
+		```
+		
+		### CI/CD集成配置
+		
+		**GitHub Actions工作流**：
+		```yaml
+		# .github/workflows/quality-gates.yml
+		name: Quality Gates
+		
+		on:
+		  pull_request:
+		    branches: [ main, develop ]
+		  push:
+		    branches: [ main ]
+		
+		jobs:
+		  quality-gates:
+		    runs-on: windows-latest
+		    
+		    steps:
+		    - uses: actions/checkout@v4
+		    
+		    - name: Setup Node.js
+		      uses: actions/setup-node@v4
+		      with:
+		        node-version: '20'
+		        cache: 'npm'
+		    
+		    - name: Install dependencies
+		      run: npm ci
+		    
+		    - name: TypeScript compilation
+		      run: npm run typecheck
+		    
+		    - name: ESLint check
+		      run: npm run lint
+		    
+		    - name: Unit tests with coverage
+		      run: npm run test:unit -- --coverage
+		    
+		    - name: Install Playwright
+		      run: npx playwright install --with-deps
+		    
+		    - name: E2E tests
+		      run: npm run test:e2e
+		      
+		    - name: Security scan
+		      run: npm run guard:electron
+		      
+		    - name: Quality gates validation
+		      run: npm run guard:quality
+		      
+		    - name: Upload coverage reports
+		      uses: codecov/codecov-action@v3
+		      with:
+		        file: ./coverage/lcov.info
+		        
+		    - name: Upload test results
+		      uses: actions/upload-artifact@v3
+		      if: always()
+		      with:
+		        name: test-results
+		        path: test-results/
+		```
+		
+		**Package.json脚本配置**：
+		```json
+		{
+		  "scripts": {
+		    "test:unit": "vitest run --coverage",
+		    "test:e2e": "playwright test",
+		    "test:e2e:ui": "playwright test --ui",
+		    "typecheck": "tsc --noEmit",
+		    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+		    "guard:electron": "node scripts/scan_electron_safety.mjs",
+		    "guard:quality": "node scripts/quality_gates.mjs",
+		    "guard:performance": "node scripts/performance_check.mjs",
+		    "guard:ci": "npm run typecheck && npm run lint && npm run test:unit && npm run test:e2e && npm run guard:electron && npm run guard:quality"
+		  }
+		}
+		```
+		
+		### Positive Consequences
+		
+		* 自动化质量门禁，确保代码质量不会因项目压力而妥协
+		* 硬编码阈值防止质量标准被绕过或降低
+		* 全面的测试覆盖（单元、集成、E2E、性能）
+		* 快速反馈机制，问题早期发现和修复
+		* 支持持续集成和持续部署
+		* 测试结果可视化和历史追踪
+		* Electron应用特有的测试覆盖
+		
+		### Negative Consequences
+		
+		* 初期测试编写成本较高，需要团队培训
+		* 严格的门禁可能降低开发速度
+		* 硬编码阈值缺乏灵活性，特殊情况处理复杂
+		* Playwright测试环境搭建和维护成本
+		* 测试基础设施需要额外资源投入
+		* 可能出现测试不稳定导致的假阳性失败
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/quality-gates.spec.ts, tests/e2e/quality-validation.spec.ts
+		* **门禁脚本**: scripts/quality_gates.mjs, scripts/performance_check.mjs
+		* **监控指标**: tests.pass_rate, coverage.percentage, ci.build_success_rate, quality.gate_failures
+		* **CI/CD集成**: GitHub Actions工作流自动执行所有质量检查
+		
+		### 质量门禁验证矩阵
+		
+		| 检查类型        | 工具           | 阈值要求              | 失败后果          |
+		|----------------|----------------|----------------------|-------------------|
+		| **代码编译**    | TypeScript     | 0 errors             | PR自动阻断        |
+		| **代码风格**    | ESLint         | 0 warnings           | PR自动阻断        |
+		| **单元测试**    | Vitest         | 90%覆盖率            | PR自动阻断        |
+		| **E2E测试**     | Playwright     | 95%通过率            | PR自动阻断        |
+		| **安全扫描**    | 自定义脚本      | 0 High/Critical      | PR自动阻断        |
+		| **性能测试**    | 自定义脚本      | <3s启动,<512MB内存   | PR自动阻断        |
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **测试框架**: 安装和配置Playwright、Vitest测试框架
+		2. **门禁脚本**: 部署硬编码质量门禁检查脚本
+		3. **CI/CD集成**: 配置GitHub Actions自动化工作流
+		4. **覆盖率监控**: 建立代码覆盖率追踪和报告
+		5. **性能基准**: 建立性能基准测试和监控
+		6. **团队培训**: 团队测试编写和维护培训
+		
+		### 回滚步骤
+		1. **紧急绕过**: 提供紧急情况下的质量门禁绕过机制（需要管理层审批）
+		2. **阈值临时调整**: 在严重阻塞时可临时降低非关键指标阈值
+		3. **测试修复**: 快速修复不稳定的测试用例
+		4. **环境恢复**: 恢复测试环境到稳定状态
+		5. **问题分析**: 分析门禁失败原因并制定改进计划
+		
+		### 迁移指南
+		- **测试补充**: 为现有功能补充测试用例以达到覆盖率要求
+		- **CI适配**: 现有CI/CD流程需要集成新的质量门禁检查
+		- **开发流程**: 开发人员需要适应TDD（测试驱动开发）流程
+		- **工具培训**: 团队需要学习Playwright和Vitest工具使用
+		- **质量文化**: 建立重视测试和质量的团队文化
+		
+		## References
+		
+		* **CH章节关联**: CH07, CH05
+		* **相关ADR**: ADR-0002-electron-security, ADR-0003-observability-release-health, ADR-0004-event-bus-and-contracts
+		* **外部文档**: 
+		  - [Playwright Electron Testing](https://playwright.dev/docs/api/class-electron)
+		  - [Vitest Configuration](https://vitest.dev/config/)
+		  - [GitHub Actions CI/CD](https://docs.github.com/en/actions)
+		  - [Code Coverage Best Practices](https://testing.googleblog.com/2020/08/code-coverage-best-practices.html)
+		* **测试标准**: IEEE 829 Test Documentation, ISO/IEC 29119 Software Testing
+		* **相关PRD-ID**: 适用于所有PRD的质量门禁基线]]></file>
+	<file path='ADR-0006-data-storage.md'><![CDATA[
+		---
+		ADR-ID: ADR-0006
+		title: SQLite数据存储策略 - WAL模式与性能优化
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 数据团队]
+		archRefs: [CH05, CH06, CH011]
+		verification:
+		  - path: src/shared/storage/sqlite/init.ts
+		    assert: journal_mode=WAL and wal_autocheckpoint configured
+		  - path: scripts/db/wal-checkpoint.mjs
+		    assert: Checkpoint runs when WAL exceeds N pages or on schedule
+		  - path: scripts/db/backup.mjs
+		    assert: Consistent backup via VACUUM INTO / Online Backup completes
+		  - path: tests/unit/db/migrations.spec.ts
+		    assert: Migrations apply and rollback successfully
+		impact-scope:
+		  - src/shared/db/
+		  - electron/db/
+		  - scripts/db-migration.mjs
+		tech-tags:
+		  - sqlite
+		  - wal
+		  - database
+		  - performance
+		  - storage
+		depends-on: []
+		depended-by: []
+		test-coverage: tests/unit/adr-0006.spec.ts
+		monitoring-metrics:
+		  - implementation_coverage
+		  - compliance_rate
+		executable-deliverables:
+		  - src/main/db/init.ts
+		  - scripts/db-checkpoint.mjs
+		  - tests/unit/db/sqlite-wal.spec.ts
+		supersedes: []
+		---
+		
+		# ADR-0006: 数据存储与持久化策略
+		
+		
+		## Context and Problem Statement
+		
+		Electron桌面游戏应用需要可靠的本地数据存储方案，支持游戏存档、用户配置、成就数据、游戏统计等多种数据类型。需要平衡性能、可靠性、便携性和开发复杂度，同时确保数据完整性和支持高并发读写操作。
+		
+		## Decision Drivers
+		
+		* 需要高性能的本地数据存储，支持频繁的读写操作
+		* 需要数据完整性保证，防止游戏数据丢失或损坏
+		* 需要支持事务操作，确保数据一致性
+		* 需要跨平台兼容性（Windows/macOS/Linux）
+		* 需要轻量级解决方案，不依赖外部数据库服务
+		* 需要支持数据备份和恢复机制
+		* 需要支持数据迁移和版本升级
+		
+		## Considered Options
+		
+		* **SQLite + WAL模式** (选择方案)
+		* **LevelDB + 自定义备份**
+		* **IndexedDB + 文件系统备份**
+		* **JSON文件 + 文件锁机制**
+		* **Dexie.js + 结构化存储**
+		
+		## Decision Outcome
+		
+		选择的方案：**SQLite + WAL（Write-Ahead Logging）模式**
+		
+		### SQLite WAL模式核心配置
+		
+		**数据库连接配置**：
+		```typescript
+		// src/shared/database/sqlite-manager.ts
+		import Database from 'better-sqlite3';
+		import path from 'path';
+		import { app } from 'electron';
+		
+		export class SQLiteManager {
+		  private db: Database.Database;
+		  private dbPath: string;
+		
+		  constructor() {
+		    // 数据库文件路径
+		    const userDataPath = app.getPath('userData');
+		    this.dbPath = path.join(userDataPath, 'game-data.db');
+		    
+		    // 初始化数据库连接
+		    this.db = new Database(this.dbPath, {
+		      verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+		    });
+		
+		    // 启用WAL模式和性能优化
+		    this.enableWALMode();
+		    this.configureOptimizations();
+		  }
+		
+		  private enableWALMode(): void {
+		    // 启用WAL（Write-Ahead Logging）模式
+		    this.db.pragma('journal_mode = WAL');
+		    
+		    // 同步模式配置
+		    this.db.pragma('synchronous = NORMAL'); // 平衡性能和安全性
+		    
+		    // WAL检查点配置
+		    this.db.pragma('wal_autocheckpoint = 1000'); // 1000页后自动检查点
+		    
+		    // 缓存大小配置（16MB）
+		    this.db.pragma('cache_size = -16000');
+		    
+		    // 内存映射大小（256MB）
+		    this.db.pragma('mmap_size = 268435456');
+		    
+		    // 临时存储在内存中
+		    this.db.pragma('temp_store = MEMORY');
+		  }
+		
+		  private configureOptimizations(): void {
+		    // 启用外键约束
+		    this.db.pragma('foreign_keys = ON');
+		    
+		    // 启用递归触发器
+		    this.db.pragma('recursive_triggers = ON');
+		    
+		    // 设置忙等待超时（5秒）
+		    this.db.pragma('busy_timeout = 5000');
+		  }
+		
+		  // WAL检查点管理
+		  public performWALCheckpoint(): void {
+		    try {
+		      const result = this.db.pragma('wal_checkpoint(TRUNCATE)');
+		      console.log('WAL checkpoint completed:', result);
+		    } catch (error) {
+		      console.error('WAL checkpoint failed:', error);
+		    }
+		  }
+		
+		  // 定期维护任务
+		  public performMaintenance(): void {
+		    try {
+		      // 执行WAL检查点
+		      this.performWALCheckpoint();
+		      
+		      // 优化数据库（重建索引和统计信息）
+		      this.db.pragma('optimize');
+		      
+		      // 分析表统计信息
+		      this.db.pragma('analysis_limit = 1000');
+		      this.db.pragma('analyze');
+		      
+		    } catch (error) {
+		      console.error('Database maintenance failed:', error);
+		    }
+		  }
+		}
+		```
+		
+		### 数据模型与Schema管理
+		
+		**核心数据表设计**：
+		```sql
+		-- 游戏存档表
+		CREATE TABLE IF NOT EXISTS game_saves (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  save_name TEXT NOT NULL UNIQUE,
+		  player_data JSON NOT NULL,
+		  game_state JSON NOT NULL,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  checksum TEXT NOT NULL,
+		  version INTEGER DEFAULT 1
+		);
+		
+		-- 用户配置表
+		CREATE TABLE IF NOT EXISTS user_settings (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  category TEXT NOT NULL,
+		  key TEXT NOT NULL,
+		  value TEXT NOT NULL,
+		  data_type TEXT CHECK(data_type IN ('string', 'number', 'boolean', 'object')) DEFAULT 'string',
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  UNIQUE(category, key)
+		);
+		
+		-- 游戏统计表  
+		CREATE TABLE IF NOT EXISTS game_stats (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  player_id TEXT NOT NULL,
+		  metric_name TEXT NOT NULL,
+		  metric_value REAL NOT NULL,
+		  recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  session_id TEXT,
+		  INDEX idx_player_metric (player_id, metric_name),
+		  INDEX idx_recorded_at (recorded_at)
+		);
+		
+		-- 成就数据表
+		CREATE TABLE IF NOT EXISTS achievements (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  achievement_id TEXT NOT NULL UNIQUE,
+		  title TEXT NOT NULL,
+		  description TEXT NOT NULL,
+		  icon_url TEXT,
+		  points INTEGER DEFAULT 0,
+		  unlocked_at DATETIME,
+		  progress REAL DEFAULT 0.0,
+		  metadata JSON
+		);
+		
+		-- 数据迁移版本表
+		CREATE TABLE IF NOT EXISTS schema_versions (
+		  version INTEGER PRIMARY KEY,
+		  applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  description TEXT NOT NULL
+		);
+		```
+		
+		**Repository模式数据访问层**：
+		```typescript
+		// src/shared/database/repositories/game-save-repository.ts
+		import { SQLiteManager } from '../sqlite-manager';
+		import { createHash } from 'crypto';
+		
+		export interface GameSave {
+		  id?: number;
+		  saveName: string;
+		  playerData: any;
+		  gameState: any;
+		  createdAt?: Date;
+		  updatedAt?: Date;
+		  checksum: string;
+		  version: number;
+		}
+		
+		export class GameSaveRepository {
+		  constructor(private dbManager: SQLiteManager) {}
+		
+		  async createSave(saveData: Omit<GameSave, 'id' | 'createdAt' | 'updatedAt' | 'checksum'>): Promise<GameSave> {
+		    const db = this.dbManager.getDatabase();
+		    
+		    // 计算数据校验和
+		    const dataString = JSON.stringify({
+		      playerData: saveData.playerData,
+		      gameState: saveData.gameState
+		    });
+		    const checksum = createHash('sha256').update(dataString).digest('hex');
+		
+		    const stmt = db.prepare(`
+		      INSERT INTO game_saves (save_name, player_data, game_state, checksum, version)
+		      VALUES (?, ?, ?, ?, ?)
+		    `);
+		
+		    const result = stmt.run(
+		      saveData.saveName,
+		      JSON.stringify(saveData.playerData),
+		      JSON.stringify(saveData.gameState),
+		      checksum,
+		      saveData.version
+		    );
+		
+		    return this.findById(result.lastInsertRowid as number);
+		  }
+		
+		  async updateSave(id: number, saveData: Partial<GameSave>): Promise<GameSave> {
+		    const db = this.dbManager.getDatabase();
+		    
+		    // 使用事务确保数据一致性
+		    const transaction = db.transaction(() => {
+		      const existing = this.findById(id);
+		      if (!existing) {
+		        throw new Error(`Game save with id ${id} not found`);
+		      }
+		
+		      const mergedData = { ...existing, ...saveData };
+		      const dataString = JSON.stringify({
+		        playerData: mergedData.playerData,
+		        gameState: mergedData.gameState
+		      });
+		      const checksum = createHash('sha256').update(dataString).digest('hex');
+		
+		      const stmt = db.prepare(`
+		        UPDATE game_saves 
+		        SET player_data = ?, game_state = ?, checksum = ?, version = ?, updated_at = CURRENT_TIMESTAMP
+		        WHERE id = ?
+		      `);
+		
+		      stmt.run(
+		        JSON.stringify(mergedData.playerData),
+		        JSON.stringify(mergedData.gameState),
+		        checksum,
+		        mergedData.version,
+		        id
+		      );
+		    });
+		
+		    transaction();
+		    return this.findById(id);
+		  }
+		
+		  findById(id: number): GameSave | null {
+		    const db = this.dbManager.getDatabase();
+		    const stmt = db.prepare('SELECT * FROM game_saves WHERE id = ?');
+		    const row = stmt.get(id);
+		    
+		    if (!row) return null;
+		
+		    return {
+		      id: row.id,
+		      saveName: row.save_name,
+		      playerData: JSON.parse(row.player_data),
+		      gameState: JSON.parse(row.game_state),
+		      createdAt: new Date(row.created_at),
+		      updatedAt: new Date(row.updated_at),
+		      checksum: row.checksum,
+		      version: row.version
+		    };
+		  }
+		
+		  // 数据完整性验证
+		  async validateSaveIntegrity(id: number): Promise<boolean> {
+		    const save = this.findById(id);
+		    if (!save) return false;
+		
+		    const dataString = JSON.stringify({
+		      playerData: save.playerData,
+		      gameState: save.gameState
+		    });
+		    const computedChecksum = createHash('sha256').update(dataString).digest('hex');
+		    
+		    return computedChecksum === save.checksum;
+		  }
+		}
+		```
+		
+		### 数据备份与恢复策略
+		
+		**自动备份机制**：
+		```typescript
+		// src/shared/database/backup-manager.ts
+		import fs from 'fs-extra';
+		import path from 'path';
+		import { app } from 'electron';
+		import { createHash } from 'crypto';
+		
+		export class DatabaseBackupManager {
+		  private backupDir: string;
+		  private maxBackups: number = 10;
+		
+		  constructor() {
+		    this.backupDir = path.join(app.getPath('userData'), 'backups');
+		    fs.ensureDirSync(this.backupDir);
+		  }
+		
+		  async createBackup(): Promise<string> {
+		    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+		    const backupFileName = `game-data-${timestamp}.db`;
+		    const backupPath = path.join(this.backupDir, backupFileName);
+		    
+		    const dbPath = path.join(app.getPath('userData'), 'game-data.db');
+		    
+		    try {
+		      // 执行WAL检查点确保数据完整性
+		      await this.performWALCheckpoint();
+		      
+		      // 复制数据库文件
+		      await fs.copy(dbPath, backupPath);
+		      
+		      // 验证备份完整性
+		      const isValid = await this.validateBackup(backupPath);
+		      if (!isValid) {
+		        await fs.remove(backupPath);
+		        throw new Error('Backup validation failed');
+		      }
+		      
+		      // 清理旧备份
+		      await this.cleanupOldBackups();
+		      
+		      console.log(`Database backup created: ${backupFileName}`);
+		      return backupPath;
+		      
+		    } catch (error) {
+		      console.error('Backup creation failed:', error);
+		      throw error;
+		    }
+		  }
+		
+		  async restoreFromBackup(backupPath: string): Promise<void> {
+		    const dbPath = path.join(app.getPath('userData'), 'game-data.db');
+		    
+		    try {
+		      // 验证备份文件
+		      const isValid = await this.validateBackup(backupPath);
+		      if (!isValid) {
+		        throw new Error('Backup file is corrupted');
+		      }
+		      
+		      // 创建当前数据库的紧急备份
+		      const emergencyBackup = path.join(this.backupDir, 'emergency-backup.db');
+		      if (await fs.pathExists(dbPath)) {
+		        await fs.copy(dbPath, emergencyBackup);
+		      }
+		      
+		      // 恢复数据库
+		      await fs.copy(backupPath, dbPath);
+		      
+		      console.log('Database restored from backup successfully');
+		      
+		    } catch (error) {
+		      console.error('Database restore failed:', error);
+		      throw error;
+		    }
+		  }
+		
+		  private async validateBackup(backupPath: string): Promise<boolean> {
+		    try {
+		      const Database = require('better-sqlite3');
+		      const db = new Database(backupPath, { readonly: true });
+		      
+		      // 检查数据库完整性
+		      const result = db.pragma('integrity_check');
+		      db.close();
+		      
+		      return result[0].integrity_check === 'ok';
+		    } catch (error) {
+		      return false;
+		    }
+		  }
+		
+		  private async cleanupOldBackups(): Promise<void> {
+		    const files = await fs.readdir(this.backupDir);
+		    const backupFiles = files
+		      .filter(file => file.startsWith('game-data-') && file.endsWith('.db'))
+		      .map(file => ({
+		        name: file,
+		        path: path.join(this.backupDir, file),
+		        mtime: fs.statSync(path.join(this.backupDir, file)).mtime
+		      }))
+		      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+		
+		    // 保留最新的备份，删除多余的
+		    if (backupFiles.length > this.maxBackups) {
+		      const filesToDelete = backupFiles.slice(this.maxBackups);
+		      for (const file of filesToDelete) {
+		        await fs.remove(file.path);
+		      }
+		    }
+		  }
+		}
+		```
+		
+		### 数据迁移和版本管理
+		
+		**Schema迁移系统**：
+		```typescript
+		// src/shared/database/migration-manager.ts
+		export interface Migration {
+		  version: number;
+		  description: string;
+		  up: (db: Database.Database) => void;
+		  down?: (db: Database.Database) => void;
+		}
+		
+		export class MigrationManager {
+		  private migrations: Migration[] = [
+		    {
+		      version: 1,
+		      description: 'Initial schema creation',
+		      up: (db) => {
+		        // 创建初始表结构
+		        db.exec(`
+		          CREATE TABLE game_saves (
+		            id INTEGER PRIMARY KEY AUTOINCREMENT,
+		            save_name TEXT NOT NULL UNIQUE,
+		            player_data JSON NOT NULL,
+		            game_state JSON NOT NULL,
+		            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		            checksum TEXT NOT NULL,
+		            version INTEGER DEFAULT 1
+		          );
+		        `);
+		      }
+		    },
+		    {
+		      version: 2,
+		      description: 'Add achievements table',
+		      up: (db) => {
+		        db.exec(`
+		          CREATE TABLE achievements (
+		            id INTEGER PRIMARY KEY AUTOINCREMENT,
+		            achievement_id TEXT NOT NULL UNIQUE,
+		            title TEXT NOT NULL,
+		            description TEXT NOT NULL,
+		            icon_url TEXT,
+		            points INTEGER DEFAULT 0,
+		            unlocked_at DATETIME,
+		            progress REAL DEFAULT 0.0,
+		            metadata JSON
+		          );
+		        `);
+		      }
+		    }
+		  ];
+		
+		  constructor(private db: Database.Database) {
+		    this.initializeVersionTable();
+		  }
+		
+		  private initializeVersionTable(): void {
+		    this.db.exec(`
+		      CREATE TABLE IF NOT EXISTS schema_versions (
+		        version INTEGER PRIMARY KEY,
+		        applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		        description TEXT NOT NULL
+		      );
+		    `);
+		  }
+		
+		  public migrate(): void {
+		    const currentVersion = this.getCurrentVersion();
+		    const pendingMigrations = this.migrations.filter(m => m.version > currentVersion);
+		    
+		    if (pendingMigrations.length === 0) {
+		      console.log('Database is up to date');
+		      return;
+		    }
+		
+		    console.log(`Applying ${pendingMigrations.length} migrations...`);
+		    
+		    const transaction = this.db.transaction(() => {
+		      for (const migration of pendingMigrations) {
+		        console.log(`Applying migration ${migration.version}: ${migration.description}`);
+		        
+		        try {
+		          migration.up(this.db);
+		          
+		          // 记录迁移版本
+		          const stmt = this.db.prepare(`
+		            INSERT INTO schema_versions (version, description) VALUES (?, ?)
+		          `);
+		          stmt.run(migration.version, migration.description);
+		          
+		        } catch (error) {
+		          console.error(`Migration ${migration.version} failed:`, error);
+		          throw error;
+		        }
+		      }
+		    });
+		
+		    transaction();
+		    console.log('All migrations applied successfully');
+		  }
+		
+		  private getCurrentVersion(): number {
+		    try {
+		      const stmt = this.db.prepare('SELECT MAX(version) as version FROM schema_versions');
+		      const result = stmt.get();
+		      return result?.version || 0;
+		    } catch {
+		      return 0;
+		    }
+		  }
+		}
+		```
+		
+		### Positive Consequences
+		
+		* SQLite提供了优秀的ACID事务支持和数据完整性
+		* WAL模式支持高并发读取操作，显著提升性能
+		* 无需外部依赖，简化部署和分发
+		* 跨平台兼容性好，支持所有Electron目标平台
+		* 内置的全文搜索和JSON操作支持
+		* 自动备份和恢复机制保障数据安全
+		* 灵活的Schema迁移系统支持版本升级
+		
+		### Negative Consequences
+		
+		* SQLite不支持网络访问，仅限本地存储
+		* 单文件数据库在大数据量时可能出现性能瓶颈
+		* WAL模式会创建额外的日志文件，占用更多磁盘空间
+		* 复杂查询的性能可能不如专业数据库
+		* 备份和同步需要额外的实现工作
+		* JSON列查询性能相对较低
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/database/sqlite-manager.spec.ts, tests/integration/data-persistence.spec.ts
+		* **门禁脚本**: scripts/verify_database_integrity.mjs, scripts/test_backup_restore.mjs
+		* **监控指标**: db.query_performance, db.wal_size, backup.success_rate, migration.execution_time
+		* **数据完整性**: 定期校验和验证、自动备份验证、事务回滚测试
+		
+		### 数据存储验证清单
+		
+		- [ ] SQLite WAL模式启用和配置验证
+		- [ ] 数据完整性校验和机制工作正常
+		- [ ] 自动备份定期执行并验证完整性
+		- [ ] Schema迁移系统能够正确处理版本升级
+		- [ ] 事务操作确保数据一致性
+		- [ ] 数据库性能满足游戏运行要求
+		- [ ] 跨平台数据文件兼容性验证
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **数据库配置**: 配置SQLite连接和WAL模式参数
+		2. **Schema部署**: 执行初始Schema创建和索引优化
+		3. **备份配置**: 设置自动备份计划和存储策略
+		4. **迁移系统**: 部署数据库版本管理和迁移系统
+		5. **监控集成**: 集成数据库性能监控和告警
+		6. **数据验证**: 建立数据完整性检查和修复机制
+		
+		### 回滚步骤
+		1. **数据恢复**: 从最近的有效备份恢复数据库
+		2. **版本回退**: 如需要，回滚到稳定的Schema版本
+		3. **WAL清理**: 清理损坏的WAL文件并重建
+		4. **完整性检查**: 执行全面的数据完整性验证
+		5. **性能验证**: 确认数据库操作性能正常
+		6. **问题分析**: 分析故障原因并制定预防措施
+		
+		### 迁移指南
+		- **数据迁移**: 现有数据需要迁移到新的表结构中
+		- **配置更新**: 更新数据库连接配置和优化参数
+		- **备份策略**: 建立定期备份和灾难恢复计划
+		- **性能调优**: 根据实际使用情况调整SQLite参数
+		- **监控部署**: 部署数据库监控和性能追踪
+		
+		## References
+		
+		* **CH章节关联**: CH05, CH06
+		* **相关ADR**: ADR-0005-quality-gates, ADR-0007-ports-adapters
+		* **外部文档**: 
+		  - [SQLite WAL Mode](https://www.sqlite.org/wal.html)
+		  - [better-sqlite3 Documentation](https://github.com/WiseLibs/better-sqlite3)
+		  - [Database Design Best Practices](https://www.sqlitetutorial.net/sqlite-database-design/)
+		  - [Electron Data Storage](https://www.electronjs.org/docs/tutorial/data-storage)
+		* **性能基准**: SQLite Performance Tuning, Database Optimization Guide
+		* **相关PRD-ID**: 适用于所有需要数据持久化的PRD模块]]></file>
+	<file path='ADR-0007-ports-adapters.md'><![CDATA[
+		---
+		ADR-ID: ADR-0007
+		title: 端口适配器架构 - 六边形架构模式
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 开发团队]
+		archRefs: [CH04, CH05, CH06]
+		verification:
+		  - path: tests/contract/<port>.spec.ts
+		    assert: Port contract passes with in-memory adapter
+		  - path: scripts/arch/madge-check.mjs
+		    assert: No reversed dependencies or cycles across domain boundaries
+		  - path: tests/unit/retries.spec.ts
+		    assert: Timeout/retry/idempotency policies are enforced
+		impact-scope:
+		  - src/ports/
+		  - src/adapters/
+		  - src/domain/
+		  - src/shared/contracts/
+		tech-tags:
+		  - hexagonal-architecture
+		  - ports-adapters
+		  - dependency-injection
+		  - interfaces
+		depends-on: []
+		depended-by: []
+		test-coverage: tests/unit/adr-0007.spec.ts
+		monitoring-metrics:
+		  - implementation_coverage
+		  - compliance_rate
+		executable-deliverables:
+		  - src/ports/GameEnginePort.ts
+		  - src/adapters/PhaserGameAdapter.ts
+		  - tests/unit/architecture/ports-adapters.spec.ts
+		supersedes: []
+		---
+		
+		# ADR-0007: 端口适配器架构（六边形架构）
+		
+		
+		## Context and Problem Statement
+		
+		游戏应用需要与多种外部系统交互（数据库、文件系统、网络服务、Electron APIs），同时保持核心业务逻辑的独立性和可测试性。需要建立清晰的架构边界，使得业务逻辑不依赖于具体的技术实现，便于测试、维护和技术栈变更。
+		
+		## Decision Drivers
+		
+		* 需要将业务逻辑与外部依赖解耦
+		* 需要提高代码的可测试性和可维护性
+		* 需要支持不同的技术栈适配（SQLite、文件系统、网络等）
+		* 需要明确的架构边界和职责分离
+		* 需要支持领域驱动设计（DDD）原则
+		* 需要便于单元测试和集成测试
+		* 需要支持依赖注入和控制反转
+		
+		## Considered Options
+		
+		* **六边形架构（端口-适配器）** (选择方案)
+		* **分层架构（传统三层架构）**
+		* **洋葱架构（Clean Architecture）**
+		* **微服务架构（过度工程）**
+		* **模块化单体架构**
+		
+		## Decision Outcome
+		
+		选择的方案：**六边形架构（端口-适配器模式）**
+		
+		### 架构核心概念
+		
+		**六边形架构层次划分**：
+		```
+		┌─────────────────────────────────────────────────────────┐
+		│                    外部世界                                │
+		│  ┌─────────────────────────────────────────────────┐    │
+		│  │                  适配器层                         │    │
+		│  │  ┌─────────────────────────────────────────┐    │    │
+		│  │  │                应用层                     │    │    │
+		│  │  │  ┌─────────────────────────────────┐    │    │    │
+		│  │  │  │            领域层                 │    │    │    │
+		│  │  │  │  - 实体 (Entities)              │    │    │    │
+		│  │  │  │  - 值对象 (Value Objects)       │    │    │    │
+		│  │  │  │  - 领域服务 (Domain Services)   │    │    │    │
+		│  │  │  └─────────────────────────────────┘    │    │    │
+		│  │  │                                         │    │    │
+		│  │  │  - 应用服务 (Application Services)      │    │    │
+		│  │  │  - 端口接口 (Ports)                    │    │    │
+		│  │  └─────────────────────────────────────────┘    │    │
+		│  │                                                 │    │
+		│  │  - 适配器实现 (Adapters)                         │    │
+		│  │  - 基础设施 (Infrastructure)                    │    │
+		│  └─────────────────────────────────────────────────┘    │
+		│                                                         │
+		│  - 用户接口 (UI)                                         │
+		│  - 外部服务 (External Services)                         │
+		└─────────────────────────────────────────────────────────┘
+		```
+		
+		### 端口定义（Ports）
+		
+		**输入端口（Primary Ports）**：
+		```typescript
+		// src/core/ports/primary/game-service.port.ts
+		export interface GameServicePort {
+		  startNewGame(playerId: string, gameConfig: GameConfiguration): Promise<GameSession>;
+		  loadGame(saveId: string): Promise<GameSession>;
+		  saveGame(session: GameSession): Promise<void>;
+		  pauseGame(sessionId: string): Promise<void>;
+		  resumeGame(sessionId: string): Promise<void>;
+		}
+		
+		// src/core/ports/primary/player-service.port.ts  
+		export interface PlayerServicePort {
+		  createPlayer(playerData: CreatePlayerRequest): Promise<Player>;
+		  getPlayer(playerId: string): Promise<Player>;
+		  updatePlayer(playerId: string, updates: UpdatePlayerRequest): Promise<Player>;
+		  levelUp(playerId: string, experience: number): Promise<LevelUpResult>;
+		  addAchievement(playerId: string, achievementId: string): Promise<void>;
+		}
+		
+		// src/core/ports/primary/inventory-service.port.ts
+		export interface InventoryServicePort {
+		  addItem(playerId: string, item: GameItem, quantity: number): Promise<void>;
+		  removeItem(playerId: string, itemId: string, quantity: number): Promise<void>;
+		  getInventory(playerId: string): Promise<PlayerInventory>;
+		  equipItem(playerId: string, itemId: string, slotType: EquipmentSlot): Promise<void>;
+		  unequipItem(playerId: string, slotType: EquipmentSlot): Promise<void>;
+		}
+		```
+		
+		**输出端口（Secondary Ports）**：
+		```typescript
+		// src/core/ports/secondary/game-repository.port.ts
+		export interface GameRepositoryPort {
+		  findById(gameId: string): Promise<GameSave | null>;
+		  save(gameSave: GameSave): Promise<void>;
+		  findByPlayerId(playerId: string): Promise<GameSave[]>;
+		  delete(gameId: string): Promise<void>;
+		}
+		
+		// src/core/ports/secondary/player-repository.port.ts
+		export interface PlayerRepositoryPort {
+		  findById(playerId: string): Promise<Player | null>;
+		  save(player: Player): Promise<void>;
+		  findByUsername(username: string): Promise<Player | null>;
+		  updateStats(playerId: string, stats: PlayerStats): Promise<void>;
+		}
+		
+		// src/core/ports/secondary/file-system.port.ts
+		export interface FileSystemPort {
+		  readFile(filePath: string): Promise<string>;
+		  writeFile(filePath: string, content: string): Promise<void>;
+		  exists(filePath: string): Promise<boolean>;
+		  deleteFile(filePath: string): Promise<void>;
+		  createDirectory(dirPath: string): Promise<void>;
+		}
+		
+		// src/core/ports/secondary/event-publisher.port.ts
+		export interface EventPublisherPort {
+		  publish<T extends CloudEventExtended>(event: T): Promise<void>;
+		  subscribe<T extends CloudEventExtended>(
+		    eventType: string, 
+		    handler: (event: T) => Promise<void>
+		  ): () => void;
+		}
+		```
+		
+		### 领域层实现
+		
+		**实体（Entities）**：
+		```typescript
+		// src/core/domain/entities/player.entity.ts
+		export class Player {
+		  constructor(
+		    private readonly id: PlayerId,
+		    private name: PlayerName,
+		    private level: PlayerLevel,
+		    private experience: Experience,
+		    private stats: PlayerStats,
+		    private inventory: PlayerInventory,
+		    private achievements: Achievement[]
+		  ) {}
+		
+		  public levelUp(experienceGained: number): LevelUpResult {
+		    const newExperience = this.experience.add(experienceGained);
+		    const newLevel = this.calculateLevelFromExperience(newExperience);
+		    
+		    const result = new LevelUpResult(
+		      this.level,
+		      newLevel,
+		      experienceGained,
+		      this.getUnlockedSkills(newLevel)
+		    );
+		
+		    this.experience = newExperience;
+		    this.level = newLevel;
+		
+		    return result;
+		  }
+		
+		  public addAchievement(achievement: Achievement): void {
+		    if (this.hasAchievement(achievement.id)) {
+		      throw new DomainError('Player already has this achievement');
+		    }
+		    
+		    this.achievements.push(achievement);
+		  }
+		
+		  public canEquipItem(item: GameItem, slot: EquipmentSlot): boolean {
+		    return this.level.value >= item.requiredLevel &&
+		           this.stats.meets(item.requirements) &&
+		           this.inventory.canEquip(item, slot);
+		  }
+		
+		  // 不变性保护
+		  private calculateLevelFromExperience(experience: Experience): PlayerLevel {
+		    const level = Math.floor(experience.value / 1000) + 1;
+		    return new PlayerLevel(Math.min(level, 100)); // 最大等级100
+		  }
+		
+		  private hasAchievement(achievementId: AchievementId): boolean {
+		    return this.achievements.some(a => a.id.equals(achievementId));
+		  }
+		
+		  // 访问器
+		  public getId(): PlayerId { return this.id; }
+		  public getName(): PlayerName { return this.name; }
+		  public getLevel(): PlayerLevel { return this.level; }
+		  public getExperience(): Experience { return this.experience; }
+		}
+		```
+		
+		**值对象（Value Objects）**：
+		```typescript
+		// src/core/domain/value-objects/player-id.vo.ts
+		export class PlayerId {
+		  constructor(private readonly value: string) {
+		    if (!value || value.trim().length === 0) {
+		      throw new DomainError('Player ID cannot be empty');
+		    }
+		    if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
+		      throw new DomainError('Player ID contains invalid characters');
+		    }
+		  }
+		
+		  public getValue(): string {
+		    return this.value;
+		  }
+		
+		  public equals(other: PlayerId): boolean {
+		    return this.value === other.value;
+		  }
+		
+		  public toString(): string {
+		    return this.value;
+		  }
+		}
+		
+		// src/core/domain/value-objects/experience.vo.ts
+		export class Experience {
+		  constructor(private readonly value: number) {
+		    if (value < 0) {
+		      throw new DomainError('Experience cannot be negative');
+		    }
+		    if (value > 1000000) {
+		      throw new DomainError('Experience cannot exceed 1,000,000');
+		    }
+		  }
+		
+		  public add(amount: number): Experience {
+		    return new Experience(this.value + amount);
+		  }
+		
+		  public subtract(amount: number): Experience {
+		    return new Experience(Math.max(0, this.value - amount));
+		  }
+		
+		  public getValue(): number {
+		    return this.value;
+		  }
+		
+		  public equals(other: Experience): boolean {
+		    return this.value === other.value;
+		  }
+		}
+		```
+		
+		**领域服务（Domain Services）**：
+		```typescript
+		// src/core/domain/services/level-calculation.service.ts
+		export class LevelCalculationService {
+		  private static readonly EXPERIENCE_TABLE = [
+		    0, 1000, 2500, 4500, 7000, 10000, 14000, 19000, 25000, 32000, 40000
+		    // ... 更多等级经验需求
+		  ];
+		
+		  public calculateLevel(experience: Experience): PlayerLevel {
+		    const exp = experience.getValue();
+		    let level = 1;
+		
+		    for (let i = LevelCalculationService.EXPERIENCE_TABLE.length - 1; i >= 0; i--) {
+		      if (exp >= LevelCalculationService.EXPERIENCE_TABLE[i]) {
+		        level = i + 1;
+		        break;
+		      }
+		    }
+		
+		    return new PlayerLevel(level);
+		  }
+		
+		  public getExperienceForLevel(level: PlayerLevel): Experience {
+		    const levelValue = level.getValue();
+		    if (levelValue <= 0 || levelValue > LevelCalculationService.EXPERIENCE_TABLE.length) {
+		      throw new DomainError('Invalid level');
+		    }
+		
+		    return new Experience(LevelCalculationService.EXPERIENCE_TABLE[levelValue - 1]);
+		  }
+		
+		  public getExperienceToNextLevel(experience: Experience, currentLevel: PlayerLevel): Experience {
+		    const nextLevel = currentLevel.getValue() + 1;
+		    if (nextLevel > LevelCalculationService.EXPERIENCE_TABLE.length) {
+		      return new Experience(0); // 已达最高等级
+		    }
+		
+		    const nextLevelExp = LevelCalculationService.EXPERIENCE_TABLE[nextLevel - 1];
+		    const remaining = nextLevelExp - experience.getValue();
+		    return new Experience(Math.max(0, remaining));
+		  }
+		}
+		```
+		
+		### 应用层实现
+		
+		**应用服务（Application Services）**：
+		```typescript
+		// src/core/application/services/player-application.service.ts
+		export class PlayerApplicationService implements PlayerServicePort {
+		  constructor(
+		    private readonly playerRepository: PlayerRepositoryPort,
+		    private readonly eventPublisher: EventPublisherPort,
+		    private readonly levelCalculationService: LevelCalculationService
+		  ) {}
+		
+		  public async createPlayer(request: CreatePlayerRequest): Promise<Player> {
+		    // 验证输入
+		    if (!request.username || !request.email) {
+		      throw new ApplicationError('Username and email are required');
+		    }
+		
+		    // 检查用户名是否已存在
+		    const existingPlayer = await this.playerRepository.findByUsername(request.username);
+		    if (existingPlayer) {
+		      throw new ApplicationError('Username already exists');
+		    }
+		
+		    // 创建玩家实体
+		    const player = new Player(
+		      new PlayerId(generateId()),
+		      new PlayerName(request.username),
+		      new PlayerLevel(1),
+		      new Experience(0),
+		      PlayerStats.createDefault(),
+		      PlayerInventory.createEmpty(),
+		      []
+		    );
+		
+		    // 持久化
+		    await this.playerRepository.save(player);
+		
+		    // 发布领域事件
+		    await this.eventPublisher.publish({
+		      id: generateEventId(),
+		      source: 'game.player',
+		      type: 'com.buildgame.player.created',
+		      specversion: '1.0',
+		      time: new Date().toISOString(),
+		      data: {
+		        playerId: player.getId().getValue(),
+		        username: player.getName().getValue(),
+		        createdAt: new Date().toISOString()
+		      }
+		    });
+		
+		    return player;
+		  }
+		
+		  public async levelUp(playerId: string, experienceGained: number): Promise<LevelUpResult> {
+		    const player = await this.playerRepository.findById(playerId);
+		    if (!player) {
+		      throw new ApplicationError('Player not found');
+		    }
+		
+		    const levelUpResult = player.levelUp(experienceGained);
+		    await this.playerRepository.save(player);
+		
+		    // 发布升级事件
+		    await this.eventPublisher.publish({
+		      id: generateEventId(),
+		      source: 'game.player',
+		      type: 'com.buildgame.player.levelup',
+		      specversion: '1.0',
+		      time: new Date().toISOString(),
+		      data: {
+		        playerId: player.getId().getValue(),
+		        previousLevel: levelUpResult.previousLevel.getValue(),
+		        newLevel: levelUpResult.newLevel.getValue(),
+		        experienceGained: experienceGained,
+		        unlockedSkills: levelUpResult.unlockedSkills
+		      }
+		    });
+		
+		    return levelUpResult;
+		  }
+		
+		  public async getPlayer(playerId: string): Promise<Player> {
+		    const player = await this.playerRepository.findById(playerId);
+		    if (!player) {
+		      throw new ApplicationError('Player not found');
+		    }
+		    return player;
+		  }
+		}
+		```
+		
+		### 适配器层实现
+		
+		**数据库适配器**：
+		```typescript
+		// src/infrastructure/adapters/secondary/sqlite-player-repository.adapter.ts
+		export class SQLitePlayerRepositoryAdapter implements PlayerRepositoryPort {
+		  constructor(private readonly dbManager: SQLiteManager) {}
+		
+		  public async findById(playerId: string): Promise<Player | null> {
+		    const db = this.dbManager.getDatabase();
+		    const stmt = db.prepare('SELECT * FROM players WHERE id = ?');
+		    const row = stmt.get(playerId);
+		
+		    if (!row) return null;
+		
+		    return this.mapRowToPlayer(row);
+		  }
+		
+		  public async save(player: Player): Promise<void> {
+		    const db = this.dbManager.getDatabase();
+		    
+		    const playerData = {
+		      id: player.getId().getValue(),
+		      name: player.getName().getValue(),
+		      level: player.getLevel().getValue(),
+		      experience: player.getExperience().getValue(),
+		      stats: JSON.stringify(player.getStats().toJSON()),
+		      inventory: JSON.stringify(player.getInventory().toJSON()),
+		      achievements: JSON.stringify(player.getAchievements().map(a => a.toJSON()))
+		    };
+		
+		    const stmt = db.prepare(`
+		      INSERT OR REPLACE INTO players (id, name, level, experience, stats, inventory, achievements, updated_at)
+		      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+		    `);
+		
+		    stmt.run(
+		      playerData.id,
+		      playerData.name,
+		      playerData.level,
+		      playerData.experience,
+		      playerData.stats,
+		      playerData.inventory,
+		      playerData.achievements
+		    );
+		  }
+		
+		  private mapRowToPlayer(row: any): Player {
+		    return new Player(
+		      new PlayerId(row.id),
+		      new PlayerName(row.name),
+		      new PlayerLevel(row.level),
+		      new Experience(row.experience),
+		      PlayerStats.fromJSON(JSON.parse(row.stats)),
+		      PlayerInventory.fromJSON(JSON.parse(row.inventory)),
+		      JSON.parse(row.achievements).map(Achievement.fromJSON)
+		    );
+		  }
+		}
+		```
+		
+		**文件系统适配器**：
+		```typescript
+		// src/infrastructure/adapters/secondary/electron-file-system.adapter.ts
+		export class ElectronFileSystemAdapter implements FileSystemPort {
+		  constructor(private readonly app: Electron.App) {}
+		
+		  public async readFile(filePath: string): Promise<string> {
+		    try {
+		      const fullPath = this.resolvePath(filePath);
+		      return await fs.readFile(fullPath, 'utf-8');
+		    } catch (error) {
+		      throw new InfrastructureError(`Failed to read file: ${filePath}`, error);
+		    }
+		  }
+		
+		  public async writeFile(filePath: string, content: string): Promise<void> {
+		    try {
+		      const fullPath = this.resolvePath(filePath);
+		      await fs.ensureDir(path.dirname(fullPath));
+		      await fs.writeFile(fullPath, content, 'utf-8');
+		    } catch (error) {
+		      throw new InfrastructureError(`Failed to write file: ${filePath}`, error);
+		    }
+		  }
+		
+		  public async exists(filePath: string): Promise<boolean> {
+		    try {
+		      const fullPath = this.resolvePath(filePath);
+		      await fs.access(fullPath);
+		      return true;
+		    } catch {
+		      return false;
+		    }
+		  }
+		
+		  private resolvePath(filePath: string): string {
+		    if (path.isAbsolute(filePath)) {
+		      return filePath;
+		    }
+		    return path.join(this.app.getPath('userData'), filePath);
+		  }
+		}
+		```
+		
+		**用户界面适配器**：
+		```typescript
+		// src/infrastructure/adapters/primary/http-game-controller.adapter.ts
+		export class HttpGameControllerAdapter {
+		  constructor(private readonly gameService: GameServicePort) {}
+		
+		  public async handleStartGame(req: Request, res: Response): Promise<void> {
+		    try {
+		      const { playerId, gameConfig } = req.body;
+		      
+		      const gameSession = await this.gameService.startNewGame(playerId, gameConfig);
+		      
+		      res.json({
+		        success: true,
+		        data: {
+		          sessionId: gameSession.getId(),
+		          playerId: gameSession.getPlayerId(),
+		          startedAt: gameSession.getStartTime()
+		        }
+		      });
+		    } catch (error) {
+		      this.handleError(res, error);
+		    }
+		  }
+		
+		  private handleError(res: Response, error: any): void {
+		    if (error instanceof ApplicationError) {
+		      res.status(400).json({ success: false, error: error.message });
+		    } else if (error instanceof DomainError) {
+		      res.status(422).json({ success: false, error: error.message });
+		    } else {
+		      res.status(500).json({ success: false, error: 'Internal server error' });
+		    }
+		  }
+		}
+		```
+		
+		### 依赖注入配置
+		
+		**依赖容器配置**：
+		```typescript
+		// src/infrastructure/di/container.ts
+		import { Container } from 'inversify';
+		import { TYPES } from './types';
+		
+		const container = new Container();
+		
+		// 绑定端口到适配器
+		container.bind<PlayerRepositoryPort>(TYPES.PlayerRepository)
+		  .to(SQLitePlayerRepositoryAdapter)
+		  .inSingletonScope();
+		
+		container.bind<GameRepositoryPort>(TYPES.GameRepository)
+		  .to(SQLiteGameRepositoryAdapter)
+		  .inSingletonScope();
+		
+		container.bind<FileSystemPort>(TYPES.FileSystem)
+		  .to(ElectronFileSystemAdapter)
+		  .inSingletonScope();
+		
+		container.bind<EventPublisherPort>(TYPES.EventPublisher)
+		  .to(CloudEventBusAdapter)
+		  .inSingletonScope();
+		
+		// 绑定应用服务
+		container.bind<PlayerServicePort>(TYPES.PlayerService)
+		  .to(PlayerApplicationService)
+		  .inSingletonScope();
+		
+		container.bind<GameServicePort>(TYPES.GameService)
+		  .to(GameApplicationService)
+		  .inSingletonScope();
+		
+		// 绑定领域服务
+		container.bind<LevelCalculationService>(TYPES.LevelCalculationService)
+		  .to(LevelCalculationService)
+		  .inSingletonScope();
+		
+		export { container };
+		```
+		
+		### In-Memory适配器（测试隔离）
+		
+		为CI环境和单元测试提供的内存适配器实现，遵循相同的端口契约：
+		
+		**内存仓储适配器**：
+		```typescript
+		// src/infrastructure/adapters/secondary/in-memory-player-repository.adapter.ts
+		export class InMemoryPlayerRepositoryAdapter implements PlayerRepositoryPort {
+		  private players: Map<string, Player> = new Map();
+		
+		  public async findById(playerId: string): Promise<Player | null> {
+		    return this.players.get(playerId) || null;
+		  }
+		
+		  public async save(player: Player): Promise<void> {
+		    this.players.set(player.getId().getValue(), player);
+		  }
+		
+		  public async findByName(playerName: string): Promise<Player | null> {
+		    for (const player of this.players.values()) {
+		      if (player.getName().getValue() === playerName) {
+		        return player;
+		      }
+		    }
+		    return null;
+		  }
+		
+		  // 测试辅助方法
+		  public clear(): void {
+		    this.players.clear();
+		  }
+		
+		  public size(): number {
+		    return this.players.size;
+		  }
+		}
+		```
+		
+		**内存文件系统适配器**：
+		```typescript
+		// src/infrastructure/adapters/secondary/in-memory-filesystem.adapter.ts
+		export class InMemoryFileSystemAdapter implements FileSystemPort {
+		  private files: Map<string, string> = new Map();
+		
+		  public async readFile(filePath: string): Promise<string> {
+		    const content = this.files.get(filePath);
+		    if (!content) {
+		      throw new Error(`File not found: ${filePath}`);
+		    }
+		    return content;
+		  }
+		
+		  public async writeFile(filePath: string, content: string): Promise<void> {
+		    this.files.set(filePath, content);
+		  }
+		
+		  public async exists(filePath: string): Promise<boolean> {
+		    return this.files.has(filePath);
+		  }
+		
+		  public async deleteFile(filePath: string): Promise<void> {
+		    this.files.delete(filePath);
+		  }
+		
+		  // 测试辅助方法
+		  public clear(): void {
+		    this.files.clear();
+		  }
+		
+		  public getAllFiles(): Record<string, string> {
+		    return Object.fromEntries(this.files.entries());
+		  }
+		}
+		```
+		
+		**测试配置容器**：
+		```typescript
+		// src/infrastructure/container/test.container.ts
+		export const testContainer = new Container();
+		
+		// 使用In-Memory适配器进行测试隔离
+		testContainer.bind<PlayerRepositoryPort>(TYPES.PlayerRepository)
+		  .to(InMemoryPlayerRepositoryAdapter)
+		  .inSingletonScope();
+		
+		testContainer.bind<FileSystemPort>(TYPES.FileSystem)
+		  .to(InMemoryFileSystemAdapter)
+		  .inSingletonScope();
+		
+		// 其他服务保持不变
+		testContainer.bind<PlayerServicePort>(TYPES.PlayerService)
+		  .to(PlayerApplicationService)
+		  .inSingletonScope();
+		```
+		
+		**测试用例示例**：
+		```typescript
+		// tests/unit/application/services/player.service.spec.ts
+		describe('PlayerApplicationService', () => {
+		  let playerService: PlayerServicePort;
+		  let playerRepository: InMemoryPlayerRepositoryAdapter;
+		
+		  beforeEach(() => {
+		    // 使用测试容器隔离外部依赖
+		    playerRepository = testContainer.get<PlayerRepositoryPort>(TYPES.PlayerRepository) as InMemoryPlayerRepositoryAdapter;
+		    playerService = testContainer.get<PlayerServicePort>(TYPES.PlayerService);
+		    
+		    // 清理测试数据
+		    playerRepository.clear();
+		  });
+		
+		  it('should level up player when sufficient experience', async () => {
+		    // 完全隔离的测试环境，无需真实数据库
+		    const player = new Player(new PlayerId('test-123'), new PlayerName('TestPlayer'));
+		    await playerRepository.save(player);
+		
+		    const result = await playerService.levelUpPlayer('test-123', 1500);
+		
+		    expect(result.newLevel.getValue()).toBe(2);
+		    expect(playerRepository.size()).toBe(1);
+		  });
+		});
+		```
+		
+		### Positive Consequences
+		
+		* 业务逻辑与技术实现完全解耦，提高可维护性
+		* 优秀的可测试性，可以轻松进行单元测试和集成测试
+		* 支持不同技术栈的适配器替换，增强灵活性
+		* 明确的架构边界和职责分离
+		* 支持领域驱动设计原则，业务逻辑清晰表达
+		* 依赖注入使得组件组装更加灵活
+		* 便于实现横切关注点（日志、缓存、事务等）
+		
+		### Negative Consequences
+		
+		* 初期架构设计复杂度较高，学习成本增加
+		* 需要编写更多的接口和适配器代码
+		* 依赖注入框架增加了额外的复杂性
+		* 小型项目可能存在过度设计的问题
+		* 调试时需要理解架构层次关系
+		* 性能开销轻微增加（主要是抽象层调用）
+		
+		## Verification
+		
+		* **测试验证**: tests/unit/domain/entities/*.spec.ts, tests/integration/adapters/*.spec.ts
+		* **门禁脚本**: scripts/verify_architecture_boundaries.mjs, scripts/check_dependency_direction.mjs
+		* **监控指标**: architecture.coupling_metrics, dependencies.violation_count, tests.coverage_by_layer
+		* **架构验证**: 依赖方向检查、端口-适配器边界验证、领域纯度检查
+		
+		### 架构验证清单
+		
+		- [ ] 依赖方向正确（外层依赖内层，内层不依赖外层）
+		- [ ] 领域层不包含任何基础设施依赖
+		- [ ] 应用层仅依赖端口接口，不依赖具体适配器
+		- [ ] 适配器正确实现端口接口
+		- [ ] 实体和值对象保持不变性和业务规则
+		- [ ] 领域服务不包含应用逻辑
+		- [ ] 依赖注入配置正确且完整
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **架构分层**: 按照六边形架构原则组织代码结构
+		2. **端口定义**: 定义所有输入端口和输出端口接口
+		3. **领域实现**: 实现实体、值对象和领域服务
+		4. **应用服务**: 实现应用服务和用例编排
+		5. **适配器实现**: 实现各种技术适配器
+		6. **依赖注入**: 配置依赖注入容器和绑定关系
+		
+		### 回滚步骤
+		1. **架构简化**: 如遇复杂性问题，可临时简化架构层次
+		2. **直接依赖**: 紧急情况下可允许直接依赖绕过端口
+		3. **适配器降级**: 回退到简单的适配器实现
+		4. **容器禁用**: 临时禁用依赖注入，使用直接实例化
+		5. **边界放松**: 临时允许跨层直接调用
+		
+		### 迁移指南
+		- **代码重构**: 现有代码需要按照架构层次重新组织
+		- **接口抽取**: 将具体实现抽象为端口接口
+		- **依赖反转**: 调整依赖方向，实现控制反转
+		- **测试重写**: 按照架构层次重写单元测试和集成测试
+		- **团队培训**: 团队需要学习六边形架构和DDD原则
+		
+		## References
+		
+		* **CH章节关联**: CH04, CH05, CH06
+		* **相关ADR**: ADR-0006-data-storage, ADR-0004-event-bus-and-contracts, ADR-0005-quality-gates
+		* **外部文档**: 
+		  - [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+		  - [Ports and Adapters Pattern](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+		  - [Domain-Driven Design](https://domainlanguage.com/ddd/)
+		  - [Dependency Inversion Principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle)
+		* **架构模式**: Clean Architecture, Onion Architecture, Hexagonal Architecture
+		* **相关PRD-ID**: 适用于所有需要业务逻辑清晰分离的PRD模块]]></file>
+	<file path='ADR-0008-deployment-release.md'><![CDATA[
+		---
+		ADR-ID: ADR-0008
+		title: 部署与发布策略 - Electron Builder + GitHub Releases
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, DevOps团队, 安全团队]
+		archRefs: [CH03, CH07, CH10]
+		verification:
+		  - path: scripts/release/updater-config-check.mjs
+		    assert: electron-updater configured with correct channel and provider
+		  - path: scripts/release/signing-verify.mjs
+		    assert: Windows Authenticode and macOS code signing/notarization succeed
+		  - path: scripts/release/rollout.mjs
+		    assert: Rollout gates on Release Health and supports pause/rollback
+		impact-scope:
+		  - build/
+		  - electron-builder.json
+		  - .github/workflows/
+		  - scripts/release.mjs
+		tech-tags:
+		  - electron-builder
+		  - github-releases
+		  - deployment
+		  - ci-cd
+		  - auto-update
+		depends-on:
+		  - ADR-0005
+		depended-by: []
+		test-coverage: tests/unit/adr-0008.spec.ts
+		monitoring-metrics:
+		  - implementation_coverage
+		  - compliance_rate
+		executable-deliverables:
+		  - electron-builder.json
+		  - .github/workflows/release.yml
+		  - scripts/release-automation.mjs
+		supersedes: []
+		---
+		
+		# ADR-0008: 部署发布与自动更新策略
+		
+		
+		## Context and Problem Statement
+		
+		Electron桌面应用需要建立可靠的部署发布流程和自动更新机制，支持跨平台分发（Windows、macOS、Linux），确保应用的安全性（代码签名）、可靠性（渐进式发布）和用户体验（无缝更新）。需要平衡安全性、用户体验和运维成本。
+		
+		## Decision Drivers
+		
+		* 需要自动更新机制，减少用户手动更新成本
+		* 需要代码签名确保应用安全性和用户信任
+		* 需要支持渐进式发布，降低大规模部署风险
+		* 需要跨平台兼容性（Windows/macOS/Linux）
+		* 需要与Release Health监控集成（继承ADR-0003）
+		* 需要支持快速回滚机制
+		* 需要满足应用商店分发要求
+		
+		## Considered Options
+		
+		* **electron-updater + 代码签名 + 渐进式发布** (选择方案)
+		* **Squirrel.Windows + 手动分发**
+		* **应用商店独占分发（限制灵活性）**
+		* **Docker容器化桌面应用（技术复杂度高）**
+		* **Web应用替代（功能受限）**
+		
+		## Decision Outcome
+		
+		选择的方案：**electron-updater + 多平台代码签名 + 渐进式发布**
+		
+		### electron-updater核心配置
+		
+		**自动更新配置**：
+		```javascript
+		// electron/main/auto-updater.ts
+		import { autoUpdater } from 'electron-updater';
+		import { app, BrowserWindow, dialog } from 'electron';
+		import log from 'electron-log';
+		
+		export class AutoUpdaterManager {
+		  private mainWindow: BrowserWindow | null = null;
+		  private isUpdateAvailable = false;
+		  private updateDownloaded = false;
+		
+		  constructor() {
+		    this.configureUpdater();
+		    this.setupEventHandlers();
+		  }
+		
+		  private configureUpdater(): void {
+		    // 配置更新服务器
+		    autoUpdater.setFeedURL({
+		      provider: 'github',
+		      owner: 'buildgame',
+		      repo: 'vitegame',
+		      private: false // 或者使用token访问私有仓库
+		    });
+		
+		    // 配置日志
+		    autoUpdater.logger = log;
+		    (autoUpdater.logger as any).transports.file.level = 'info';
+		
+		    // 配置更新行为
+		    autoUpdater.autoDownload = false; // 手动控制下载时机
+		    autoUpdater.autoInstallOnAppQuit = true;
+		    
+		    // 允许预发布版本（可配置）
+		    autoUpdater.allowPrerelease = process.env.NODE_ENV === 'development';
+		  }
+		
+		  private setupEventHandlers(): void {
+		    autoUpdater.on('checking-for-update', () => {
+		      log.info('Checking for update...');
+		      this.sendToRenderer('update-checking');
+		    });
+		
+		    autoUpdater.on('update-available', (info) => {
+		      log.info('Update available:', info);
+		      this.isUpdateAvailable = true;
+		      this.sendToRenderer('update-available', {
+		        version: info.version,
+		        releaseNotes: info.releaseNotes,
+		        releaseDate: info.releaseDate,
+		        size: info.files[0]?.size
+		      });
+		    });
+		
+		    autoUpdater.on('update-not-available', (info) => {
+		      log.info('Update not available:', info);
+		      this.sendToRenderer('update-not-available');
+		    });
+		
+		    autoUpdater.on('error', (err) => {
+		      log.error('Update error:', err);
+		      this.sendToRenderer('update-error', err.message);
+		    });
+		
+		    autoUpdater.on('download-progress', (progressObj) => {
+		      log.info(`Download progress: ${progressObj.percent}%`);
+		      this.sendToRenderer('update-download-progress', {
+		        percent: progressObj.percent,
+		        bytesPerSecond: progressObj.bytesPerSecond,
+		        total: progressObj.total,
+		        transferred: progressObj.transferred
+		      });
+		    });
+		
+		    autoUpdater.on('update-downloaded', (info) => {
+		      log.info('Update downloaded:', info);
+		      this.updateDownloaded = true;
+		      this.sendToRenderer('update-downloaded', {
+		        version: info.version,
+		        files: info.files.map(f => ({ url: f.url, size: f.size }))
+		      });
+		      
+		      // 显示安装确认对话框
+		      this.showInstallDialog(info);
+		    });
+		  }
+		
+		  private async showInstallDialog(info: any): Promise<void> {
+		    const result = await dialog.showMessageBox(this.mainWindow!, {
+		      type: 'info',
+		      title: '更新已下载',
+		      message: `新版本 ${info.version} 已下载完成，是否立即安装？`,
+		      detail: '应用将重启以完成更新安装。',
+		      buttons: ['立即安装', '稍后安装'],
+		      defaultId: 0,
+		      cancelId: 1
+		    });
+		
+		    if (result.response === 0) {
+		      // 立即安装
+		      autoUpdater.quitAndInstall();
+		    }
+		  }
+		
+		  public setMainWindow(window: BrowserWindow): void {
+		    this.mainWindow = window;
+		  }
+		
+		  public async checkForUpdates(): Promise<void> {
+		    if (app.isPackaged) {
+		      await autoUpdater.checkForUpdates();
+		    } else {
+		      log.info('Skipping update check in development mode');
+		    }
+		  }
+		
+		  public async downloadUpdate(): Promise<void> {
+		    if (this.isUpdateAvailable) {
+		      await autoUpdater.downloadUpdate();
+		    }
+		  }
+		
+		  public quitAndInstall(): void {
+		    if (this.updateDownloaded) {
+		      autoUpdater.quitAndInstall();
+		    }
+		  }
+		
+		  private sendToRenderer(channel: string, data?: any): void {
+		    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+		      this.mainWindow.webContents.send(channel, data);
+		    }
+		  }
+		}
+		```
+		
+		### 代码签名配置
+		
+		**Windows代码签名（Authenticode）**：
+		```javascript
+		// electron-builder配置
+		{
+		  "build": {
+		    "appId": "com.buildgame.vitegame",
+		    "productName": "Build Game",
+		    "directories": {
+		      "output": "dist"
+		    },
+		    "files": [
+		      "dist-electron/**/*",
+		      "dist/**/*",
+		      "node_modules/**/*"
+		    ],
+		    "win": {
+		      "target": [
+		        {
+		          "target": "nsis",
+		          "arch": ["x64", "ia32"]
+		        },
+		        {
+		          "target": "portable",
+		          "arch": ["x64", "ia32"]
+		        }
+		      ],
+		      "certificateFile": "build/certificates/windows-cert.p12",
+		      "certificatePassword": "${env.WINDOWS_CERT_PASSWORD}",
+		      "signingHashAlgorithms": ["sha256"],
+		      "timeStampServer": "http://timestamp.digicert.com",
+		      "publisherName": "Build Game Studio"
+		    },
+		    "nsis": {
+		      "oneClick": false,
+		      "allowToChangeInstallationDirectory": true,
+		      "createDesktopShortcut": true,
+		      "createStartMenuShortcut": true,
+		      "shortcutName": "Build Game"
+		    },
+		    "publish": {
+		      "provider": "github",
+		      "owner": "buildgame",
+		      "repo": "vitegame",
+		      "releaseType": "release"
+		    }
+		  }
+		}
+		```
+		
+		**macOS代码签名和公证**：
+		```javascript
+		{
+		  "mac": {
+		    "category": "public.app-category.games",
+		    "target": [
+		      {
+		        "target": "dmg",
+		        "arch": ["x64", "arm64"]
+		      },
+		      {
+		        "target": "zip",
+		        "arch": ["x64", "arm64"]
+		      }
+		    ],
+		    "identity": "Developer ID Application: Build Game Studio (TEAM_ID)",
+		    "hardenedRuntime": true,
+		    "gatekeeperAssess": false,
+		    "entitlements": "build/entitlements.mac.plist",
+		    "entitlementsInherit": "build/entitlements.mac.plist",
+		    "notarize": {
+		      "teamId": "${env.APPLE_TEAM_ID}"
+		    }
+		  },
+		  "dmg": {
+		    "sign": false,
+		    "title": "Build Game ${version}",
+		    "background": "build/background.png",
+		    "window": {
+		      "width": 540,
+		      "height": 400
+		    },
+		    "contents": [
+		      {
+		        "x": 140,
+		        "y": 200,
+		        "type": "file"
+		      },
+		      {
+		        "x": 400,
+		        "y": 200,
+		        "type": "link",
+		        "path": "/Applications"
+		      }
+		    ]
+		  }
+		}
+		```
+		
+		**macOS entitlements.mac.plist**：
+		```xml
+		<?xml version="1.0" encoding="UTF-8"?>
+		<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+		<plist version="1.0">
+		<dict>
+		  <key>com.apple.security.cs.allow-jit</key>
+		  <true/>
+		  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+		  <true/>
+		  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+		  <true/>
+		  <key>com.apple.security.network.client</key>
+		  <true/>
+		  <key>com.apple.security.network.server</key>
+		  <true/>
+		  <key>com.apple.security.files.user-selected.read-write</key>
+		  <true/>
+		</dict>
+		</plist>
+		```
+		
+		### 渐进式发布策略
+		
+		**发布阶段配置**：
+		```typescript
+		// scripts/progressive-release.ts
+		export interface ReleaseStage {
+		  name: string;
+		  percentage: number;
+		  duration: number; // 小时
+		  criteria: ReleaseCriteria;
+		}
+		
+		export interface ReleaseCriteria {
+		  crashFreeUsers: number;
+		  crashFreeSessions: number;
+		  minAdoption: number;
+		  maxErrorRate: number;
+		}
+		
+		const RELEASE_STAGES: ReleaseStage[] = [
+		  {
+		    name: 'canary',
+		    percentage: 1,
+		    duration: 4,
+		    criteria: {
+		      crashFreeUsers: 99.0,
+		      crashFreeSessions: 99.5,
+		      minAdoption: 50,
+		      maxErrorRate: 0.01
+		    }
+		  },
+		  {
+		    name: 'beta',
+		    percentage: 10,
+		    duration: 12,
+		    criteria: {
+		      crashFreeUsers: 99.3,
+		      crashFreeSessions: 99.7,
+		      minAdoption: 500,
+		      maxErrorRate: 0.005
+		    }
+		  },
+		  {
+		    name: 'stable',
+		    percentage: 100,
+		    duration: 0,
+		    criteria: {
+		      crashFreeUsers: 99.5,
+		      crashFreeSessions: 99.8,
+		      minAdoption: 1000,
+		      maxErrorRate: 0.002
+		    }
+		  }
+		];
+		
+		export class ProgressiveReleaseManager {
+		  constructor(
+		    private readonly sentryClient: SentryClient,
+		    private readonly githubClient: GitHubClient
+		  ) {}
+		
+		  async executeRelease(version: string): Promise<void> {
+		    let currentStage = 0;
+		    
+		    for (const stage of RELEASE_STAGES) {
+		      console.log(`Starting ${stage.name} release (${stage.percentage}%)`);
+		      
+		      // 更新GitHub Release为指定阶段
+		      await this.updateReleaseStage(version, stage);
+		      
+		      // 等待指定时间
+		      await this.waitForDuration(stage.duration);
+		      
+		      // 检查Release Health指标
+		      const metrics = await this.getReleaseHealthMetrics(version);
+		      const passed = this.validateCriteria(metrics, stage.criteria);
+		      
+		      if (!passed) {
+		        console.error(`Stage ${stage.name} failed criteria validation`);
+		        await this.rollbackRelease(version, currentStage);
+		        throw new Error(`Release ${version} failed at ${stage.name} stage`);
+		      }
+		      
+		      console.log(`Stage ${stage.name} completed successfully`);
+		      currentStage++;
+		    }
+		    
+		    console.log(`Release ${version} completed successfully`);
+		  }
+		
+		  private async updateReleaseStage(version: string, stage: ReleaseStage): Promise<void> {
+		    // 更新GitHub Release的标签和描述
+		    await this.githubClient.updateRelease(version, {
+		      tag_name: `v${version}`,
+		      name: `${version} (${stage.name})`,
+		      body: this.generateReleaseNotes(version, stage),
+		      draft: false,
+		      prerelease: stage.name !== 'stable'
+		    });
+		  }
+		
+		  private async getReleaseHealthMetrics(version: string): Promise<ReleaseHealthMetrics> {
+		    // 从Sentry获取Release Health数据
+		    return await this.sentryClient.getReleaseHealth(version, {
+		      statsPeriod: '1h',
+		      project: 'build-game'
+		    });
+		  }
+		
+		  private validateCriteria(metrics: ReleaseHealthMetrics, criteria: ReleaseCriteria): boolean {
+		    return (
+		      metrics.crashFreeUsers >= criteria.crashFreeUsers &&
+		      metrics.crashFreeSessions >= criteria.crashFreeSessions &&
+		      metrics.adoption >= criteria.minAdoption &&
+		      metrics.errorRate <= criteria.maxErrorRate
+		    );
+		  }
+		
+		  private async rollbackRelease(version: string, stageIndex: number): Promise<void> {
+		    console.log(`Rolling back release ${version} from stage ${stageIndex}`);
+		    
+		    // 标记发布为draft，停止自动更新推送
+		    await this.githubClient.updateRelease(version, {
+		      draft: true,
+		      prerelease: true
+		    });
+		    
+		    // 发送回滚通知
+		    await this.sendRollbackNotification(version, stageIndex);
+		  }
+		}
+		```
+		
+		### CI/CD集成配置
+		
+		**GitHub Actions发布工作流**：
+		```yaml
+		# .github/workflows/release.yml
+		name: Release
+		
+		on:
+		  push:
+		    tags:
+		      - 'v*'
+		
+		jobs:
+		  release:
+		    runs-on: ${{ matrix.os }}
+		    
+		    strategy:
+		      matrix:
+		        os: [windows-latest, macos-latest, ubuntu-latest]
+		    
+		    steps:
+		      - name: Checkout code
+		        uses: actions/checkout@v4
+		      
+		      - name: Setup Node.js
+		        uses: actions/setup-node@v4
+		        with:
+		          node-version: '20'
+		          cache: 'npm'
+		      
+		      - name: Install dependencies
+		        run: npm ci
+		      
+		      - name: Run quality gates
+		        run: npm run guard:ci
+		      
+		      - name: Import Windows certificate
+		        if: matrix.os == 'windows-latest'
+		        run: |
+		          echo "${{ secrets.WINDOWS_CERT_P12 }}" | base64 --decode > build/certificates/windows-cert.p12
+		        shell: bash
+		      
+		      - name: Import macOS certificates
+		        if: matrix.os == 'macos-latest'
+		        env:
+		          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+		          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+		          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+		        run: |
+		          echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
+		          security create-keychain -p "" build.keychain
+		          security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+		          security list-keychains -s build.keychain
+		          security default-keychain -s build.keychain
+		          security unlock-keychain -p "" build.keychain
+		          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+		      
+		      - name: Build and release
+		        env:
+		          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+		          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+		          APPLE_ID: ${{ secrets.APPLE_ID }}
+		          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+		          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+		        run: npm run build:release
+		      
+		      - name: Upload release artifacts
+		        uses: actions/upload-artifact@v3
+		        with:
+		          name: release-${{ matrix.os }}
+		          path: dist/
+		      
+		      - name: Start progressive release
+		        if: matrix.os == 'ubuntu-latest'
+		        env:
+		          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+		        run: npm run release:progressive
+		```
+		
+		**版本管理和发布脚本**：
+		```javascript
+		// scripts/release.mjs
+		import { execSync } from 'child_process';
+		import { readFileSync, writeFileSync } from 'fs';
+		import semver from 'semver';
+		
+		class ReleaseManager {
+		  constructor() {
+		    this.packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
+		  }
+		
+		  async createRelease(releaseType = 'patch') {
+		    console.log(`Creating ${releaseType} release...`);
+		    
+		    // 1. 运行质量门禁
+		    console.log('Running quality gates...');
+		    execSync('npm run guard:ci', { stdio: 'inherit' });
+		    
+		    // 2. 更新版本号
+		    const oldVersion = this.packageJson.version;
+		    const newVersion = semver.inc(oldVersion, releaseType);
+		    
+		    this.packageJson.version = newVersion;
+		    writeFileSync('package.json', JSON.stringify(this.packageJson, null, 2));
+		    
+		    console.log(`Version updated: ${oldVersion} → ${newVersion}`);
+		    
+		    // 3. 构建应用
+		    console.log('Building application...');
+		    execSync('npm run build', { stdio: 'inherit' });
+		    
+		    // 4. 构建安装包
+		    console.log('Building installers...');
+		    execSync('npm run build:electron', { stdio: 'inherit' });
+		    
+		    // 5. 创建Git标签
+		    console.log('Creating git tag...');
+		    execSync(`git add package.json`, { stdio: 'inherit' });
+		    execSync(`git commit -m "chore: bump version to ${newVersion}"`, { stdio: 'inherit' });
+		    execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
+		    
+		    // 6. 推送到远程
+		    console.log('Pushing to remote...');
+		    execSync('git push origin main --tags', { stdio: 'inherit' });
+		    
+		    console.log(`Release ${newVersion} created successfully!`);
+		    return newVersion;
+		  }
+		}
+		
+		// 命令行接口
+		const releaseManager = new ReleaseManager();
+		const releaseType = process.argv[2] || 'patch';
+		
+		releaseManager.createRelease(releaseType)
+		  .then(version => {
+		    console.log(`\n✅ Release ${version} completed!`);
+		  })
+		  .catch(error => {
+		    console.error('\n❌ Release failed:', error.message);
+		    process.exit(1);
+		  });
+		```
+		
+		### 更新UI组件
+		
+		**更新进度组件**：
+		```tsx
+		// src/components/UpdateProgress.tsx
+		import React, { useState, useEffect } from 'react';
+		import { ipcRenderer } from 'electron';
+		
+		interface UpdateInfo {
+		  version: string;
+		  releaseNotes: string;
+		  size: number;
+		}
+		
+		interface ProgressInfo {
+		  percent: number;
+		  bytesPerSecond: number;
+		  total: number;
+		  transferred: number;
+		}
+		
+		export const UpdateProgress: React.FC = () => {
+		  const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'downloaded'>('idle');
+		  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+		  const [progress, setProgress] = useState<ProgressInfo | null>(null);
+		  const [error, setError] = useState<string | null>(null);
+		
+		  useEffect(() => {
+		    // 监听更新事件
+		    ipcRenderer.on('update-checking', () => {
+		      setUpdateState('checking');
+		      setError(null);
+		    });
+		
+		    ipcRenderer.on('update-available', (_event, info: UpdateInfo) => {
+		      setUpdateState('available');
+		      setUpdateInfo(info);
+		    });
+		
+		    ipcRenderer.on('update-not-available', () => {
+		      setUpdateState('idle');
+		    });
+		
+		    ipcRenderer.on('update-download-progress', (_event, progressObj: ProgressInfo) => {
+		      setProgress(progressObj);
+		    });
+		
+		    ipcRenderer.on('update-downloaded', () => {
+		      setUpdateState('downloaded');
+		    });
+		
+		    ipcRenderer.on('update-error', (_event, errorMessage: string) => {
+		      setError(errorMessage);
+		      setUpdateState('idle');
+		    });
+		
+		    // 清理监听器
+		    return () => {
+		      ipcRenderer.removeAllListeners('update-checking');
+		      ipcRenderer.removeAllListeners('update-available');
+		      ipcRenderer.removeAllListeners('update-not-available');
+		      ipcRenderer.removeAllListeners('update-download-progress');
+		      ipcRenderer.removeAllListeners('update-downloaded');
+		      ipcRenderer.removeAllListeners('update-error');
+		    };
+		  }, []);
+		
+		  const handleDownload = () => {
+		    setUpdateState('downloading');
+		    ipcRenderer.send('download-update');
+		  };
+		
+		  const handleInstall = () => {
+		    ipcRenderer.send('quit-and-install');
+		  };
+		
+		  if (error) {
+		    return (
+		      <div className="update-error">
+		        <h3>更新失败</h3>
+		        <p>{error}</p>
+		        <button onClick={() => setError(null)}>关闭</button>
+		      </div>
+		    );
+		  }
+		
+		  return (
+		    <div className="update-container">
+		      {updateState === 'checking' && (
+		        <div className="update-checking">
+		          <p>正在检查更新...</p>
+		        </div>
+		      )}
+		
+		      {updateState === 'available' && updateInfo && (
+		        <div className="update-available">
+		          <h3>发现新版本 {updateInfo.version}</h3>
+		          <div className="release-notes">
+		            <h4>更新内容：</h4>
+		            <div dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }} />
+		          </div>
+		          <p>大小: {(updateInfo.size / 1024 / 1024).toFixed(2)} MB</p>
+		          <button onClick={handleDownload} className="download-btn">
+		            下载更新
+		          </button>
+		        </div>
+		      )}
+		
+		      {updateState === 'downloading' && progress && (
+		        <div className="update-downloading">
+		          <h3>正在下载更新...</h3>
+		          <div className="progress-bar">
+		            <div 
+		              className="progress-fill"
+		              style={{ width: `${progress.percent}%` }}
+		            />
+		          </div>
+		          <p>{progress.percent.toFixed(1)}% - {(progress.bytesPerSecond / 1024).toFixed(1)} KB/s</p>
+		          <p>{(progress.transferred / 1024 / 1024).toFixed(2)} MB / {(progress.total / 1024 / 1024).toFixed(2)} MB</p>
+		        </div>
+		      )}
+		
+		      {updateState === 'downloaded' && (
+		        <div className="update-downloaded">
+		          <h3>更新已下载</h3>
+		          <p>重启应用以完成更新安装</p>
+		          <button onClick={handleInstall} className="install-btn">
+		            立即安装
+		          </button>
+		        </div>
+		      )}
+		    </div>
+		  );
+		};
+		```
+		
+		### Positive Consequences
+		
+		* 自动更新机制提供无缝的用户体验
+		* 代码签名确保应用安全性和用户信任度
+		* 渐进式发布降低大规模部署风险
+		* 跨平台支持覆盖主要操作系统
+		* 与Release Health监控集成，可快速发现问题
+		* 支持快速回滚，减少故障影响时间
+		* 满足应用商店和企业分发要求
+		
+		### Negative Consequences
+		
+		* 代码签名证书成本和维护复杂度
+		* 渐进式发布增加发布流程复杂性
+		* macOS公证流程较为复杂，耗时较长
+		* 自动更新可能在某些网络环境下失败
+		* 需要维护多平台构建环境
+		* 回滚机制需要额外的监控和告警系统
+		
+		## Verification
+		
+		* **测试验证**: tests/e2e/auto-update.spec.ts, tests/integration/code-signing.spec.ts
+		* **门禁脚本**: scripts/verify_signatures.mjs, scripts/test_update_flow.mjs
+		* **监控指标**: update.success_rate, release.health_score, deployment.rollback_count, signing.cert_expiry
+		* **部署验证**: 多平台安装测试、签名验证、更新流程验证
+		
+		### 部署发布验证清单
+		
+		- [ ] 代码签名配置正确且证书有效
+		- [ ] 自动更新机制在所有目标平台正常工作
+		- [ ] 渐进式发布策略配置和监控集成
+		- [ ] Release Health指标与发布门禁联动
+		- [ ] 回滚机制能够快速响应和执行
+		- [ ] 跨平台安装包构建和分发正常
+		- [ ] CI/CD工作流自动化执行完整
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **证书配置**: 获取和配置Windows/macOS代码签名证书
+		2. **构建环境**: 设置跨平台构建环境和签名工具
+		3. **更新集成**: 集成electron-updater到应用主进程
+		4. **发布流程**: 配置GitHub Actions发布工作流
+		5. **监控集成**: 集成Release Health监控和告警
+		6. **渐进式发布**: 部署渐进式发布和自动回滚机制
+		
+		### 回滚步骤
+		1. **立即回滚**: 将有问题的版本标记为draft，停止推送
+		2. **版本回退**: 恢复到上一个稳定版本的GitHub Release
+		3. **通知机制**: 通过应用内通知告知用户回滚情况
+		4. **数据恢复**: 如需要，恢复与版本相关的数据状态
+		5. **问题分析**: 分析回滚原因并制定修复计划
+		6. **热修复**: 发布热修复版本解决关键问题
+		
+		### 迁移指南
+		- **证书迁移**: 现有应用需要重新签名和分发
+		- **更新机制**: 集成自动更新到现有应用架构
+		- **用户沟通**: 提前告知用户新的更新机制和流程
+		- **数据备份**: 在更新前确保用户数据安全备份
+		- **兼容性**: 确保新版本与旧版本数据格式兼容
+		
+		## References
+		
+		* **CH章节关联**: CH07, CH10
+		* **相关ADR**: ADR-0003-observability-release-health, ADR-0005-quality-gates, ADR-0002-electron-security
+		* **外部文档**: 
+		  - [electron-updater Documentation](https://www.electron.build/auto-update)
+		  - [Windows Code Signing Guide](https://docs.microsoft.com/en-us/windows/win32/seccrypto/cryptography-tools)
+		  - [macOS Notarization Guide](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
+		  - [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
+		* **工具链**: electron-builder, electron-updater, GitHub Actions
+		* **相关PRD-ID**: 适用于所有需要桌面应用分发的PRD]]></file>
+	<file path='ADR-0009-cross-platform.md'><![CDATA[
+		---
+		ADR-ID: ADR-0009
+		title: 跨平台兼容策略 - Windows/macOS/Linux统一
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, 开发团队, UX团队]
+		archRefs: [CH04, CH09, CH11]
+		verification:
+		  - path: tests/e2e/os-matrix.spec.ts
+		    assert: Platform behaviors (paths, menus, tray, shortcuts) pass on Win/macOS/Linux
+		  - path: scripts/os/feature-probes.mjs
+		    assert: Platform feature probes (notifications, proxies, SAB) report expected capabilities
+		  - path: scripts/perf/os-baselines.json
+		    assert: Per-OS performance baselines are within drift threshold
+		impact-scope:
+		  - electron/
+		  - scripts/platform/
+		  - tests/e2e/platform/
+		tech-tags:
+		  - cross-platform
+		  - windows
+		  - macos
+		  - linux
+		  - compatibility
+		depends-on: []
+		depended-by: []
+		test-coverage: tests/unit/adr-0009.spec.ts
+		monitoring-metrics:
+		  - implementation_coverage
+		  - compliance_rate
+		executable-deliverables:
+		  - scripts/platform-detection.mjs
+		  - electron/platform-specific.ts
+		  - tests/e2e/platform/cross-platform.spec.ts
+		supersedes: []
+		---
+		
+		# ADR-0009: 跨平台适配策略
+		
+		
+		## Context and Problem Statement
+		
+		Electron游戏应用需要在Windows、macOS、Linux三大平台上提供一致的用户体验，同时充分利用各平台的原生特性。需要处理平台间的差异，包括UI设计规范、文件系统、快捷键、系统集成、性能优化等方面，确保应用在各平台上都能正常运行并符合用户预期。
+		
+		## Decision Drivers
+		
+		* 需要在三大主流平台（Windows、macOS、Linux）上提供一致的功能
+		* 需要遵循各平台的UI/UX设计规范和用户习惯
+		* 需要处理平台特定的文件路径、权限、系统调用
+		* 需要优化各平台的性能表现和资源使用
+		* 需要支持平台特定的系统集成功能
+		* 需要简化跨平台开发和维护成本
+		* 需要确保应用在所有平台上的稳定性
+		
+		## Considered Options
+		
+		* **统一适配器模式 + 平台检测** (选择方案)
+		* **平台独立构建分支**
+		* **仅支持主流平台（Windows+macOS）**
+		* **Web应用替代（功能受限）**
+		* **原生应用分别开发（成本过高）**
+		
+		## Decision Outcome
+		
+		选择的方案：**统一适配器模式 + 平台检测**
+		
+		### 平台检测与抽象层
+		
+		**平台检测服务**：
+		```typescript
+		// src/shared/platform/platform-detector.ts
+		export enum Platform {
+		  WINDOWS = 'windows',
+		  MACOS = 'darwin',
+		  LINUX = 'linux'
+		}
+		
+		export interface PlatformInfo {
+		  platform: Platform;
+		  version: string;
+		  arch: string;
+		  isARM: boolean;
+		  isX64: boolean;
+		  homeDir: string;
+		  tempDir: string;
+		  executableName: string;
+		}
+		
+		export class PlatformDetector {
+		  private static _instance: PlatformDetector;
+		  private _platformInfo: PlatformInfo;
+		
+		  private constructor() {
+		    this._platformInfo = this.detectPlatform();
+		  }
+		
+		  public static getInstance(): PlatformDetector {
+		    if (!PlatformDetector._instance) {
+		      PlatformDetector._instance = new PlatformDetector();
+		    }
+		    return PlatformDetector._instance;
+		  }
+		
+		  public getPlatformInfo(): PlatformInfo {
+		    return this._platformInfo;
+		  }
+		
+		  public isWindows(): boolean {
+		    return this._platformInfo.platform === Platform.WINDOWS;
+		  }
+		
+		  public isMacOS(): boolean {
+		    return this._platformInfo.platform === Platform.MACOS;
+		  }
+		
+		  public isLinux(): boolean {
+		    return this._platformInfo.platform === Platform.LINUX;
+		  }
+		
+		  private detectPlatform(): PlatformInfo {
+		    const os = require('os');
+		    
+		    return {
+		      platform: os.platform() as Platform,
+		      version: os.release(),
+		      arch: os.arch(),
+		      isARM: os.arch().includes('arm'),
+		      isX64: os.arch() === 'x64',
+		      homeDir: os.homedir(),
+		      tempDir: os.tmpdir(),
+		      executableName: this.getExecutableName(os.platform())
+		    };
+		  }
+		
+		  private getExecutableName(platform: string): string {
+		    switch (platform) {
+		      case 'win32': return 'BuildGame.exe';
+		      case 'darwin': return 'BuildGame.app';
+		      case 'linux': return 'buildgame';
+		      default: return 'buildgame';
+		    }
+		  }
+		}
+		```
+		
+		### 平台特定适配器
+		
+		**文件系统适配器**：
+		```typescript
+		// src/shared/platform/adapters/file-system.adapter.ts
+		export abstract class FileSystemAdapter {
+		  abstract getConfigPath(): string;
+		  abstract getDataPath(): string;
+		  abstract getLogPath(): string;
+		  abstract getCachePath(): string;
+		  abstract getDownloadPath(): string;
+		  abstract openFileExplorer(path: string): Promise<void>;
+		  abstract openTerminal(path?: string): Promise<void>;
+		  abstract getShortcutPath(): string;
+		}
+		
+		export class WindowsFileSystemAdapter extends FileSystemAdapter {
+		  getConfigPath(): string {
+		    return path.join(os.homedir(), 'AppData', 'Roaming', 'BuildGame');
+		  }
+		
+		  getDataPath(): string {
+		    return path.join(os.homedir(), 'AppData', 'Local', 'BuildGame');
+		  }
+		
+		  getLogPath(): string {
+		    return path.join(this.getDataPath(), 'logs');
+		  }
+		
+		  getCachePath(): string {
+		    return path.join(this.getDataPath(), 'cache');
+		  }
+		
+		  getDownloadPath(): string {
+		    return path.join(os.homedir(), 'Downloads');
+		  }
+		
+		  async openFileExplorer(filePath: string): Promise<void> {
+		    const { shell } = require('electron');
+		    await shell.openPath(filePath);
+		  }
+		
+		  async openTerminal(workingDir?: string): Promise<void> {
+		    const { spawn } = require('child_process');
+		    const cwd = workingDir || this.getDataPath();
+		    spawn('cmd', ['/c', 'start', 'cmd'], { cwd, detached: true });
+		  }
+		
+		  getShortcutPath(): string {
+		    return path.join(os.homedir(), 'Desktop', 'BuildGame.lnk');
+		  }
+		}
+		
+		export class MacOSFileSystemAdapter extends FileSystemAdapter {
+		  getConfigPath(): string {
+		    return path.join(os.homedir(), 'Library', 'Application Support', 'BuildGame');
+		  }
+		
+		  getDataPath(): string {
+		    return path.join(os.homedir(), 'Library', 'Application Support', 'BuildGame');
+		  }
+		
+		  getLogPath(): string {
+		    return path.join(os.homedir(), 'Library', 'Logs', 'BuildGame');
+		  }
+		
+		  getCachePath(): string {
+		    return path.join(os.homedir(), 'Library', 'Caches', 'BuildGame');
+		  }
+		
+		  getDownloadPath(): string {
+		    return path.join(os.homedir(), 'Downloads');
+		  }
+		
+		  async openFileExplorer(filePath: string): Promise<void> {
+		    const { shell } = require('electron');
+		    await shell.showItemInFolder(filePath);
+		  }
+		
+		  async openTerminal(workingDir?: string): Promise<void> {
+		    const { spawn } = require('child_process');
+		    const cwd = workingDir || this.getDataPath();
+		    spawn('open', ['-a', 'Terminal', cwd], { detached: true });
+		  }
+		
+		  getShortcutPath(): string {
+		    return path.join(os.homedir(), 'Desktop', 'BuildGame.app');
+		  }
+		}
+		
+		export class LinuxFileSystemAdapter extends FileSystemAdapter {
+		  getConfigPath(): string {
+		    const xdgConfig = process.env.XDG_CONFIG_HOME;
+		    return xdgConfig 
+		      ? path.join(xdgConfig, 'buildgame')
+		      : path.join(os.homedir(), '.config', 'buildgame');
+		  }
+		
+		  getDataPath(): string {
+		    const xdgData = process.env.XDG_DATA_HOME;
+		    return xdgData
+		      ? path.join(xdgData, 'buildgame')
+		      : path.join(os.homedir(), '.local', 'share', 'buildgame');
+		  }
+		
+		  getLogPath(): string {
+		    return path.join(this.getDataPath(), 'logs');
+		  }
+		
+		  getCachePath(): string {
+		    const xdgCache = process.env.XDG_CACHE_HOME;
+		    return xdgCache
+		      ? path.join(xdgCache, 'buildgame')
+		      : path.join(os.homedir(), '.cache', 'buildgame');
+		  }
+		
+		  getDownloadPath(): string {
+		    const xdgDownload = process.env.XDG_DOWNLOAD_DIR;
+		    return xdgDownload || path.join(os.homedir(), 'Downloads');
+		  }
+		
+		  async openFileExplorer(filePath: string): Promise<void> {
+		    const { spawn } = require('child_process');
+		    // 尝试多种文件管理器
+		    const fileManagers = ['nautilus', 'dolphin', 'thunar', 'pcmanfm', 'xdg-open'];
+		    
+		    for (const manager of fileManagers) {
+		      try {
+		        spawn(manager, [filePath], { detached: true, stdio: 'ignore' });
+		        return;
+		      } catch (error) {
+		        continue; // 尝试下一个
+		      }
+		    }
+		  }
+		
+		  async openTerminal(workingDir?: string): Promise<void> {
+		    const { spawn } = require('child_process');
+		    const cwd = workingDir || this.getDataPath();
+		    
+		    // 尝试多种终端模拟器
+		    const terminals = [
+		      ['gnome-terminal', '--working-directory=' + cwd],
+		      ['konsole', '--workdir', cwd],
+		      ['xfce4-terminal', '--default-working-directory=' + cwd],
+		      ['xterm', '-e', 'cd ' + cwd + ' && bash']
+		    ];
+		    
+		    for (const [terminal, ...args] of terminals) {
+		      try {
+		        spawn(terminal, args, { detached: true, stdio: 'ignore' });
+		        return;
+		      } catch (error) {
+		        continue;
+		      }
+		    }
+		  }
+		
+		  getShortcutPath(): string {
+		    return path.join(os.homedir(), 'Desktop', 'buildgame.desktop');
+		  }
+		}
+		```
+		
+		### 快捷键适配
+		
+		**快捷键适配器**：
+		```typescript
+		// src/shared/platform/adapters/keyboard.adapter.ts
+		export interface KeyboardShortcut {
+		  key: string;
+		  modifiers: string[];
+		  description: string;
+		}
+		
+		export abstract class KeyboardAdapter {
+		  abstract getShortcuts(): Map<string, KeyboardShortcut>;
+		  abstract getModifierKey(): string; // Ctrl/Cmd
+		  abstract getMenuAccelerator(shortcut: string): string;
+		}
+		
+		export class WindowsKeyboardAdapter extends KeyboardAdapter {
+		  getShortcuts(): Map<string, KeyboardShortcut> {
+		    return new Map([
+		      ['new-game', { key: 'N', modifiers: ['Ctrl'], description: '新游戏' }],
+		      ['save-game', { key: 'S', modifiers: ['Ctrl'], description: '保存游戏' }],
+		      ['open-settings', { key: ',', modifiers: ['Ctrl'], description: '打开设置' }],
+		      ['toggle-fullscreen', { key: 'F11', modifiers: [], description: '全屏切换' }],
+		      ['quit-app', { key: 'F4', modifiers: ['Alt'], description: '退出应用' }],
+		      ['minimize', { key: 'M', modifiers: ['Ctrl'], description: '最小化' }],
+		      ['copy', { key: 'C', modifiers: ['Ctrl'], description: '复制' }],
+		      ['paste', { key: 'V', modifiers: ['Ctrl'], description: '粘贴' }]
+		    ]);
+		  }
+		
+		  getModifierKey(): string {
+		    return 'Ctrl';
+		  }
+		
+		  getMenuAccelerator(shortcut: string): string {
+		    const mapping: Record<string, string> = {
+		      'new-game': 'Ctrl+N',
+		      'save-game': 'Ctrl+S',
+		      'open-settings': 'Ctrl+,',
+		      'toggle-fullscreen': 'F11',
+		      'quit-app': 'Alt+F4'
+		    };
+		    return mapping[shortcut] || '';
+		  }
+		}
+		
+		export class MacOSKeyboardAdapter extends KeyboardAdapter {
+		  getShortcuts(): Map<string, KeyboardShortcut> {
+		    return new Map([
+		      ['new-game', { key: 'N', modifiers: ['Cmd'], description: '新游戏' }],
+		      ['save-game', { key: 'S', modifiers: ['Cmd'], description: '保存游戏' }],
+		      ['open-settings', { key: ',', modifiers: ['Cmd'], description: '打开设置' }],
+		      ['toggle-fullscreen', { key: 'F', modifiers: ['Cmd', 'Ctrl'], description: '全屏切换' }],
+		      ['quit-app', { key: 'Q', modifiers: ['Cmd'], description: '退出应用' }],
+		      ['minimize', { key: 'M', modifiers: ['Cmd'], description: '最小化' }],
+		      ['hide', { key: 'H', modifiers: ['Cmd'], description: '隐藏窗口' }],
+		      ['copy', { key: 'C', modifiers: ['Cmd'], description: '复制' }],
+		      ['paste', { key: 'V', modifiers: ['Cmd'], description: '粘贴' }]
+		    ]);
+		  }
+		
+		  getModifierKey(): string {
+		    return 'Cmd';
+		  }
+		
+		  getMenuAccelerator(shortcut: string): string {
+		    const mapping: Record<string, string> = {
+		      'new-game': 'CmdOrCtrl+N',
+		      'save-game': 'CmdOrCtrl+S',
+		      'open-settings': 'CmdOrCtrl+,',
+		      'toggle-fullscreen': 'Cmd+Ctrl+F',
+		      'quit-app': 'CmdOrCtrl+Q',
+		      'minimize': 'CmdOrCtrl+M',
+		      'hide': 'Cmd+H'
+		    };
+		    return mapping[shortcut] || '';
+		  }
+		}
+		```
+		
+		### UI主题适配
+		
+		**主题适配器**：
+		```typescript
+		// src/shared/platform/adapters/theme.adapter.ts
+		export interface PlatformTheme {
+		  colors: {
+		    primary: string;
+		    secondary: string;
+		    accent: string;
+		    background: string;
+		    surface: string;
+		    text: string;
+		    border: string;
+		  };
+		  typography: {
+		    fontFamily: string;
+		    fontSize: {
+		      small: string;
+		      medium: string;
+		      large: string;
+		    };
+		  };
+		  spacing: {
+		    small: string;
+		    medium: string;
+		    large: string;
+		  };
+		  borderRadius: string;
+		  shadows: {
+		    light: string;
+		    medium: string;
+		    heavy: string;
+		  };
+		}
+		
+		export abstract class ThemeAdapter {
+		  abstract getTheme(): PlatformTheme;
+		  abstract isDarkMode(): boolean;
+		  abstract getSystemTheme(): 'light' | 'dark' | 'system';
+		}
+		
+		export class WindowsThemeAdapter extends ThemeAdapter {
+		  getTheme(): PlatformTheme {
+		    return {
+		      colors: {
+		        primary: '#0078d4',
+		        secondary: '#6b6b6b',
+		        accent: '#005a9e',
+		        background: '#ffffff',
+		        surface: '#f5f5f5',
+		        text: '#323130',
+		        border: '#d1d1d1'
+		      },
+		      typography: {
+		        fontFamily: 'Segoe UI, system-ui, sans-serif',
+		        fontSize: {
+		          small: '12px',
+		          medium: '14px',
+		          large: '16px'
+		        }
+		      },
+		      spacing: {
+		        small: '4px',
+		        medium: '8px',
+		        large: '16px'
+		      },
+		      borderRadius: '2px',
+		      shadows: {
+		        light: '0 1px 3px rgba(0,0,0,0.12)',
+		        medium: '0 4px 6px rgba(0,0,0,0.15)',
+		        heavy: '0 8px 20px rgba(0,0,0,0.20)'
+		      }
+		    };
+		  }
+		
+		  isDarkMode(): boolean {
+		    // Windows系统主题检测
+		    const { systemPreferences } = require('electron');
+		    return systemPreferences.shouldUseDarkColors();
+		  }
+		
+		  getSystemTheme(): 'light' | 'dark' | 'system' {
+		    return this.isDarkMode() ? 'dark' : 'light';
+		  }
+		}
+		
+		export class MacOSThemeAdapter extends ThemeAdapter {
+		  getTheme(): PlatformTheme {
+		    return {
+		      colors: {
+		        primary: '#007aff',
+		        secondary: '#8e8e93',
+		        accent: '#5856d6',
+		        background: '#ffffff',
+		        surface: '#f2f2f7',
+		        text: '#000000',
+		        border: '#c6c6c8'
+		      },
+		      typography: {
+		        fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+		        fontSize: {
+		          small: '11px',
+		          medium: '13px',
+		          large: '15px'
+		        }
+		      },
+		      spacing: {
+		        small: '6px',
+		        medium: '12px',
+		        large: '20px'
+		      },
+		      borderRadius: '8px',
+		      shadows: {
+		        light: '0 1px 3px rgba(0,0,0,0.10)',
+		        medium: '0 4px 14px rgba(0,0,0,0.12)',
+		        heavy: '0 25px 55px rgba(0,0,0,0.21)'
+		      }
+		    };
+		  }
+		
+		  isDarkMode(): boolean {
+		    const { systemPreferences } = require('electron');
+		    return systemPreferences.isDarkMode();
+		  }
+		
+		  getSystemTheme(): 'light' | 'dark' | 'system' {
+		    return this.isDarkMode() ? 'dark' : 'light';
+		  }
+		}
+		
+		export class LinuxThemeAdapter extends ThemeAdapter {
+		  getTheme(): PlatformTheme {
+		    return {
+		      colors: {
+		        primary: '#3584e4',
+		        secondary: '#77767b',
+		        accent: '#9141ac',
+		        background: '#ffffff',
+		        surface: '#fafafa',
+		        text: '#2e3436',
+		        border: '#c0bfbc'
+		      },
+		      typography: {
+		        fontFamily: 'Ubuntu, "Noto Sans", system-ui, sans-serif',
+		        fontSize: {
+		          small: '10px',
+		          medium: '12px',
+		          large: '14px'
+		        }
+		      },
+		      spacing: {
+		        small: '4px',
+		        medium: '8px',
+		        large: '16px'
+		      },
+		      borderRadius: '4px',
+		      shadows: {
+		        light: '0 1px 3px rgba(0,0,0,0.16)',
+		        medium: '0 3px 6px rgba(0,0,0,0.20)',
+		        heavy: '0 10px 20px rgba(0,0,0,0.25)'
+		      }
+		    };
+		  }
+		
+		  isDarkMode(): boolean {
+		    // 检查GTK主题或环境变量
+		    const gtkTheme = process.env.GTK_THEME;
+		    return gtkTheme?.toLowerCase().includes('dark') || false;
+		  }
+		
+		  getSystemTheme(): 'light' | 'dark' | 'system' {
+		    return this.isDarkMode() ? 'dark' : 'light';
+		  }
+		}
+		```
+		
+		### 窗口管理适配
+		
+		**窗口适配器**：
+		```typescript
+		// src/shared/platform/adapters/window.adapter.ts
+		export interface WindowConfig {
+		  minWidth: number;
+		  minHeight: number;
+		  defaultWidth: number;
+		  defaultHeight: number;
+		  titleBarStyle: 'default' | 'hidden' | 'hiddenInset';
+		  vibrancy?: string;
+		  transparent: boolean;
+		  frame: boolean;
+		  show: boolean;
+		}
+		
+		export abstract class WindowAdapter {
+		  abstract getWindowConfig(): WindowConfig;
+		  abstract setupWindow(window: BrowserWindow): void;
+		  abstract handleWindowEvents(window: BrowserWindow): void;
+		}
+		
+		export class WindowsWindowAdapter extends WindowAdapter {
+		  getWindowConfig(): WindowConfig {
+		    return {
+		      minWidth: 800,
+		      minHeight: 600,
+		      defaultWidth: 1200,
+		      defaultHeight: 800,
+		      titleBarStyle: 'default',
+		      transparent: false,
+		      frame: true,
+		      show: true
+		    };
+		  }
+		
+		  setupWindow(window: BrowserWindow): void {
+		    // Windows特定的窗口设置
+		    window.setMenuBarVisibility(false);
+		    
+		    // Windows 11特效支持
+		    if (process.platform === 'win32' && process.getSystemVersion() >= '10.0.22000') {
+		      window.setBackgroundMaterial('acrylic');
+		    }
+		  }
+		
+		  handleWindowEvents(window: BrowserWindow): void {
+		    window.on('minimize', () => {
+		      // Windows最小化行为
+		      window.hide();
+		    });
+		
+		    window.on('close', (event) => {
+		      // 阻止默认关闭，最小化到系统托盘
+		      event.preventDefault();
+		      window.hide();
+		    });
+		  }
+		}
+		
+		export class MacOSWindowAdapter extends WindowAdapter {
+		  getWindowConfig(): WindowConfig {
+		    return {
+		      minWidth: 800,
+		      minHeight: 600,
+		      defaultWidth: 1200,
+		      defaultHeight: 800,
+		      titleBarStyle: 'hiddenInset',
+		      vibrancy: 'window',
+		      transparent: true,
+		      frame: true,
+		      show: true
+		    };
+		  }
+		
+		  setupWindow(window: BrowserWindow): void {
+		    // macOS特定的窗口设置
+		    window.setWindowButtonVisibility(true);
+		    
+		    // 设置窗口级别
+		    window.setAlwaysOnTop(false);
+		    
+		    // macOS原生全屏支持
+		    window.setFullScreenable(true);
+		  }
+		
+		  handleWindowEvents(window: BrowserWindow): void {
+		    window.on('close', (event) => {
+		      // macOS标准行为：隐藏窗口而不是退出应用
+		      if (!app.isQuittingAll) {
+		        event.preventDefault();
+		        window.hide();
+		      }
+		    });
+		
+		    window.on('minimize', () => {
+		      // macOS最小化到Dock
+		      window.minimize();
+		    });
+		  }
+		}
+		
+		export class LinuxWindowAdapter extends WindowAdapter {
+		  getWindowConfig(): WindowConfig {
+		    return {
+		      minWidth: 800,
+		      minHeight: 600,
+		      defaultWidth: 1200,
+		      defaultHeight: 800,
+		      titleBarStyle: 'default',
+		      transparent: false,
+		      frame: true,
+		      show: true
+		    };
+		  }
+		
+		  setupWindow(window: BrowserWindow): void {
+		    // Linux特定的窗口设置
+		    window.setIcon(path.join(__dirname, '../assets/icon.png'));
+		    
+		    // Wayland支持
+		    if (process.env.WAYLAND_DISPLAY) {
+		      window.setBackgroundColor('#ffffff');
+		    }
+		  }
+		
+		  handleWindowEvents(window: BrowserWindow): void {
+		    window.on('close', () => {
+		      // Linux标准行为：直接关闭应用
+		      app.quit();
+		    });
+		  }
+		}
+		```
+		
+		### 系统集成适配
+		
+		**系统集成适配器**：
+		```typescript
+		// src/shared/platform/adapters/system-integration.adapter.ts
+		export abstract class SystemIntegrationAdapter {
+		  abstract setupAutoStart(enabled: boolean): Promise<void>;
+		  abstract createDesktopShortcut(): Promise<void>;
+		  abstract setupSystemTray(): Tray | null;
+		  abstract handleDeepLinks(protocol: string): void;
+		  abstract getSystemInfo(): SystemInfo;
+		}
+		
+		export class WindowsSystemIntegrationAdapter extends SystemIntegrationAdapter {
+		  async setupAutoStart(enabled: boolean): Promise<void> {
+		    const { app } = require('electron');
+		    
+		    app.setLoginItemSettings({
+		      openAtLogin: enabled,
+		      openAsHidden: true,
+		      path: app.getPath('exe'),
+		      args: ['--hidden']
+		    });
+		  }
+		
+		  async createDesktopShortcut(): Promise<void> {
+		    const { shell, app } = require('electron');
+		    const shortcutPath = path.join(os.homedir(), 'Desktop', 'BuildGame.lnk');
+		    
+		    shell.writeShortcutLink(shortcutPath, 'create', {
+		      target: app.getPath('exe'),
+		      cwd: path.dirname(app.getPath('exe')),
+		      description: 'Build Game - 桌面游戏应用',
+		      icon: app.getPath('exe'),
+		      iconIndex: 0
+		    });
+		  }
+		
+		  setupSystemTray(): Tray | null {
+		    const { Tray, Menu, nativeImage } = require('electron');
+		    const iconPath = path.join(__dirname, '../assets/tray-icon.ico');
+		    const icon = nativeImage.createFromPath(iconPath);
+		    
+		    const tray = new Tray(icon);
+		    tray.setToolTip('Build Game');
+		    
+		    const contextMenu = Menu.buildFromTemplate([
+		      { label: '显示主窗口', click: () => this.showMainWindow() },
+		      { label: '新游戏', click: () => this.startNewGame() },
+		      { type: 'separator' },
+		      { label: '退出', click: () => app.quit() }
+		    ]);
+		    
+		    tray.setContextMenu(contextMenu);
+		    return tray;
+		  }
+		
+		  handleDeepLinks(protocol: string): void {
+		    const { app } = require('electron');
+		    
+		    if (process.defaultApp) {
+		      if (process.argv.length >= 2) {
+		        app.setAsDefaultProtocolClient(protocol, process.execPath, [path.resolve(process.argv[1])]);
+		      }
+		    } else {
+		      app.setAsDefaultProtocolClient(protocol);
+		    }
+		  }
+		
+		  getSystemInfo(): SystemInfo {
+		    const os = require('os');
+		    return {
+		      platform: 'Windows',
+		      version: os.release(),
+		      arch: os.arch(),
+		      totalMemory: os.totalmem(),
+		      freeMemory: os.freemem(),
+		      cpus: os.cpus().length,
+		      uptime: os.uptime()
+		    };
+		  }
+		
+		  private showMainWindow(): void {
+		    // 实现显示主窗口逻辑
+		  }
+		
+		  private startNewGame(): void {
+		    // 实现新游戏逻辑
+		  }
+		}
+		```
+		
+		### 平台适配工厂
+		
+		**适配器工厂**：
+		```typescript
+		// src/shared/platform/platform-adapter.factory.ts
+		export class PlatformAdapterFactory {
+		  private static fileSystemAdapter: FileSystemAdapter;
+		  private static keyboardAdapter: KeyboardAdapter;
+		  private static themeAdapter: ThemeAdapter;
+		  private static windowAdapter: WindowAdapter;
+		  private static systemIntegrationAdapter: SystemIntegrationAdapter;
+		
+		  public static getFileSystemAdapter(): FileSystemAdapter {
+		    if (!this.fileSystemAdapter) {
+		      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
+		      
+		      switch (platform) {
+		        case Platform.WINDOWS:
+		          this.fileSystemAdapter = new WindowsFileSystemAdapter();
+		          break;
+		        case Platform.MACOS:
+		          this.fileSystemAdapter = new MacOSFileSystemAdapter();
+		          break;
+		        case Platform.LINUX:
+		          this.fileSystemAdapter = new LinuxFileSystemAdapter();
+		          break;
+		      }
+		    }
+		    return this.fileSystemAdapter;
+		  }
+		
+		  public static getKeyboardAdapter(): KeyboardAdapter {
+		    if (!this.keyboardAdapter) {
+		      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
+		      
+		      switch (platform) {
+		        case Platform.WINDOWS:
+		          this.keyboardAdapter = new WindowsKeyboardAdapter();
+		          break;
+		        case Platform.MACOS:
+		          this.keyboardAdapter = new MacOSKeyboardAdapter();
+		          break;
+		        case Platform.LINUX:
+		          this.keyboardAdapter = new WindowsKeyboardAdapter(); // Linux使用Windows样式
+		          break;
+		      }
+		    }
+		    return this.keyboardAdapter;
+		  }
+		
+		  public static getThemeAdapter(): ThemeAdapter {
+		    if (!this.themeAdapter) {
+		      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
+		      
+		      switch (platform) {
+		        case Platform.WINDOWS:
+		          this.themeAdapter = new WindowsThemeAdapter();
+		          break;
+		        case Platform.MACOS:
+		          this.themeAdapter = new MacOSThemeAdapter();
+		          break;
+		        case Platform.LINUX:
+		          this.themeAdapter = new LinuxThemeAdapter();
+		          break;
+		      }
+		    }
+		    return this.themeAdapter;
+		  }
+		
+		  public static getAllAdapters() {
+		    return {
+		      fileSystem: this.getFileSystemAdapter(),
+		      keyboard: this.getKeyboardAdapter(),
+		      theme: this.getThemeAdapter(),
+		      window: this.getWindowAdapter(),
+		      systemIntegration: this.getSystemIntegrationAdapter()
+		    };
+		  }
+		}
+		```
+		
+		### React跨平台UI组件
+		
+		**平台感知UI组件**：
+		```tsx
+		// src/components/platform/PlatformButton.tsx
+		import React from 'react';
+		import { PlatformAdapterFactory } from '../../shared/platform/platform-adapter.factory';
+		
+		interface PlatformButtonProps {
+		  children: React.ReactNode;
+		  onClick: () => void;
+		  variant?: 'primary' | 'secondary';
+		  className?: string;
+		}
+		
+		export const PlatformButton: React.FC<PlatformButtonProps> = ({
+		  children,
+		  onClick,
+		  variant = 'primary',
+		  className = ''
+		}) => {
+		  const themeAdapter = PlatformAdapterFactory.getThemeAdapter();
+		  const theme = themeAdapter.getTheme();
+		
+		  const baseStyles = {
+		    fontFamily: theme.typography.fontFamily,
+		    fontSize: theme.typography.fontSize.medium,
+		    padding: `${theme.spacing.medium} ${theme.spacing.large}`,
+		    borderRadius: theme.borderRadius,
+		    border: 'none',
+		    cursor: 'pointer',
+		    transition: 'all 0.2s ease'
+		  };
+		
+		  const variantStyles = {
+		    primary: {
+		      backgroundColor: theme.colors.primary,
+		      color: '#ffffff',
+		      boxShadow: theme.shadows.medium
+		    },
+		    secondary: {
+		      backgroundColor: theme.colors.surface,
+		      color: theme.colors.text,
+		      border: `1px solid ${theme.colors.border}`,
+		      boxShadow: theme.shadows.light
+		    }
+		  };
+		
+		  return (
+		    <button
+		      className={className}
+		      style={{ ...baseStyles, ...variantStyles[variant] }}
+		      onClick={onClick}
+		      onMouseOver={(e) => {
+		        e.currentTarget.style.opacity = '0.9';
+		      }}
+		      onMouseOut={(e) => {
+		        e.currentTarget.style.opacity = '1';
+		      }}
+		    >
+		      {children}
+		    </button>
+		  );
+		};
+		```
+		
+		### 性能优化配置
+		
+		**平台性能优化**：
+		```typescript
+		// src/shared/platform/performance-optimizer.ts
+		export class PlatformPerformanceOptimizer {
+		  public static optimizeForPlatform(): void {
+		    const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
+		    
+		    switch (platform) {
+		      case Platform.WINDOWS:
+		        this.optimizeForWindows();
+		        break;
+		      case Platform.MACOS:
+		        this.optimizeForMacOS();
+		        break;
+		      case Platform.LINUX:
+		        this.optimizeForLinux();
+		        break;
+		    }
+		  }
+		
+		  private static optimizeForWindows(): void {
+		    // Windows特定优化
+		    const { app } = require('electron');
+		    
+		    // 启用Windows硬件加速
+		    app.commandLine.appendSwitch('enable-gpu-rasterization');
+		    app.commandLine.appendSwitch('enable-zero-copy');
+		    
+		    // Windows DPI适配
+		    app.commandLine.appendSwitch('high-dpi-support', '1');
+		    app.commandLine.appendSwitch('force-device-scale-factor', '1');
+		  }
+		
+		  private static optimizeForMacOS(): void {
+		    // macOS特定优化
+		    const { app } = require('electron');
+		    
+		    // 启用macOS原生渲染
+		    app.commandLine.appendSwitch('enable-quartz-compositor');
+		    
+		    // Retina支持
+		    app.commandLine.appendSwitch('force-device-scale-factor', '2');
+		    
+		    // 金属渲染支持
+		    app.commandLine.appendSwitch('enable-metal');
+		  }
+		
+		  private static optimizeForLinux(): void {
+		    // Linux特定优化
+		    const { app } = require('electron');
+		    
+		    // 启用GPU加速
+		    app.commandLine.appendSwitch('enable-gpu');
+		    app.commandLine.appendSwitch('ignore-gpu-blacklist');
+		    
+		    // Wayland支持
+		    if (process.env.WAYLAND_DISPLAY) {
+		      app.commandLine.appendSwitch('enable-features', 'UseOzonePlatform');
+		      app.commandLine.appendSwitch('ozone-platform', 'wayland');
+		    }
+		  }
+		}
+		```
+		
+		### Positive Consequences
+		
+		* 在所有主流平台上提供一致的功能和用户体验
+		* 充分利用各平台的原生特性和设计规范
+		* 统一的适配器模式简化了跨平台开发
+		* 自动的平台检测和适配减少手动配置
+		* 性能优化针对各平台特点进行调优
+		* 支持平台特定的系统集成功能
+		* 维护成本相对较低，代码复用率高
+		
+		### Negative Consequences
+		
+		* 适配器模式增加了代码复杂性
+		* 需要在多个平台上进行测试验证
+		* 平台特定功能可能存在兼容性问题
+		* Linux平台的碎片化增加适配难度
+		* 需要维护多套平台特定的资源文件
+		* 某些高级平台功能可能无法统一抽象
+		
+		## Verification
+		
+		* **测试验证**: tests/e2e/platform-compatibility.spec.ts, tests/unit/platform-adapters/*.spec.ts
+		* **门禁脚本**: scripts/test_cross_platform.mjs, scripts/verify_platform_resources.mjs
+		* **监控指标**: platform.compatibility_score, ui.rendering_performance, system.integration_success
+		* **平台验证**: 多平台自动化测试、UI一致性验证、性能基准测试
+		
+		### 跨平台验证清单
+		
+		- [ ] 所有目标平台上的基本功能正常工作
+		- [ ] 平台特定的UI/UX符合各平台设计规范
+		- [ ] 文件路径和权限处理在所有平台正确
+		- [ ] 快捷键和菜单适配符合平台习惯
+		- [ ] 系统集成功能（托盘、自启动）正常
+		- [ ] 性能优化在各平台生效
+		- [ ] 安装包和更新在所有平台工作正常
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **平台检测**: 部署平台检测和适配器工厂系统
+		2. **适配器实现**: 为每个目标平台实现具体适配器
+		3. **UI组件**: 创建平台感知的UI组件库
+		4. **性能优化**: 实施平台特定的性能优化配置
+		5. **系统集成**: 集成平台特定的系统功能
+		6. **测试验证**: 在所有目标平台上进行完整测试
+		
+		### 回滚步骤
+		1. **功能降级**: 如遇兼容性问题，可临时禁用特定平台功能
+		2. **适配器回退**: 回退到简化的适配器实现
+		3. **UI统一**: 临时使用统一的UI样式而非平台特定样式
+		4. **性能配置**: 恢复默认的性能配置
+		5. **问题隔离**: 隔离有问题的平台，确保其他平台正常工作
+		
+		### 迁移指南
+		- **代码重构**: 现有代码需要适配平台检测和适配器模式
+		- **资源整理**: 整理和准备平台特定的资源文件
+		- **UI适配**: 调整UI组件以支持平台感知
+		- **测试环境**: 建立多平台测试环境和CI/CD流程
+		- **用户沟通**: 告知用户新的跨平台支持和改进
+		
+		## References
+		
+		* **CH章节关联**: CH09, CH01, CH10
+		* **相关ADR**: ADR-0001-tech-stack, ADR-0008-deployment-release, ADR-0002-electron-security
+		* **外部文档**: 
+		  - [Electron Platform APIs](https://www.electronjs.org/docs/api/process)
+		  - [Windows Design Guidelines](https://docs.microsoft.com/en-us/windows/apps/design/)
+		  - [macOS Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/macos)
+		  - [GNOME Human Interface Guidelines](https://developer.gnome.org/hig/)
+		* **设计规范**: Windows Fluent Design, macOS Big Sur Design, Material Design for Linux
+		* **相关PRD-ID**: 适用于所有需要跨平台兼容的PRD模块]]></file>
+	<file path='ADR-0010-internationalization.md'><![CDATA[
+		---
+		ADR-ID: ADR-0010
+		title: 国际化策略 - i18next + 动态语言切换
+		status: Accepted
+		decision-time: "2025-08-17"
+		deciders: [架构团队, UX团队, 国际化团队]
+		archRefs: [CH01, CH06, CH10]
+		verification:
+		  - path: src/i18n/index.ts
+		    assert: i18next configured with fallbackLng, namespaces, and lazy loading
+		  - path: tests/e2e/i18n.spec.ts
+		    assert: Language switch updates <html lang|dir> and localized formatters + RTL CSS styles verification
+		  - path: scripts/i18n/keys-check.mjs
+		    assert: All locale files have identical keys and no missing translations
+		impact-scope:
+		  - src/i18n/
+		  - locales/
+		  - src/components/
+		tech-tags:
+		  - i18n
+		  - i18next
+		  - localization
+		  - internationalization
+		depends-on: []
+		depended-by: []
+		test-coverage: tests/unit/adr-0010.spec.ts
+		monitoring-metrics:
+		  - implementation_coverage
+		  - compliance_rate
+		executable-deliverables:
+		  - src/i18n/config.ts
+		  - locales/en/translation.json
+		  - tests/unit/i18n/translation.spec.ts
+		supersedes: []
+		---
+		
+		# ADR-0010: 国际化与本地化策略
+		
+		
+		## Context and Problem Statement
+		
+		Build Game需要支持多语言和多地区，提供本地化的用户体验。需要建立可扩展的国际化架构，支持动态语言切换、复数形式处理、日期时间格式化、文本方向性（RTL/LTR）和文化敏感内容适配。同时需要考虑Electron应用的特殊性，确保主进程和渲染进程的语言设置同步。
+		
+		## Decision Drivers
+		
+		* 需要支持至少6种语言（中文简体、中文繁体、英语、日语、韩语、德语）
+		* 需要动态语言切换，无需重启应用
+		* 需要支持复数形式和语法变化
+		* 需要本地化日期、时间、数字、货币格式
+		* 需要支持从右到左（RTL）语言如阿拉伯语
+		* 需要延迟加载语言包，减少初始化时间
+		* 需要与Electron主进程语言设置同步
+		* 需要支持插件和扩展的国际化
+		
+		## Considered Options
+		
+		* **react-i18next + 命名空间 + 懒加载** (选择方案)
+		* **Format.js (React Intl) + 分包加载**
+		* **自定义i18n引擎 + JSON语言包**
+		* **Electron locales API + React context**
+		* **第三方云端翻译服务集成**
+		
+		## Decision Outcome
+		
+		选择的方案：**react-i18next + 命名空间 + 懒加载**
+		
+		### 核心配置与初始化
+		
+		**i18next配置**：
+		```typescript
+		// src/shared/i18n/config.ts
+		import i18n from 'i18next';
+		import { initReactI18next } from 'react-i18next';
+		import LanguageDetector from 'i18next-browser-languagedetector';
+		import Backend from 'i18next-http-backend';
+		
+		export const SUPPORTED_LANGUAGES = {
+		  'zh-CN': { name: '中文（简体）', flag: '🇨🇳', rtl: false },
+		  'zh-TW': { name: '中文（繁體）', flag: '🇹🇼', rtl: false },
+		  'en': { name: 'English', flag: '🇺🇸', rtl: false },
+		  'ja': { name: '日本語', flag: '🇯🇵', rtl: false },
+		  'ko': { name: '한국어', flag: '🇰🇷', rtl: false },
+		  'de': { name: 'Deutsch', flag: '🇩🇪', rtl: false },
+		  'ar': { name: 'العربية', flag: '🇸🇦', rtl: true }
+		} as const;
+		
+		export const DEFAULT_NAMESPACE = 'common';
+		export const FALLBACK_LANGUAGE = 'en';
+		
+		const i18nConfig = {
+		  fallbackLng: FALLBACK_LANGUAGE,
+		  defaultNS: DEFAULT_NAMESPACE,
+		  
+		  // 命名空间配置
+		  ns: [
+		    'common',      // 通用词汇：按钮、标签、状态
+		    'game',        // 游戏内容：角色、装备、技能
+		    'ui',          // 界面组件：菜单、对话框、提示
+		    'settings',    // 设置页面：选项、配置、偏好
+		    'errors',      // 错误消息：验证、网络、系统
+		    'onboarding'   // 引导流程：教程、提示、帮助
+		  ],
+		  
+		  // 懒加载配置
+		  partialBundledLanguages: true,
+		  
+		  // 语言检测配置
+		  detection: {
+		    order: ['localStorage', 'navigator', 'htmlTag'],
+		    lookupLocalStorage: 'i18nextLng',
+		    caches: ['localStorage']
+		  },
+		  
+		  // 后端配置（懒加载）
+		  backend: {
+		    loadPath: '/locales/{{lng}}/{{ns}}.json',
+		    addPath: '/locales/add/{{lng}}/{{ns}}',
+		    allowMultiLoading: false
+		  },
+		  
+		  // React配置
+		  react: {
+		    useSuspense: true,
+		    bindI18n: 'languageChanged loaded',
+		    bindI18nStore: 'added removed',
+		    transEmptyNodeValue: '',
+		    transSupportBasicHtmlNodes: true,
+		    transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p']
+		  },
+		  
+		  // 插值配置
+		  interpolation: {
+		    escapeValue: false, // React已经防XSS
+		    formatSeparator: ',',
+		    format: function(value, format, lng) {
+		      if (format === 'uppercase') return value.toUpperCase();
+		      if (format === 'lowercase') return value.toLowerCase();
+		      if (value instanceof Date) return formatDateTime(value, format, lng);
+		      if (typeof value === 'number') return formatNumber(value, format, lng);
+		      return value;
+		    }
+		  },
+		  
+		  // 开发配置
+		  debug: process.env.NODE_ENV === 'development',
+		  
+		  // 资源加载超时
+		  load: 'languageOnly',
+		  preload: [FALLBACK_LANGUAGE],
+		  
+		  // 键值分隔符
+		  keySeparator: '.',
+		  nsSeparator: ':',
+		  
+		  // 复数规则
+		  pluralSeparator: '_',
+		  contextSeparator: '_'
+		};
+		
+		i18n
+		  .use(Backend)
+		  .use(LanguageDetector)
+		  .use(initReactI18next)
+		  .init(i18nConfig);
+		
+		export default i18n;
+		```
+		
+		**语言包结构**：
+		```json
+		// public/locales/zh-CN/common.json
+		{
+		  "buttons": {
+		    "confirm": "确认",
+		    "cancel": "取消", 
+		    "save": "保存",
+		    "delete": "删除",
+		    "edit": "编辑",
+		    "add": "添加"
+		  },
+		  "labels": {
+		    "name": "名称",
+		    "description": "描述",
+		    "type": "类型",
+		    "status": "状态",
+		    "created": "创建时间",
+		    "updated": "更新时间"
+		  },
+		  "status": {
+		    "loading": "加载中...",
+		    "success": "成功",
+		    "error": "错误",
+		    "warning": "警告",
+		    "pending": "等待中"
+		  },
+		  "validation": {
+		    "required": "此字段为必填项",
+		    "minLength": "最少需要{{min}}个字符",
+		    "maxLength": "最多允许{{max}}个字符",
+		    "email": "请输入有效的邮箱地址",
+		    "phone": "请输入有效的手机号码"
+		  }
+		}
+		
+		// public/locales/zh-CN/game.json
+		{
+		  "character": {
+		    "level": "等级",
+		    "experience": "经验值",
+		    "health": "生命值", 
+		    "mana": "魔法值",
+		    "strength": "力量",
+		    "agility": "敏捷",
+		    "intelligence": "智力"
+		  },
+		  "inventory": {
+		    "items_one": "{{count}}件物品",
+		    "items_other": "{{count}}件物品",
+		    "capacity": "容量：{{current}}/{{max}}",
+		    "empty": "背包为空",
+		    "full": "背包已满"
+		  },
+		  "skills": {
+		    "attack": "攻击",
+		    "defense": "防御", 
+		    "magic": "魔法",
+		    "healing": "治疗",
+		    "buff": "增益效果",
+		    "debuff": "减益效果"
+		  }
+		}
+		```
+		
+		### React组件集成
+		
+		**Hook封装**：
+		```typescript
+		// src/shared/i18n/hooks.ts
+		import { useTranslation } from 'react-i18next';
+		import { useCallback, useMemo } from 'react';
+		import { SUPPORTED_LANGUAGES } from './config';
+		
+		export interface UseI18nReturn {
+		  t: (key: string, options?: any) => string;
+		  currentLanguage: string;
+		  currentLanguageInfo: typeof SUPPORTED_LANGUAGES[keyof typeof SUPPORTED_LANGUAGES];
+		  supportedLanguages: typeof SUPPORTED_LANGUAGES;
+		  changeLanguage: (lng: string) => Promise<void>;
+		  isRTL: boolean;
+		  formatDateTime: (date: Date, format?: string) => string;
+		  formatNumber: (num: number, format?: string) => string;
+		  formatCurrency: (amount: number, currency?: string) => string;
+		}
+		
+		export function useI18n(namespace?: string | string[]): UseI18nReturn {
+		  const { t, i18n } = useTranslation(namespace);
+		  
+		  const currentLanguage = i18n.language;
+		  const currentLanguageInfo = useMemo(() => 
+		    SUPPORTED_LANGUAGES[currentLanguage as keyof typeof SUPPORTED_LANGUAGES] || 
+		    SUPPORTED_LANGUAGES.en
+		  , [currentLanguage]);
+		  
+		  const changeLanguage = useCallback(async (lng: string) => {
+		    await i18n.changeLanguage(lng);
+		    // 同步到Electron主进程
+		    if (window.electronAPI) {
+		      await window.electronAPI.setLanguage(lng);
+		    }
+		    // 更新HTML lang属性
+		    document.documentElement.lang = lng;
+		    document.documentElement.dir = SUPPORTED_LANGUAGES[lng as keyof typeof SUPPORTED_LANGUAGES]?.rtl ? 'rtl' : 'ltr';
+		  }, [i18n]);
+		  
+		  const formatDateTime = useCallback((date: Date, format = 'short'): string => {
+		    const locale = currentLanguage === 'zh-CN' ? 'zh-CN' : 
+		                   currentLanguage === 'zh-TW' ? 'zh-TW' : currentLanguage;
+		    
+		    const options: Intl.DateTimeFormatOptions = {
+		      short: { 
+		        year: 'numeric', 
+		        month: 'short', 
+		        day: 'numeric',
+		        hour: '2-digit',
+		        minute: '2-digit'
+		      },
+		      date: { 
+		        year: 'numeric', 
+		        month: 'long', 
+		        day: 'numeric' 
+		      },
+		      time: { 
+		        hour: '2-digit', 
+		        minute: '2-digit',
+		        second: '2-digit'
+		      },
+		      relative: { 
+		        numeric: 'auto' 
+		      }
+		    }[format] || {};
+		    
+		    if (format === 'relative') {
+		      const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+		      const diffTime = date.getTime() - new Date().getTime();
+		      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		      return rtf.format(diffDays, 'day');
+		    }
+		    
+		    return new Intl.DateTimeFormat(locale, options).format(date);
+		  }, [currentLanguage]);
+		  
+		  const formatNumber = useCallback((num: number, format = 'decimal'): string => {
+		    const locale = currentLanguage;
+		    const options: Intl.NumberFormatOptions = {
+		      decimal: { maximumFractionDigits: 2 },
+		      integer: { maximumFractionDigits: 0 },
+		      percent: { style: 'percent', maximumFractionDigits: 1 },
+		      compact: { notation: 'compact', maximumFractionDigits: 1 }
+		    }[format] || {};
+		    
+		    return new Intl.NumberFormat(locale, options).format(num);
+		  }, [currentLanguage]);
+		  
+		  const formatCurrency = useCallback((amount: number, currency = 'USD'): string => {
+		    const locale = currentLanguage;
+		    return new Intl.NumberFormat(locale, {
+		      style: 'currency',
+		      currency: currency,
+		      minimumFractionDigits: 2
+		    }).format(amount);
+		  }, [currentLanguage]);
+		  
+		  return {
+		    t,
+		    currentLanguage,
+		    currentLanguageInfo,
+		    supportedLanguages: SUPPORTED_LANGUAGES,
+		    changeLanguage,
+		    isRTL: currentLanguageInfo.rtl,
+		    formatDateTime,
+		    formatNumber,
+		    formatCurrency
+		  };
+		}
+		
+		// 命名空间特化Hook
+		export const useCommonI18n = () => useI18n('common');
+		export const useGameI18n = () => useI18n('game'); 
+		export const useUIi18n = () => useI18n('ui');
+		export const useSettingsI18n = () => useI18n('settings');
+		export const useErrorsI18n = () => useI18n('errors');
+		```
+		
+		**语言切换组件**：
+		```typescript
+		// src/components/common/LanguageSwitcher.tsx
+		import React, { Suspense } from 'react';
+		import { useI18n } from '../../shared/i18n/hooks';
+		
+		export interface LanguageSwitcherProps {
+		  variant?: 'dropdown' | 'buttons' | 'compact';
+		  showFlags?: boolean;
+		  className?: string;
+		}
+		
+		export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
+		  variant = 'dropdown',
+		  showFlags = true,
+		  className = ''
+		}) => {
+		  const { 
+		    currentLanguage, 
+		    supportedLanguages, 
+		    changeLanguage,
+		    t
+		  } = useI18n();
+		
+		  const handleLanguageChange = async (lng: string) => {
+		    try {
+		      await changeLanguage(lng);
+		      // 可选：显示切换成功提示
+		    } catch (error) {
+		      console.error('Language change failed:', error);
+		      // 可选：显示错误提示
+		    }
+		  };
+		
+		  if (variant === 'dropdown') {
+		    return (
+		      <div className={`language-switcher ${className}`}>
+		        <label htmlFor="language-select" className="sr-only">
+		          {t('settings.language')}
+		        </label>
+		        <select
+		          id="language-select"
+		          value={currentLanguage}
+		          onChange={(e) => handleLanguageChange(e.target.value)}
+		          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+		          data-testid="language-switcher"
+		        >
+		          {Object.entries(supportedLanguages).map(([code, info]) => (
+		            <option key={code} value={code}>
+		              {showFlags ? `${info.flag} ${info.name}` : info.name}
+		            </option>
+		          ))}
+		        </select>
+		      </div>
+		    );
+		  }
+		
+		  if (variant === 'buttons') {
+		    return (
+		      <div className={`language-buttons flex gap-2 ${className}`}>
+		        {Object.entries(supportedLanguages).map(([code, info]) => (
+		          <button
+		            key={code}
+		            onClick={() => handleLanguageChange(code)}
+		            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+		              currentLanguage === code
+		                ? 'bg-blue-600 text-white'
+		                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+		            }`}
+		            data-testid={`language-button-${code}`}
+		          >
+		            {showFlags ? `${info.flag} ${info.name}` : info.name}
+		          </button>
+		        ))}
+		      </div>
+		    );
+		  }
+		
+		  // Compact variant
+		  return (
+		    <div className={`language-compact ${className}`}>
+		      <button
+		        onClick={() => {
+		          const languages = Object.keys(supportedLanguages);
+		          const currentIndex = languages.indexOf(currentLanguage);
+		          const nextIndex = (currentIndex + 1) % languages.length;
+		          handleLanguageChange(languages[nextIndex]);
+		        }}
+		        className="flex items-center gap-2 px-2 py-1 text-sm hover:bg-gray-100 rounded"
+		        data-testid="language-toggle"
+		      >
+		        {showFlags && supportedLanguages[currentLanguage as keyof typeof supportedLanguages].flag}
+		        <span>{currentLanguage.toUpperCase()}</span>
+		      </button>
+		    </div>
+		  );
+		};
+		
+		// Suspense包装器，处理懒加载
+		export const LanguageSwitcherWithSuspense: React.FC<LanguageSwitcherProps> = (props) => {
+		  return (
+		    <Suspense fallback={<div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>}>
+		      <LanguageSwitcher {...props} />
+		    </Suspense>
+		  );
+		};
+		```
+		
+		### Electron集成
+		
+		**主进程语言同步**：
+		```typescript
+		// electron/i18n.ts
+		import { app, ipcMain } from 'electron';
+		import * as path from 'path';
+		import * as fs from 'fs';
+		
+		export class ElectronI18nManager {
+		  private currentLanguage: string;
+		  private supportedLanguages = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'de', 'ar'];
+		
+		  constructor() {
+		    this.currentLanguage = this.detectSystemLanguage();
+		    this.setupIpcHandlers();
+		  }
+		
+		  private detectSystemLanguage(): string {
+		    const systemLocale = app.getLocale();
+		    const normalizedLocale = this.normalizeLocale(systemLocale);
+		    
+		    return this.supportedLanguages.includes(normalizedLocale) 
+		      ? normalizedLocale 
+		      : 'en';
+		  }
+		
+		  private normalizeLocale(locale: string): string {
+		    // 处理系统语言代码到应用语言代码的映射
+		    const localeMap: Record<string, string> = {
+		      'zh': 'zh-CN',
+		      'zh-CN': 'zh-CN', 
+		      'zh-TW': 'zh-TW',
+		      'zh-HK': 'zh-TW',
+		      'en': 'en',
+		      'en-US': 'en',
+		      'en-GB': 'en',
+		      'ja': 'ja',
+		      'ko': 'ko',
+		      'de': 'de',
+		      'ar': 'ar'
+		    };
+		
+		    return localeMap[locale] || 'en';
+		  }
+		
+		  private setupIpcHandlers(): void {
+		    ipcMain.handle('i18n:get-language', () => {
+		      return this.currentLanguage;
+		    });
+		
+		    ipcMain.handle('i18n:set-language', (event, language: string) => {
+		      if (this.supportedLanguages.includes(language)) {
+		        this.currentLanguage = language;
+		        
+		        // 更新应用菜单语言
+		        this.updateAppMenu();
+		        
+		        // 保存到用户设置
+		        this.saveLanguagePreference(language);
+		        
+		        // 广播语言变更事件
+		        event.sender.webContents.getAllFrames().forEach(frame => {
+		          frame.send('i18n:language-changed', language);
+		        });
+		        
+		        return { success: true, language };
+		      }
+		      
+		      return { success: false, error: 'Unsupported language' };
+		    });
+		
+		    ipcMain.handle('i18n:get-system-locale', () => {
+		      return {
+		        system: app.getLocale(),
+		        detected: this.detectSystemLanguage(),
+		        country: app.getLocaleCountryCode()
+		      };
+		    });
+		  }
+		
+		  private updateAppMenu(): void {
+		    // 根据当前语言更新应用菜单
+		    // 这里需要重新构建菜单模板
+		    const menuTemplate = this.buildLocalizedMenuTemplate();
+		    // 应用新菜单...
+		  }
+		
+		  private buildLocalizedMenuTemplate(): Electron.MenuItemConstructorOptions[] {
+		    const translations = this.loadMainProcessTranslations();
+		    
+		    return [
+		      {
+		        label: translations.file || 'File',
+		        submenu: [
+		          {
+		            label: translations.new || 'New',
+		            accelerator: 'CmdOrCtrl+N'
+		          },
+		          {
+		            label: translations.open || 'Open',
+		            accelerator: 'CmdOrCtrl+O'
+		          },
+		          { type: 'separator' },
+		          {
+		            label: translations.quit || 'Quit',
+		            accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+		            role: 'quit'
+		          }
+		        ]
+		      },
+		      {
+		        label: translations.edit || 'Edit',
+		        submenu: [
+		          { label: translations.undo || 'Undo', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
+		          { label: translations.redo || 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
+		          { type: 'separator' },
+		          { label: translations.cut || 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
+		          { label: translations.copy || 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
+		          { label: translations.paste || 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' }
+		        ]
+		      }
+		    ];
+		  }
+		
+		  private loadMainProcessTranslations(): Record<string, string> {
+		    try {
+		      const translationPath = path.join(__dirname, '../locales', this.currentLanguage, 'electron.json');
+		      const translations = JSON.parse(fs.readFileSync(translationPath, 'utf8'));
+		      return translations.menu || {};
+		    } catch (error) {
+		      console.warn(`Failed to load main process translations for ${this.currentLanguage}:`, error);
+		      return {};
+		    }
+		  }
+		
+		  private saveLanguagePreference(language: string): void {
+		    // 保存语言偏好到用户配置文件
+		    const userDataPath = app.getPath('userData');
+		    const configPath = path.join(userDataPath, 'i18n-config.json');
+		    
+		    try {
+		      const config = {
+		        language,
+		        lastUpdated: new Date().toISOString()
+		      };
+		      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+		    } catch (error) {
+		      console.error('Failed to save language preference:', error);
+		    }
+		  }
+		
+		  public getCurrentLanguage(): string {
+		    return this.currentLanguage;
+		  }
+		}
+		```
+		
+		**预加载脚本API**：
+		```typescript
+		// electron/preload.ts (添加i18n相关API)
+		import { contextBridge, ipcRenderer } from 'electron';
+		
+		contextBridge.exposeInMainWorld('electronAPI', {
+		  // ... 其他API ...
+		  
+		  // 国际化API
+		  i18n: {
+		    getLanguage: () => ipcRenderer.invoke('i18n:get-language'),
+		    setLanguage: (language: string) => ipcRenderer.invoke('i18n:set-language', language),
+		    getSystemLocale: () => ipcRenderer.invoke('i18n:get-system-locale'),
+		    onLanguageChanged: (callback: (language: string) => void) => {
+		      ipcRenderer.on('i18n:language-changed', (event, language) => callback(language));
+		    },
+		    removeLanguageChangedListener: () => {
+		      ipcRenderer.removeAllListeners('i18n:language-changed');
+		    }
+		  }
+		});
+		```
+		
+		### 复数形式处理
+		
+		**复数规则配置**：
+		```typescript
+		// src/shared/i18n/plural-rules.ts
+		export const PLURAL_RULES = {
+		  'zh-CN': {
+		    cardinal: ['other'],
+		    ordinal: ['other']
+		  },
+		  'zh-TW': {
+		    cardinal: ['other'], 
+		    ordinal: ['other']
+		  },
+		  'en': {
+		    cardinal: ['one', 'other'],
+		    ordinal: ['one', 'two', 'few', 'other']
+		  },
+		  'ja': {
+		    cardinal: ['other'],
+		    ordinal: ['other']
+		  },
+		  'ko': {
+		    cardinal: ['other'],
+		    ordinal: ['other']
+		  },
+		  'de': {
+		    cardinal: ['one', 'other'],
+		    ordinal: ['other']
+		  },
+		  'ar': {
+		    cardinal: ['zero', 'one', 'two', 'few', 'many', 'other'],
+		    ordinal: ['other']
+		  }
+		};
+		
+		// 复数形式使用示例
+		export const usePluralExamples = () => {
+		  const { t } = useI18n();
+		  
+		  return {
+		    // 英语：1 item / 5 items
+		    // 中文：1 个物品 / 5 个物品 
+		    items: (count: number) => t('game:inventory.items', { count }),
+		    
+		    // 英语：1st level / 2nd level / 3rd level / 4th level
+		    // 中文：第 1 级 / 第 2 级
+		    level: (num: number) => t('game:character.level_ordinal', { ordinal: num }),
+		    
+		    // 阿拉伯语复杂复数形式
+		    // 0 items / 1 item / 2 items / 3-10 items / 11+ items
+		    arabicItems: (count: number) => t('game:inventory.items_ar', { count })
+		  };
+		};
+		```
+		
+		**语言包复数示例**：
+		```json
+		// public/locales/en/game.json
+		{
+		  "inventory": {
+		    "items_one": "{{count}} item",
+		    "items_other": "{{count}} items"
+		  },
+		  "character": {
+		    "level_ordinal_1": "{{ordinal}}st level",
+		    "level_ordinal_2": "{{ordinal}}nd level", 
+		    "level_ordinal_3": "{{ordinal}}rd level",
+		    "level_ordinal_other": "{{ordinal}}th level"
+		  }
+		}
+		
+		// public/locales/zh-CN/game.json  
+		{
+		  "inventory": {
+		    "items_other": "{{count}} 个物品"
+		  },
+		  "character": {
+		    "level_ordinal_other": "第 {{ordinal}} 级"
+		  }
+		}
+		
+		// public/locales/ar/game.json
+		{
+		  "inventory": {
+		    "items_zero": "لا توجد عناصر",
+		    "items_one": "عنصر واحد", 
+		    "items_two": "عنصران",
+		    "items_few": "{{count}} عناصر",
+		    "items_many": "{{count}} عنصراً",
+		    "items_other": "{{count}} عنصر"
+		  }
+		}
+		```
+		
+		### 测试策略
+		
+		**国际化测试套件**：
+		```typescript
+		// tests/unit/i18n/i18n.spec.ts
+		import { describe, it, expect, vi, beforeEach } from 'vitest';
+		import i18n from '../../../src/shared/i18n/config';
+		import { useI18n } from '../../../src/shared/i18n/hooks';
+		import { renderHook, act } from '@testing-library/react';
+		
+		describe('Internationalization', () => {
+		  beforeEach(() => {
+		    vi.clearAllMocks();
+		  });
+		
+		  describe('Language Detection', () => {
+		    it('should detect browser language correctly', async () => {
+		      Object.defineProperty(window.navigator, 'language', {
+		        value: 'zh-CN',
+		        writable: true
+		      });
+		      
+		      await i18n.init();
+		      expect(i18n.language).toBe('zh-CN');
+		    });
+		
+		    it('should fallback to English for unsupported languages', async () => {
+		      Object.defineProperty(window.navigator, 'language', {
+		        value: 'fr-FR',
+		        writable: true
+		      });
+		      
+		      await i18n.init();
+		      expect(i18n.language).toBe('en');
+		    });
+		  });
+		
+		  describe('Language Switching', () => {
+		    it('should switch language and update HTML attributes', async () => {
+		      const { result } = renderHook(() => useI18n());
+		      
+		      await act(async () => {
+		        await result.current.changeLanguage('zh-CN');
+		      });
+		      
+		      expect(result.current.currentLanguage).toBe('zh-CN');
+		      expect(document.documentElement.lang).toBe('zh-CN');
+		      expect(document.documentElement.dir).toBe('ltr');
+		    });
+		
+		    it('should handle RTL languages correctly', async () => {
+		      const { result } = renderHook(() => useI18n());
+		      
+		      await act(async () => {
+		        await result.current.changeLanguage('ar');
+		      });
+		      
+		      expect(result.current.isRTL).toBe(true);
+		      expect(document.documentElement.dir).toBe('rtl');
+		    });
+		  });
+		
+		  describe('Pluralization', () => {
+		    it('should handle English plurals correctly', async () => {
+		      await i18n.changeLanguage('en');
+		      
+		      expect(i18n.t('game:inventory.items', { count: 1 })).toBe('1 item');
+		      expect(i18n.t('game:inventory.items', { count: 5 })).toBe('5 items');
+		    });
+		
+		    it('should handle Chinese plurals correctly', async () => {
+		      await i18n.changeLanguage('zh-CN');
+		      
+		      expect(i18n.t('game:inventory.items', { count: 1 })).toBe('1 个物品');
+		      expect(i18n.t('game:inventory.items', { count: 5 })).toBe('5 个物品');
+		    });
+		
+		    it('should handle Arabic complex plurals', async () => {
+		      await i18n.changeLanguage('ar');
+		      
+		      expect(i18n.t('game:inventory.items', { count: 0 })).toBe('لا توجد عناصر');
+		      expect(i18n.t('game:inventory.items', { count: 1 })).toBe('عنصر واحد');
+		      expect(i18n.t('game:inventory.items', { count: 2 })).toBe('عنصران');
+		      expect(i18n.t('game:inventory.items', { count: 5 })).toBe('5 عناصر');
+		    });
+		  });
+		
+		  describe('Date and Number Formatting', () => {
+		    it('should format dates according to locale', () => {
+		      const { result } = renderHook(() => useI18n());
+		      const testDate = new Date('2025-01-15T10:30:00Z');
+		      
+		      act(() => {
+		        result.current.changeLanguage('zh-CN');
+		      });
+		      
+		      const formatted = result.current.formatDateTime(testDate, 'date');
+		      expect(formatted).toContain('2025');
+		      expect(formatted).toContain('1');
+		      expect(formatted).toContain('15');
+		    });
+		
+		    it('should format numbers according to locale', () => {
+		      const { result } = renderHook(() => useI18n());
+		      
+		      act(() => {
+		        result.current.changeLanguage('de');
+		      });
+		      
+		      const formatted = result.current.formatNumber(1234.56, 'decimal');
+		      expect(formatted).toBe('1.234,56'); // German formatting
+		    });
+		
+		    it('should format currency according to locale', () => {
+		      const { result } = renderHook(() => useI18n());
+		      
+		      act(() => {
+		        result.current.changeLanguage('en');
+		      });
+		      
+		      const formatted = result.current.formatCurrency(1234.56, 'USD');
+		      expect(formatted).toBe('$1,234.56');
+		    });
+		  });
+		
+		  describe('Namespace Loading', () => {
+		    it('should load namespace lazily', async () => {
+		      const loadSpy = vi.spyOn(i18n.services.backendConnector, 'load');
+		      
+		      await i18n.loadNamespaces('settings');
+		      
+		      expect(loadSpy).toHaveBeenCalledWith(['en'], ['settings'], expect.any(Function));
+		    });
+		
+		    it('should cache loaded namespaces', async () => {
+		      await i18n.loadNamespaces('common');
+		      const loadSpy = vi.spyOn(i18n.services.backendConnector, 'load');
+		      
+		      await i18n.loadNamespaces('common'); // Second load
+		      
+		      expect(loadSpy).not.toHaveBeenCalled(); // Should be cached
+		    });
+		  });
+		});
+		```
+		
+		**E2E国际化测试**：
+		```typescript
+		// tests/e2e/i18n.electron.spec.ts
+		import { test, expect, _electron as electron } from '@playwright/test';
+		
+		test.describe('Internationalization E2E', () => {
+		  let app: any;
+		  let window: any;
+		
+		  test.beforeAll(async () => {
+		    app = await electron.launch({
+		      args: ['./electron/main.js'],
+		      timeout: 10000
+		    });
+		    
+		    window = await app.firstWindow();
+		    await window.waitForLoadState('domcontentloaded');
+		  });
+		
+		  test.afterAll(async () => {
+		    await app.close();
+		  });
+		
+		  test('should display interface in system language', async () => {
+		    // 验证界面使用系统语言
+		    const title = await window.locator('[data-testid="app-title"]').textContent();
+		    expect(title).toBeTruthy();
+		  });
+		
+		  test('should switch language through settings', async () => {
+		    // 打开设置页面
+		    await window.locator('[data-testid="settings-button"]').click();
+		    await expect(window.locator('[data-testid="settings-panel"]')).toBeVisible();
+		
+		    // 切换到中文
+		    await window.locator('[data-testid="language-switcher"]').selectOption('zh-CN');
+		    
+		    // 等待语言切换完成
+		    await window.waitForTimeout(1000);
+		    
+		    // 验证界面已切换到中文
+		    const settingsTitle = await window.locator('[data-testid="settings-title"]').textContent();
+		    expect(settingsTitle).toContain('设置');
+		    
+		    // 验证HTML lang属性已更新
+		    const htmlLang = await window.evaluate(() => document.documentElement.lang);
+		    expect(htmlLang).toBe('zh-CN');
+		  });
+		
+		  test('should handle RTL languages correctly', async () => {
+		    // 切换到阿拉伯语
+		    await window.locator('[data-testid="language-switcher"]').selectOption('ar');
+		    await window.waitForTimeout(1000);
+		    
+		    // 验证文档方向已变更为RTL
+		    const htmlDir = await window.evaluate(() => document.documentElement.dir);
+		    expect(htmlDir).toBe('rtl');
+		    
+		    // 🆕 验证CSS样式是否正确响应RTL布局
+		    const bodyElement = window.locator('body');
+		    await expect(bodyElement).toHaveCSS('direction', 'rtl');
+		    
+		    // 验证关键UI元素的RTL CSS布局
+		    const mainContent = window.locator('[data-testid="main-content"]');
+		    await expect(mainContent).toHaveCSS('text-align', 'right');
+		    
+		    // 验证导航菜单RTL布局
+		    const navMenu = window.locator('[data-testid="nav-menu"]');
+		    await expect(navMenu).toHaveCSS('direction', 'rtl');
+		    
+		    // 验证阿拉伯语文本显示
+		    const title = await window.locator('[data-testid="app-title"]').textContent();
+		    expect(title).toContain('العاب'); // Arabic text
+		    
+		    // 🆕 验证Flexbox布局在RTL下的正确性
+		    const flexContainer = window.locator('[data-testid="flex-container"]');
+		    if (await flexContainer.count() > 0) {
+		      await expect(flexContainer).toHaveCSS('flex-direction', /row-reverse|column/);
+		    }
+		  });
+		
+		  test('should format dates according to selected locale', async () => {
+		    // 切换到德语
+		    await window.locator('[data-testid="language-switcher"]').selectOption('de');
+		    await window.waitForTimeout(1000);
+		    
+		    // 查看日期格式
+		    const dateElement = await window.locator('[data-testid="current-date"]');
+		    const dateText = await dateElement.textContent();
+		    
+		    // 德语日期格式应该是 DD.MM.YYYY
+		    expect(dateText).toMatch(/\d{1,2}\.\d{1,2}\.\d{4}/);
+		  });
+		
+		  test('should persist language choice across app restarts', async () => {
+		    // 设置语言为日语
+		    await window.locator('[data-testid="language-switcher"]').selectOption('ja');
+		    await window.waitForTimeout(1000);
+		    
+		    // 重启应用
+		    await app.close();
+		    app = await electron.launch({
+		      args: ['./electron/main.js'],
+		      timeout: 10000
+		    });
+		    window = await app.firstWindow();
+		    await window.waitForLoadState('domcontentloaded');
+		    
+		    // 验证语言设置被保持
+		    const htmlLang = await window.evaluate(() => document.documentElement.lang);
+		    expect(htmlLang).toBe('ja');
+		  });
+		});
+		```
+		
+		### CI/CD集成
+		
+		**国际化验证脚本**：
+		```javascript
+		// scripts/verify_i18n.mjs
+		import fs from 'fs';
+		import path from 'path';
+		import { fileURLToPath } from 'url';
+		
+		const __filename = fileURLToPath(import.meta.url);
+		const __dirname = path.dirname(__filename);
+		
+		const LOCALES_DIR = path.join(__dirname, '../public/locales');
+		const SUPPORTED_LANGUAGES = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'de', 'ar'];
+		const REQUIRED_NAMESPACES = ['common', 'game', 'ui', 'settings', 'errors', 'onboarding'];
+		
+		class I18nValidator {
+		  constructor() {
+		    this.errors = [];
+		    this.warnings = [];
+		  }
+		
+		  async validate() {
+		    console.log('🌐 Validating internationalization...');
+		    
+		    await this.validateDirectoryStructure();
+		    await this.validateLanguageFiles();
+		    await this.validateKeyConsistency();
+		    await this.validatePlurals();
+		    
+		    this.reportResults();
+		    
+		    if (this.errors.length > 0) {
+		      process.exit(1);
+		    }
+		  }
+		
+		  async validateDirectoryStructure() {
+		    for (const lang of SUPPORTED_LANGUAGES) {
+		      const langDir = path.join(LOCALES_DIR, lang);
+		      if (!fs.existsSync(langDir)) {
+		        this.errors.push(`Missing language directory: ${lang}`);
+		        continue;
+		      }
+		
+		      for (const namespace of REQUIRED_NAMESPACES) {
+		        const filePath = path.join(langDir, `${namespace}.json`);
+		        if (!fs.existsSync(filePath)) {
+		          this.errors.push(`Missing namespace file: ${lang}/${namespace}.json`);
+		        }
+		      }
+		    }
+		  }
+		
+		  async validateLanguageFiles() {
+		    for (const lang of SUPPORTED_LANGUAGES) {
+		      for (const namespace of REQUIRED_NAMESPACES) {
+		        const filePath = path.join(LOCALES_DIR, lang, `${namespace}.json`);
+		        if (!fs.existsSync(filePath)) continue;
+		
+		        try {
+		          const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+		          await this.validateJsonStructure(content, `${lang}/${namespace}.json`);
+		        } catch (error) {
+		          this.errors.push(`Invalid JSON in ${lang}/${namespace}.json: ${error.message}`);
+		        }
+		      }
+		    }
+		  }
+		
+		  async validateJsonStructure(obj, filePath, keyPath = '') {
+		    for (const [key, value] of Object.entries(obj)) {
+		      const fullKey = keyPath ? `${keyPath}.${key}` : key;
+		      
+		      if (typeof value === 'object' && value !== null) {
+		        await this.validateJsonStructure(value, filePath, fullKey);
+		      } else if (typeof value === 'string') {
+		        // 验证插值变量
+		        const interpolations = value.match(/\{\{[\w.]+\}\}/g) || [];
+		        for (const interpolation of interpolations) {
+		          const varName = interpolation.slice(2, -2);
+		          if (!varName.match(/^[\w.]+$/)) {
+		            this.warnings.push(`Invalid interpolation variable "${varName}" in ${filePath}:${fullKey}`);
+		          }
+		        }
+		        
+		        // 验证HTML标签
+		        const htmlTags = value.match(/<[^>]+>/g) || [];
+		        for (const tag of htmlTags) {
+		          if (!tag.match(/^<(br|strong|i|p|\/?(br|strong|i|p))>$/)) {
+		            this.warnings.push(`Potentially unsafe HTML tag "${tag}" in ${filePath}:${fullKey}`);
+		          }
+		        }
+		      }
+		    }
+		  }
+		
+		  async validateKeyConsistency() {
+		    const referenceKeys = new Map();
+		    
+		    // 使用英语作为参考
+		    for (const namespace of REQUIRED_NAMESPACES) {
+		      const filePath = path.join(LOCALES_DIR, 'en', `${namespace}.json`);
+		      if (fs.existsSync(filePath)) {
+		        const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+		        const keys = this.extractKeys(content);
+		        referenceKeys.set(namespace, keys);
+		      }
+		    }
+		
+		    // 检查其他语言的键一致性
+		    for (const lang of SUPPORTED_LANGUAGES) {
+		      if (lang === 'en') continue;
+		      
+		      for (const namespace of REQUIRED_NAMESPACES) {
+		        const filePath = path.join(LOCALES_DIR, lang, `${namespace}.json`);
+		        if (!fs.existsSync(filePath)) continue;
+		
+		        const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+		        const keys = this.extractKeys(content);
+		        const referenceKeySet = referenceKeys.get(namespace) || new Set();
+		
+		        // 检查缺失的键
+		        for (const refKey of referenceKeySet) {
+		          if (!keys.has(refKey)) {
+		            this.errors.push(`Missing key "${refKey}" in ${lang}/${namespace}.json`);
+		          }
+		        }
+		
+		        // 检查多余的键
+		        for (const key of keys) {
+		          if (!referenceKeySet.has(key)) {
+		            this.warnings.push(`Extra key "${key}" in ${lang}/${namespace}.json`);
+		          }
+		        }
+		      }
+		    }
+		  }
+		
+		  extractKeys(obj, prefix = '') {
+		    const keys = new Set();
+		    
+		    for (const [key, value] of Object.entries(obj)) {
+		      const fullKey = prefix ? `${prefix}.${key}` : key;
+		      
+		      if (typeof value === 'object' && value !== null) {
+		        const nestedKeys = this.extractKeys(value, fullKey);
+		        nestedKeys.forEach(k => keys.add(k));
+		      } else {
+		        keys.add(fullKey);
+		      }
+		    }
+		    
+		    return keys;
+		  }
+		
+		  async validatePlurals() {
+		    const pluralSuffixes = ['zero', 'one', 'two', 'few', 'many', 'other'];
+		    
+		    for (const lang of SUPPORTED_LANGUAGES) {
+		      for (const namespace of REQUIRED_NAMESPACES) {
+		        const filePath = path.join(LOCALES_DIR, lang, `${namespace}.json`);
+		        if (!fs.existsSync(filePath)) continue;
+		
+		        const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+		        await this.validatePluralKeys(content, `${lang}/${namespace}.json`);
+		      }
+		    }
+		  }
+		
+		  async validatePluralKeys(obj, filePath, keyPath = '') {
+		    for (const [key, value] of Object.entries(obj)) {
+		      const fullKey = keyPath ? `${keyPath}.${key}` : key;
+		      
+		      if (typeof value === 'object' && value !== null) {
+		        await this.validatePluralKeys(value, filePath, fullKey);
+		      } else if (key.includes('_')) {
+		        const [baseKey, suffix] = key.split('_');
+		        const pluralSuffixes = ['zero', 'one', 'two', 'few', 'many', 'other'];
+		        
+		        if (pluralSuffixes.includes(suffix)) {
+		          // 验证复数形式键
+		          if (typeof value !== 'string') {
+		            this.errors.push(`Plural key "${fullKey}" should have string value in ${filePath}`);
+		          }
+		        }
+		      }
+		    }
+		  }
+		
+		  reportResults() {
+		    console.log('\n📊 I18n Validation Results:');
+		    
+		    if (this.errors.length === 0 && this.warnings.length === 0) {
+		      console.log('✅ All internationalization files are valid!');
+		      return;
+		    }
+		
+		    if (this.errors.length > 0) {
+		      console.log(`\n❌ ${this.errors.length} Error(s):`);
+		      this.errors.forEach(error => console.log(`   • ${error}`));
+		    }
+		
+		    if (this.warnings.length > 0) {
+		      console.log(`\n⚠️  ${this.warnings.length} Warning(s):`);
+		      this.warnings.forEach(warning => console.log(`   • ${warning}`));
+		    }
+		  }
+		}
+		
+		const validator = new I18nValidator();
+		validator.validate().catch(console.error);
+		```
+		
+		**Package.json脚本**：
+		```json
+		{
+		  "scripts": {
+		    "i18n:validate": "node scripts/verify_i18n.mjs",
+		    "i18n:extract": "i18next-scanner --config i18next-scanner.config.js",
+		    "i18n:sync": "node scripts/sync_translations.mjs",
+		    "test:i18n": "vitest run tests/unit/i18n/",
+		    "test:i18n:e2e": "playwright test tests/e2e/i18n.electron.spec.ts",
+		    "guard:i18n": "npm run i18n:validate && npm run test:i18n && npm run test:i18n:e2e"
+		  }
+		}
+		```
+		
+		### Positive Consequences
+		
+		* 支持多语言动态切换，提升全球用户体验
+		* 命名空间和懒加载减少应用启动时间和内存占用
+		* 与Electron深度集成，主进程和渲染进程语言同步
+		* 支持复杂复数形式和文化敏感格式化
+		* 完整的测试覆盖确保国际化功能稳定性
+		* 自动化验证脚本确保翻译质量和一致性
+		* RTL语言支持覆盖更多国际市场
+		
+		### Negative Consequences
+		
+		* 增加构建包大小（多语言文件）
+		* 复杂语言切换逻辑增加维护成本
+		* 翻译内容管理需要额外流程和工具
+		* 某些第三方库可能不支持国际化
+		* RTL语言需要额外的CSS和布局调整
+		* 复数形式处理增加开发复杂度
+		
+		## Verification
+		
+		* **核心验证**: tests/unit/i18n/i18n.spec.ts, tests/e2e/i18n.electron.spec.ts
+		* **验证脚本**: scripts/verify_i18n.mjs
+		* **监控指标**: i18n.language_switch_success_rate, i18n.translation_load_time, i18n.missing_keys_count
+		* **质量门禁**: 100%翻译键覆盖率，语言切换E2E测试100%通过率
+		
+		### 国际化验证矩阵
+		
+		| 验证类型        | 工具            | 要求标准                | 失败后果          |
+		|----------------|----------------|------------------------|-------------------|
+		| **翻译完整性**   | 自定义脚本      | 100%键覆盖率           | CI自动阻断        |
+		| **语言切换**     | E2E测试        | 100%测试通过           | PR自动阻断        |
+		| **格式化**      | 单元测试        | 日期/数字/货币格式正确   | CI自动阻断        |
+		| **复数形式**     | 单元测试        | 复数规则正确应用        | CI自动阻断        |
+		| **RTL支持**     | E2E测试        | HTML dir属性正确 + CSS样式验证 | PR自动阻断        |
+		| **性能**        | 性能测试        | 语言包加载<500ms       | 监控告警          |
+		
+		## Operational Playbook
+		
+		### 升级步骤
+		1. **依赖安装**: 安装react-i18next、i18next相关包和类型定义
+		2. **配置部署**: 创建i18n配置文件和hook封装
+		3. **语言包创建**: 建立语言包目录结构和初始翻译文件
+		4. **组件集成**: 在React组件中集成useI18n hook
+		5. **Electron集成**: 配置主进程语言同步和菜单本地化
+		6. **测试部署**: 建立单元测试和E2E测试套件
+		
+		### 回滚步骤
+		1. **应急降级**: 快速切换回硬编码英语文本（通过环境变量）
+		2. **语言包恢复**: 从备份恢复损坏的语言包文件
+		3. **配置回滚**: 恢复到单语言配置并禁用语言切换功能
+		4. **测试验证**: 确保回滚后应用功能正常
+		5. **问题分析**: 分析国际化问题原因并制定修复计划
+		
+		### 维护指南
+		- **翻译更新**: 建立翻译审核流程，确保文案质量和一致性
+		- **性能监控**: 监控语言包加载时间和语言切换响应时间
+		- **键值管理**: 定期清理无用翻译键，避免冗余
+		- **质量保证**: 每次发布前运行完整的i18n验证套件
+		- **用户反馈**: 建立多语言用户反馈收集和处理机制
+		
+		## References
+		
+		* **CH章节关联**: CH01, CH04, CH10
+		* **相关ADR**: ADR-0001-tech-stack, ADR-0005-quality-gates
+		* **外部文档**: 
+		  - [react-i18next Documentation](https://react.i18next.com/)
+		  - [i18next Configuration](https://www.i18next.com/overview/configuration-options)
+		  - [Unicode Locale Data Markup Language](https://unicode.org/reports/tr35/)
+		  - [Electron Localization](https://www.electronjs.org/docs/latest/tutorial/localization)
+		* **国际化标准**: BCP 47 Language Tags, Unicode CLDR, ISO 639 Language Codes
+		* **相关PRD-ID**: 适用于所有需要多语言支持的PRD功能模块]]></file>
+</files>

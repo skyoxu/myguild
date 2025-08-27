@@ -1,0 +1,69 @@
+{
+  "guild-dev": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "项目环境初始化",
+        "description": "设置Electron + Vite + Phaser 3 + React开发环境",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [],
+        "details": "安装必要依赖，配置开发环境，确保所有技术栈正常工作",
+        "testStrategy": "验证开发服务器启动，确认热更新工作",
+        "createdAt": "2025-08-26T13:30:00.000Z",
+        "updatedAt": "2025-08-26T13:30:00.000Z",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "基础游戏引擎搭建",
+        "description": "实现Phaser 3场景管理和基础游戏循环",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "details": "创建游戏场景，设置渲染循环，建立基础架构",
+        "testStrategy": "验证游戏场景渲染，确认帧率稳定",
+        "createdAt": "2025-08-26T13:30:00.000Z",
+        "updatedAt": "2025-08-26T13:30:00.000Z",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "React UI框架集成",
+        "description": "创建React组件并与Phaser集成",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "1"
+        ],
+        "details": "建立React组件结构，实现Phaser-React通信",
+        "testStrategy": "验证UI组件渲染，确认数据流通信",
+        "createdAt": "2025-08-26T13:30:00.000Z",
+        "updatedAt": "2025-08-26T13:30:00.000Z",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "数据存储设计",
+        "description": "实现游戏数据持久化存储",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "1"
+        ],
+        "details": "设计数据模型，实现本地存储方案",
+        "testStrategy": "验证数据保存和加载功能",
+        "createdAt": "2025-08-26T13:30:00.000Z",
+        "updatedAt": "2025-08-26T13:30:00.000Z",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-26T13:29:27.371Z",
+      "updated": "2025-08-26T13:57:34.237Z",
+      "description": "Guild management game development"
+    }
+  }
+}

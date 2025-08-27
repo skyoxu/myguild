@@ -1,0 +1,131 @@
+{
+  "claude_code_max_output_tokens": 32000,
+  "claude_code_max_input_tokens": 200000,
+  "claude_code_model": "claude-opus-4-1-20250805",
+  "claude_code_temperature": 0.1,
+  "claude_code_max_iterations": 18,
+  "claude_code_timeout": 300,
+  "claude_code_retry_count": 3,
+  "claude_code_enable_streaming": true,
+  "claude_code_enable_debug": false,
+  "claude_code_auto_save": true,
+  "claude_code_backup_enabled": true,
+  "claude_code_backup_interval": 300,
+  "truncate_context": false,
+  
+  "chunking": {
+    "enabled": true,
+    "max_chars_per_chunk": 12000,
+    "overlap_chars": 400,
+    "summarize_long_chunks": true
+  },
+  
+  "claude_code_workspace": {
+    "root": "C:\\buildgame\\vitegame",
+    "ignore_patterns": [
+      "node_modules/**",
+      "dist/**",
+      "dist-electron/**", 
+      "release/**",
+      ".git/**",
+      "*.log",
+      "*.tmp",
+      ".env.local",
+      ".env.*.local"
+    ],
+    "include_patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx", 
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "src/**/*.vue",
+      "docs/**/*.md",
+      "*.json",
+      "*.yaml",
+      "*.yml",
+      "*.toml"
+    ]
+  },
+  
+  "claude_code_features": {
+    "auto_formatting": true,
+    "syntax_highlighting": true,
+    "error_detection": true,
+    "type_checking": true,
+    "lint_integration": true,
+    "git_integration": true,
+    "multi_file_editing": true,
+    "project_analysis": true
+  },
+  
+  "claude_code_logging": {
+    "level": "INFO",
+    "file": "logs/claude-code.log",
+    "max_file_size": "10MB",
+    "backup_count": 5,
+    "include_timestamps": true,
+    "include_context": true
+  },
+  
+  "claude_code_performance": {
+    "cache_enabled": true,
+    "cache_size": "200MB",
+    "cache_ttl": 3600,
+    "parallel_processing": true,
+    "max_concurrent_requests": 5,
+    "request_batching": true,
+    "memory_limit": "2GB"
+  },
+  
+  "claude_code_security": {
+    "scan_for_secrets": true,
+    "prevent_data_leaks": true,
+    "sanitize_logs": true,
+    "secure_temp_files": true,
+    "encryption_at_rest": false
+  },
+  
+  "claude_code_project_settings": {
+    "language": "typescript",
+    "framework": "react",
+    "build_tool": "vite", 
+    "package_manager": "npm",
+    "test_framework": "vitest",
+    "linter": "eslint",
+    "formatter": "prettier",
+    "type_checker": "typescript"
+  },
+  
+  "claude_code_ai_preferences": {
+    "code_style": "modern",
+    "documentation_level": "comprehensive",
+    "error_handling": "robust", 
+    "testing_approach": "tdd",
+    "performance_priority": "high",
+    "security_priority": "high",
+    "maintainability_priority": "high",
+    "prefer_typescript": true,
+    "prefer_functional": false,
+    "prefer_composition": true
+  },
+  
+  "claude_code_integrations": {
+    "git": {
+      "enabled": true,
+      "auto_stage": false,
+      "auto_commit": false,
+      "commit_message_template": "feat: ${description}\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
+    },
+    "npm": {
+      "enabled": true,
+      "auto_install": false,
+      "prefer_exact_versions": false
+    },
+    "electron": {
+      "enabled": true,
+      "main_process_path": "src/main",
+      "renderer_process_path": "src/renderer",
+      "preload_path": "src/preload"
+    }
+  }
+}

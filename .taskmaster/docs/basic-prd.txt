@@ -1,0 +1,23 @@
+# Guild Management Game - Basic PRD
+
+## Project Overview
+Create a guild management simulation game using Electron + Phaser 3 + React.
+
+## Core Features
+1. **Project Setup**: Initialize Electron + Vite + Phaser 3 + React development environment
+2. **Basic Game Engine**: Set up Phaser 3 scene management and game loop
+3. **UI Framework**: Create React-based UI components for game interfaces
+4. **Data Management**: Implement game data storage and state management
+5. **Guild System**: Build core guild management functionality
+6. **Event System**: Create game event system and time progression
+7. **Testing Setup**: Implement unit tests and E2E tests
+8. **Build Pipeline**: Set up production build and deployment
+
+## Technical Requirements
+- TypeScript throughout
+- Electron for desktop app
+- Phaser 3 for game engine
+- React for UI components
+- Vite for build tooling
+- Tailwind CSS for styling
+- Jest/Vitest for testing

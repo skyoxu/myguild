@@ -1,0 +1,151 @@
+# PRD Chunks Embedding Index
+
+Total Documents: 24
+Source Directory: docs/prd_chunks
+
+## Document List
+
+### [11904ecb1a7d] 《公会经理》产品需求文档 (PRD)
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_001.md
+- Size: 7925 chars
+- Tags: UI, Game, Guild, Player, Battle
+- Summary: **版本**: 2.0 **日期**: 2025-07-14 **状态**: 初稿 **作者**: 产品团队 1. [执行摘要](#1-执行摘要) 2. [用户研究与需求分析](#2-用户研究与需求分析) 3. [功能规格说明](#3-功能规格说明) 4. [技术架构规范](#4-技术架构规范) 5. [开发计划与里程碑](#5-开发计划与里程碑) 6....
+
+### [a0914b67b8ce] Prd-Guild-Manager Chunk 002
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_002.md
+- Size: 7948 chars
+- Tags: Database, UI, Guild, Player, Battle
+- Summary: // 小怪设计 interface TrashMob { id: string                    // 小怪ID name: string                  // 小怪名称 type: MobType                 // 怪物类型 // 基础属性 level: number health: number damage: number //...
+
+### [1840891ac5d7] Prd-Guild-Manager Chunk 003
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_003.md
+- Size: 7954 chars
+- Tags: API, UI, Game, Guild, Player
+- Summary: /* 生成最优阵容建议 */ generateOptimalComposition(raidType: RaidType): CompositionRecommendation } // 官员影响系统 interface OfficerInfluence { officerId: string                               // 官员ID officerType:...
+
+### [6ed30552c06f] Prd-Guild-Manager Chunk 004
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_004.md
+- Size: 7939 chars
+- Tags: UI, Game, Guild, Player, Battle
+- Summary: // 基础角色接口 interface BaseCharacter { id: string avatar: string            // 头像 level: number            // 等级 (1-60) gearScore: number        // 装备评分 // 活动统计 activityStats: { totalActivities: number...
+
+### [3c3a670293cb] Prd-Guild-Manager Chunk 005
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_005.md
+- Size: 7945 chars
+- Tags: UI, Backend, Game, Guild, Player
+- Summary: ```typescript // 世界生成系统 interface WorldGenerationSystem { // 公会池配置 guildArchetypes: NPCGuildArchetype[]  // 预定义公会原型 // 生成逻辑 generateCompetitors(): NPCGuild[] initializeWorldState(competitors:...
+
+### [dca4b9674d6d] Prd-Guild-Manager Chunk 006
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_006.md
+- Size: 7846 chars
+- Tags: UI, Game, Guild, Player, Battle
+- Summary: // 条件和限制 conditions: ModifierCondition[]         // 生效条件 stackable: boolean                      // 是否可叠加 priority: number                        // 优先级 } enum ModifierType { PERMANENT = "永久性",      ...
+
+### [3030b20d2d93] Prd-Guild-Manager Chunk 007
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_007.md
+- Size: 7903 chars
+- Tags: UI, Auth, Game, Guild, Player
+- Summary: // 运营数据 dailyMaintenance: ResourceCost     // 日常维护 efficiencyRating: number           // 运行效率 lastUpgradeDate: Date             // 最后升级时间 } // 设施类型枚举 (对应6大模块) enum FacilityType { // 公会管理模块设施...
+
+### [a53615472275] Prd-Guild-Manager Chunk 008
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_008.md
+- Size: 7971 chars
+- Tags: API, UI, Auth, Guild, Battle
+- Summary: // 贡献等级系统 contributionTier: ContributionTier               // 贡献等级 tierProgress: number                             // 当前等级进度 (0-100%) nextTierRequirement: number                      // 下一等级所需贡献度 //...
+
+### [6f2a705a93da] Prd-Guild-Manager Chunk 009
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_009.md
+- Size: 7917 chars
+- Tags: UI, Game, Guild, Player
+- Summary: // 表现亮点 achievements: ContributionAchievement[]         // 贡献成就 milestones: ContributionMilestone[]             // 里程碑 standoutPerformances: StandoutPerformance[]     // 突出表现 // 改进建议...
+
+### [7db5432fb4ad] Prd-Guild-Manager Chunk 010
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_010.md
+- Size: 7902 chars
+- Tags: API, UI, Game, Guild, Player
+- Summary: /* 综合计算训练效果 */ calculateFinalEffectiveness(base: number, modifiers: TrainingModifier[]): number } // 训练结果 interface TrainingResult { memberId: string                                // 成员ID...
+
+### [c02cec2d4e77] Prd-Guild-Manager Chunk 011
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_011.md
+- Size: 7689 chars
+- Tags: UI, Game, Guild, Player
+- Summary: // 紧急事件 URGENT_DECISIONS = "紧急决策",             // 需要立即决策的事件 CRISIS_MANAGEMENT = "危机处理",            // 危机事件处理 TIME_SENSITIVE = "时限任务",               // 有时间限制的任务 // 自定义分类 CUSTOM_CATEGORIES = "自定义分类"   ...
+
+### [1ec445d4e8b7] Prd-Guild-Manager Chunk 012
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_012.md
+- Size: 5740 chars
+- Tags: UI, Game, Guild, Player
+- Summary: 请您考虑并做出决策。建议在 {deadline} 前给出回复。 `, defaultActions: [ { id: "view_guild_profile", label: "查看对方公会详情", actionType: ActionType.NAVIGATE_TO_MODULE, targetFunction: "GuildProfileModule" }, { id:...
+
+### [ff7db8b85735] 3.5 经验系统架构
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_013.md
+- Size: 7919 chars
+- Tags: UI, Backend, Game, Guild, Player
+- Summary: 简化的经验系统专注于成员个体成长和多样化活动参与，删除复杂的熟练度机制。 - **成员主体经验**: 所有成员（玩家公会和NPC公会）拥有主体等级和经验 - **活动专精经验**: 针对不同位置、副本、PVP等活动的专门经验 - **公会声望系统**: 公会整体通过成就和活动获得声望，而非直接经验 - **直观成长机制**: 经验直接影响成员在对应活动中的表现 ```typescript //...
+
+### [853986a48cfb] Prd-Guild-Manager Chunk 014
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_014.md
+- Size: 7900 chars
+- Tags: UI, Auth, Game, Guild, Player
+- Summary: /* 计算影响因素 */ calculateImpactFactors(activity: Activity): ImpactFactor[] } interface PerformanceAnalysis { overallRating: number                   // 总体评分 (0-10) aspectRatings: Map<ActivityAspect,...
+
+### [f59e0387491d] Prd-Guild-Manager Chunk 015
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_015.md
+- Size: 7871 chars
+- Tags: API, UI, Backend, Auth, Game
+- Summary: **功能验收：** - ✅ 支持12种不同的专业官员职位 - ✅ 完整的权限矩阵和访问控制 - ✅ 智能官员推荐和适配系统 - ✅ 官员绩效评估和管理工具 - ✅ 职位继承和临时代理机制 **质量验收：** - ✅ 权限验证的准确性和安全性 - ✅ 官员管理的便利性和直观性 - ✅ 绩效评估的公平性和有效性 - ✅ 系统的可扩展性和维护性 **设计理念：**...
+
+### [8db5faa91222] Prd-Guild-Manager Chunk 016
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_016.md
+- Size: 7992 chars
+- Tags: UI, Backend, Auth, Game, Guild
+- Summary: // 明日预览 tomorrowPreview: { scheduledActivities: ScheduledActivity[] // 计划活动 anticipatedDecisions: AnticipatedDecision[] // 预期决策 potentialIssues: PotentialIssue[]        // 潜在问题 } } // 用户体验优化...
+
+### [f2f57c1d8fef] 3.8.2 技术规格
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_017.md
+- Size: 7927 chars
+- Tags: UI, Game, Guild, Player, Battle
+- Summary: /* 分配奖励 */ distributeRewards(bossId: string): RewardDistributionResult /* 记录战斗数据 */ recordBattleData(bossId: string, battleData: BattleData): void } ``` **跨公会协调算法：** ```typescript // 智能联盟匹配系统 class...
+
+### [7df4d07b6e18] Prd-Guild-Manager Chunk 018
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_018.md
+- Size: 7995 chars
+- Tags: UI, Backend, Game, Guild, Player
+- Summary: // 虚拟对手生成器 class OpponentGenerator { /* 生成匹配的虚拟对手 */ generateMatchedOpponent(playerGuild: Guild, difficulty: DifficultyLevel): VirtualGuild { const baseTemplate =...
+
+### [58ea309b9d0b] Prd-Guild-Manager Chunk 019
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_019.md
+- Size: 6287 chars
+- Tags: UI, Backend, Game, Guild, Player
+- Summary: // 玩家相关 playerGuildRank: number              // 玩家公会排名 playerGuildScore: number             // 玩家公会得分 rankingChange: RankingChange         // 排名变化情况 } // 排名条目 interface RankingEntry { rank: number   ...
+
+### [02c26eefab37] 3.11 数据管理规格
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_020.md
+- Size: 7805 chars
+- Tags: Database, UI, Backend, Game, Guild
+- Summary: ``` /gamedata (本地JSON存储) ├── /events_ecosystem          # 事件系统数据 │   ├── event_templates.json   # 事件模板库（200+） │   ├── event_chains.json      # 事件链和任务系统 │   ├── trigger_conditions.json # 触发条件库 │   └──...
+
+### [ee5c34f3294f] Prd-Guild-Manager Chunk 021
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_021.md
+- Size: 5887 chars
+- Tags: API, Database, UI, Game, Guild
+- Summary: // 数据一致性验证 interface ConsistencyReport { overallHealth: DataHealthStatus                 // 整体数据健康状态 referenceIntegrity: ReferenceIntegrityCheck     // 引用完整性检查 crossValidationResults:...
+
+### [c9134c24b9af] 4.5 扩展性架构与接口预留
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_022.md
+- Size: 5925 chars
+- Tags: UI, Backend, Game, Guild, Player
+- Summary: 为确保未来功能扩展的无缝集成，架构设计预留了关键接口和扩展点。 - **事件驱动**: 所有新功能通过EventBus与核心系统交互 - **数据驱动**: 新内容通过JSON配置文件定义，无需代码修改 - **模块化**: 新功能作为独立模块，最小化对核心系统的影响 - **向后兼容**: 数据格式设计支持版本迁移和兼容性 **卡牌系统接口预留** ```typescript //...
+
+### [000aa31dd793] 5.4 风险管理时间线
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_023.md
+- Size: 7201 chars
+- Tags: UI, Game, Guild, Player
+- Summary: | 时间节点 | 风险类型 | 缓解措施 | 负责人 | |----------|----------|----------|--------| | Month 2 | 事件系统复杂度 | 分阶段实现，早期验证 | 技术负责人 | | Month 4 | AI协调性能 | 性能测试，优化算法 | AI工程师 | | Month 6 | UI/游戏逻辑集成 | EventBus稳定性测试 |...
+
+### [3c35772aaf66] 8.2 阶段性验收标准
+- File: docs\prd_chunks\PRD-Guild-Manager_chunk_024.md
+- Size: 3954 chars
+- Tags: UI, Backend, Auth, Game, Guild
+- Summary: **技术验收标准:** - ✅ 事件引擎处理 100+ 基础事件 - ✅ AI 实体自主决策和状态转换 - ✅ 数据存储读写和备份恢复 - ✅ EventBus 通信稳定性测试 - ✅ 内存使用 < 300MB，响应时间 < 300ms - ✅ 传奇成员特殊数据结构设计 - ✅ NPC贡献度计算系统基础 **功能验收标准:** - ✅ 创建公会和会长角色 - ✅ 基础成员管理和属性系统 - ✅...
+
