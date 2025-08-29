@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-  PerformanceCollector, 
+import {
+  PerformanceCollector,
   PerformanceTestUtils,
-  p95 
+  p95,
 } from '../../tests/utils/PerformanceTestUtils';
 
 describe('P95 性能测试工具', () => {
@@ -21,13 +21,13 @@ describe('P95 性能测试工具', () => {
     it('应该正确计算 P95 值', () => {
       // 准备测试数据：[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
       const testData = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-      
+
       testData.forEach(value => {
         collector.addMetric('test', value);
       });
 
       const p95Value = collector.getP95('test');
-      
+
       // P95 应该是第 95% 位的值
       // 对于 10 个数字，95% 位置是索引 9 (Math.ceil(10 * 0.95) - 1 = 9)
       expect(p95Value).toBe(100);
@@ -35,7 +35,7 @@ describe('P95 性能测试工具', () => {
 
     it('应该正确计算平均值', () => {
       const testData = [10, 20, 30, 40, 50];
-      
+
       testData.forEach(value => {
         collector.addMetric('average_test', value);
       });
@@ -86,7 +86,7 @@ describe('P95 性能测试工具', () => {
   describe('PerformanceTestUtils 工厂方法', () => {
     it('runP95Test 应该执行指定次数的采样', async () => {
       let callCount = 0;
-      
+
       const testFunction = async () => {
         callCount++;
         return Math.random() * 100; // 模拟性能测试返回随机时间

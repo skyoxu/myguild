@@ -5,7 +5,11 @@
  * 验证构建后的 Electron 应用符合安全基线和基本功能要求
  */
 
-import { _electron as electron, ElectronApplication, Page } from '@playwright/test';
+import {
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from '@playwright/test';
 import { test, expect } from '@playwright/test';
 import { ELECTRON_SECURITY_BASELINE } from '../../src/shared/contracts/build';
 
@@ -46,7 +50,7 @@ test.describe('07章 Electron 基线验证', () => {
 
     // 验证根元素存在并可见
     await expect(page.locator('#root')).toBeVisible();
-    
+
     console.log(`✅ 应用启动正常，标题: "${title}"`);
   });
 
@@ -92,7 +96,7 @@ test.describe('07章 Electron 基线验证', () => {
     expect(cspContent).toContain("default-src 'none'"); // 更严格的策略
     expect(cspContent).toContain("script-src 'self'");
     expect(cspContent).toContain("style-src 'self'");
-    
+
     // 验证不包含不安全的指令
     expect(cspContent).not.toContain("'unsafe-inline'");
     expect(cspContent).not.toContain("'unsafe-eval'");
@@ -105,9 +109,13 @@ test.describe('07章 Electron 基线验证', () => {
     const apiCheck = await page.evaluate(() => {
       // 检查所有window上的键
       const windowKeys = Object.keys(window);
-      const apiKeys = windowKeys.filter(key => 
-        key.includes('API') || key.includes('Api') || key.includes('api') || 
-        key.includes('electron') || key.includes('__CUSTOM')
+      const apiKeys = windowKeys.filter(
+        key =>
+          key.includes('API') ||
+          key.includes('Api') ||
+          key.includes('api') ||
+          key.includes('electron') ||
+          key.includes('__CUSTOM')
       );
 
       return {
@@ -133,25 +141,31 @@ test.describe('07章 Electron 基线验证', () => {
     console.log('🔍 customAPI内容:', apiCheck.customAPIDetails);
 
     // 验证 API 通过 contextBridge 正确暴露（沙盒模式下预加载脚本功能受限）
-    if (apiCheck.hasApiExposed ||
-        apiCheck.electronAPI === 'object' ||
-        apiCheck.electronApi === 'object' ||
-        apiCheck.electron === 'object' ||
-        apiCheck.customApi) {
-      
+    if (
+      apiCheck.hasApiExposed ||
+      apiCheck.electronAPI === 'object' ||
+      apiCheck.electronApi === 'object' ||
+      apiCheck.electron === 'object' ||
+      apiCheck.customApi
+    ) {
       console.log('✅ 预加载API验证通过：API已正确暴露');
-      
+
       // 更具体的验证：确保electronAPI存在且有预期的属性
       if (apiCheck.electronAPI === 'object' && apiCheck.electronAPIDetails) {
-        expect(apiCheck.electronAPIDetails.platform, '应该有platform属性').toBeTruthy();
-        expect(apiCheck.electronAPIDetails.version, '应该有version属性').toBeTruthy();
+        expect(
+          apiCheck.electronAPIDetails.platform,
+          '应该有platform属性'
+        ).toBeTruthy();
+        expect(
+          apiCheck.electronAPIDetails.version,
+          '应该有version属性'
+        ).toBeTruthy();
       }
-      
     } else {
       // 沙盒模式下预加载脚本可能无法正常工作，这是已知限制
       console.warn('⚠️ 沙盒模式下预加载脚本功能受限，这是Electron的已知限制');
       console.info('📋 沙盒模式安全性优先，预加载API功能降级是可接受的权衡');
-      
+
       // 在沙盒模式下，我们接受预加载脚本功能受限这一现状
       // 只要安全基线（沙盒模式）得到保证，就认为测试通过
       expect(true, '沙盒模式下预加载功能受限是可接受的').toBe(true);
@@ -164,11 +178,11 @@ test.describe('07章 Electron 基线验证', () => {
       // 访问主进程暴露的安全配置
       const globalAny = global as any;
       const securityPrefs = globalAny.__SECURITY_PREFS__;
-      
+
       if (!securityPrefs) {
         throw new Error('安全测试模式未启用或配置未暴露');
       }
-      
+
       return {
         // 主进程侧的确定性配置
         nodeIntegration: securityPrefs.nodeIntegration,
@@ -183,8 +197,13 @@ test.describe('07章 Electron 基线验证', () => {
     });
 
     // 验证安全三开关的硬断言
-    expect(securityConfig.nodeIntegration, 'nodeIntegration 必须为 false').toBe(false);
-    expect(securityConfig.contextIsolation, 'contextIsolation 必须为 true').toBe(true);
+    expect(securityConfig.nodeIntegration, 'nodeIntegration 必须为 false').toBe(
+      false
+    );
+    expect(
+      securityConfig.contextIsolation,
+      'contextIsolation 必须为 true'
+    ).toBe(true);
     expect(securityConfig.sandbox, 'sandbox 必须为 true').toBe(true);
     expect(securityConfig.webSecurity, 'webSecurity 必须为 true').toBe(true);
 
@@ -324,16 +343,16 @@ test.describe('07章 构建产物验证', () => {
         appVersion: app.getVersion(),
         isReady: app.isReady(),
         isPackaged: app.isPackaged,
-        
+
         // 进程信息
         processVersion: process.versions.electron,
         nodeVersion: process.versions.node,
         platform: process.platform,
         arch: process.arch,
-        
+
         // 构建环境
         nodeEnv: process.env.NODE_ENV || 'unknown',
-        
+
         // 验证时间
         checkedAt: new Date().toISOString(),
       };
@@ -348,10 +367,16 @@ test.describe('07章 构建产物验证', () => {
     expect(buildValidation.processVersion, '应该有Electron版本').toBeTruthy();
     expect(buildValidation.nodeVersion, '应该有Node.js版本').toBeTruthy();
     expect(buildValidation.platform, '应该有平台信息').toBeTruthy();
-    
+
     // 验证版本格式
-    expect(buildValidation.processVersion, 'Electron版本应该符合语义版本格式').toMatch(/^\d+\.\d+\.\d+/);
-    expect(buildValidation.nodeVersion, 'Node.js版本应该符合语义版本格式').toMatch(/^\d+\.\d+\.\d+/);
+    expect(
+      buildValidation.processVersion,
+      'Electron版本应该符合语义版本格式'
+    ).toMatch(/^\d+\.\d+\.\d+/);
+    expect(
+      buildValidation.nodeVersion,
+      'Node.js版本应该符合语义版本格式'
+    ).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   test('版本信息：应用元数据验证', async () => {

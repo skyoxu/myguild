@@ -27,29 +27,31 @@ function createWindow(): void {
   if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
     // 禁用自动更新检查
     app.setAppUserModelId('com.electron.test');
-    
+
     // 设置离线模式网络策略
     mainWindow.webContents.session.setPermissionRequestHandler(() => false);
-    
+
     // 阻止不必要的网络请求
-    mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-      const url = details.url;
-      
-      // 允许本地资源和测试必需的连接
-      if (
-        url.startsWith('file://') || 
-        url.startsWith('chrome-devtools://') ||
-        url.startsWith('data:') ||
-        url.includes('localhost') ||
-        url.includes('127.0.0.1')
-      ) {
-        callback({ cancel: false });
-      } else {
-        // 阻止外部网络请求
-        console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
-        callback({ cancel: true });
+    mainWindow.webContents.session.webRequest.onBeforeRequest(
+      (details, callback) => {
+        const url = details.url;
+
+        // 允许本地资源和测试必需的连接
+        if (
+          url.startsWith('file://') ||
+          url.startsWith('chrome-devtools://') ||
+          url.startsWith('data:') ||
+          url.includes('localhost') ||
+          url.includes('127.0.0.1')
+        ) {
+          callback({ cancel: false });
+        } else {
+          // 阻止外部网络请求
+          console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
+          callback({ cancel: true });
+        }
       }
-    });
+    );
   }
 
   // 在测试模式下暴露安全配置供验证

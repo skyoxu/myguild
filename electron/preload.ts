@@ -9,11 +9,11 @@ if (process.contextIsolated) {
       // 基础系统信息
       platform: process.platform,
       version: process.versions.electron,
-      
+
       // 扩展@electron-toolkit提供的API
       ...electronAPI,
     });
-    
+
     // 为了测试验证，额外暴露一个自定义API标识
     contextBridge.exposeInMainWorld('__CUSTOM_API__', {
       preloadExposed: true,
@@ -23,13 +23,13 @@ if (process.contextIsolated) {
     console.error('Failed to expose API:', error);
   }
 } else {
-  // @ts-ignore (define in dts)  
+  // @ts-ignore (define in dts)
   window.electronAPI = {
     platform: process.platform,
     version: process.versions.electron,
     ...electronAPI,
   };
-  
+
   // @ts-ignore
   window.__CUSTOM_API__ = {
     preloadExposed: true,

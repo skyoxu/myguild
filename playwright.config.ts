@@ -88,7 +88,7 @@ export default defineConfig({
         launchOptions: {
           executablePath: undefined,
           args: [
-            '--disable-web-security', 
+            '--disable-web-security',
             '--allow-running-insecure-content',
             '--offline', // E2E网络隔离
           ],

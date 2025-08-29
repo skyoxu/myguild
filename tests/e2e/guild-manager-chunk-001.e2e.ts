@@ -4,7 +4,11 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { ElectronApplication, Page, _electron as electron } from '@playwright/test';
+import {
+  ElectronApplication,
+  Page,
+  _electron as electron,
+} from '@playwright/test';
 import path from 'path';
 
 let electronApp: ElectronApplication;

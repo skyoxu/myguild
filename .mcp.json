@@ -39,7 +39,7 @@
       ],
       "env": {}
     },
-    "_task-master-ai_DISABLED": {
+    "task-master-ai": {
       "type": "stdio",
       "command": "cmd",
       "args": [

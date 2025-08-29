@@ -5,7 +5,11 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { ElectronApplication, Page, _electron as electron } from '@playwright/test';
+import {
+  ElectronApplication,
+  Page,
+  _electron as electron,
+} from '@playwright/test';
 
 test.describe('CSP策略安全验证', () => {
   let electronApp: ElectronApplication;

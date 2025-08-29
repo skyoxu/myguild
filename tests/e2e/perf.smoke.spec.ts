@@ -7,7 +7,11 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { _electron as electron, ElectronApplication, Page } from '@playwright/test';
+import {
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from '@playwright/test';
 import {
   DEFAULT_FRAME_BUDGET,
   DEFAULT_LATENCY_BUDGET,
