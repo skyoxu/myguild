@@ -2,38 +2,45 @@
   "mcpServers": {
     "zen-mcp-server": {
       "type": "stdio",
-      "command": "C:\\buildgame\\vitegame\\zen-mcp-server\\.zen_venv\\Scripts\\python.exe",
+      "command": "npx",
       "args": [
-        "C:\\buildgame\\vitegame\\zen-mcp-server\\run.py"
+        "-y",
+        "zen-mcp-server-199bio"
       ],
-      "env": {}
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+        "GEMINI_API_KEY": "${GOOGLE_API_KEY}",
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}",
+        "XAI_API_KEY": "${XAI_API_KEY}",
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "MISTRAL_API_KEY": "${MISTRAL_API_KEY}"
+      }
     },
     "sequential-thinking": {
       "type": "stdio",
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
+        "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ],
       "env": {}
     },
     "context7": {
       "type": "stdio",
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
+        "-y",
         "@upstash/context7-mcp"
       ],
       "env": {}
     },
     "filesystem": {
       "type": "stdio",
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
+        "-y",
         "@modelcontextprotocol/server-filesystem",
         "C:\\buildgame\\vitegame"
       ],
@@ -41,10 +48,8 @@
     },
     "task-master-ai": {
       "type": "stdio",
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
         "-y",
         "--package=task-master-ai",
         "task-master-ai"
@@ -59,6 +64,29 @@
         "MISTRAL_API_KEY": "${MISTRAL_API_KEY}",
         "AZURE_OPENAI_API_KEY": "${AZURE_OPENAI_API_KEY}",
         "OLLAMA_API_KEY": "${OLLAMA_API_KEY}"
+      }
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--project",
+        "vitegame"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w"
+      }
+    },
+    "brave-search": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@brave/brave-search-mcp-server"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     }
   }

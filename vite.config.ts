@@ -1,11 +1,23 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Bundle可视化插件 - 生成bundle分析报告
+    visualizer({
+      filename: 'dist/bundle-analysis.html',
+      template: 'treemap', // treemap | sunburst | network
+      open: process.env.BUNDLE_ANALYZE === 'true',
+      gzipSize: true,
+      brotliSize: true,
+      sourcemap: true,
+    }),
+  ],
   server: {
     open: true,
   },

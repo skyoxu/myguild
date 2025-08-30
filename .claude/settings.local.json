@@ -180,7 +180,21 @@
       "Bash(npm run db:backup:*)",
       "Bash(npm run release:stage:*)",
       "Bash(npm run release:rollback:emergency:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(where serena)",
+      "Bash(pip show:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(serena:*)",
+      "Bash(taskkill:*)",
+      "mcp__task-master-ai__add_task",
+      "mcp__task-master-ai__initialize_project",
+      "mcp__task-master-ai__get_task",
+      "mcp__task-master-ai__set_task_status",
+      "Bash(npm run guard:bundle:*)",
+      "Bash(npm run guard:web-vitals:baseline:*)",
+      "Bash(npm run guard:web-vitals:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "additionalDirectories": [

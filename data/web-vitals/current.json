@@ -1,0 +1,10 @@
+{
+  "LCP": 2650,
+  "INP": 220,
+  "CLS": 0.12,
+  "FCP": 1800,
+  "TTFB": 850,
+  "timestamp": "2025-01-25T10:30:00.000Z",
+  "environment": "test",
+  "commit": "test-commit"
+}

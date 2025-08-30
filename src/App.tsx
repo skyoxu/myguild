@@ -1,6 +1,33 @@
 import { GameCanvas } from './components/GameCanvas';
+import { useWebVitals } from './hooks/useWebVitals';
+import { useEffect } from 'react';
 
 function App() {
+  // 初始化Web Vitals监控
+  const webVitals = useWebVitals({
+    enabled: true,
+    componentName: 'App',
+    trackRender: true,
+    trackInteractions: true,
+    collectorConfig: {
+      enabled: true,
+      sentryEnabled: true,
+      batchSize: 5,
+      flushInterval: 15000, // 15秒批量上报
+    }
+  });
+
+  // 应用启动性能监控
+  useEffect(() => {
+    webVitals.startTiming('app_initialization');
+    
+    // 模拟应用初始化完成
+    const timer = setTimeout(() => {
+      webVitals.endTiming('app_initialization');
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [webVitals]);
   return (
     <div className="app-container p-8 min-h-screen bg-game-ui-background">
       <header className="text-center mb-8">

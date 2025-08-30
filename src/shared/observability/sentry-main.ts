@@ -530,5 +530,101 @@ function generateSpanId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
+/**
+ * 集成SQLite健康指标到Sentry监控
+ */
+export async function integrateObservabilityMetrics(): Promise<void> {
+  try {
+    console.log('🔗 集成可观测性指标到Sentry...');
+
+    // 动态导入可观测性集成器
+    const { ObservabilityManager } = await import('../../scripts/observability-integration.mjs');
+    
+    const observabilityConfig = {
+      dbPath: process.env.DB_PATH || 'data/app.db',
+      sentryDsn: process.env.SENTRY_DSN,
+      metricsInterval: 60, // Sentry集成使用较长间隔
+      enabled: true
+    };
+
+    const manager = new ObservabilityManager(observabilityConfig);
+    
+    // 启动定期指标收集和上报
+    setInterval(async () => {
+      try {
+        await manager.collectAndExpose();
+      } catch (error) {
+        console.warn('⚠️ 可观测性指标收集失败:', error.message);
+      }
+    }, observabilityConfig.metricsInterval * 1000);
+
+    // 立即执行一次收集
+    await manager.collectAndExpose();
+    
+    console.log('✅ SQLite健康指标已集成到Sentry监控');
+  } catch (error) {
+    console.warn('⚠️ 可观测性指标集成失败:', error.message);
+    // 不应该因为监控失败而影响主应用启动
+  }
+}
+
+/**
+ * 向Sentry发送自定义业务指标
+ */
+export function sendBusinessMetric(
+  metricName: string, 
+  value: number, 
+  unit: string = 'count',
+  tags: Record<string, string> = {}
+): void {
+  try {
+    // 使用Sentry的自定义指标功能
+    Sentry.metrics.gauge(metricName, value, {
+      unit,
+      tags: {
+        component: 'business-metrics',
+        environment: determineEnvironment(),
+        ...tags
+      }
+    });
+    
+    console.log(`📊 业务指标已发送: ${metricName}=${value}${unit}`);
+  } catch (error) {
+    console.warn('⚠️ 业务指标发送失败:', error.message);
+  }
+}
+
+/**
+ * 发送数据库健康告警
+ */
+export function sendDatabaseAlert(
+  alertType: string,
+  message: string,
+  severity: 'warning' | 'error' = 'warning',
+  extra: Record<string, any> = {}
+): void {
+  try {
+    Sentry.captureMessage(`Database Alert: ${message}`, {
+      level: severity,
+      tags: {
+        component: 'database',
+        alertType,
+        environment: determineEnvironment()
+      },
+      extra
+    });
+    
+    console.log(`🚨 数据库告警已发送: ${alertType} - ${message}`);
+  } catch (error) {
+    console.warn('⚠️ 数据库告警发送失败:', error.message);
+  }
+}
+
 // 🔄 导出辅助函数
-export { determineEnvironment, validateSentryConfig };
+export { 
+  determineEnvironment, 
+  validateSentryConfig,
+  integrateObservabilityMetrics,
+  sendBusinessMetric,
+  sendDatabaseAlert
+};

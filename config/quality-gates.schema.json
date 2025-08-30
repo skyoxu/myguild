@@ -1,0 +1,280 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Quality Gates Configuration Schema",
+  "description": "质量门禁配置文件的JSON Schema验证",
+  "type": "object",
+  "required": ["version", "environments"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date"
+    },
+    "environments": {
+      "type": "object",
+      "required": ["default"],
+      "properties": {
+        "default": {
+          "$ref": "#/definitions/environmentConfig"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/environmentConfig"
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/partialEnvironmentConfig"
+      }
+    }
+  },
+  "definitions": {
+    "threshold": {
+      "type": "object",
+      "required": ["threshold", "unit"],
+      "properties": {
+        "threshold": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["bytes", "percent", "seconds", "milliseconds", "megabytes", "hours", "minutes", "count"]
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "webVitalsMetric": {
+      "type": "object",
+      "required": ["warning", "critical", "unit"],
+      "properties": {
+        "warning": {
+          "type": "number",
+          "minimum": 0
+        },
+        "critical": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["percent"]
+        }
+      }
+    },
+    "environmentConfig": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "bundleSize": {
+          "type": "object",
+          "properties": {
+            "mainProcess": {
+              "$ref": "#/definitions/threshold"
+            },
+            "renderer": {
+              "type": "object",
+              "properties": {
+                "js": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "css": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "html": {
+                  "$ref": "#/definitions/threshold"
+                }
+              }
+            }
+          }
+        },
+        "webVitals": {
+          "type": "object",
+          "properties": {
+            "baseline": {
+              "type": "object",
+              "properties": {
+                "windowDays": {
+                  "type": "number",
+                  "minimum": 1
+                },
+                "minSampleSize": {
+                  "type": "number",
+                  "minimum": 1
+                },
+                "confidenceLevel": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "regressionThresholds": {
+              "type": "object",
+              "properties": {
+                "LCP": {
+                  "$ref": "#/definitions/webVitalsMetric"
+                },
+                "INP": {
+                  "$ref": "#/definitions/webVitalsMetric"
+                },
+                "CLS": {
+                  "$ref": "#/definitions/webVitalsMetric"
+                },
+                "FCP": {
+                  "$ref": "#/definitions/webVitalsMetric"
+                },
+                "TTFB": {
+                  "$ref": "#/definitions/webVitalsMetric"
+                }
+              }
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "lines": {
+              "$ref": "#/definitions/threshold"
+            },
+            "branches": {
+              "$ref": "#/definitions/threshold"
+            },
+            "functions": {
+              "$ref": "#/definitions/threshold"
+            },
+            "statements": {
+              "$ref": "#/definitions/threshold"
+            }
+          }
+        },
+        "e2e": {
+          "type": "object",
+          "properties": {
+            "passRate": {
+              "$ref": "#/definitions/threshold"
+            },
+            "maxDuration": {
+              "$ref": "#/definitions/threshold"
+            },
+            "criticalPath": {
+              "$ref": "#/definitions/threshold"
+            }
+          }
+        },
+        "performance": {
+          "type": "object",
+          "properties": {
+            "appStartTime": {
+              "$ref": "#/definitions/threshold"
+            },
+            "memoryUsage": {
+              "$ref": "#/definitions/threshold"
+            },
+            "cpuUsage": {
+              "$ref": "#/definitions/threshold"
+            }
+          }
+        },
+        "releaseHealth": {
+          "type": "object",
+          "properties": {
+            "crashFreeUsers": {
+              "$ref": "#/definitions/threshold"
+            },
+            "crashFreeSessions": {
+              "$ref": "#/definitions/threshold"
+            },
+            "minAdoption": {
+              "$ref": "#/definitions/threshold"
+            }
+          }
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "health": {
+              "type": "object",
+              "properties": {
+                "dbSizeWarningMB": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "walSizeThresholdMB": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "diskSpaceWarningMB": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "intervalHours": {
+                  "$ref": "#/definitions/threshold"
+                }
+              }
+            },
+            "checkpoint": {
+              "type": "object",
+              "properties": {
+                "intervalMinutes": {
+                  "$ref": "#/definitions/threshold"
+                },
+                "transactionThreshold": {
+                  "$ref": "#/definitions/threshold"
+                }
+              }
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "audit": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "string",
+                  "enum": ["info", "low", "moderate", "high", "critical"]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "allowedVulnerabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "csp": {
+              "type": "object",
+              "properties": {
+                "enforceMode": {
+                  "type": "boolean"
+                },
+                "reportOnly": {
+                  "type": "boolean"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "partialEnvironmentConfig": {
+      "type": "object",
+      "description": "部分环境配置，用于覆盖默认值"
+    }
+  }
+}
