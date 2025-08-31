@@ -32,13 +32,13 @@ const SENTRY_CONFIGS: Record<
     dsn: process.env.SENTRY_DSN || '',
     environment: 'production',
     sampleRate: 1.0, // 生产环境100%错误采集
-    tracesSampleRate: 0.1, // 生产环境10%性能追踪（基础值）
+    tracesSampleRate: 0.2, // 按您要求设置为20%性能追踪（基础值）
     autoSessionTracking: true, // 开启Release Health
     enableTracing: true,
     release: `app@${app.getVersion?.() ?? 'unknown'}+${process.platform}`,
     dist: process.platform,
     dynamicSampling: {
-      baseSampleRate: 0.1,
+      baseSampleRate: 0.2, // 基础采样率也更新为0.2
       errorThreshold: 0.05,
       performanceThreshold: 500,
       criticalTransactions: ['startup', 'game.load', 'ai.decision'],
@@ -538,17 +538,19 @@ export async function integrateObservabilityMetrics(): Promise<void> {
     console.log('🔗 集成可观测性指标到Sentry...');
 
     // 动态导入可观测性集成器
-    const { ObservabilityManager } = await import('../../scripts/observability-integration.mjs');
-    
+    const { ObservabilityManager } = await import(
+      '../../scripts/observability-integration.mjs'
+    );
+
     const observabilityConfig = {
       dbPath: process.env.DB_PATH || 'data/app.db',
       sentryDsn: process.env.SENTRY_DSN,
       metricsInterval: 60, // Sentry集成使用较长间隔
-      enabled: true
+      enabled: true,
     };
 
     const manager = new ObservabilityManager(observabilityConfig);
-    
+
     // 启动定期指标收集和上报
     setInterval(async () => {
       try {
@@ -560,7 +562,7 @@ export async function integrateObservabilityMetrics(): Promise<void> {
 
     // 立即执行一次收集
     await manager.collectAndExpose();
-    
+
     console.log('✅ SQLite健康指标已集成到Sentry监控');
   } catch (error) {
     console.warn('⚠️ 可观测性指标集成失败:', error.message);
@@ -569,29 +571,124 @@ export async function integrateObservabilityMetrics(): Promise<void> {
 }
 
 /**
- * 向Sentry发送自定义业务指标
+ * 向Sentry发送自定义业务指标 - 按您要求的distribution格式
  */
 export function sendBusinessMetric(
-  metricName: string, 
-  value: number, 
+  metricName: string,
+  value: number,
   unit: string = 'count',
   tags: Record<string, string> = {}
 ): void {
   try {
-    // 使用Sentry的自定义指标功能
-    Sentry.metrics.gauge(metricName, value, {
-      unit,
+    // 使用您要求的distribution格式
+    Sentry.metrics.distribution(metricName, value, {
       tags: {
-        component: 'business-metrics',
+        component: 'main-process',
         environment: determineEnvironment(),
-        ...tags
-      }
+        ...tags,
+      },
     });
-    
-    console.log(`📊 业务指标已发送: ${metricName}=${value}${unit}`);
+
+    console.log(`📊 主进程指标已发送: ${metricName}=${value}${unit}`, tags);
   } catch (error) {
-    console.warn('⚠️ 业务指标发送失败:', error.message);
+    console.warn('⚠️ 主进程指标发送失败:', error.message);
   }
+}
+
+/**
+ * 发送关卡加载时长指标 - 主进程版本
+ */
+export function reportLevelLoadTimeMain(loadMs: number, levelId: string): void {
+  sendBusinessMetric('level.load.ms', loadMs, 'millisecond', {
+    levelId,
+    source: 'main-process',
+  });
+}
+
+/**
+ * 发送战斗回合耗时指标 - 主进程版本
+ */
+export function reportBattleRoundTimeMain(
+  roundMs: number,
+  battleType: string,
+  round: number
+): void {
+  sendBusinessMetric('battle.round.ms', roundMs, 'millisecond', {
+    battleType,
+    round: round.toString(),
+    source: 'main-process',
+  });
+}
+
+/**
+ * 发送系统性能指标
+ */
+export function reportSystemMetrics(): void {
+  try {
+    const memUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
+
+    // 发送内存指标
+    sendBusinessMetric(
+      'system.memory.rss.mb',
+      Math.round(memUsage.rss / 1024 / 1024),
+      'megabyte',
+      {
+        type: 'rss',
+      }
+    );
+
+    sendBusinessMetric(
+      'system.memory.heap.mb',
+      Math.round(memUsage.heapUsed / 1024 / 1024),
+      'megabyte',
+      {
+        type: 'heap',
+      }
+    );
+
+    // 发送CPU指标
+    sendBusinessMetric(
+      'system.cpu.user.ms',
+      Math.round(cpuUsage.user / 1000),
+      'millisecond',
+      {
+        type: 'user',
+      }
+    );
+
+    sendBusinessMetric(
+      'system.cpu.system.ms',
+      Math.round(cpuUsage.system / 1000),
+      'millisecond',
+      {
+        type: 'system',
+      }
+    );
+  } catch (error) {
+    console.warn('⚠️ 系统性能指标发送失败:', error.message);
+  }
+}
+
+/**
+ * 定期发送系统指标
+ */
+export function startSystemMetricsCollection(): void {
+  // 立即发送一次
+  reportSystemMetrics();
+
+  // 每60秒发送一次系统指标
+  const metricsInterval = setInterval(() => {
+    reportSystemMetrics();
+  }, 60000);
+
+  // 在应用退出时清理
+  app.on('before-quit', () => {
+    clearInterval(metricsInterval);
+    reportSystemMetrics(); // 最后一次上报
+  });
+
+  console.log('📊 系统指标收集已启动（每60秒）');
 }
 
 /**
@@ -609,11 +706,11 @@ export function sendDatabaseAlert(
       tags: {
         component: 'database',
         alertType,
-        environment: determineEnvironment()
+        environment: determineEnvironment(),
       },
-      extra
+      extra,
     });
-    
+
     console.log(`🚨 数据库告警已发送: ${alertType} - ${message}`);
   } catch (error) {
     console.warn('⚠️ 数据库告警发送失败:', error.message);
@@ -621,10 +718,14 @@ export function sendDatabaseAlert(
 }
 
 // 🔄 导出辅助函数
-export { 
-  determineEnvironment, 
+export {
+  determineEnvironment,
   validateSentryConfig,
   integrateObservabilityMetrics,
   sendBusinessMetric,
-  sendDatabaseAlert
+  sendDatabaseAlert,
+  reportLevelLoadTimeMain,
+  reportBattleRoundTimeMain,
+  reportSystemMetrics,
+  startSystemMetricsCollection,
 };

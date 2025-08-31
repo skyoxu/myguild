@@ -14,6 +14,12 @@ if (process.contextIsolated) {
       ...electronAPI,
     });
 
+    // 应用版本信息 - 用于Sentry Release Health
+    contextBridge.exposeInMainWorld(
+      '__APP_VERSION__',
+      process.env.APP_VERSION || '0.1.1'
+    );
+
     // 为了测试验证，额外暴露一个自定义API标识
     contextBridge.exposeInMainWorld('__CUSTOM_API__', {
       preloadExposed: true,
@@ -29,6 +35,9 @@ if (process.contextIsolated) {
     version: process.versions.electron,
     ...electronAPI,
   };
+
+  // @ts-ignore - 应用版本信息
+  window.__APP_VERSION__ = process.env.APP_VERSION || '0.1.1';
 
   // @ts-ignore
   window.__CUSTOM_API__ = {

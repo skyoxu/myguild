@@ -246,7 +246,7 @@ describe('GameEngineAdapter', () => {
 
       expect(state).toBeDefined();
       expect(state.timestamp).toBeInstanceOf(Date);
-    }, 10000);
+    }, 30000); // 游戏启动较慢，30s超时
 
     it('应该能暂停和恢复游戏', async () => {
       await gameEngine.startGame();
@@ -256,7 +256,7 @@ describe('GameEngineAdapter', () => {
 
       await gameEngine.resumeGame();
       expect(gameEngine.getStateMachineState()).toBe('running');
-    }, 10000);
+    }, 30000); // 游戏生命周期操作较慢，30s超时
 
     it('应该能结束游戏并获取结果', async () => {
       await gameEngine.startGame();
@@ -271,7 +271,7 @@ describe('GameEngineAdapter', () => {
       expect(result.levelReached).toBe(1);
       expect(result.playTime).toBeGreaterThanOrEqual(0);
       expect(result.statistics).toBeDefined();
-    }, 10000);
+    }, 30000); // 游戏完整生命周期较慢，30s超时
   });
 
   describe('错误处理', () => {

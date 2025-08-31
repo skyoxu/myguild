@@ -20,7 +20,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // 强制单线程，避免Electron进程冲突
-  timeout: 120000, // Electron启动较慢，增加超时时间到2分钟
+  timeout: 30_000, // 恢复生产环境阈值
 
   /* 报告配置 */
   reporter: [

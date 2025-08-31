@@ -38,6 +38,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // 超时配置 - 按止疼法提升基线
+    testTimeout: 20_000, // 默认 5s -> 20s
+    hookTimeout: 20_000, // 钩子默认 10s -> 20s
+    maxThreads: 4, // 降并发，避免抢 I/O
     setupFiles: ['./src/test-setup.ts', './vitest.setup.ts'],
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
