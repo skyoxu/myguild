@@ -1,7 +1,9 @@
-import { app, shell, BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { securityPolicyManager } from './security/permissions';
+import { secureAutoUpdater } from './security/auto-updater';
+import { CSPManager } from './security/csp-policy';
 
 // 安全配置常量（用于测试验证）
 const SECURITY_PREFERENCES = {
@@ -54,64 +56,28 @@ function createWindow(): void {
     );
   }
 
-  // 在测试模式下暴露安全配置供验证
+  // 在测试模式下暴露安全配置供验证（最小化信息泄露）
   if (process.env.SECURITY_TEST_MODE === 'true') {
+    // 限制暴露的信息，仅包含测试必需的数据
     (global as any).__SECURITY_PREFS__ = {
-      ...SECURITY_PREFERENCES,
-      windowId: mainWindow.id,
-      createdAt: new Date().toISOString(),
-    };
-
-    // 暴露安全策略管理器配置
-    (global as any).__SECURITY_POLICY_CONFIG__ = {
-      config: securityPolicyManager.getConfig(),
-      isProduction: process.env.NODE_ENV === 'production',
+      nodeIntegration: SECURITY_PREFERENCES.nodeIntegration,
+      contextIsolation: SECURITY_PREFERENCES.contextIsolation,
+      sandbox: SECURITY_PREFERENCES.sandbox,
+      webSecurity: SECURITY_PREFERENCES.webSecurity,
       testMode: true,
-      exposedAt: new Date().toISOString(),
+      windowId: `window-${Math.random().toString(36).substr(2, 9)}`, // 匿名化ID
     };
 
-    // 暴露CSP配置信息
-    (global as any).__CSP_CONFIG__ = {
-      enabled: true,
-      policies: [
-        "default-src 'none'",
-        "script-src 'self' 'nonce-*'",
-        "style-src 'self'",
-        "img-src 'self' data: blob:",
-        "connect-src 'self'",
-        "font-src 'self'",
-        "object-src 'none'",
-        "frame-ancestors 'none'",
-        "base-uri 'none'",
-        "form-action 'self'",
-      ],
-      nonceGeneration: true,
-      configuredAt: new Date().toISOString(),
+    // 仅暴露必要的策略验证信息
+    (global as any).__SECURITY_POLICY_ENABLED__ = {
+      permissionHandler: true,
+      navigationHandler: true,
+      windowOpenHandler: true,
+      cspEnabled: true,
     };
 
-    // 暴露安全处理器状态
-    (global as any).__SECURITY_HANDLERS__ = {
-      permissionHandler: {
-        enabled: true,
-        type: 'setPermissionRequestHandler',
-        scope: 'session.defaultSession',
-      },
-      navigationHandler: {
-        enabled: true,
-        events: ['will-navigate', 'will-attach-webview'],
-      },
-      windowOpenHandler: {
-        enabled: true,
-        type: 'setWindowOpenHandler',
-        policy: 'deny-new-windows-redirect-external',
-      },
-      webRequestFiltering: {
-        enabled: true,
-        type: 'onBeforeRequest',
-        scope: 'session.defaultSession.webRequest',
-      },
-      configuredAt: new Date().toISOString(),
-    };
+    // 使用CSPManager生成测试配置
+    (global as any).__CSP_CONFIG__ = CSPManager.generateTestingConfig();
   }
 
   mainWindow.on('ready-to-show', () => {
@@ -130,21 +96,13 @@ function createWindow(): void {
         const crypto = require('crypto');
         const nonce = crypto.randomBytes(16).toString('base64');
 
+        // 使用统一CSP管理器生成开发环境策略
+        const cspPolicy = CSPManager.generateDevelopmentCSP(nonce);
+
         callback({
           responseHeaders: {
             ...details.responseHeaders,
-            'Content-Security-Policy': [
-              "default-src 'none'; " +
-                `script-src 'self' 'nonce-${nonce}'; ` +
-                "style-src 'self'; " +
-                "img-src 'self' data: blob:; " +
-                "connect-src 'self'; " +
-                "font-src 'self'; " +
-                "object-src 'none'; " +
-                "frame-ancestors 'none'; " +
-                "base-uri 'none'; " +
-                "form-action 'self'",
-            ],
+            'Content-Security-Policy': [cspPolicy],
             // 存储nonce供渲染进程使用
             'X-CSP-Nonce': [nonce],
           },
@@ -169,6 +127,15 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+
+  // 初始化安全自动更新器（仅在非测试环境）
+  if (process.env.NODE_ENV !== 'test' && process.env.CI !== 'true') {
+    // 延迟检查更新，避免阻塞应用启动
+    setTimeout(() => {
+      console.log('🔄 正在检查应用更新...');
+      secureAutoUpdater.checkForUpdates();
+    }, 3000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

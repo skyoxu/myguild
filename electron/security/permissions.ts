@@ -57,6 +57,12 @@ const DEVELOPMENT_SECURITY_CONFIG: SecurityConfig = {
 class SecurityPolicyManager {
   private config: SecurityConfig;
   private isProduction: boolean;
+  private auditLog: Array<{
+    timestamp: string;
+    type: 'permission' | 'navigation' | 'window-open' | 'web-request';
+    action: 'allow' | 'deny';
+    details: string;
+  }> = [];
 
   constructor(isProduction: boolean = process.env.NODE_ENV === 'production') {
     this.isProduction = isProduction;
@@ -67,6 +73,61 @@ class SecurityPolicyManager {
     console.log(
       `🔒 初始化安全策略管理器 (${isProduction ? '生产' : '开发'}环境)`
     );
+  }
+
+  /**
+   * 记录安全审计日志
+   */
+  private logSecurityEvent(
+    type: 'permission' | 'navigation' | 'window-open' | 'web-request',
+    action: 'allow' | 'deny',
+    details: string
+  ): void {
+    const event = {
+      timestamp: new Date().toISOString(),
+      type,
+      action,
+      details
+    };
+    
+    this.auditLog.push(event);
+    
+    // 保持日志大小，只保留最近1000条记录
+    if (this.auditLog.length > 1000) {
+      this.auditLog = this.auditLog.slice(-1000);
+    }
+
+    // 在控制台输出详细的审计信息
+    const emoji = action === 'allow' ? '✅' : '❌';
+    console.log(`${emoji} [${type.toUpperCase()}] ${details}`);
+  }
+
+  /**
+   * 获取安全审计报告
+   */
+  getSecurityAuditReport(): {
+    totalEvents: number;
+    allowedEvents: number;
+    deniedEvents: number;
+    recentEvents: typeof this.auditLog;
+    securityScore: number;
+  } {
+    const totalEvents = this.auditLog.length;
+    const allowedEvents = this.auditLog.filter(e => e.action === 'allow').length;
+    const deniedEvents = this.auditLog.filter(e => e.action === 'deny').length;
+    
+    // 计算安全分数（拒绝的恶意请求越多，分数越高）
+    const securityScore = totalEvents > 0 
+      ? Math.round((deniedEvents / totalEvents) * 100)
+      : 100;
+
+    return {
+      totalEvents,
+      allowedEvents,
+      deniedEvents,
+      recentEvents: this.auditLog.slice(-50), // 最近50条记录
+      securityScore
+    };
   }
 
   /**
@@ -86,7 +147,7 @@ class SecurityPolicyManager {
    */
   private setupPermissionHandler(): void {
     session.defaultSession.setPermissionRequestHandler(
-      (webContents, permission, callback, details) => {
+      (_webContents, permission, callback, details) => {
         const requestingOrigin = new URL(details.requestingUrl).origin;
 
         // 检查源是否被允许
@@ -98,20 +159,29 @@ class SecurityPolicyManager {
         const isPermissionAllowed =
           this.config.allowedPermissions.includes(permission);
 
+        // 对于敏感权限，即使配置允许也要额外检查
+        const sensitivePermissions = ['media', 'geolocation', 'notifications'];
+        if (sensitivePermissions.includes(permission)) {
+          // 生产环境默认拒绝敏感权限
+          if (this.isProduction) {
+            this.logSecurityEvent(
+              'permission',
+              'deny',
+              `生产环境拒绝敏感权限: ${permission} from ${requestingOrigin}`
+            );
+            callback(false);
+            return;
+          }
+        }
+
         const shouldAllow = isOriginAllowed && isPermissionAllowed;
 
-        if (shouldAllow) {
-          console.log(
-            `✅ 允许权限请求: ${permission} from ${requestingOrigin}`
-          );
-        } else {
-          console.warn(
-            `❌ 拒绝权限请求: ${permission} from ${requestingOrigin}`
-          );
-          console.warn(
-            `   - 源允许: ${isOriginAllowed}, 权限允许: ${isPermissionAllowed}`
-          );
-        }
+        // 记录安全审计日志
+        this.logSecurityEvent(
+          'permission',
+          shouldAllow ? 'allow' : 'deny',
+          `${permission} from ${requestingOrigin} (源允许: ${isOriginAllowed}, 权限允许: ${isPermissionAllowed})`
+        );
 
         callback(shouldAllow);
       }
@@ -138,20 +208,28 @@ class SecurityPolicyManager {
       );
 
       if (!isLocalNavigation && !isDomainAllowed) {
-        console.warn(`❌ 阻止导航到: ${navigationUrl}`);
+        this.logSecurityEvent(
+          'navigation',
+          'deny',
+          `阻止导航到: ${navigationUrl} (hostname: ${targetHostname})`
+        );
         event.preventDefault();
 
         // 可选：显示用户友好的错误消息
         // dialog.showErrorBox('导航被阻止', `不允许导航到: ${targetHostname}`);
       } else {
-        console.log(`✅ 允许导航到: ${navigationUrl}`);
+        this.logSecurityEvent(
+          'navigation',
+          'allow',
+          `允许导航到: ${navigationUrl} (local: ${isLocalNavigation}, domain: ${isDomainAllowed})`
+        );
       }
     });
 
     // 防止加载外部内容到webview
     window.webContents.on(
       'will-attach-webview',
-      (event, webPreferences, params) => {
+      (event, _webPreferences, params) => {
         const targetOrigin = new URL(params.src).origin;
 
         const isOriginAllowed = this.config.allowedOrigins.some(origin =>
@@ -159,8 +237,18 @@ class SecurityPolicyManager {
         );
 
         if (!isOriginAllowed) {
-          console.warn(`❌ 阻止webview加载: ${params.src}`);
+          this.logSecurityEvent(
+            'navigation',
+            'deny',
+            `阻止webview加载: ${params.src} (origin: ${targetOrigin})`
+          );
           event.preventDefault();
+        } else {
+          this.logSecurityEvent(
+            'navigation',
+            'allow',
+            `允许webview加载: ${params.src}`
+          );
         }
       }
     );
@@ -180,10 +268,18 @@ class SecurityPolicyManager {
       );
 
       if (isExternalAllowed) {
-        console.log(`✅ 在外部浏览器打开: ${url}`);
+        this.logSecurityEvent(
+          'window-open',
+          'allow',
+          `在外部浏览器打开: ${url} (hostname: ${targetHostname})`
+        );
         shell.openExternal(url);
       } else {
-        console.warn(`❌ 阻止打开外部链接: ${url}`);
+        this.logSecurityEvent(
+          'window-open',
+          'deny',
+          `阻止打开外部链接: ${url} (hostname: ${targetHostname})`
+        );
       }
 
       // 总是拒绝在新窗口中打开
@@ -214,9 +310,21 @@ class SecurityPolicyManager {
       );
 
       if (!isOriginAllowed && this.isProduction) {
-        console.warn(`❌ 阻止外部请求: ${details.url}`);
+        this.logSecurityEvent(
+          'web-request',
+          'deny',
+          `阻止外部请求: ${details.url} (protocol: ${url.protocol})`
+        );
         callback({ cancel: true });
       } else {
+        if (!isOriginAllowed) {
+          // 开发环境允许但记录日志
+          this.logSecurityEvent(
+            'web-request',
+            'allow',
+            `开发环境允许外部请求: ${details.url}`
+          );
+        }
         callback({ cancel: false });
       }
     });
@@ -235,6 +343,32 @@ class SecurityPolicyManager {
    */
   getConfig(): SecurityConfig {
     return { ...this.config };
+  }
+
+  /**
+   * 导出安全审计报告（用于监控和分析）
+   */
+  exportSecurityReport(): {
+    timestamp: string;
+    environment: 'production' | 'development';
+    config: SecurityConfig;
+    auditSummary: ReturnType<typeof this.getSecurityAuditReport>;
+  } {
+    return {
+      timestamp: new Date().toISOString(),
+      environment: this.isProduction ? 'production' : 'development',
+      config: this.getConfig(),
+      auditSummary: this.getSecurityAuditReport()
+    };
+  }
+
+  /**
+   * 清理审计日志（用于内存管理）
+   */
+  clearAuditLog(): void {
+    const cleared = this.auditLog.length;
+    this.auditLog = [];
+    console.log(`🧹 已清理 ${cleared} 条安全审计记录`);
   }
 }
 
