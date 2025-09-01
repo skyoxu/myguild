@@ -4,7 +4,6 @@
  */
 
 import { useState } from 'react';
-import { useGameEvents } from '../../hooks/useGameEvents';
 import { useGameState } from '../../contexts/GameStateContext';
 import type { GameState } from '../../ports/game-engine.port';
 
@@ -28,7 +27,6 @@ export function GameStatusPanel({
 
   // 优先使用Context中的状态，回退到初始状态
   const gameState = contextGameState || initialGameState;
-
 
   // 计算健康百分比
   const healthPercentage = gameState

@@ -1,6 +1,6 @@
 /**
  * Web Vitals数据收集器
- * 
+ *
  * 功能：
  * 1. 收集Web Vitals数据
  * 2. 上报到Sentry和其他监控服务
@@ -9,7 +9,11 @@
  */
 
 import * as Sentry from '@sentry/browser';
-import { getWebVitalsMonitor, WebVitalsMetrics, WebVitalsData } from './web-vitals-monitor';
+import {
+  getWebVitalsMonitor,
+  type WebVitalsMetrics,
+  type WebVitalsData,
+} from './web-vitals-monitor';
 
 export interface WebVitalsCollectorConfig {
   enabled: boolean;
@@ -88,7 +92,7 @@ class WebVitalsCollector {
   constructor(config: Partial<WebVitalsCollectorConfig> = {}) {
     this.config = { ...this.DEFAULT_CONFIG, ...config };
     this.sessionId = this.generateSessionId();
-    
+
     if (this.config.enabled && typeof window !== 'undefined') {
       this.initialize();
     }
@@ -97,19 +101,19 @@ class WebVitalsCollector {
   private initialize() {
     try {
       // 订阅Web Vitals数据更新
-      this.unsubscribe = this.monitor.subscribe((metrics) => {
+      this.unsubscribe = this.monitor.subscribe(metrics => {
         this.collectData(metrics);
       });
 
       // 设置定时刷新
       this.setupFlushTimer();
-      
+
       // 监听页面卸载事件，确保数据上报
       this.setupUnloadHandler();
-      
+
       // 清理旧数据
       this.cleanupOldData();
-      
+
       this.isEnabled = true;
       console.log('[WebVitalsCollector] 数据收集器初始化完成');
     } catch (error) {
@@ -133,7 +137,7 @@ class WebVitalsCollector {
     };
 
     this.dataBuffer.push(dataPoint);
-    
+
     // 达到批量大小时立即刷新
     if (this.dataBuffer.length >= this.config.batchSize) {
       this.flush();
@@ -170,7 +174,9 @@ class WebVitalsCollector {
     if ('navigation' in performance) {
       const nav = performance.navigation;
       context.navigation = {
-        type: ['navigate', 'reload', 'back_forward', 'prerender'][nav.type] || 'navigate',
+        type:
+          ['navigate', 'reload', 'back_forward', 'prerender'][nav.type] ||
+          'navigate',
         redirectCount: nav.redirectCount,
       };
     }
@@ -191,16 +197,17 @@ class WebVitalsCollector {
     // 尝试从多个来源获取用户ID
     try {
       // 从localStorage获取
-      const userId = localStorage.getItem('userId') || 
-                   localStorage.getItem('user_id') ||
-                   sessionStorage.getItem('userId');
-      
+      const userId =
+        localStorage.getItem('userId') ||
+        localStorage.getItem('user_id') ||
+        sessionStorage.getItem('userId');
+
       if (userId) return userId;
-      
+
       // 从cookies获取（如果有的话）
       const match = document.cookie.match(/user_id=([^;]+)/);
       if (match) return match[1];
-      
+
       return undefined;
     } catch {
       return undefined;
@@ -211,7 +218,7 @@ class WebVitalsCollector {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
     }
-    
+
     this.flushTimer = setInterval(() => {
       if (this.dataBuffer.length > 0) {
         this.flush();
@@ -229,7 +236,7 @@ class WebVitalsCollector {
 
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('pagehide', handleUnload);
-    
+
     // Electron环境下也监听应用关闭
     if (window.electronAPI) {
       // 如果有暴露的API，可以监听应用关闭事件
@@ -258,20 +265,20 @@ class WebVitalsCollector {
     if (this.dataBuffer.length === 0) return;
 
     const data = JSON.stringify(this.dataBuffer);
-    
+
     try {
       // 使用sendBeacon确保数据发送
       if ('sendBeacon' in navigator) {
         const endpoint = '/api/web-vitals'; // 根据实际API调整
         navigator.sendBeacon(endpoint, data);
       }
-      
+
       // 同时保存到localStorage作为备份
       this.saveToLocalStorageSync(this.dataBuffer);
     } catch (error) {
       console.error('[WebVitalsCollector] 同步上报失败:', error);
     }
-    
+
     this.dataBuffer = [];
   }
 
@@ -303,7 +310,7 @@ class WebVitalsCollector {
             category: 'performance',
             message: `Custom timing: ${name}`,
             level: 'info',
-            data: { value, sessionId: point.sessionId }
+            data: { value, sessionId: point.sessionId },
           });
         });
       });
@@ -313,19 +320,28 @@ class WebVitalsCollector {
     }
   }
 
-  private sendMetricToSentry(name: string, metric: WebVitalsData, point: WebVitalsDataPoint) {
+  private sendMetricToSentry(
+    name: string,
+    metric: WebVitalsData,
+    point: WebVitalsDataPoint
+  ) {
     // 发送性能指标到Sentry
     Sentry.addBreadcrumb({
       category: 'performance',
       message: `Web Vital: ${name}`,
-      level: metric.rating === 'good' ? 'info' : metric.rating === 'needs-improvement' ? 'warning' : 'error',
+      level:
+        metric.rating === 'good'
+          ? 'info'
+          : metric.rating === 'needs-improvement'
+            ? 'warning'
+            : 'error',
       data: {
         value: metric.value,
         rating: metric.rating,
         sessionId: point.sessionId,
         connection: point.context.connection,
         viewport: point.context.viewport,
-      }
+      },
     });
 
     // 对于差评级的指标，作为性能问题上报
@@ -339,7 +355,7 @@ class WebVitalsCollector {
         extra: {
           metric,
           context: point.context,
-        }
+        },
       });
     }
   }
@@ -363,10 +379,10 @@ class WebVitalsCollector {
     try {
       const existing = this.getStoredData();
       const combined = [...existing, ...data];
-      
+
       // 保留最近1000条记录
       const trimmed = combined.slice(-1000);
-      
+
       localStorage.setItem(this.config.storageKey, JSON.stringify(trimmed));
     } catch (error) {
       console.error('[WebVitalsCollector] 本地存储失败:', error);
@@ -396,12 +412,15 @@ class WebVitalsCollector {
   private cleanupOldData() {
     try {
       const data = this.getStoredData();
-      const cutoff = Date.now() - (this.config.baselineWindow * 24 * 60 * 60 * 1000);
+      const cutoff =
+        Date.now() - this.config.baselineWindow * 24 * 60 * 60 * 1000;
       const filtered = data.filter(point => point.timestamp > cutoff);
-      
+
       if (filtered.length !== data.length) {
         localStorage.setItem(this.config.storageKey, JSON.stringify(filtered));
-        console.log(`[WebVitalsCollector] 清理了${data.length - filtered.length}条旧数据`);
+        console.log(
+          `[WebVitalsCollector] 清理了${data.length - filtered.length}条旧数据`
+        );
       }
     } catch (error) {
       console.error('[WebVitalsCollector] 数据清理失败:', error);
@@ -417,7 +436,10 @@ class WebVitalsCollector {
 
       // 检查LCP回归
       if (dataPoint.metrics.lcp && baseline.lcp_p95) {
-        const regression = this.calculateRegression(dataPoint.metrics.lcp.value, baseline.lcp_p95);
+        const regression = this.calculateRegression(
+          dataPoint.metrics.lcp.value,
+          baseline.lcp_p95
+        );
         if (regression > this.config.regressionThreshold) {
           regressions.push({
             metric: 'LCP',
@@ -432,7 +454,10 @@ class WebVitalsCollector {
 
       // 检查INP回归
       if (dataPoint.metrics.inp && baseline.inp_p95) {
-        const regression = this.calculateRegression(dataPoint.metrics.inp.value, baseline.inp_p95);
+        const regression = this.calculateRegression(
+          dataPoint.metrics.inp.value,
+          baseline.inp_p95
+        );
         if (regression > this.config.regressionThreshold) {
           regressions.push({
             metric: 'INP',
@@ -447,7 +472,10 @@ class WebVitalsCollector {
 
       // 检查CLS回归
       if (dataPoint.metrics.cls && baseline.cls_p95) {
-        const regression = this.calculateRegression(dataPoint.metrics.cls.value, baseline.cls_p95);
+        const regression = this.calculateRegression(
+          dataPoint.metrics.cls.value,
+          baseline.cls_p95
+        );
         if (regression > this.config.regressionThreshold) {
           regressions.push({
             metric: 'CLS',
@@ -469,14 +497,20 @@ class WebVitalsCollector {
     }
   }
 
-  private calculateRegression(currentValue: number, baselineValue: number): number {
+  private calculateRegression(
+    currentValue: number,
+    baselineValue: number
+  ): number {
     return ((currentValue - baselineValue) / baselineValue) * 100;
   }
 
   private reportRegressions(regressions: RegressionAlert[]) {
     regressions.forEach(regression => {
-      console.warn(`[WebVitalsCollector] ${regression.metric}性能回归检测:`, regression);
-      
+      console.warn(
+        `[WebVitalsCollector] ${regression.metric}性能回归检测:`,
+        regression
+      );
+
       // 上报到Sentry
       if (this.config.sentryEnabled) {
         Sentry.captureMessage(`Web Vitals回归: ${regression.metric}`, {
@@ -512,19 +546,30 @@ class WebVitalsCollector {
   public updateBaseline(): WebVitalsBaseline | null {
     try {
       const data = this.getStoredData();
-      const cutoff = Date.now() - (this.config.baselineWindow * 24 * 60 * 60 * 1000);
+      const cutoff =
+        Date.now() - this.config.baselineWindow * 24 * 60 * 60 * 1000;
       const recentData = data.filter(point => point.timestamp > cutoff);
-      
+
       if (recentData.length < 10) {
         console.warn('[WebVitalsCollector] 数据量不足，无法计算基线');
         return null;
       }
 
-      const lcpValues = recentData.filter(d => d.metrics.lcp).map(d => d.metrics.lcp!.value);
-      const inpValues = recentData.filter(d => d.metrics.inp).map(d => d.metrics.inp!.value);
-      const clsValues = recentData.filter(d => d.metrics.cls).map(d => d.metrics.cls!.value);
-      const fcpValues = recentData.filter(d => d.metrics.fcp).map(d => d.metrics.fcp!.value);
-      const ttfbValues = recentData.filter(d => d.metrics.ttfb).map(d => d.metrics.ttfb!.value);
+      const lcpValues = recentData
+        .filter(d => d.metrics.lcp)
+        .map(d => d.metrics.lcp!.value);
+      const inpValues = recentData
+        .filter(d => d.metrics.inp)
+        .map(d => d.metrics.inp!.value);
+      const clsValues = recentData
+        .filter(d => d.metrics.cls)
+        .map(d => d.metrics.cls!.value);
+      const fcpValues = recentData
+        .filter(d => d.metrics.fcp)
+        .map(d => d.metrics.fcp!.value);
+      const ttfbValues = recentData
+        .filter(d => d.metrics.ttfb)
+        .map(d => d.metrics.ttfb!.value);
 
       const baseline: WebVitalsBaseline = {
         lcp_p95: this.calculateP95(lcpValues),
@@ -538,9 +583,12 @@ class WebVitalsCollector {
         lastUpdated: Date.now(),
       };
 
-      localStorage.setItem(`${this.config.storageKey}-baseline`, JSON.stringify(baseline));
+      localStorage.setItem(
+        `${this.config.storageKey}-baseline`,
+        JSON.stringify(baseline)
+      );
       console.log('[WebVitalsCollector] 性能基线已更新:', baseline);
-      
+
       return baseline;
     } catch (error) {
       console.error('[WebVitalsCollector] 基线计算失败:', error);
@@ -550,7 +598,7 @@ class WebVitalsCollector {
 
   private calculateP95(values: number[]): number {
     if (values.length === 0) return 0;
-    
+
     const sorted = values.sort((a, b) => a - b);
     const index = Math.ceil(sorted.length * 0.95) - 1;
     return sorted[Math.max(0, index)];
@@ -571,29 +619,42 @@ class WebVitalsCollector {
     };
   } {
     const data = this.getStoredData();
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 最近24小时
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 最近24小时
     const recent = data.filter(point => point.timestamp > cutoff);
-    
-    const lcpValues = recent.filter(d => d.metrics.lcp).map(d => d.metrics.lcp!.value);
-    const inpValues = recent.filter(d => d.metrics.inp).map(d => d.metrics.inp!.value);
-    const clsValues = recent.filter(d => d.metrics.cls).map(d => d.metrics.cls!.value);
-    
-    const goodCount = recent.filter(d => 
-      d.metrics.lcp?.rating === 'good' && 
-      d.metrics.inp?.rating === 'good' && 
-      d.metrics.cls?.rating === 'good'
+
+    const lcpValues = recent
+      .filter(d => d.metrics.lcp)
+      .map(d => d.metrics.lcp!.value);
+    const inpValues = recent
+      .filter(d => d.metrics.inp)
+      .map(d => d.metrics.inp!.value);
+    const clsValues = recent
+      .filter(d => d.metrics.cls)
+      .map(d => d.metrics.cls!.value);
+
+    const goodCount = recent.filter(
+      d =>
+        d.metrics.lcp?.rating === 'good' &&
+        d.metrics.inp?.rating === 'good' &&
+        d.metrics.cls?.rating === 'good'
     ).length;
-    
+
     return {
       baseline: this.getBaseline(),
       recent,
       summary: {
         totalSessions: new Set(recent.map(d => d.sessionId)).size,
-        avgLCP: lcpValues.length ? lcpValues.reduce((a, b) => a + b, 0) / lcpValues.length : 0,
-        avgINP: inpValues.length ? inpValues.reduce((a, b) => a + b, 0) / inpValues.length : 0,
-        avgCLS: clsValues.length ? clsValues.reduce((a, b) => a + b, 0) / clsValues.length : 0,
+        avgLCP: lcpValues.length
+          ? lcpValues.reduce((a, b) => a + b, 0) / lcpValues.length
+          : 0,
+        avgINP: inpValues.length
+          ? inpValues.reduce((a, b) => a + b, 0) / inpValues.length
+          : 0,
+        avgCLS: clsValues.length
+          ? clsValues.reduce((a, b) => a + b, 0) / clsValues.length
+          : 0,
         goodRating: recent.length ? (goodCount / recent.length) * 100 : 0,
-      }
+      },
     };
   }
 
@@ -611,20 +672,20 @@ class WebVitalsCollector {
    */
   public stop() {
     this.isEnabled = false;
-    
+
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
-    
+
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
     }
-    
+
     // 最后刷新一次数据
     this.flush();
-    
+
     console.log('[WebVitalsCollector] 收集器已停止');
   }
 
@@ -641,7 +702,9 @@ class WebVitalsCollector {
 // 全局单例
 let webVitalsCollector: WebVitalsCollector | null = null;
 
-export const getWebVitalsCollector = (config?: Partial<WebVitalsCollectorConfig>): WebVitalsCollector => {
+export const getWebVitalsCollector = (
+  config?: Partial<WebVitalsCollectorConfig>
+): WebVitalsCollector => {
   if (!webVitalsCollector) {
     webVitalsCollector = new WebVitalsCollector(config);
   }

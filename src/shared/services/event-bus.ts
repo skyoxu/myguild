@@ -16,11 +16,11 @@ import type {
   EventPublisher,
   EventSubscriber,
   EventMiddleware,
-} from '@/shared/contracts/events';
+} from '../contracts/events';
 import {
   createValidationMiddleware,
   type ValidationConfig,
-} from '@/shared/middleware/cloud-events-validator';
+} from '../middleware/cloud-events-validator';
 
 // ============================================================================
 // 事件总线配置

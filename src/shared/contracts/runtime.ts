@@ -180,13 +180,13 @@ export function createPerformanceThresholds(): PerformanceThresholds {
 }
 
 // Utility type guards
-export function isFrameOverrun(_budget: FrameBudget): boolean {
+export function isFrameOverrun(budget: FrameBudget): boolean {
   return budget.overrun || budget.remaining < 0;
 }
 
 export function isEventLatencyExceeded(
-  _budget: EventLatencyBudget,
-  _eventType: 'ui' | 'game'
+  budget: EventLatencyBudget,
+  eventType: 'ui' | 'game'
 ): boolean {
   const maxLatency =
     eventType === 'ui' ? budget.uiEventMaxMs : budget.gameEventMaxMs;
@@ -194,9 +194,9 @@ export function isEventLatencyExceeded(
 }
 
 export function shouldDegradeState(
-  _metrics: PerformanceMetrics,
-  _thresholds: PerformanceThresholds,
-  _currentState: PerformanceState
+  metrics: PerformanceMetrics,
+  thresholds: PerformanceThresholds,
+  currentState: PerformanceState
 ): PerformanceState {
   // Check if we need to degrade further
   if (

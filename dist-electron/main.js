@@ -20,37 +20,42 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
-      ...SECURITY_PREFERENCES,
-    }
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true,
+    },
   });
 
   // E2E测试模式：网络隔离配置
   if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
     // 禁用自动更新检查
     app.setAppUserModelId('com.electron.test');
-    
+
     // 设置离线模式网络策略
     mainWindow.webContents.session.setPermissionRequestHandler(() => false);
-    
+
     // 阻止不必要的网络请求
-    mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-      const url = details.url;
-      
-      // 允许本地资源和测试必需的连接
-      if (
-        url.startsWith('file://') || 
-        url.startsWith('chrome-devtools://') ||
-        url.startsWith('data:') ||
-        url.includes('localhost') ||
-        url.includes('127.0.0.1')
-      ) {
-        callback({ cancel: false });
-      } else {
-        // 阻止外部网络请求
-        console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
-        callback({ cancel: true });
+    mainWindow.webContents.session.webRequest.onBeforeRequest(
+      (details, callback) => {
+        const url = details.url;
+
+        // 允许本地资源和测试必需的连接
+        if (
+          url.startsWith('file://') ||
+          url.startsWith('chrome-devtools://') ||
+          url.startsWith('data:') ||
+          url.includes('localhost') ||
+          url.includes('127.0.0.1')
+        ) {
+          callback({ cancel: false });
+        } else {
+          // 阻止外部网络请求
+          console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
+          callback({ cancel: true });
+        }
       }
-    });
+    );
   }
 
   // 在测试模式下暴露安全配置供验证
@@ -93,25 +98,30 @@ function createWindow() {
     mainWindow.show();
   });
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  mainWindow.webContents.setWindowOpenHandler(details => {
     shell.openExternal(details.url);
     return { action: 'deny' };
   });
 
   // 设置严格CSP响应头 - 确保沙箱模式下内联脚本被阻止
-  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-        ]
-      }
-    });
-  });
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    (details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+          ],
+        },
+      });
+    }
+  );
 
   // 加载应用
-  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    process.env.ELECTRON_RENDERER_URL
+  ) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
     mainWindow.loadFile(join(__dirname, '../dist/index.html'));
