@@ -30,7 +30,7 @@ describe('Release Feed Management', () => {
         version: '1.2.3',
         path: 'app.exe',
         sha512: 'sha512-testHash123==',
-        releaseDate: '2025-08-29T10:00:00.000Z'
+        releaseDate: '2025-08-29T10:00:00.000Z',
       };
       fs.writeFileSync(testFeedFile, yaml.dump(initialFeed), 'utf8');
 
@@ -41,7 +41,9 @@ describe('Release Feed Management', () => {
       );
 
       // 验证结果
-      const updatedFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const updatedFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(updatedFeed.stagingPercentage).toBe(25);
       expect(updatedFeed.version).toBe('1.2.3');
       expect(updatedFeed.path).toBe('app.exe');
@@ -60,21 +62,29 @@ describe('Release Feed Management', () => {
       fs.writeFileSync(testFeedFile, yaml.dump(initialFeed), 'utf8');
 
       // 测试 0%
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 0`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 0`
+      );
       let feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(0);
 
       // 测试 100%
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 100`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 100`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(100);
 
       // 测试超出范围的值会被夹紧
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 150`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 150`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(100);
 
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} -10`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} -10`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(0);
     });
@@ -109,9 +119,9 @@ describe('Release Feed Management', () => {
             {
               url: 'app-1.1.0.exe',
               sha512: 'sha512-oldHash123==',
-              size: 50331648
-            }
-          ]
+              size: 50331648,
+            },
+          ],
         },
         '1.2.0': {
           path: 'app-1.2.0.exe',
@@ -122,12 +132,16 @@ describe('Release Feed Management', () => {
             {
               url: 'app-1.2.0.exe',
               sha512: 'sha512-newHash456==',
-              size: 52428800
-            }
-          ]
-        }
+              size: 52428800,
+            },
+          ],
+        },
       };
-      fs.writeFileSync(testManifestFile, JSON.stringify(testManifest, null, 2), 'utf8');
+      fs.writeFileSync(
+        testManifestFile,
+        JSON.stringify(testManifest, null, 2),
+        'utf8'
+      );
     });
 
     test('should rollback feed to specified version', () => {
@@ -142,9 +156,9 @@ describe('Release Feed Management', () => {
           {
             url: 'app-1.2.0.exe',
             sha512: 'sha512-newHash456==',
-            size: 52428800
-          }
-        ]
+            size: 52428800,
+          },
+        ],
       };
       fs.writeFileSync(testFeedFile, yaml.dump(currentFeed), 'utf8');
 
@@ -155,7 +169,9 @@ describe('Release Feed Management', () => {
       );
 
       // 验证回滚结果
-      const rolledBackFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const rolledBackFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(rolledBackFeed.version).toBe('1.1.0');
       expect(rolledBackFeed.path).toBe('app-1.1.0.exe');
       expect(rolledBackFeed.sha512).toBe('sha512-oldHash123==');
@@ -204,7 +220,11 @@ describe('Release Feed Management', () => {
       expect(manifest['1.3.0'].sha512).toBeDefined();
 
       // 创建 feed 文件并回滚到新版本
-      const testFeed = { version: '1.4.0', path: 'app-1.4.0.exe', sha512: 'temp' };
+      const testFeed = {
+        version: '1.4.0',
+        path: 'app-1.4.0.exe',
+        sha512: 'temp',
+      };
       fs.writeFileSync(testFeedFile, yaml.dump(testFeed), 'utf8');
 
       execSync(
@@ -212,7 +232,9 @@ describe('Release Feed Management', () => {
         { stdio: 'pipe' }
       );
 
-      const rolledBackFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const rolledBackFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(rolledBackFeed.version).toBe('1.3.0');
       expect(rolledBackFeed.path).toBe('app-1.3.0.exe'); // 应该使用清单中的文件名
       expect(rolledBackFeed.sha512).toBe(manifest['1.3.0'].sha512);
@@ -232,12 +254,16 @@ describe('Release Feed Management', () => {
             {
               url: 'app-1.0.0.exe',
               sha512: 'sha512-stableHash==',
-              size: 48234496
-            }
-          ]
-        }
+              size: 48234496,
+            },
+          ],
+        },
       };
-      fs.writeFileSync(testManifestFile, JSON.stringify(testManifest, null, 2), 'utf8');
+      fs.writeFileSync(
+        testManifestFile,
+        JSON.stringify(testManifest, null, 2),
+        'utf8'
+      );
     });
 
     test('should execute emergency rollback (stop only)', () => {
@@ -246,7 +272,7 @@ describe('Release Feed Management', () => {
         version: '1.1.0',
         path: 'app-1.1.0.exe',
         sha512: 'sha512-currentHash==',
-        stagingPercentage: 25
+        stagingPercentage: 25,
       };
       fs.writeFileSync(testFeedFile, yaml.dump(activeFeed), 'utf8');
 
@@ -257,14 +283,18 @@ describe('Release Feed Management', () => {
       );
 
       // 验证紧急停止结果
-      const stoppedFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const stoppedFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(stoppedFeed.stagingPercentage).toBe(0);
       expect(stoppedFeed.version).toBe('1.1.0'); // 版本不变，只是停止分发
 
       const jsonResult = JSON.parse(result);
       expect(jsonResult.success).toBe(true);
       expect(jsonResult.steps).toBeDefined();
-      expect(jsonResult.steps.some((step: any) => step.step === 'emergency_stop')).toBe(true);
+      expect(
+        jsonResult.steps.some((step: any) => step.step === 'emergency_stop')
+      ).toBe(true);
     });
 
     test('should execute complete rollback with version revert', () => {
@@ -273,7 +303,7 @@ describe('Release Feed Management', () => {
         version: '1.1.0',
         path: 'app-1.1.0.exe',
         sha512: 'sha512-currentHash==',
-        stagingPercentage: 50
+        stagingPercentage: 50,
       };
       fs.writeFileSync(testFeedFile, yaml.dump(currentFeed), 'utf8');
 
@@ -284,7 +314,9 @@ describe('Release Feed Management', () => {
       );
 
       // 验证完整回滚结果
-      const rolledBackFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const rolledBackFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(rolledBackFeed.stagingPercentage).toBe(0);
       expect(rolledBackFeed.version).toBe('1.0.0'); // 版本已回退
       expect(rolledBackFeed.path).toBe('app-1.0.0.exe');
@@ -293,8 +325,12 @@ describe('Release Feed Management', () => {
       const jsonResult = JSON.parse(result);
       expect(jsonResult.success).toBe(true);
       expect(jsonResult.steps).toBeDefined();
-      expect(jsonResult.steps.some((step: any) => step.step === 'emergency_stop')).toBe(true);
-      expect(jsonResult.steps.some((step: any) => step.step === 'version_rollback')).toBe(true);
+      expect(
+        jsonResult.steps.some((step: any) => step.step === 'emergency_stop')
+      ).toBe(true);
+      expect(
+        jsonResult.steps.some((step: any) => step.step === 'version_rollback')
+      ).toBe(true);
     });
   });
 
@@ -306,7 +342,7 @@ describe('Release Feed Management', () => {
         path: 'app-1.3.0.exe',
         sha512: 'sha512-newVersionHash==',
         releaseDate: '2025-08-29T12:00:00.000Z',
-        stagingPercentage: 5
+        stagingPercentage: 5,
       };
       fs.writeFileSync(testFeedFile, yaml.dump(initialFeed), 'utf8');
 
@@ -315,17 +351,23 @@ describe('Release Feed Management', () => {
       expect(feed.stagingPercentage).toBe(5);
 
       // 3. 模拟健康检查通过，进展到 25%
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 25`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 25`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(25);
 
       // 4. 继续进展到 50%
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 50`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 50`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(50);
 
       // 5. 最终全量发布 100%
-      execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 100`);
+      execSync(
+        `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 100`
+      );
       feed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
       expect(feed.stagingPercentage).toBe(100);
       expect(feed.version).toBe('1.3.0'); // 版本保持不变
@@ -337,7 +379,7 @@ describe('Release Feed Management', () => {
         version: '1.4.0',
         path: 'app-1.4.0.exe',
         sha512: 'sha512-problematicVersion==',
-        stagingPercentage: 25
+        stagingPercentage: 25,
       };
       fs.writeFileSync(testFeedFile, yaml.dump(partialFeed), 'utf8');
 
@@ -348,7 +390,9 @@ describe('Release Feed Management', () => {
       );
 
       // 验证紧急停止成功
-      const stoppedFeed = yaml.load(fs.readFileSync(testFeedFile, 'utf8')) as any;
+      const stoppedFeed = yaml.load(
+        fs.readFileSync(testFeedFile, 'utf8')
+      ) as any;
       expect(stoppedFeed.stagingPercentage).toBe(0); // 停止分发
       expect(stoppedFeed.version).toBe('1.4.0'); // 版本保持，但不再分发
 
@@ -363,7 +407,10 @@ describe('Release Feed Management', () => {
 
       // 测试脚本是否能优雅处理损坏的文件
       expect(() => {
-        execSync(`node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 50`, { stdio: 'pipe' });
+        execSync(
+          `node scripts/release/patch-staging-percentage.mjs ${testFeedFile} 50`,
+          { stdio: 'pipe' }
+        );
       }).toThrow();
     });
   });
@@ -379,8 +426,8 @@ describe('Release Feed Management', () => {
         healthMetrics: {
           crashFreeSessions: 0.98,
           crashFreeUsers: 0.95,
-          lastUpdated: '2025-08-29T14:30:00.000Z'
-        }
+          lastUpdated: '2025-08-29T14:30:00.000Z',
+        },
       };
       fs.writeFileSync(testFeedFile, yaml.dump(feedWithMetrics), 'utf8');
 
@@ -400,8 +447,8 @@ describe('Release Feed Management', () => {
         stagingPercentage: 15,
         healthMetrics: {
           crashFreeSessions: 0.85, // 低于 90% 阈值
-          crashFreeUsers: 0.82     // 低于 88% 阈值
-        }
+          crashFreeUsers: 0.82, // 低于 88% 阈值
+        },
       };
       fs.writeFileSync(testFeedFile, yaml.dump(unhealthyFeed), 'utf8');
 

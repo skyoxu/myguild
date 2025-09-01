@@ -3,20 +3,20 @@
 /**
  * 可观测性统一集成器
  * 将SQLite健康指标暴露到Sentry等可观测性平台
- * 
+ *
  * 功能：
  * - 收集SQLite数据库健康指标
  * - 集成Sentry性能监控和错误追踪
  * - 暴露Prometheus指标端点
  * - 提供Web Vitals和业务指标集成
  * - 支持配置中心化管理
- * 
+ *
  * Usage:
  *   node scripts/observability-integration.mjs start
  *   node scripts/observability-integration.mjs collect
  *   node scripts/observability-integration.mjs expose --platform=sentry
  *   node scripts/observability-integration.mjs metrics --format=prometheus
- * 
+ *
  * Environment Variables:
  *   NODE_ENV                 - 运行环境 (development/production)
  *   SENTRY_DSN              - Sentry DSN for integration
@@ -54,7 +54,7 @@ class SQLiteHealthCollector {
       checkpointFrequency: 0,
       fragmentationLevel: 0,
       diskSpaceAvailable: 0,
-      lastCollected: null
+      lastCollected: null,
     };
     this.history = [];
   }
@@ -89,19 +89,19 @@ class SQLiteHealthCollector {
         walGrowthRate,
         diskSpaceAvailable: diskSpaceAvailable / (1024 * 1024), // MB
         ...performanceMetrics,
-        lastCollected: new Date().toISOString()
+        lastCollected: new Date().toISOString(),
       };
 
       // 保存历史记录
       this.history.push({
         timestamp: this.metrics.lastCollected,
-        ...this.metrics
+        ...this.metrics,
       });
 
       // 保留最近7天的数据
-      const cutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000);
-      this.history = this.history.filter(record => 
-        new Date(record.timestamp).getTime() > cutoffTime
+      const cutoffTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      this.history = this.history.filter(
+        record => new Date(record.timestamp).getTime() > cutoffTime
       );
 
       return this.metrics;
@@ -134,8 +134,9 @@ class SQLiteHealthCollector {
     }
 
     const lastRecord = this.history[this.history.length - 1];
-    const timeDelta = (Date.now() - new Date(lastRecord.timestamp).getTime()) / 1000; // 秒
-    const sizeDelta = (currentWalSize / (1024 * 1024)) - lastRecord.walSize; // MB
+    const timeDelta =
+      (Date.now() - new Date(lastRecord.timestamp).getTime()) / 1000; // 秒
+    const sizeDelta = currentWalSize / (1024 * 1024) - lastRecord.walSize; // MB
 
     return timeDelta > 0 ? sizeDelta / timeDelta : 0; // MB/秒
   }
@@ -146,30 +147,34 @@ class SQLiteHealthCollector {
   async getDiskSpace(filePath) {
     try {
       const { execSync } = await import('child_process');
-      
+
       if (process.platform === 'win32') {
         // Windows: 使用wmic获取磁盘空间
         const drive = path.parse(filePath).root.replace('\\', '');
-        const result = execSync(`wmic logicaldisk where caption="${drive}" get size,freespace /value`, 
-          { encoding: 'utf8', timeout: 5000 });
-        
+        const result = execSync(
+          `wmic logicaldisk where caption="${drive}" get size,freespace /value`,
+          { encoding: 'utf8', timeout: 5000 }
+        );
+
         const lines = result.split('\n').filter(line => line.includes('='));
         const freeSpace = lines.find(line => line.startsWith('FreeSpace='));
-        
+
         if (freeSpace) {
           return parseInt(freeSpace.split('=')[1]) || 0;
         }
       } else {
         // Unix: 使用df命令
-        const result = execSync(`df -k "${path.dirname(filePath)}"`, 
-          { encoding: 'utf8', timeout: 5000 });
+        const result = execSync(`df -k "${path.dirname(filePath)}"`, {
+          encoding: 'utf8',
+          timeout: 5000,
+        });
         const lines = result.split('\n');
         if (lines.length > 1) {
           const fields = lines[1].split(/\s+/);
           return parseInt(fields[3]) * 1024 || 0; // KB转bytes
         }
       }
-      
+
       return 0;
     } catch (error) {
       console.warn('⚠️ 无法获取磁盘空间信息:', error.message);
@@ -185,35 +190,40 @@ class SQLiteHealthCollector {
       connectionCount: 0,
       transactionDuration: 0,
       checkpointFrequency: 0,
-      fragmentationLevel: 0
+      fragmentationLevel: 0,
     };
 
     try {
       // 尝试使用SQLite3命令行工具获取更详细信息
       const { execSync } = await import('child_process');
-      
+
       // 检查数据库完整性和统计信息
-      const integrityResult = execSync(`sqlite3 "${dbPath}" "PRAGMA integrity_check;"`, 
-        { encoding: 'utf8', timeout: 10000 });
-      
+      const integrityResult = execSync(
+        `sqlite3 "${dbPath}" "PRAGMA integrity_check;"`,
+        { encoding: 'utf8', timeout: 10000 }
+      );
+
       if (!integrityResult.includes('ok')) {
         console.warn('⚠️ 数据库完整性检查异常:', integrityResult);
       }
 
       // 获取页面统计信息
-      const pageStatsResult = execSync(`sqlite3 "${dbPath}" "PRAGMA page_count; PRAGMA freelist_count;"`, 
-        { encoding: 'utf8', timeout: 5000 });
-      
+      const pageStatsResult = execSync(
+        `sqlite3 "${dbPath}" "PRAGMA page_count; PRAGMA freelist_count;"`,
+        { encoding: 'utf8', timeout: 5000 }
+      );
+
       const pageStats = pageStatsResult.split('\n').filter(Boolean);
       const pageCount = parseInt(pageStats[0]) || 0;
       const freelistCount = parseInt(pageStats[1]) || 0;
-      
+
       // 计算碎片化程度
-      const fragmentationLevel = pageCount > 0 ? (freelistCount / pageCount) * 100 : 0;
+      const fragmentationLevel =
+        pageCount > 0 ? (freelistCount / pageCount) * 100 : 0;
 
       return {
         ...defaultMetrics,
-        fragmentationLevel: Math.round(fragmentationLevel * 100) / 100 // 保留2位小数
+        fragmentationLevel: Math.round(fragmentationLevel * 100) / 100, // 保留2位小数
       };
     } catch (error) {
       console.warn('⚠️ 无法收集数据库性能指标:', error.message);
@@ -228,7 +238,7 @@ class SQLiteHealthCollector {
     const thresholds = config.database?.health || {
       dbSizeWarningMB: { threshold: 500 },
       walSizeThresholdMB: { threshold: 10 },
-      diskSpaceWarningMB: { threshold: 1000 }
+      diskSpaceWarningMB: { threshold: 1000 },
     };
 
     const issues = [];
@@ -241,7 +251,7 @@ class SQLiteHealthCollector {
         type: 'wal_size_exceeded',
         message: `WAL文件大小(${this.metrics.walSize.toFixed(2)}MB)超过阈值`,
         threshold: thresholds.walSizeThresholdMB.threshold,
-        actual: this.metrics.walSize
+        actual: this.metrics.walSize,
       });
       status = 'critical';
     }
@@ -253,19 +263,21 @@ class SQLiteHealthCollector {
         type: 'db_size_warning',
         message: `数据库大小(${this.metrics.dbSize.toFixed(2)}MB)超过警告阈值`,
         threshold: thresholds.dbSizeWarningMB.threshold,
-        actual: this.metrics.dbSize
+        actual: this.metrics.dbSize,
       });
       if (status === 'healthy') status = 'warning';
     }
 
     // 检查磁盘空间
-    if (this.metrics.diskSpaceAvailable < thresholds.diskSpaceWarningMB.threshold) {
+    if (
+      this.metrics.diskSpaceAvailable < thresholds.diskSpaceWarningMB.threshold
+    ) {
       issues.push({
         severity: 'critical',
         type: 'disk_space_low',
         message: `可用磁盘空间(${this.metrics.diskSpaceAvailable.toFixed(2)}MB)不足`,
         threshold: thresholds.diskSpaceWarningMB.threshold,
-        actual: this.metrics.diskSpaceAvailable
+        actual: this.metrics.diskSpaceAvailable,
       });
       status = 'critical';
     }
@@ -277,7 +289,7 @@ class SQLiteHealthCollector {
         type: 'high_fragmentation',
         message: `数据库碎片化程度(${this.metrics.fragmentationLevel}%)较高`,
         threshold: 25,
-        actual: this.metrics.fragmentationLevel
+        actual: this.metrics.fragmentationLevel,
       });
       if (status === 'healthy') status = 'warning';
     }
@@ -287,7 +299,7 @@ class SQLiteHealthCollector {
       timestamp: new Date().toISOString(),
       issues,
       metrics: this.metrics,
-      recommendations: this.generateRecommendations(issues)
+      recommendations: this.generateRecommendations(issues),
     };
   }
 
@@ -300,7 +312,9 @@ class SQLiteHealthCollector {
     issues.forEach(issue => {
       switch (issue.type) {
         case 'wal_size_exceeded':
-          recommendations.push('执行WAL检查点操作: npm run db:checkpoint:truncate');
+          recommendations.push(
+            '执行WAL检查点操作: npm run db:checkpoint:truncate'
+          );
           break;
         case 'db_size_warning':
           recommendations.push('考虑数据清理或归档: npm run db:maintenance');
@@ -363,7 +377,7 @@ class SentryIntegrator {
         tags: {
           environment: environment,
           component: 'database',
-          status: healthAssessment.status
+          status: healthAssessment.status,
         },
         data: {
           dbSizeMB: healthAssessment.metrics.dbSize,
@@ -371,8 +385,10 @@ class SentryIntegrator {
           diskSpaceAvailableMB: healthAssessment.metrics.diskSpaceAvailable,
           fragmentationLevel: healthAssessment.metrics.fragmentationLevel,
           issueCount: healthAssessment.issues.length,
-          criticalIssues: healthAssessment.issues.filter(i => i.severity === 'critical').length
-        }
+          criticalIssues: healthAssessment.issues.filter(
+            i => i.severity === 'critical'
+          ).length,
+        },
       };
 
       // 在没有实际Sentry SDK时，记录到日志
@@ -387,12 +403,15 @@ class SentryIntegrator {
             tags: {
               alertType: issue.type,
               component: 'database',
-              environment: environment
+              environment: environment,
             },
-            extra: issue
+            extra: issue,
           };
 
-          console.log('🚨 Sentry错误事件:', JSON.stringify(errorEvent, null, 2));
+          console.log(
+            '🚨 Sentry错误事件:',
+            JSON.stringify(errorEvent, null, 2)
+          );
         }
       }
 
@@ -441,18 +460,20 @@ class PrometheusExporter {
    */
   async start() {
     const { createServer } = await import('http');
-    
+
     this.server = createServer((req, res) => {
       if (req.url === '/metrics') {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end(this.generateMetricsOutput());
       } else if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          status: 'healthy',
-          uptime: process.uptime(),
-          timestamp: new Date().toISOString()
-        }));
+        res.end(
+          JSON.stringify({
+            status: 'healthy',
+            uptime: process.uptime(),
+            timestamp: new Date().toISOString(),
+          })
+        );
       } else {
         res.writeHead(404);
         res.end('Not Found');
@@ -460,7 +481,9 @@ class PrometheusExporter {
     });
 
     this.server.listen(this.port, () => {
-      console.log(`📊 Prometheus指标服务器启动: http://localhost:${this.port}/metrics`);
+      console.log(
+        `📊 Prometheus指标服务器启动: http://localhost:${this.port}/metrics`
+      );
     });
 
     return this.server;
@@ -477,49 +500,50 @@ class PrometheusExporter {
       help: 'SQLite database file size in MB',
       type: 'gauge',
       value: healthAssessment.metrics.dbSize,
-      labels
+      labels,
     });
 
     this.metrics.set(`${prefix}_wal_size_mb`, {
       help: 'SQLite WAL file size in MB',
       type: 'gauge',
       value: healthAssessment.metrics.walSize,
-      labels
+      labels,
     });
 
     this.metrics.set(`${prefix}_disk_space_available_mb`, {
       help: 'Available disk space in MB',
       type: 'gauge',
       value: healthAssessment.metrics.diskSpaceAvailable,
-      labels
+      labels,
     });
 
     this.metrics.set(`${prefix}_fragmentation_level_percent`, {
       help: 'Database fragmentation level percentage',
       type: 'gauge',
       value: healthAssessment.metrics.fragmentationLevel,
-      labels
+      labels,
     });
 
     this.metrics.set(`${prefix}_issues_total`, {
       help: 'Total number of database health issues',
       type: 'gauge',
       value: healthAssessment.issues.length,
-      labels: `${labels},severity="all"`
+      labels: `${labels},severity="all"`,
     });
 
     this.metrics.set(`${prefix}_critical_issues_total`, {
       help: 'Number of critical database health issues',
       type: 'gauge',
-      value: healthAssessment.issues.filter(i => i.severity === 'critical').length,
-      labels: `${labels},severity="critical"`
+      value: healthAssessment.issues.filter(i => i.severity === 'critical')
+        .length,
+      labels: `${labels},severity="critical"`,
     });
 
     this.metrics.set(`${prefix}_score`, {
       help: 'Overall database health score (0-1)',
       type: 'gauge',
       value: this.calculateHealthScore(healthAssessment),
-      labels
+      labels,
     });
   }
 
@@ -595,7 +619,7 @@ class ObservabilityManager {
    */
   async start() {
     console.log('🚀 启动可观测性统一监控...');
-    
+
     this.running = true;
 
     // 启动Prometheus指标服务器
@@ -603,7 +627,7 @@ class ObservabilityManager {
 
     // 开始定期收集指标
     const interval = (this.config.metricsInterval || 30) * 1000;
-    
+
     this.intervalId = setInterval(async () => {
       if (this.running) {
         await this.collectAndExpose();
@@ -615,7 +639,9 @@ class ObservabilityManager {
 
     console.log('✅ 可观测性监控已启动');
     console.log(`📊 指标采集间隔: ${interval / 1000}秒`);
-    console.log(`🔗 Prometheus指标: http://localhost:${this.prometheusExporter.port}/metrics`);
+    console.log(
+      `🔗 Prometheus指标: http://localhost:${this.prometheusExporter.port}/metrics`
+    );
   }
 
   /**
@@ -624,23 +650,27 @@ class ObservabilityManager {
   async collectAndExpose() {
     try {
       console.log('📊 收集数据库健康指标...');
-      
+
       // 收集SQLite健康指标
       await this.healthCollector.collectMetrics();
-      
+
       // 获取健康评估
       const healthAssessment = this.healthCollector.getHealthAssessment();
-      
+
       // 更新Prometheus指标
       this.prometheusExporter.updateSQLiteMetrics(healthAssessment);
-      
+
       // 发送到Sentry
       await this.sentryIntegrator.sendHealthMetrics(healthAssessment);
-      
+
       // 输出状态摘要
       console.log(`📈 数据库健康状态: ${healthAssessment.status}`);
-      console.log(`📊 WAL大小: ${healthAssessment.metrics.walSize.toFixed(2)}MB`);
-      console.log(`💾 数据库大小: ${healthAssessment.metrics.dbSize.toFixed(2)}MB`);
+      console.log(
+        `📊 WAL大小: ${healthAssessment.metrics.walSize.toFixed(2)}MB`
+      );
+      console.log(
+        `💾 数据库大小: ${healthAssessment.metrics.dbSize.toFixed(2)}MB`
+      );
       console.log(`⚠️ 问题数量: ${healthAssessment.issues.length}`);
 
       // 保存详细报告
@@ -659,19 +689,22 @@ class ObservabilityManager {
   async saveHealthReport(healthAssessment) {
     try {
       const reportsDir = path.join(process.cwd(), 'logs', 'observability');
-      
+
       if (!fs.existsSync(reportsDir)) {
         fs.mkdirSync(reportsDir, { recursive: true });
       }
 
-      const reportFile = path.join(reportsDir, `health-${new Date().toISOString().slice(0, 10)}.json`);
+      const reportFile = path.join(
+        reportsDir,
+        `health-${new Date().toISOString().slice(0, 10)}.json`
+      );
       const reportData = {
         ...healthAssessment,
         collector: {
           version: '1.0.0',
           runtime: process.version,
-          platform: process.platform
-        }
+          platform: process.platform,
+        },
       };
 
       fs.writeFileSync(reportFile, JSON.stringify(reportData, null, 2));
@@ -686,16 +719,16 @@ class ObservabilityManager {
    */
   stop() {
     console.log('🛑 停止可观测性监控...');
-    
+
     this.running = false;
-    
+
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    
+
     this.prometheusExporter.stop();
-    
+
     console.log('✅ 可观测性监控已停止');
   }
 
@@ -704,12 +737,12 @@ class ObservabilityManager {
    */
   async collectOnce() {
     console.log('🔍 执行单次指标收集...');
-    
+
     const healthAssessment = await this.collectAndExpose();
-    
+
     console.log('\n📊 指标收集结果:');
     console.log(JSON.stringify(healthAssessment, null, 2));
-    
+
     return healthAssessment;
   }
 }
@@ -726,7 +759,7 @@ async function main() {
     sentryDsn: process.env.SENTRY_DSN,
     prometheusPort: parseInt(process.env.PROMETHEUS_PORT) || 9090,
     metricsInterval: parseInt(process.env.METRICS_INTERVAL) || 30,
-    enabled: (process.env.OBSERVABILITY_ENABLED || 'true') === 'true'
+    enabled: (process.env.OBSERVABILITY_ENABLED || 'true') === 'true',
   };
 
   if (!observabilityConfig.enabled) {
@@ -740,18 +773,18 @@ async function main() {
     switch (command) {
       case 'start':
         await manager.start();
-        
+
         // 处理优雅关闭
         process.on('SIGINT', () => {
           manager.stop();
           process.exit(0);
         });
-        
+
         process.on('SIGTERM', () => {
           manager.stop();
           process.exit(0);
         });
-        
+
         // 保持进程运行
         console.log('🔄 可观测性监控运行中... (Ctrl+C 停止)');
         await new Promise(() => {}); // 永久运行
@@ -759,12 +792,12 @@ async function main() {
 
       case 'collect':
         const result = await manager.collectOnce();
-        
+
         // 输出简化状态用于CI
         console.log(`\n📈 健康状态: ${result.status}`);
         console.log(`📊 指标数量: ${Object.keys(result.metrics).length}`);
         console.log(`⚠️ 问题数量: ${result.issues.length}`);
-        
+
         if (result.issues.filter(i => i.severity === 'critical').length > 0) {
           console.log('❌ 发现严重问题，建议立即处理');
           process.exit(1);
@@ -772,34 +805,37 @@ async function main() {
         break;
 
       case 'expose':
-        const platform = flags.find(f => f.startsWith('--platform='))?.split('=')[1] || 'all';
-        
+        const platform =
+          flags.find(f => f.startsWith('--platform='))?.split('=')[1] || 'all';
+
         console.log(`🔗 暴露指标到平台: ${platform}`);
-        
+
         if (platform === 'sentry' || platform === 'all') {
-          const healthAssessment = manager.healthCollector.getHealthAssessment();
+          const healthAssessment =
+            manager.healthCollector.getHealthAssessment();
           await manager.sentryIntegrator.sendHealthMetrics(healthAssessment);
         }
-        
+
         if (platform === 'prometheus' || platform === 'all') {
           await manager.prometheusExporter.start();
           console.log('📊 Prometheus指标已暴露，按Ctrl+C停止...');
-          
+
           process.on('SIGINT', () => {
             manager.prometheusExporter.stop();
             process.exit(0);
           });
-          
+
           await new Promise(() => {}); // 保持服务器运行
         }
         break;
 
       case 'metrics':
-        const format = flags.find(f => f.startsWith('--format='))?.split('=')[1] || 'json';
-        
+        const format =
+          flags.find(f => f.startsWith('--format='))?.split('=')[1] || 'json';
+
         await manager.healthCollector.collectMetrics();
         const assessment = manager.healthCollector.getHealthAssessment();
-        
+
         if (format === 'prometheus') {
           manager.prometheusExporter.updateSQLiteMetrics(assessment);
           console.log(manager.prometheusExporter.generateMetricsOutput());
@@ -850,8 +886,16 @@ async function main() {
 }
 
 // 如果直接运行脚本
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('observability-integration.mjs')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1].endsWith('observability-integration.mjs')
+) {
   main();
 }
 
-export { ObservabilityManager, SQLiteHealthCollector, SentryIntegrator, PrometheusExporter };
+export {
+  ObservabilityManager,
+  SQLiteHealthCollector,
+  SentryIntegrator,
+  PrometheusExporter,
+};

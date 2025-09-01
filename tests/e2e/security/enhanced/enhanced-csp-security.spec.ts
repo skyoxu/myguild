@@ -65,18 +65,26 @@ test.describe('CSP策略安全验证', () => {
 
   test('CSP违规报告功能', async () => {
     // 监听 CSP 违规报告
-    const cspViolations: Array<{ violatedDirective: string; blockedURI: string }> = [];
-    
+    const cspViolations: Array<{
+      violatedDirective: string;
+      blockedURI: string;
+    }> = [];
+
     page.on('console', msg => {
-      if (msg.type() === 'error' && msg.text().includes('Content-Security-Policy')) {
+      if (
+        msg.type() === 'error' &&
+        msg.text().includes('Content-Security-Policy')
+      ) {
         const cspError = msg.text();
-        const violatedDirectiveMatch = cspError.match(/violated-directive:\s*([^;]+)/);
+        const violatedDirectiveMatch = cspError.match(
+          /violated-directive:\s*([^;]+)/
+        );
         const blockedURIMatch = cspError.match(/blocked-uri:\s*([^;]+)/);
-        
+
         if (violatedDirectiveMatch && blockedURIMatch) {
           cspViolations.push({
             violatedDirective: violatedDirectiveMatch[1].trim(),
-            blockedURI: blockedURIMatch[1].trim()
+            blockedURI: blockedURIMatch[1].trim(),
           });
         }
       }
@@ -88,7 +96,7 @@ test.describe('CSP策略安全验证', () => {
       const script = document.createElement('script');
       script.textContent = 'console.log("违规脚本执行");';
       document.head.appendChild(script);
-      
+
       // 尝试加载外部不安全资源
       const img = new Image();
       img.src = 'http://unsafe-domain.example.com/image.png';
@@ -97,16 +105,20 @@ test.describe('CSP策略安全验证', () => {
 
     // 等待一段时间让违规报告触发
     await page.waitForTimeout(1000);
-    
+
     // 验证至少捕获到一个 CSP 违规
     expect(cspViolations.length).toBeGreaterThan(0);
-    expect(cspViolations.some(v => v.violatedDirective.includes('script-src'))).toBe(true);
+    expect(
+      cspViolations.some(v => v.violatedDirective.includes('script-src'))
+    ).toBe(true);
   });
 
   test('CSP策略完整性检查', async () => {
     // 获取当前页面的 CSP 策略
     const cspContent = await page.evaluate(() => {
-      const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector<HTMLMetaElement>(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       return cspMeta?.getAttribute('content') || '';
     });
 
@@ -117,24 +129,28 @@ test.describe('CSP策略安全验证', () => {
     expect(cspContent).toContain('default-src');
     expect(cspContent).toContain('script-src');
     expect(cspContent).toContain('style-src');
-    expect(cspContent).toContain('object-src \'none\'');
-    expect(cspContent).toContain('base-uri \'self\'');
+    expect(cspContent).toContain("object-src 'none'");
+    expect(cspContent).toContain("base-uri 'self'");
 
     // 验证不包含不安全的指令
-    expect(cspContent).not.toContain('\'unsafe-inline\'');
-    expect(cspContent).not.toContain('\'unsafe-eval\'');
+    expect(cspContent).not.toContain("'unsafe-inline'");
+    expect(cspContent).not.toContain("'unsafe-eval'");
     expect(cspContent).not.toContain('*'); // 避免通配符
 
     // 验证 connect-src 只允许必要的域名
     const connectSrcMatch = cspContent.match(/connect-src\s+([^;]+)/);
     if (connectSrcMatch) {
       const connectSrc = connectSrcMatch[1];
-      expect(connectSrc).toContain('\'self\'');
+      expect(connectSrc).toContain("'self'");
       // 验证只包含必要的外部域名（如 Sentry）
       const allowedDomains = ['sentry.io'];
-      const domains = connectSrc.split(' ').filter(d => d.startsWith('https://'));
+      const domains = connectSrc
+        .split(' ')
+        .filter(d => d.startsWith('https://'));
       domains.forEach(domain => {
-        const isAllowed = allowedDomains.some(allowed => domain.includes(allowed));
+        const isAllowed = allowedDomains.some(allowed =>
+          domain.includes(allowed)
+        );
         expect(isAllowed).toBe(true);
       });
     }
@@ -143,9 +159,11 @@ test.describe('CSP策略安全验证', () => {
   test('CSP动态策略验证 - 环境特定检查', async () => {
     // 获取当前环境
     const environment = process.env.NODE_ENV || 'development';
-    
+
     const cspContent = await page.evaluate(() => {
-      const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector<HTMLMetaElement>(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       return cspMeta?.getAttribute('content') || '';
     });
 
@@ -167,25 +185,29 @@ test.describe('CSP策略安全验证', () => {
   test('CSP实时策略更新验证', async () => {
     // 模拟策略更新场景
     const originalCsp = await page.evaluate(() => {
-      const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector<HTMLMetaElement>(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       return cspMeta?.getAttribute('content') || '';
     });
 
     // 尝试动态修改 CSP 策略（应该被阻止或无效）
     const updateResult = await page.evaluate(() => {
       try {
-        const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+        const cspMeta = document.querySelector<HTMLMetaElement>(
+          'meta[http-equiv="Content-Security-Policy"]'
+        );
         if (cspMeta) {
           const originalContent = cspMeta.getAttribute('content');
           cspMeta.setAttribute('content', "default-src 'unsafe-inline' *");
-          
+
           // 检查是否真的被修改
           const newContent = cspMeta.getAttribute('content');
           return {
             success: true,
             changed: newContent !== originalContent,
             original: originalContent,
-            new: newContent
+            new: newContent,
           };
         }
         return { success: false, error: 'CSP meta not found' };
@@ -196,7 +218,7 @@ test.describe('CSP策略安全验证', () => {
 
     // 验证即使DOM被修改，浏览器仍然使用原始策略
     expect(updateResult.success).toBe(true);
-    
+
     // 尝试执行应该被原始策略阻止的操作
     const stillBlocked = await page.evaluate(async () => {
       return new Promise(resolve => {
@@ -217,15 +239,15 @@ test.describe('CSP策略安全验证', () => {
 
   test('CSP违规事件监听器验证', async () => {
     let violationReported = false;
-    
+
     // 在页面中设置 CSP 违规监听器
     await page.evaluate(() => {
-      document.addEventListener('securitypolicyviolation', (e) => {
+      document.addEventListener('securitypolicyviolation', e => {
         console.log('CSP Violation detected:', {
           violatedDirective: e.violatedDirective,
           blockedURI: e.blockedURI,
           lineNumber: e.lineNumber,
-          sourceFile: e.sourceFile
+          sourceFile: e.sourceFile,
         });
         (window as any).cspViolationDetected = true;
       });
@@ -240,7 +262,7 @@ test.describe('CSP策略安全验证', () => {
 
     // 等待违规事件触发
     await page.waitForTimeout(500);
-    
+
     // 检查违规是否被检测到
     violationReported = await page.evaluate(() => {
       return (window as any).cspViolationDetected === true;
@@ -251,7 +273,9 @@ test.describe('CSP策略安全验证', () => {
 
   test('CSP策略指令覆盖完整性', async () => {
     const cspContent = await page.evaluate(() => {
-      const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector<HTMLMetaElement>(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       return cspMeta?.getAttribute('content') || '';
     });
 
@@ -267,7 +291,7 @@ test.describe('CSP策略安全验证', () => {
     // 验证关键安全指令存在
     const requiredDirectives = [
       'default-src',
-      'script-src', 
+      'script-src',
       'style-src',
       'img-src',
       'font-src',
@@ -275,7 +299,7 @@ test.describe('CSP策略安全验证', () => {
       'object-src',
       'base-uri',
       'form-action',
-      'frame-ancestors'
+      'frame-ancestors',
     ];
 
     requiredDirectives.forEach(directive => {
@@ -292,9 +316,11 @@ test.describe('CSP策略安全验证', () => {
 
   test('CSP策略动态环境适配', async () => {
     const environment = process.env.NODE_ENV || 'development';
-    
+
     const cspContent = await page.evaluate(() => {
-      const cspMeta = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector<HTMLMetaElement>(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       return cspMeta?.getAttribute('content') || '';
     });
 
@@ -311,7 +337,7 @@ test.describe('CSP策略安全验证', () => {
 
     // 验证 Sentry 集成
     expect(cspContent).toContain('sentry.io');
-    
+
     // 验证没有通配符（除了特定情况）
     const dangerousPatterns = ['*', "'unsafe-inline'", "'unsafe-eval'"];
     dangerousPatterns.forEach(pattern => {

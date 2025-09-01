@@ -2,7 +2,7 @@
 /**
  * Critical条件检查清单 - 风险/回滚机制
  * 基于ADR-0003和ADR-0005，为生产发布提供Critical条件验证
- * 
+ *
  * Critical条件定义：
  * - 安全基线违规（Electron沙箱、CSP策略）
  * - Release Health低于阈值（Crash-Free < 99.5%）
@@ -25,15 +25,15 @@ const criticalChecks = {
   releaseHealth: { status: 'unknown', checks: [], violations: [], metrics: {} },
   coreServices: { status: 'unknown', checks: [], failures: [] },
   performance: { status: 'unknown', checks: [], degradations: [] },
-  resources: { status: 'unknown', checks: [], warnings: [] }
+  resources: { status: 'unknown', checks: [], warnings: [] },
 };
 
 /** 检查状态枚举 */
 const CHECK_STATUS = {
   PASS: 'pass',
-  WARN: 'warn', 
+  WARN: 'warn',
   FAIL: 'fail',
-  CRITICAL: 'critical'
+  CRITICAL: 'critical',
 };
 
 /**
@@ -41,31 +41,31 @@ const CHECK_STATUS = {
  */
 async function checkSecurityBaseline() {
   console.log('🔐 检查安全基线Critical条件...');
-  
+
   try {
     // 检查Electron安全配置
     const mainFilePath = path.join(projectRoot, 'electron', 'main.ts');
     if (await fileExists(mainFilePath)) {
       const mainContent = await fs.readFile(mainFilePath, 'utf-8');
-      
+
       // Critical: contextIsolation必须为true
       if (mainContent.includes('contextIsolation: false')) {
         criticalChecks.security.violations.push({
           type: 'CRITICAL_SECURITY_VIOLATION',
           message: 'contextIsolation设置为false，严重安全风险',
-          action: 'IMMEDIATE_ROLLBACK'
+          action: 'IMMEDIATE_ROLLBACK',
         });
         criticalChecks.security.status = CHECK_STATUS.CRITICAL;
       } else {
         criticalChecks.security.checks.push('✅ contextIsolation安全设置正确');
       }
-      
+
       // Critical: nodeIntegration必须为false
       if (mainContent.includes('nodeIntegration: true')) {
         criticalChecks.security.violations.push({
           type: 'CRITICAL_SECURITY_VIOLATION',
           message: 'nodeIntegration设置为true，严重安全风险',
-          action: 'IMMEDIATE_ROLLBACK'
+          action: 'IMMEDIATE_ROLLBACK',
         });
         criticalChecks.security.status = CHECK_STATUS.CRITICAL;
       } else {
@@ -77,13 +77,16 @@ async function checkSecurityBaseline() {
     const indexPath = path.join(projectRoot, 'index.html');
     if (await fileExists(indexPath)) {
       const indexContent = await fs.readFile(indexPath, 'utf-8');
-      
+
       // Critical: 生产环境不能有unsafe-inline
-      if (indexContent.includes("'unsafe-inline'") && process.env.NODE_ENV === 'production') {
+      if (
+        indexContent.includes("'unsafe-inline'") &&
+        process.env.NODE_ENV === 'production'
+      ) {
         criticalChecks.security.violations.push({
           type: 'CRITICAL_CSP_VIOLATION',
           message: '生产环境CSP包含unsafe-inline，安全风险',
-          action: 'IMMEDIATE_ROLLBACK'
+          action: 'IMMEDIATE_ROLLBACK',
         });
         criticalChecks.security.status = CHECK_STATUS.CRITICAL;
       } else {
@@ -94,13 +97,12 @@ async function checkSecurityBaseline() {
     if (criticalChecks.security.status !== CHECK_STATUS.CRITICAL) {
       criticalChecks.security.status = CHECK_STATUS.PASS;
     }
-
   } catch (error) {
     criticalChecks.security.status = CHECK_STATUS.FAIL;
     criticalChecks.security.violations.push({
       type: 'CHECK_ERROR',
       message: `安全基线检查失败: ${error.message}`,
-      action: 'INVESTIGATE'
+      action: 'INVESTIGATE',
     });
   }
 }
@@ -110,29 +112,41 @@ async function checkSecurityBaseline() {
  */
 async function checkReleaseHealth() {
   console.log('📊 检查Release Health Critical条件...');
-  
+
   try {
     const healthConfigPath = path.join(projectRoot, '.release-health.json');
-    
+
     if (await fileExists(healthConfigPath)) {
-      const healthConfig = JSON.parse(await fs.readFile(healthConfigPath, 'utf-8'));
-      
+      const healthConfig = JSON.parse(
+        await fs.readFile(healthConfigPath, 'utf-8')
+      );
+
       // 解析配置格式（支持新旧格式）
-      const crashFreeSessions = healthConfig.crashFreeSessions || 
-                               (healthConfig.thresholds?.sentry?.minCrashFreeSessions ? 
-                                healthConfig.thresholds.sentry.minCrashFreeSessions / 100 : 0);
-      const crashFreeUsers = healthConfig.crashFreeUsers || 
-                           (healthConfig.thresholds?.sentry?.minCrashFreeUsers ? 
-                            healthConfig.thresholds.sentry.minCrashFreeUsers / 100 : 0);
-      
+      const crashFreeSessions =
+        healthConfig.crashFreeSessions ||
+        (healthConfig.thresholds?.sentry?.minCrashFreeSessions
+          ? healthConfig.thresholds.sentry.minCrashFreeSessions / 100
+          : 0);
+      const crashFreeUsers =
+        healthConfig.crashFreeUsers ||
+        (healthConfig.thresholds?.sentry?.minCrashFreeUsers
+          ? healthConfig.thresholds.sentry.minCrashFreeUsers / 100
+          : 0);
+
       // 检查配置文件是否包含实际指标（而不是阈值）
       const isConfigFile = healthConfig.thresholds && !healthConfig.metrics;
-      
+
       if (isConfigFile) {
         // 这是配置文件，不包含实际指标
-        criticalChecks.releaseHealth.checks.push('✅ Release Health配置文件存在');
-        criticalChecks.releaseHealth.checks.push(`✅ 配置阈值: Sessions ≥ ${healthConfig.thresholds.sentry.minCrashFreeSessions}%`);
-        criticalChecks.releaseHealth.checks.push(`✅ 配置阈值: Users ≥ ${healthConfig.thresholds.sentry.minCrashFreeUsers}%`);
+        criticalChecks.releaseHealth.checks.push(
+          '✅ Release Health配置文件存在'
+        );
+        criticalChecks.releaseHealth.checks.push(
+          `✅ 配置阈值: Sessions ≥ ${healthConfig.thresholds.sentry.minCrashFreeSessions}%`
+        );
+        criticalChecks.releaseHealth.checks.push(
+          `✅ 配置阈值: Users ≥ ${healthConfig.thresholds.sentry.minCrashFreeUsers}%`
+        );
       } else {
         // Critical: Crash-Free Sessions < 99.5%
         if (crashFreeSessions < 0.995) {
@@ -141,11 +155,13 @@ async function checkReleaseHealth() {
             message: `Crash-Free Sessions ${(crashFreeSessions * 100).toFixed(2)}% < 99.5% Critical阈值`,
             action: 'IMMEDIATE_ROLLBACK',
             currentValue: crashFreeSessions,
-            threshold: 0.995
+            threshold: 0.995,
           });
           criticalChecks.releaseHealth.status = CHECK_STATUS.CRITICAL;
         } else {
-          criticalChecks.releaseHealth.checks.push(`✅ Crash-Free Sessions: ${(crashFreeSessions * 100).toFixed(2)}%`);
+          criticalChecks.releaseHealth.checks.push(
+            `✅ Crash-Free Sessions: ${(crashFreeSessions * 100).toFixed(2)}%`
+          );
         }
 
         // Critical: Crash-Free Users < 99.5%
@@ -155,11 +171,13 @@ async function checkReleaseHealth() {
             message: `Crash-Free Users ${(crashFreeUsers * 100).toFixed(2)}% < 99.5% Critical阈值`,
             action: 'IMMEDIATE_ROLLBACK',
             currentValue: crashFreeUsers,
-            threshold: 0.995
+            threshold: 0.995,
           });
           criticalChecks.releaseHealth.status = CHECK_STATUS.CRITICAL;
         } else {
-          criticalChecks.releaseHealth.checks.push(`✅ Crash-Free Users: ${(crashFreeUsers * 100).toFixed(2)}%`);
+          criticalChecks.releaseHealth.checks.push(
+            `✅ Crash-Free Users: ${(crashFreeUsers * 100).toFixed(2)}%`
+          );
         }
       }
 
@@ -168,29 +186,29 @@ async function checkReleaseHealth() {
         crashFreeSessions,
         crashFreeUsers,
         adoptionRate: healthConfig.adoptionRate || 0,
-        lastUpdated: healthConfig.lastUpdated || new Date().toISOString()
+        lastUpdated: healthConfig.lastUpdated || new Date().toISOString(),
       };
-
     } else {
       criticalChecks.releaseHealth.violations.push({
         type: 'MISSING_HEALTH_DATA',
         message: 'Release Health配置文件不存在，无法验证稳定性',
-        action: 'BLOCK_RELEASE'
+        action: 'BLOCK_RELEASE',
       });
       criticalChecks.releaseHealth.status = CHECK_STATUS.FAIL;
     }
 
-    if (criticalChecks.releaseHealth.status !== CHECK_STATUS.CRITICAL && 
-        criticalChecks.releaseHealth.status !== CHECK_STATUS.FAIL) {
+    if (
+      criticalChecks.releaseHealth.status !== CHECK_STATUS.CRITICAL &&
+      criticalChecks.releaseHealth.status !== CHECK_STATUS.FAIL
+    ) {
       criticalChecks.releaseHealth.status = CHECK_STATUS.PASS;
     }
-
   } catch (error) {
     criticalChecks.releaseHealth.status = CHECK_STATUS.FAIL;
     criticalChecks.releaseHealth.violations.push({
       type: 'CHECK_ERROR',
       message: `Release Health检查失败: ${error.message}`,
-      action: 'INVESTIGATE'
+      action: 'INVESTIGATE',
     });
   }
 }
@@ -200,13 +218,13 @@ async function checkReleaseHealth() {
  */
 async function checkCoreServices() {
   console.log('⚙️ 检查核心服务Critical条件...');
-  
+
   try {
     // 检查数据库连接配置
     const dbConfigFiles = [
       'src/shared/contracts/repos.ts',
       'src/core/database/connection.ts',
-      'electron/database.ts'
+      'electron/database.ts',
     ];
 
     let dbConfigFound = false;
@@ -214,7 +232,9 @@ async function checkCoreServices() {
       const fullPath = path.join(projectRoot, configPath);
       if (await fileExists(fullPath)) {
         dbConfigFound = true;
-        criticalChecks.coreServices.checks.push(`✅ 发现数据库配置: ${configPath}`);
+        criticalChecks.coreServices.checks.push(
+          `✅ 发现数据库配置: ${configPath}`
+        );
         break;
       }
     }
@@ -223,7 +243,7 @@ async function checkCoreServices() {
       criticalChecks.coreServices.failures.push({
         type: 'CRITICAL_SERVICE_MISSING',
         message: '未找到数据库配置文件，核心服务可能不可用',
-        action: 'BLOCK_RELEASE'
+        action: 'BLOCK_RELEASE',
       });
       criticalChecks.coreServices.status = CHECK_STATUS.CRITICAL;
     }
@@ -231,17 +251,22 @@ async function checkCoreServices() {
     // 检查关键依赖是否存在
     const packageJsonPath = path.join(projectRoot, 'package.json');
     if (await fileExists(packageJsonPath)) {
-      const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
-      const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-      
+      const packageJson = JSON.parse(
+        await fs.readFile(packageJsonPath, 'utf-8')
+      );
+      const dependencies = {
+        ...packageJson.dependencies,
+        ...packageJson.devDependencies,
+      };
+
       const criticalDeps = ['electron', 'sqlite3', 'better-sqlite3'];
       const missingDeps = criticalDeps.filter(dep => !dependencies[dep]);
-      
+
       if (missingDeps.length > 0) {
         criticalChecks.coreServices.failures.push({
           type: 'CRITICAL_DEPENDENCIES_MISSING',
           message: `关键依赖缺失: ${missingDeps.join(', ')}`,
-          action: 'BLOCK_RELEASE'
+          action: 'BLOCK_RELEASE',
         });
         criticalChecks.coreServices.status = CHECK_STATUS.CRITICAL;
       } else {
@@ -252,13 +277,12 @@ async function checkCoreServices() {
     if (criticalChecks.coreServices.status !== CHECK_STATUS.CRITICAL) {
       criticalChecks.coreServices.status = CHECK_STATUS.PASS;
     }
-
   } catch (error) {
     criticalChecks.coreServices.status = CHECK_STATUS.FAIL;
     criticalChecks.coreServices.failures.push({
       type: 'CHECK_ERROR',
       message: `核心服务检查失败: ${error.message}`,
-      action: 'INVESTIGATE'
+      action: 'INVESTIGATE',
     });
   }
 }
@@ -268,14 +292,14 @@ async function checkCoreServices() {
  */
 async function checkPerformance() {
   console.log('⚡ 检查性能Critical条件...');
-  
+
   try {
     // 检查性能基线配置
     const perfConfigPath = path.join(projectRoot, '.performance-baseline.json');
-    
+
     if (await fileExists(perfConfigPath)) {
       const perfConfig = JSON.parse(await fs.readFile(perfConfigPath, 'utf-8'));
-      
+
       // Critical: 启动时间 > 10秒
       const startupTime = perfConfig.metrics?.startup_time || 0;
       if (startupTime > 10000) {
@@ -284,7 +308,7 @@ async function checkPerformance() {
           message: `应用启动时间 ${startupTime}ms > 10s Critical阈值`,
           action: 'IMMEDIATE_ROLLBACK',
           currentValue: startupTime,
-          threshold: 10000
+          threshold: 10000,
         });
         criticalChecks.performance.status = CHECK_STATUS.CRITICAL;
       } else {
@@ -299,33 +323,33 @@ async function checkPerformance() {
           message: `内存使用 ${memoryUsage}MB > 1GB Critical阈值`,
           action: 'IMMEDIATE_ROLLBACK',
           currentValue: memoryUsage,
-          threshold: 1024
+          threshold: 1024,
         });
         criticalChecks.performance.status = CHECK_STATUS.CRITICAL;
       } else {
         criticalChecks.performance.checks.push(`✅ 内存使用: ${memoryUsage}MB`);
       }
-
     } else {
       criticalChecks.performance.degradations.push({
         type: 'MISSING_PERFORMANCE_DATA',
         message: '性能基线数据不存在，无法验证性能状态',
-        action: 'WARN'
+        action: 'WARN',
       });
       criticalChecks.performance.status = CHECK_STATUS.WARN;
     }
 
-    if (criticalChecks.performance.status !== CHECK_STATUS.CRITICAL && 
-        criticalChecks.performance.status !== CHECK_STATUS.WARN) {
+    if (
+      criticalChecks.performance.status !== CHECK_STATUS.CRITICAL &&
+      criticalChecks.performance.status !== CHECK_STATUS.WARN
+    ) {
       criticalChecks.performance.status = CHECK_STATUS.PASS;
     }
-
   } catch (error) {
     criticalChecks.performance.status = CHECK_STATUS.FAIL;
     criticalChecks.performance.degradations.push({
       type: 'CHECK_ERROR',
       message: `性能检查失败: ${error.message}`,
-      action: 'INVESTIGATE'
+      action: 'INVESTIGATE',
     });
   }
 }
@@ -335,7 +359,7 @@ async function checkPerformance() {
  */
 async function checkResources() {
   console.log('💾 检查资源状态Critical条件...');
-  
+
   try {
     // 检查磁盘空间
     const statsPath = path.join(projectRoot, 'dist');
@@ -347,48 +371,53 @@ async function checkResources() {
       criticalChecks.resources.warnings.push({
         type: 'MISSING_BUILD_ARTIFACTS',
         message: '构建产物不存在，可能存在构建问题',
-        action: 'INVESTIGATE'
+        action: 'INVESTIGATE',
       });
       criticalChecks.resources.status = CHECK_STATUS.WARN;
     }
 
     // 模拟资源使用检查（实际环境中可以调用系统API）
     const mockMemoryUsage = 0.75; // 75%
-    const mockCpuUsage = 0.60; // 60%
+    const mockCpuUsage = 0.6; // 60%
 
-    if (mockMemoryUsage > 0.90) {
+    if (mockMemoryUsage > 0.9) {
       criticalChecks.resources.warnings.push({
         type: 'CRITICAL_MEMORY_EXHAUSTION',
         message: `系统内存使用 ${(mockMemoryUsage * 100).toFixed(1)}% > 90% Critical阈值`,
-        action: 'IMMEDIATE_ROLLBACK'
+        action: 'IMMEDIATE_ROLLBACK',
       });
       criticalChecks.resources.status = CHECK_STATUS.CRITICAL;
     } else {
-      criticalChecks.resources.checks.push(`✅ 内存使用: ${(mockMemoryUsage * 100).toFixed(1)}%`);
+      criticalChecks.resources.checks.push(
+        `✅ 内存使用: ${(mockMemoryUsage * 100).toFixed(1)}%`
+      );
     }
 
     if (mockCpuUsage > 0.95) {
       criticalChecks.resources.warnings.push({
         type: 'CRITICAL_CPU_EXHAUSTION',
         message: `系统CPU使用 ${(mockCpuUsage * 100).toFixed(1)}% > 95% Critical阈值`,
-        action: 'IMMEDIATE_ROLLBACK'
+        action: 'IMMEDIATE_ROLLBACK',
       });
       criticalChecks.resources.status = CHECK_STATUS.CRITICAL;
     } else {
-      criticalChecks.resources.checks.push(`✅ CPU使用: ${(mockCpuUsage * 100).toFixed(1)}%`);
+      criticalChecks.resources.checks.push(
+        `✅ CPU使用: ${(mockCpuUsage * 100).toFixed(1)}%`
+      );
     }
 
-    if (criticalChecks.resources.status !== CHECK_STATUS.CRITICAL && 
-        criticalChecks.resources.status !== CHECK_STATUS.WARN) {
+    if (
+      criticalChecks.resources.status !== CHECK_STATUS.CRITICAL &&
+      criticalChecks.resources.status !== CHECK_STATUS.WARN
+    ) {
       criticalChecks.resources.status = CHECK_STATUS.PASS;
     }
-
   } catch (error) {
     criticalChecks.resources.status = CHECK_STATUS.FAIL;
     criticalChecks.resources.warnings.push({
       type: 'CHECK_ERROR',
       message: `资源状态检查失败: ${error.message}`,
-      action: 'INVESTIGATE'
+      action: 'INVESTIGATE',
     });
   }
 }
@@ -424,23 +453,27 @@ function generateCriticalReport() {
     { name: 'Release Health', key: 'releaseHealth', icon: '📊' },
     { name: '核心服务', key: 'coreServices', icon: '⚙️' },
     { name: '性能状态', key: 'performance', icon: '⚡' },
-    { name: '资源状态', key: 'resources', icon: '💾' }
+    { name: '资源状态', key: 'resources', icon: '💾' },
   ];
 
   for (const section of sections) {
     const check = criticalChecks[section.key];
-    console.log(`${section.icon} ${section.name}: ${getStatusIcon(check.status)} ${check.status.toUpperCase()}`);
-    
+    console.log(
+      `${section.icon} ${section.name}: ${getStatusIcon(check.status)} ${check.status.toUpperCase()}`
+    );
+
     // 统计状态
     if (check.status === CHECK_STATUS.CRITICAL) {
       criticalCount++;
       overallStatus = CHECK_STATUS.CRITICAL;
     } else if (check.status === CHECK_STATUS.FAIL) {
       failCount++;
-      if (overallStatus !== CHECK_STATUS.CRITICAL) overallStatus = CHECK_STATUS.FAIL;
+      if (overallStatus !== CHECK_STATUS.CRITICAL)
+        overallStatus = CHECK_STATUS.FAIL;
     } else if (check.status === CHECK_STATUS.WARN) {
       warnCount++;
-      if (overallStatus === CHECK_STATUS.PASS) overallStatus = CHECK_STATUS.WARN;
+      if (overallStatus === CHECK_STATUS.PASS)
+        overallStatus = CHECK_STATUS.WARN;
     }
 
     // 显示通过的检查
@@ -453,7 +486,7 @@ function generateCriticalReport() {
       ...(check.violations || []),
       ...(check.failures || []),
       ...(check.degradations || []),
-      ...(check.warnings || [])
+      ...(check.warnings || []),
     ];
 
     for (const issue of issues) {
@@ -466,8 +499,12 @@ function generateCriticalReport() {
 
   // 总体评估
   console.log('='.repeat(80));
-  console.log(`🎯 总体状态: ${getStatusIcon(overallStatus)} ${overallStatus.toUpperCase()}`);
-  console.log(`📊 统计: Critical(${criticalCount}), Fail(${failCount}), Warn(${warnCount})`);
+  console.log(
+    `🎯 总体状态: ${getStatusIcon(overallStatus)} ${overallStatus.toUpperCase()}`
+  );
+  console.log(
+    `📊 统计: Critical(${criticalCount}), Fail(${failCount}), Warn(${warnCount})`
+  );
   console.log();
 
   // Critical条件决策矩阵
@@ -505,11 +542,16 @@ function generateCriticalReport() {
  */
 function getStatusIcon(status) {
   switch (status) {
-    case CHECK_STATUS.PASS: return '✅';
-    case CHECK_STATUS.WARN: return '⚠️';
-    case CHECK_STATUS.FAIL: return '❌';
-    case CHECK_STATUS.CRITICAL: return '🚨';
-    default: return '❓';
+    case CHECK_STATUS.PASS:
+      return '✅';
+    case CHECK_STATUS.WARN:
+      return '⚠️';
+    case CHECK_STATUS.FAIL:
+      return '❌';
+    case CHECK_STATUS.CRITICAL:
+      return '🚨';
+    default:
+      return '❓';
   }
 }
 

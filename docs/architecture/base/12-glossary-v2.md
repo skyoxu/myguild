@@ -28,47 +28,73 @@ C4Container
 ## 结构化 SSOT + 高级TypeScript
 
 ```ts
-type TermType = 'domain'|'tech'|'abbr';
+type TermType = 'domain' | 'tech' | 'abbr';
 type I18nKey<T extends string> = `${T}.${string}`;
 type ValidatedTerm<T> = T extends GlossaryTerm ? T : never;
 
 interface GlossaryTerm {
-  term: string; definition: string; type: TermType;
-  zhCN: string; enUS: string; source: string; owner: string;
-  aliases?: string[]; i18nKey: I18nKey<'glossary'>;
+  term: string;
+  definition: string;
+  type: TermType;
+  zhCN: string;
+  enUS: string;
+  source: string;
+  owner: string;
+  aliases?: string[];
+  i18nKey: I18nKey<'glossary'>;
 }
 
 export const GlossaryTerms: Record<string, GlossaryTerm> = {
-  contentSecurityPolicy: { 
-    term:'CSP', definition:'Content Security Policy', type:'abbr', 
-    zhCN:'内容安全策略', enUS:'Content Security Policy', 
-    source:'ADR-0002', owner:'Security',
-    aliases: ['content-security-policy', 'csp'], i18nKey:'glossary.security.csp'
+  contentSecurityPolicy: {
+    term: 'CSP',
+    definition: 'Content Security Policy',
+    type: 'abbr',
+    zhCN: '内容安全策略',
+    enUS: 'Content Security Policy',
+    source: 'ADR-0002',
+    owner: 'Security',
+    aliases: ['content-security-policy', 'csp'],
+    i18nKey: 'glossary.security.csp',
   },
-  crashFreeSessions: { 
-    term:'Crash‑Free Sessions', definition:'Sentry release health metric', type:'domain', 
-    zhCN:'无崩溃会话率', enUS:'Crash‑Free Sessions', 
-    source:'ADR-0003', owner:'QA',
-    aliases: ['crash-free', 'healthy-sessions'], i18nKey:'glossary.metrics.crash_free'
+  crashFreeSessions: {
+    term: 'Crash‑Free Sessions',
+    definition: 'Sentry release health metric',
+    type: 'domain',
+    zhCN: '无崩溃会话率',
+    enUS: 'Crash‑Free Sessions',
+    source: 'ADR-0003',
+    owner: 'QA',
+    aliases: ['crash-free', 'healthy-sessions'],
+    i18nKey: 'glossary.metrics.crash_free',
   },
 };
 
-function detectDuplicates<T extends GlossaryTerm>(terms: T[]): {duplicates: string[], aliases: string[]} {
-  const termSet = new Set(); const aliasSet = new Set();
-  return terms.reduce((acc, term) => {
-    if (termSet.has(term.term)) acc.duplicates.push(term.term);
-    term.aliases?.forEach(alias => aliasSet.has(alias) ? acc.aliases.push(alias) : aliasSet.add(alias));
-    termSet.add(term.term); return acc;
-  }, {duplicates: [], aliases: []});
+function detectDuplicates<T extends GlossaryTerm>(
+  terms: T[]
+): { duplicates: string[]; aliases: string[] } {
+  const termSet = new Set();
+  const aliasSet = new Set();
+  return terms.reduce(
+    (acc, term) => {
+      if (termSet.has(term.term)) acc.duplicates.push(term.term);
+      term.aliases?.forEach(alias =>
+        aliasSet.has(alias) ? acc.aliases.push(alias) : aliasSet.add(alias)
+      );
+      termSet.add(term.term);
+      return acc;
+    },
+    { duplicates: [], aliases: [] }
+  );
 }
 
 function validateI18nConsistency<T extends Record<string, GlossaryTerm>>(
-  glossary: T, i18nKeys: string[]
-): {missing: string[], invalid: string[]} {
+  glossary: T,
+  i18nKeys: string[]
+): { missing: string[]; invalid: string[] } {
   const keys = Object.values(glossary).map(term => term.i18nKey);
   return {
     missing: keys.filter(key => !i18nKeys.includes(key)),
-    invalid: keys.filter(key => !key.startsWith('glossary.'))
+    invalid: keys.filter(key => !key.startsWith('glossary.')),
   };
 }
 ```
@@ -77,7 +103,11 @@ function validateI18nConsistency<T extends Record<string, GlossaryTerm>>(
 
 ```js
 // scripts/validate-glossary.mjs
-import { GlossaryTerms, detectDuplicates, validateI18nConsistency } from '../src/shared/contracts/glossary.js';
+import {
+  GlossaryTerms,
+  detectDuplicates,
+  validateI18nConsistency,
+} from '../src/shared/contracts/glossary.js';
 import { readFileSync } from 'fs';
 
 const i18nKeys = JSON.parse(readFileSync('src/i18n/keys.json', 'utf8'));

@@ -48,6 +48,7 @@
 #### 主进程 (Main Process) 职责与实现
 
 **核心职责**：
+
 - **唯一入口点**：应用启动/退出的控制中心
 - **窗口管理器**：BrowserWindow实例的创建与管理
 - **OS集成层**：原生菜单、系统托盘、文件对话框、全局快捷键
@@ -55,6 +56,7 @@
 - **应用状态中心**：全局配置、用户设置、游戏存档的读写管理
 
 **安全配置实现**：
+
 ```typescript
 // main.ts - 主进程安全配置
 const createWindow = (): void => {
@@ -63,12 +65,12 @@ const createWindow = (): void => {
     height: 800,
     webPreferences: {
       // 🔒 安全基线配置 (必须)
-      contextIsolation: true,        // V8上下文隔离
-      nodeIntegration: false,        // 禁用Node.js集成
-      enableRemoteModule: false,     // 禁用remote模块
-      webSecurity: true,             // 启用Web安全策略
-      preload: path.join(__dirname, 'preload.js') // 安全桥接脚本
-    }
+      contextIsolation: true, // V8上下文隔离
+      nodeIntegration: false, // 禁用Node.js集成
+      enableRemoteModule: false, // 禁用remote模块
+      webSecurity: true, // 启用Web安全策略
+      preload: path.join(__dirname, 'preload.js'), // 安全桥接脚本
+    },
   });
 };
 ```
@@ -76,38 +78,37 @@ const createWindow = (): void => {
 #### 渲染进程 (Renderer Process) 架构与安全
 
 **核心职责**：
+
 - **UI渲染层**：React 19组件树的渲染与交互处理
 - **游戏运行时**：Phaser 3游戏引擎的宿主环境
 - **沙箱环境**：在受限浏览器环境中运行，无直接Node.js访问
 - **请求代理**：通过IPC向主进程请求特权操作
 
 **安全桥接实现**：
+
 ```typescript
 // preload.js - 安全桥接脚本
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // 游戏存档操作
-  saveGameData: (data: GameSaveData) => 
-    ipcRenderer.invoke('save-game', data),
-  loadGameData: () => 
-    ipcRenderer.invoke('load-game'),
-  
+  saveGameData: (data: GameSaveData) => ipcRenderer.invoke('save-game', data),
+  loadGameData: () => ipcRenderer.invoke('load-game'),
+
   // 系统对话框
-  showSaveDialog: (options: SaveDialogOptions) => 
+  showSaveDialog: (options: SaveDialogOptions) =>
     ipcRenderer.invoke('show-save-dialog', options),
-    
+
   // 设置管理
-  getUserSettings: () => 
-    ipcRenderer.invoke('get-user-settings'),
-  updateUserSettings: (settings: UserSettings) => 
+  getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
+  updateUserSettings: (settings: UserSettings) =>
     ipcRenderer.invoke('update-user-settings', settings),
-    
+
   // 事件监听
-  onWindowFocus: (callback: () => void) => 
+  onWindowFocus: (callback: () => void) =>
     ipcRenderer.on('window-focus', callback),
-  onWindowBlur: (callback: () => void) => 
-    ipcRenderer.on('window-blur', callback)
+  onWindowBlur: (callback: () => void) =>
+    ipcRenderer.on('window-blur', callback),
 });
 ```
 
@@ -118,6 +119,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 **设计目标**：将CPU密集型AI计算从主渲染线程分离，确保60FPS游戏循环不被阻塞。
 
 **线程职责划分**：
+
 - **主UI线程**：React UI渲染 + Phaser游戏循环 + DOM事件处理
 - **AI Worker线程**：NPC决策 + 路径规划 + 战术分析 + 策略计算
 
@@ -158,35 +160,39 @@ import { DecisionTreeEngine } from './engines/DecisionTreeEngine';
 class AIWorker {
   private pathfinding = new PathfindingEngine();
   private decisionTree = new DecisionTreeEngine();
-  
+
   constructor() {
     self.onmessage = this.handleMessage.bind(this);
   }
-  
+
   private async handleMessage(event: MessageEvent<AIWorkerMessage>) {
     const { id, type, payload } = event.data;
-    
+
     try {
       let result: unknown;
-      
+
       switch (type) {
         case 'pathfinding':
-          result = await this.pathfinding.findPath(payload as PathfindingRequest);
+          result = await this.pathfinding.findPath(
+            payload as PathfindingRequest
+          );
           break;
         case 'decision_making':
-          result = await this.decisionTree.makeDecision(payload as DecisionMakingRequest);
+          result = await this.decisionTree.makeDecision(
+            payload as DecisionMakingRequest
+          );
           break;
         case 'tactical_analysis':
           result = await this.analyzeTacticalSituation(payload);
           break;
       }
-      
+
       // 返回计算结果
       self.postMessage({
         id,
         type: `${type}_result`,
         timestamp: Date.now(),
-        payload: result
+        payload: result,
       });
     } catch (error) {
       // 错误处理
@@ -194,11 +200,11 @@ class AIWorker {
         id,
         type: 'error',
         timestamp: Date.now(),
-        payload: { 
-          originalType: type, 
+        payload: {
+          originalType: type,
           error: error.message,
-          stack: error.stack 
-        }
+          stack: error.stack,
+        },
       });
     }
   }
@@ -230,7 +236,7 @@ export const PhaserGameContainer: React.FC<PhaserGameContainerProps> = ({
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGameReady, setIsGameReady] = useState(false);
-  
+
   useEffect(() => {
     // 初始化Phaser游戏实例
     const config: Phaser.Types.Core.GameConfig = {
@@ -243,15 +249,15 @@ export const PhaserGameContainer: React.FC<PhaserGameContainerProps> = ({
         }
       }
     };
-    
+
     const game = new Phaser.Game(config);
-    
+
     // 将EventBus注入Phaser registry
     game.registry.set('eventBus', eventBus);
     game.registry.set('reactContainer', containerRef.current);
-    
+
     gameRef.current = game;
-    
+
     // 清理函数
     return () => {
       if (gameRef.current) {
@@ -261,9 +267,9 @@ export const PhaserGameContainer: React.FC<PhaserGameContainerProps> = ({
       setIsGameReady(false);
     };
   }, [eventBus, onGameReady]);
-  
+
   return (
-    <div 
+    <div
       ref={containerRef}
       className="phaser-game-container"
       style={{ width: '100%', height: '100%' }}
@@ -283,12 +289,12 @@ export interface GameEvents {
   'ui:build_unit': { unitType: string; position: Point2D };
   'ui:pause_game': { paused: boolean };
   'ui:save_game': { saveSlot: number };
-  
+
   // Game -> UI 事件
   'game:health_changed': { playerId: string; health: number };
   'game:resource_updated': { resource: string; amount: number };
   'game:scene_changed': { from: string; to: string };
-  
+
   // AI Worker 事件
   'ai:calculation_complete': { requestId: string; result: unknown };
   'ai:error': { requestId: string; error: Error };
@@ -296,32 +302,32 @@ export interface GameEvents {
 
 export class EventBus {
   private emitter: Emitter<GameEvents>;
-  
+
   constructor() {
     this.emitter = mitt<GameEvents>();
   }
-  
+
   // 发送事件
   emit<K extends keyof GameEvents>(type: K, payload: GameEvents[K]): void {
     this.emitter.emit(type, payload);
   }
-  
+
   // 监听事件
   on<K extends keyof GameEvents>(
-    type: K, 
+    type: K,
     handler: (payload: GameEvents[K]) => void
   ): void {
     this.emitter.on(type, handler);
   }
-  
+
   // 移除监听
   off<K extends keyof GameEvents>(
-    type: K, 
+    type: K,
     handler: (payload: GameEvents[K]) => void
   ): void {
     this.emitter.off(type, handler);
   }
-  
+
   // 清理所有监听器
   clear(): void {
     this.emitter.all.clear();
@@ -333,11 +339,11 @@ export class EventBus {
 
 #### 通信层次与协议
 
-| 通信路径 | 技术实现 | 特性 | 适用场景 |
-|---------|---------|------|---------|
-| **React UI ↔ Phaser Game** | EventBus (mitt) | 同步、低延迟、高频 | UI交互、游戏状态实时同步 |
-| **Phaser Game ↔ AI Worker** | postMessage/onmessage | 异步、序列化开销 | AI计算任务、结果回调 |
-| **Renderer ↔ Main Process** | Electron IPC + preload.js | 异步、安全隔离 | 文件操作、系统对话框 |
+| 通信路径                     | 技术实现                  | 特性               | 适用场景                 |
+| ---------------------------- | ------------------------- | ------------------ | ------------------------ |
+| **React UI ↔ Phaser Game**  | EventBus (mitt)           | 同步、低延迟、高频 | UI交互、游戏状态实时同步 |
+| **Phaser Game ↔ AI Worker** | postMessage/onmessage     | 异步、序列化开销   | AI计算任务、结果回调     |
+| **Renderer ↔ Main Process** | Electron IPC + preload.js | 异步、安全隔离     | 文件操作、系统对话框     |
 
 #### 数据流向与性能优化
 
@@ -347,38 +353,38 @@ export class DataFlowController {
   private eventBus: EventBus;
   private aiWorker: Worker;
   private gameStateCache = new Map<string, unknown>();
-  
+
   constructor(eventBus: EventBus, aiWorker: Worker) {
     this.eventBus = eventBus;
     this.aiWorker = aiWorker;
     this.setupDataFlowOptimization();
   }
-  
+
   private setupDataFlowOptimization(): void {
     // 限制AI Worker通信频率 (最多4次/秒)
     let lastAIUpdate = 0;
     const AI_UPDATE_INTERVAL = 250;
-    
-    this.eventBus.on('game:state_update', (gameState) => {
+
+    this.eventBus.on('game:state_update', gameState => {
       const now = Date.now();
       if (now - lastAIUpdate >= AI_UPDATE_INTERVAL) {
         this.sendToAIWorker('state_update', gameState);
         lastAIUpdate = now;
       }
     });
-    
+
     // 缓存频繁访问的游戏状态
-    this.eventBus.on('game:resource_updated', (data) => {
+    this.eventBus.on('game:resource_updated', data => {
       this.gameStateCache.set(`resource_${data.resource}`, data.amount);
     });
   }
-  
+
   private sendToAIWorker(type: string, payload: unknown): void {
     this.aiWorker.postMessage({
       id: crypto.randomUUID(),
       type,
       timestamp: Date.now(),
-      payload
+      payload,
     });
   }
 }
@@ -393,40 +399,40 @@ export class DataFlowController {
 class ApplicationLifecycle {
   private static instance: ApplicationLifecycle;
   private startupTasks: (() => Promise<void>)[] = [];
-  
+
   async startup(): Promise<void> {
     console.log('🚀 开始应用启动序列...');
-    
+
     // 1. 主进程初始化
     await this.initializeMainProcess();
-    
+
     // 2. 创建主窗口
     const mainWindow = await this.createMainWindow();
-    
+
     // 3. 等待渲染进程就绪
     await this.waitForRendererReady(mainWindow);
-    
+
     // 4. 初始化游戏系统
     await this.initializeGameSystems(mainWindow);
-    
+
     console.log('✅ 应用启动完成');
   }
-  
+
   async shutdown(): Promise<void> {
     console.log('🛑 开始应用关闭序列...');
-    
+
     // 1. 保存游戏状态
     await this.saveApplicationState();
-    
+
     // 2. 停止AI Worker
     await this.terminateWorkers();
-    
+
     // 3. 清理Phaser资源
     await this.cleanupGameResources();
-    
+
     // 4. 关闭所有窗口
     await this.closeAllWindows();
-    
+
     console.log('✅ 应用关闭完成');
   }
 }
@@ -439,31 +445,31 @@ class ApplicationLifecycle {
 export class RuntimeErrorHandler {
   private errorCounts = new Map<string, number>();
   private readonly MAX_ERRORS_PER_COMPONENT = 3;
-  
+
   handleWorkerError(error: Error, workerId: string): void {
     console.error(`Worker ${workerId} error:`, error);
-    
+
     const count = this.errorCounts.get(workerId) || 0;
     this.errorCounts.set(workerId, count + 1);
-    
+
     if (count >= this.MAX_ERRORS_PER_COMPONENT) {
       // 达到错误阈值，重启Worker
       this.restartWorker(workerId);
       this.errorCounts.delete(workerId);
     }
   }
-  
+
   handlePhaserError(error: Error, scene: string): void {
     console.error(`Phaser scene ${scene} error:`, error);
-    
+
     // 将游戏错误传播到React错误边界
     this.eventBus.emit('game:error', {
       error: error.message,
       scene,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
-  
+
   private restartWorker(workerId: string): void {
     console.log(`🔄 重启Worker: ${workerId}`);
     // 实现Worker重启逻辑
@@ -480,6 +486,7 @@ export class RuntimeErrorHandler {
 ### 6.2.1 游戏循环架构设计
 
 **核心设计原则**：
+
 - **60FPS目标**：每帧16.67ms的预算控制
 - **优先级调度**：UI响应 > 游戏逻辑 > AI计算
 - **时间切片**：长时间任务自动分片处理
@@ -490,53 +497,52 @@ export class RuntimeErrorHandler {
 export class GameLoop {
   private static readonly TARGET_FPS = 60;
   private static readonly FRAME_BUDGET = 1000 / GameLoop.TARGET_FPS; // 16.67ms
-  
+
   private isRunning = false;
   private lastFrameTime = 0;
   private frameId: number | null = null;
   private performanceMonitor = new PerformanceMonitor();
-  
+
   constructor(
     private phaserGame: Phaser.Game,
     private reactUpdater: ReactUpdater,
     private aiScheduler: AITaskScheduler
   ) {}
-  
+
   start(): void {
     if (this.isRunning) return;
-    
+
     this.isRunning = true;
     this.lastFrameTime = performance.now();
     this.tick();
   }
-  
+
   private tick = (): void => {
     if (!this.isRunning) return;
-    
+
     const currentTime = performance.now();
     const deltaTime = currentTime - this.lastFrameTime;
     const remainingBudget = GameLoop.FRAME_BUDGET;
-    
+
     // 性能监控
     this.performanceMonitor.startFrame();
-    
+
     try {
       // 1. 高优先级：UI更新 (预留5ms)
       const uiStartTime = performance.now();
       this.reactUpdater.update(deltaTime);
       const uiTime = performance.now() - uiStartTime;
-      
+
       // 2. 核心优先级：Phaser游戏循环 (预留8ms)
       const gameStartTime = performance.now();
       this.updatePhaserGame(deltaTime);
       const gameTime = performance.now() - gameStartTime;
-      
+
       // 3. 低优先级：AI任务调度 (剩余时间)
       const remainingTime = remainingBudget - uiTime - gameTime - 2; // 保留2ms缓冲
       if (remainingTime > 0) {
         this.aiScheduler.processTasksWithBudget(remainingTime);
       }
-      
     } catch (error) {
       this.handleLoopError(error);
     } finally {
@@ -557,12 +563,12 @@ export class GameLoop {
 ```typescript
 // core/state/AppStateMachine.ts - 应用状态机
 export enum AppState {
-  BOOT = 'boot',           // 应用启动中
-  LOADING = 'loading',     // 资源加载中
-  RUNNING = 'running',     // 正常运行
-  PAUSED = 'paused',       // 暂停状态
-  ERROR = 'error',         // 错误状态
-  SHUTDOWN = 'shutdown'    // 关闭中
+  BOOT = 'boot', // 应用启动中
+  LOADING = 'loading', // 资源加载中
+  RUNNING = 'running', // 正常运行
+  PAUSED = 'paused', // 暂停状态
+  ERROR = 'error', // 错误状态
+  SHUTDOWN = 'shutdown', // 关闭中
 }
 
 export class AppStateMachine {
@@ -570,7 +576,7 @@ export class AppStateMachine {
   private previousState: AppState | null = null;
   private stateHistory: AppState[] = [];
   private transitionHandlers = new Map<string, () => Promise<void>>();
-  
+
   // 状态转换定义
   private readonly validTransitions = new Map<AppState, AppState[]>([
     [AppState.BOOT, [AppState.LOADING, AppState.ERROR]],
@@ -578,36 +584,41 @@ export class AppStateMachine {
     [AppState.RUNNING, [AppState.PAUSED, AppState.ERROR, AppState.SHUTDOWN]],
     [AppState.PAUSED, [AppState.RUNNING, AppState.ERROR, AppState.SHUTDOWN]],
     [AppState.ERROR, [AppState.LOADING, AppState.SHUTDOWN]],
-    [AppState.SHUTDOWN, []] // 终态
+    [AppState.SHUTDOWN, []], // 终态
   ]);
-  
-  async transitionTo(newState: AppState, context?: StateTransitionContext): Promise<boolean> {
+
+  async transitionTo(
+    newState: AppState,
+    context?: StateTransitionContext
+  ): Promise<boolean> {
     const validTargets = this.validTransitions.get(this.currentState) || [];
-    
+
     if (!validTargets.includes(newState)) {
       console.warn(`❌ 无效状态转换: ${this.currentState} -> ${newState}`);
       return false;
     }
-    
+
     try {
       // 执行状态退出处理
       await this.executeExitHandler(this.currentState);
-      
+
       // 记录状态历史
       this.previousState = this.currentState;
       this.stateHistory.push(this.currentState);
-      
+
       // 切换状态
       this.currentState = newState;
-      
+
       // 执行状态进入处理
       await this.executeEnterHandler(newState, context);
-      
+
       console.log(`✅ 状态转换成功: ${this.previousState} -> ${newState}`);
       return true;
-      
     } catch (error) {
-      console.error(`❌ 状态转换失败: ${this.previousState} -> ${newState}`, error);
+      console.error(
+        `❌ 状态转换失败: ${this.previousState} -> ${newState}`,
+        error
+      );
       await this.handleTransitionError(error);
       return false;
     }
@@ -625,27 +636,27 @@ export class AppStateMachine {
 // core/performance/PerformanceBudget.ts - 性能预算管理
 export class PerformanceBudgetManager {
   private static readonly FRAME_BUDGET = 16.67; // 60FPS预算
-  
+
   private budgetAllocations = {
-    ui: 5.0,        // React UI更新 (30%)
-    game: 8.0,      // Phaser游戏逻辑 (48%)
-    ai: 2.0,        // AI计算 (12%)
-    buffer: 1.67    // 缓冲区 (10%)
+    ui: 5.0, // React UI更新 (30%)
+    game: 8.0, // Phaser游戏逻辑 (48%)
+    ai: 2.0, // AI计算 (12%)
+    buffer: 1.67, // 缓冲区 (10%)
   };
-  
+
   private currentFrameUsage = {
     ui: 0,
     game: 0,
     ai: 0,
-    total: 0
+    total: 0,
   };
-  
+
   checkBudgetExceeded(component: keyof typeof this.budgetAllocations): boolean {
     const allocated = this.budgetAllocations[component];
     const used = this.currentFrameUsage[component];
     return used > allocated;
   }
-  
+
   applyBackpressure(): void {
     if (this.currentFrameUsage.total > PerformanceBudgetManager.FRAME_BUDGET) {
       // 应用背压策略
@@ -672,18 +683,18 @@ export class ErrorMonitoringSystem {
     this.initializeSentry();
     this.setupErrorBoundaries();
   }
-  
+
   private initializeSentry(): void {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       environment: process.env.NODE_ENV,
       integrations: [
-        new Sentry.Integrations.Electron.ElectronRendererIntegration()
+        new Sentry.Integrations.Electron.ElectronRendererIntegration(),
       ],
-      beforeSend: this.filterSensitiveData
+      beforeSend: this.filterSensitiveData,
     });
   }
-  
+
   captureGameLoopError(error: Error, context: GameLoopErrorContext): void {
     Sentry.withScope(scope => {
       scope.setTag('error_type', 'game_loop');
@@ -710,25 +721,25 @@ test.describe('进程/线程拓扑验证', () => {
   test('Electron进程架构验证', async () => {
     const electronApp = await electron.launch({ args: ['.'] });
     const window = await electronApp.firstWindow();
-    
+
     // 验证安全配置
     const securityConfig = await window.evaluate(() => ({
       contextIsolation: process.contextIsolated,
-      nodeIntegration: process.versions.node === undefined
+      nodeIntegration: process.versions.node === undefined,
     }));
-    
+
     expect(securityConfig.contextIsolation).toBe(true);
     expect(securityConfig.nodeIntegration).toBe(true);
-    
+
     await electronApp.close();
   });
-  
+
   test('React-Phaser通信验证', async () => {
     // 验证EventBus通信机制
     // 测试UI事件到游戏逻辑的传递
     // 验证游戏状态到UI的同步
   });
-  
+
   test('AI Worker性能验证', async () => {
     // 验证Worker线程正常启动
     // 测试消息传递性能

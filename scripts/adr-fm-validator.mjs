@@ -10,57 +10,64 @@ import Ajv from 'ajv';
 
 const ADR_SCHEMA = {
   type: 'object',
-  required: ['ADR-ID', 'title', 'status', 'decision-time', 'impact-scope', 'tech-tags'],
+  required: [
+    'ADR-ID',
+    'title',
+    'status',
+    'decision-time',
+    'impact-scope',
+    'tech-tags',
+  ],
   properties: {
-    'ADR-ID': { 
+    'ADR-ID': {
       type: 'string',
-      pattern: '^ADR-\\d{4}$' 
+      pattern: '^ADR-\\d{4}$',
     },
-    'title': { 
+    title: {
       type: 'string',
       minLength: 10,
-      maxLength: 100 
+      maxLength: 100,
     },
-    'status': { 
+    status: {
       type: 'string',
-      enum: ['Proposed', 'Accepted', 'Superseded', 'Rejected'] 
+      enum: ['Proposed', 'Accepted', 'Superseded', 'Rejected'],
     },
-    'decision-time': { 
+    'decision-time': {
       type: 'string',
-      pattern: '^\\d{4}-\\d{2}-\\d{2}$' 
+      pattern: '^\\d{4}-\\d{2}-\\d{2}$',
     },
-    'impact-scope': { 
+    'impact-scope': {
       type: 'array',
       items: { type: 'string' },
-      minItems: 1 
+      minItems: 1,
     },
-    'tech-tags': { 
+    'tech-tags': {
       type: 'array',
       items: { type: 'string' },
-      minItems: 1 
+      minItems: 1,
     },
-    'depends-on': { 
+    'depends-on': {
       type: 'array',
-      items: { pattern: '^ADR-\\d{4}$' } 
+      items: { pattern: '^ADR-\\d{4}$' },
     },
-    'depended-by': { 
+    'depended-by': {
       type: 'array',
-      items: { pattern: '^ADR-\\d{4}$' } 
+      items: { pattern: '^ADR-\\d{4}$' },
     },
-    'test-coverage': { 
+    'test-coverage': {
       type: 'string',
-      minLength: 1 
+      minLength: 1,
     },
-    'monitoring-metrics': { 
+    'monitoring-metrics': {
       type: 'array',
-      items: { type: 'string' } 
+      items: { type: 'string' },
     },
     'executable-deliverables': {
       type: 'array',
-      items: { type: 'string' }
-    }
+      items: { type: 'string' },
+    },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 /**
@@ -70,12 +77,12 @@ export function validateADRFile(filePath) {
   try {
     const content = readFileSync(filePath, 'utf8');
     const { data: frontMatter, isEmpty } = matter(content);
-    
+
     if (isEmpty) {
       return {
         valid: false,
         file: filePath,
-        errors: [{ message: 'ADR文档缺少Front-Matter' }]
+        errors: [{ message: 'ADR文档缺少Front-Matter' }],
       };
     }
 
@@ -87,13 +94,13 @@ export function validateADRFile(filePath) {
       valid: isValid,
       file: filePath,
       errors: isValid ? [] : validate.errors,
-      frontMatter: frontMatter
+      frontMatter: frontMatter,
     };
   } catch (error) {
     return {
       valid: false,
       file: filePath,
-      errors: [{ message: `文件解析错误: ${error.message}` }]
+      errors: [{ message: `文件解析错误: ${error.message}` }],
     };
   }
 }
@@ -105,13 +112,13 @@ export async function validateAllADRs(pattern = 'docs/adr/ADR-*.md') {
   const files = await glob(pattern);
   const results = [];
   const violations = [];
-  
+
   console.log(`🔍 开始验证 ${files.length} 个ADR文件...`);
-  
+
   for (const file of files) {
     const result = validateADRFile(file);
     results.push(result);
-    
+
     if (!result.valid) {
       violations.push(result);
       console.log(`❌ ${file}: ${result.errors.length} 个错误`);
@@ -122,7 +129,7 @@ export async function validateAllADRs(pattern = 'docs/adr/ADR-*.md') {
       console.log(`✅ ${file}: 验证通过`);
     }
   }
-  
+
   return {
     total: files.length,
     valid: results.length - violations.length,
@@ -130,8 +137,11 @@ export async function validateAllADRs(pattern = 'docs/adr/ADR-*.md') {
     summary: {
       validCount: results.length - violations.length,
       invalidCount: violations.length,
-      passRate: ((results.length - violations.length) / results.length * 100).toFixed(1)
-    }
+      passRate: (
+        ((results.length - violations.length) / results.length) *
+        100
+      ).toFixed(1),
+    },
   };
 }
 
@@ -140,22 +150,22 @@ export async function validateAllADRs(pattern = 'docs/adr/ADR-*.md') {
  */
 export function generateDependencyReport(results) {
   const dependencies = new Map();
-  
+
   results.forEach(result => {
     if (result.valid && result.frontMatter) {
       const adrId = result.frontMatter['ADR-ID'];
       const dependsOn = result.frontMatter['depends-on'] || [];
       const dependedBy = result.frontMatter['depended-by'] || [];
-      
+
       dependencies.set(adrId, {
         file: result.file,
         dependsOn,
         dependedBy,
-        status: result.frontMatter.status
+        status: result.frontMatter.status,
       });
     }
   });
-  
+
   return dependencies;
 }
 
@@ -166,34 +176,36 @@ async function main() {
   const args = process.argv.slice(2);
   const pattern = args[0] || 'docs/adr/ADR-*.md';
   const strictMode = args.includes('--strict');
-  
+
   console.log('🚀 ADR Front-Matter 验证器');
-  console.log('=' .repeat(50));
-  
+  console.log('='.repeat(50));
+
   const validation = await validateAllADRs(pattern);
-  
+
   console.log('\n📊 验证结果统计:');
   console.log(`总计: ${validation.total} 个文件`);
   console.log(`通过: ${validation.summary.validCount} 个`);
   console.log(`失败: ${validation.summary.invalidCount} 个`);
   console.log(`通过率: ${validation.summary.passRate}%`);
-  
+
   if (validation.violations.length > 0) {
     console.log('\n❌ 验证失败的文件:');
     validation.violations.forEach(v => {
       console.log(`\n📄 ${v.file}:`);
       v.errors.forEach(err => {
-        console.log(`  • ${err.instancePath || 'Front-Matter'}: ${err.message}`);
+        console.log(
+          `  • ${err.instancePath || 'Front-Matter'}: ${err.message}`
+        );
       });
     });
   }
-  
+
   // 严格模式下，如果有违例则退出码为1
   if (strictMode && validation.violations.length > 0) {
     console.log('\n🚫 严格模式：检测到违例，退出状态码 1');
     process.exit(1);
   }
-  
+
   console.log('\n✨ ADR验证完成！');
 }
 

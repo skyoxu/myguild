@@ -17,16 +17,18 @@ beforeAll(async () => {
   // ASTCache 不是导出的，直接创建mock
   ASTCache = {
     cache: new Map(),
-    clear() { this.cache.clear(); }
+    clear() {
+      this.cache.clear();
+    },
   };
 });
 
 describe('docs-scorer Performance Tests', () => {
   const performanceThresholds = {
-    smallDoc: 100,    // <5KB，应在100ms内完成
-    mediumDoc: 300,   // 5-20KB，应在300ms内完成
-    largeDoc: 1000,   // >20KB，应在1000ms内完成
-    cacheHit: 10      // 缓存命中应在10ms内完成
+    smallDoc: 100, // <5KB，应在100ms内完成
+    mediumDoc: 300, // 5-20KB，应在300ms内完成
+    largeDoc: 1000, // >20KB，应在1000ms内完成
+    cacheHit: 10, // 缓存命中应在10ms内完成
   };
 
   function measureTime(fn) {
@@ -62,8 +64,9 @@ describe('docs-scorer Performance Tests', () => {
   });
 
   test('单个文档解析性能测试', async () => {
-    const testFile = 'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
-    
+    const testFile =
+      'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
+
     if (!fs.existsSync(testFile)) {
       console.warn(`测试文件不存在: ${testFile}，跳过性能测试`);
       return;
@@ -77,7 +80,9 @@ describe('docs-scorer Performance Tests', () => {
     console.log(`文档大小: ${(fileSize / 1024).toFixed(2)}KB (${category})`);
     console.log(`性能阈值: ${threshold}ms`);
 
-    const { result, duration } = await measureTimeAsync(() => analyzeDocument(testFile));
+    const { result, duration } = await measureTimeAsync(() =>
+      analyzeDocument(testFile)
+    );
 
     console.log(`解析耗时: ${duration.toFixed(2)}ms`);
     console.log(`文档得分: ${result.scores.total}/23`);
@@ -87,19 +92,24 @@ describe('docs-scorer Performance Tests', () => {
   });
 
   test('AST缓存机制性能测试', async () => {
-    const testFile = 'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
-    
+    const testFile =
+      'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
+
     if (!fs.existsSync(testFile)) {
       console.warn(`测试文件不存在: ${testFile}，跳过缓存测试`);
       return;
     }
 
     // 第一次解析（冷启动）
-    const { duration: coldDuration } = await measureTimeAsync(() => analyzeDocument(testFile));
+    const { duration: coldDuration } = await measureTimeAsync(() =>
+      analyzeDocument(testFile)
+    );
     console.log(`冷启动解析: ${coldDuration.toFixed(2)}ms`);
 
     // 第二次解析（缓存命中）
-    const { duration: cachedDuration } = await measureTimeAsync(() => analyzeDocument(testFile));
+    const { duration: cachedDuration } = await measureTimeAsync(() =>
+      analyzeDocument(testFile)
+    );
     console.log(`缓存命中解析: ${cachedDuration.toFixed(2)}ms`);
 
     // 验证缓存效果
@@ -110,7 +120,7 @@ describe('docs-scorer Performance Tests', () => {
   test('批量文档处理性能测试', async () => {
     const pattern = 'docs/architecture/base/04-*.md';
     const files = await glob(pattern);
-    
+
     if (files.length === 0) {
       console.warn(`未找到匹配文件: ${pattern}，跳过批量测试`);
       return;
@@ -141,8 +151,9 @@ describe('docs-scorer Performance Tests', () => {
   });
 
   test('内存使用测试', async () => {
-    const testFile = 'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
-    
+    const testFile =
+      'docs/architecture/base/04-system-context-c4-event-flows.optimized.md';
+
     if (!fs.existsSync(testFile)) {
       console.warn(`测试文件不存在: ${testFile}，跳过内存测试`);
       return;
@@ -158,8 +169,12 @@ describe('docs-scorer Performance Tests', () => {
     const afterMemory = process.memoryUsage();
     const memoryIncrease = afterMemory.heapUsed - beforeMemory.heapUsed;
 
-    console.log(`解析前内存: ${(beforeMemory.heapUsed / 1024 / 1024).toFixed(2)}MB`);
-    console.log(`解析后内存: ${(afterMemory.heapUsed / 1024 / 1024).toFixed(2)}MB`);
+    console.log(
+      `解析前内存: ${(beforeMemory.heapUsed / 1024 / 1024).toFixed(2)}MB`
+    );
+    console.log(
+      `解析后内存: ${(afterMemory.heapUsed / 1024 / 1024).toFixed(2)}MB`
+    );
     console.log(`内存增长: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
 
     // 验证内存使用合理（不超过10MB增长）
@@ -169,7 +184,7 @@ describe('docs-scorer Performance Tests', () => {
   test('并发处理性能测试', async () => {
     const pattern = 'docs/architecture/base/04-*.md';
     const files = await glob(pattern);
-    
+
     if (files.length === 0) {
       console.warn(`未找到匹配文件: ${pattern}，跳过并发测试`);
       return;
@@ -194,7 +209,9 @@ describe('docs-scorer Performance Tests', () => {
 
     console.log(`串行处理耗时: ${serialDuration.toFixed(2)}ms`);
     console.log(`并行处理耗时: ${parallelDuration.toFixed(2)}ms`);
-    console.log(`并行加速比: ${(serialDuration / parallelDuration).toFixed(2)}x`);
+    console.log(
+      `并行加速比: ${(serialDuration / parallelDuration).toFixed(2)}x`
+    );
 
     // 验证并行处理效果（应该更快，除非文档数量太少）
     if (files.length > 1) {
@@ -239,15 +256,17 @@ ${'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(1000)}
 `;
 
     const testFilePath = path.join(process.cwd(), 'test-large-doc.md');
-    
+
     // 写入大文档
     fs.writeFileSync(testFilePath, largeContent);
-    
+
     try {
       const fileSize = getDocSize(testFilePath);
       console.log(`大文档大小: ${(fileSize / 1024).toFixed(2)}KB`);
 
-      const { result, duration } = await measureTimeAsync(() => analyzeDocument(testFilePath));
+      const { result, duration } = await measureTimeAsync(() =>
+        analyzeDocument(testFilePath)
+      );
 
       console.log(`大文档解析耗时: ${duration.toFixed(2)}ms`);
       console.log(`大文档得分: ${result.scores.total}/23`);
@@ -255,7 +274,6 @@ ${'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(1000)}
       // 验证大文档处理性能
       expect(duration).toBeLessThan(2000); // 大文档不超过2秒
       expect(result.scores.total).toBeGreaterThan(0);
-      
     } finally {
       // 清理测试文件
       if (fs.existsSync(testFilePath)) {
@@ -268,7 +286,7 @@ ${'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(1000)}
 // 性能报告生成
 function generatePerformanceReport() {
   console.log('\n📊 docs-scorer.mjs 性能测试报告');
-  console.log('=' .repeat(50));
+  console.log('='.repeat(50));
   console.log('🎯 性能目标:');
   console.log('  - 小文档(<5KB): <100ms');
   console.log('  - 中等文档(5-20KB): <300ms');

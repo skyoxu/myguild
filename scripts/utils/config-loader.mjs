@@ -20,15 +20,19 @@ const SCHEMA_FILE = path.join(CONFIG_DIR, 'quality-gates.schema.json');
  */
 function deepMerge(target, source) {
   const result = { ...target };
-  
+
   for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+    if (
+      source[key] &&
+      typeof source[key] === 'object' &&
+      !Array.isArray(source[key])
+    ) {
       result[key] = deepMerge(result[key] || {}, source[key]);
     } else {
       result[key] = source[key];
     }
   }
-  
+
   return result;
 }
 
@@ -38,30 +42,30 @@ function deepMerge(target, source) {
  */
 function validateConfig(config) {
   const errors = [];
-  
+
   // 检查必需字段
   if (!config.version) {
     errors.push('Missing required field: version');
   }
-  
+
   if (!config.environments) {
     errors.push('Missing required field: environments');
   } else if (!config.environments.default) {
     errors.push('Missing required field: environments.default');
   }
-  
+
   // 检查版本格式
   if (config.version && !/^\d+\.\d+\.\d+$/.test(config.version)) {
     errors.push('Invalid version format. Expected: x.y.z');
   }
-  
+
   // 检查阈值格式
   function validateThresholds(obj, path = '') {
     if (!obj || typeof obj !== 'object') return;
-    
+
     for (const [key, value] of Object.entries(obj)) {
       const currentPath = path ? `${path}.${key}` : key;
-      
+
       if (value && typeof value === 'object') {
         if (value.threshold !== undefined) {
           // 这是一个阈值对象
@@ -78,14 +82,14 @@ function validateConfig(config) {
       }
     }
   }
-  
+
   if (config.environments?.default) {
     validateThresholds(config.environments.default, 'environments.default');
   }
-  
+
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -96,67 +100,73 @@ function validateConfig(config) {
  * @returns {Object} 合并后的配置对象
  */
 export function loadQualityGatesConfig(environment = 'default', options = {}) {
-  const { 
-    validateSchema = true, 
+  const {
+    validateSchema = true,
     configFile = CONFIG_FILE,
-    throwOnError = true
+    throwOnError = true,
   } = options;
-  
+
   try {
     // 检查配置文件是否存在
     if (!fs.existsSync(configFile)) {
-      const error = new Error(`Quality gates config file not found: ${configFile}`);
+      const error = new Error(
+        `Quality gates config file not found: ${configFile}`
+      );
       if (throwOnError) throw error;
       console.warn(`Warning: ${error.message}`);
       return getDefaultConfig();
     }
-    
+
     // 读取配置文件
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-    
+
     // JSON Schema验证
     if (validateSchema) {
       const validation = validateConfig(configData);
       if (!validation.valid) {
-        const error = new Error(`Config validation failed: ${validation.errors.join(', ')}`);
+        const error = new Error(
+          `Config validation failed: ${validation.errors.join(', ')}`
+        );
         if (throwOnError) throw error;
         console.warn(`Warning: ${error.message}`);
       }
     }
-    
+
     // 获取基础配置（default环境）
     const baseConfig = configData.environments.default || {};
-    
+
     // 如果请求的就是默认环境，直接返回
     if (environment === 'default') {
       return addConfigMetadata(baseConfig, { environment, source: configFile });
     }
-    
+
     // 应用环境特定的覆盖
     let finalConfig = { ...baseConfig };
-    
+
     // 首先检查environments中是否有该环境
     if (configData.environments[environment]) {
-      finalConfig = deepMerge(finalConfig, configData.environments[environment]);
+      finalConfig = deepMerge(
+        finalConfig,
+        configData.environments[environment]
+      );
     }
-    
+
     // 然后应用overrides中的配置
     if (configData.overrides && configData.overrides[environment]) {
       finalConfig = deepMerge(finalConfig, configData.overrides[environment]);
     }
-    
-    return addConfigMetadata(finalConfig, { 
-      environment, 
+
+    return addConfigMetadata(finalConfig, {
+      environment,
       source: configFile,
       version: configData.version,
-      lastUpdated: configData.lastUpdated
+      lastUpdated: configData.lastUpdated,
     });
-    
   } catch (error) {
     if (throwOnError) {
       throw new Error(`Failed to load quality gates config: ${error.message}`);
     }
-    
+
     console.error(`Error loading config: ${error.message}`);
     console.warn('Falling back to default configuration');
     return getDefaultConfig();
@@ -169,7 +179,7 @@ export function loadQualityGatesConfig(environment = 'default', options = {}) {
 function addConfigMetadata(config, metadata) {
   return {
     ...config,
-    _meta: metadata
+    _meta: metadata,
   };
 }
 
@@ -183,33 +193,33 @@ function getDefaultConfig() {
       renderer: {
         js: { threshold: 1572864, unit: 'bytes' },
         css: { threshold: 204800, unit: 'bytes' },
-        html: { threshold: 51200, unit: 'bytes' }
-      }
+        html: { threshold: 51200, unit: 'bytes' },
+      },
     },
     webVitals: {
       baseline: {
         windowDays: 7,
         minSampleSize: 50,
-        confidenceLevel: 0.95
+        confidenceLevel: 0.95,
       },
       regressionThresholds: {
         LCP: { warning: 10, critical: 20, unit: 'percent' },
         INP: { warning: 15, critical: 30, unit: 'percent' },
         CLS: { warning: 25, critical: 50, unit: 'percent' },
         FCP: { warning: 10, critical: 25, unit: 'percent' },
-        TTFB: { warning: 15, critical: 30, unit: 'percent' }
-      }
+        TTFB: { warning: 15, critical: 30, unit: 'percent' },
+      },
     },
     coverage: {
       lines: { threshold: 90, unit: 'percent' },
       branches: { threshold: 85, unit: 'percent' },
       functions: { threshold: 88, unit: 'percent' },
-      statements: { threshold: 90, unit: 'percent' }
+      statements: { threshold: 90, unit: 'percent' },
     },
     _meta: {
       environment: 'fallback',
-      source: 'hardcoded-default'
-    }
+      source: 'hardcoded-default',
+    },
   };
 }
 
@@ -233,13 +243,13 @@ export function getModuleConfig(module, environment = 'default') {
 export function getThreshold(path, environment = 'default') {
   const config = loadQualityGatesConfig(environment);
   const pathParts = path.split('.');
-  
+
   let current = config;
   for (const part of pathParts) {
     current = current?.[part];
     if (current === undefined) return null;
   }
-  
+
   return current?.threshold ?? current;
 }
 
@@ -249,7 +259,7 @@ export function getThreshold(path, environment = 'default') {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const environment = process.argv[2] || 'default';
   const module = process.argv[3];
-  
+
   try {
     if (module) {
       const moduleConfig = getModuleConfig(module, environment);

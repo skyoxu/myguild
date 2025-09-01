@@ -2,7 +2,7 @@
 ADR-ID: ADR-0006
 title: SQLite数据存储策略 - WAL模式与性能优化
 status: Accepted
-decision-time: "2025-08-17"
+decision-time: '2025-08-17'
 deciders: [架构团队, 数据团队]
 archRefs: [CH05, CH06, CH011]
 verification:
@@ -39,28 +39,27 @@ supersedes: []
 
 # ADR-0006: 数据存储与持久化策略
 
-
 ## Context and Problem Statement
 
 Electron桌面游戏应用需要可靠的本地数据存储方案，支持游戏存档、用户配置、成就数据、游戏统计等多种数据类型。需要平衡性能、可靠性、便携性和开发复杂度，同时确保数据完整性和支持高并发读写操作。
 
 ## Decision Drivers
 
-* 需要高性能的本地数据存储，支持频繁的读写操作
-* 需要数据完整性保证，防止游戏数据丢失或损坏
-* 需要支持事务操作，确保数据一致性
-* 需要跨平台兼容性（Windows/macOS/Linux）
-* 需要轻量级解决方案，不依赖外部数据库服务
-* 需要支持数据备份和恢复机制
-* 需要支持数据迁移和版本升级
+- 需要高性能的本地数据存储，支持频繁的读写操作
+- 需要数据完整性保证，防止游戏数据丢失或损坏
+- 需要支持事务操作，确保数据一致性
+- 需要跨平台兼容性（Windows/macOS/Linux）
+- 需要轻量级解决方案，不依赖外部数据库服务
+- 需要支持数据备份和恢复机制
+- 需要支持数据迁移和版本升级
 
 ## Considered Options
 
-* **SQLite + WAL模式** (选择方案)
-* **LevelDB + 自定义备份**
-* **IndexedDB + 文件系统备份**
-* **JSON文件 + 文件锁机制**
-* **Dexie.js + 结构化存储**
+- **SQLite + WAL模式** (选择方案)
+- **LevelDB + 自定义备份**
+- **IndexedDB + 文件系统备份**
+- **JSON文件 + 文件锁机制**
+- **Dexie.js + 结构化存储**
 
 ## Decision Outcome
 
@@ -69,6 +68,7 @@ Electron桌面游戏应用需要可靠的本地数据存储方案，支持游戏
 ### SQLite WAL模式核心配置
 
 **数据库连接配置**：
+
 ```typescript
 // src/shared/database/sqlite-manager.ts
 import Database from 'better-sqlite3';
@@ -83,10 +83,10 @@ export class SQLiteManager {
     // 数据库文件路径
     const userDataPath = app.getPath('userData');
     this.dbPath = path.join(userDataPath, 'game-data.db');
-    
+
     // 初始化数据库连接
     this.db = new Database(this.dbPath, {
-      verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+      verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
     });
 
     // 启用WAL模式和性能优化
@@ -97,19 +97,19 @@ export class SQLiteManager {
   private enableWALMode(): void {
     // 启用WAL（Write-Ahead Logging）模式
     this.db.pragma('journal_mode = WAL');
-    
+
     // 同步模式配置
     this.db.pragma('synchronous = NORMAL'); // 平衡性能和安全性
-    
+
     // WAL检查点配置
     this.db.pragma('wal_autocheckpoint = 1000'); // 1000页后自动检查点
-    
+
     // 缓存大小配置（16MB）
     this.db.pragma('cache_size = -16000');
-    
+
     // 内存映射大小（256MB）
     this.db.pragma('mmap_size = 268435456');
-    
+
     // 临时存储在内存中
     this.db.pragma('temp_store = MEMORY');
   }
@@ -117,10 +117,10 @@ export class SQLiteManager {
   private configureOptimizations(): void {
     // 启用外键约束
     this.db.pragma('foreign_keys = ON');
-    
+
     // 启用递归触发器
     this.db.pragma('recursive_triggers = ON');
-    
+
     // 设置忙等待超时（5秒）
     this.db.pragma('busy_timeout = 5000');
   }
@@ -140,14 +140,13 @@ export class SQLiteManager {
     try {
       // 执行WAL检查点
       this.performWALCheckpoint();
-      
+
       // 优化数据库（重建索引和统计信息）
       this.db.pragma('optimize');
-      
+
       // 分析表统计信息
       this.db.pragma('analysis_limit = 1000');
       this.db.pragma('analyze');
-      
     } catch (error) {
       console.error('Database maintenance failed:', error);
     }
@@ -158,6 +157,7 @@ export class SQLiteManager {
 ### 数据模型与Schema管理
 
 **核心数据表设计**：
+
 ```sql
 -- 游戏存档表
 CREATE TABLE IF NOT EXISTS game_saves (
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   UNIQUE(category, key)
 );
 
--- 游戏统计表  
+-- 游戏统计表
 CREATE TABLE IF NOT EXISTS game_stats (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   player_id TEXT NOT NULL,
@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS schema_versions (
 ```
 
 **Repository模式数据访问层**：
+
 ```typescript
 // src/shared/database/repositories/game-save-repository.ts
 import { SQLiteManager } from '../sqlite-manager';
@@ -236,13 +237,15 @@ export interface GameSave {
 export class GameSaveRepository {
   constructor(private dbManager: SQLiteManager) {}
 
-  async createSave(saveData: Omit<GameSave, 'id' | 'createdAt' | 'updatedAt' | 'checksum'>): Promise<GameSave> {
+  async createSave(
+    saveData: Omit<GameSave, 'id' | 'createdAt' | 'updatedAt' | 'checksum'>
+  ): Promise<GameSave> {
     const db = this.dbManager.getDatabase();
-    
+
     // 计算数据校验和
     const dataString = JSON.stringify({
       playerData: saveData.playerData,
-      gameState: saveData.gameState
+      gameState: saveData.gameState,
     });
     const checksum = createHash('sha256').update(dataString).digest('hex');
 
@@ -264,7 +267,7 @@ export class GameSaveRepository {
 
   async updateSave(id: number, saveData: Partial<GameSave>): Promise<GameSave> {
     const db = this.dbManager.getDatabase();
-    
+
     // 使用事务确保数据一致性
     const transaction = db.transaction(() => {
       const existing = this.findById(id);
@@ -275,7 +278,7 @@ export class GameSaveRepository {
       const mergedData = { ...existing, ...saveData };
       const dataString = JSON.stringify({
         playerData: mergedData.playerData,
-        gameState: mergedData.gameState
+        gameState: mergedData.gameState,
       });
       const checksum = createHash('sha256').update(dataString).digest('hex');
 
@@ -302,7 +305,7 @@ export class GameSaveRepository {
     const db = this.dbManager.getDatabase();
     const stmt = db.prepare('SELECT * FROM game_saves WHERE id = ?');
     const row = stmt.get(id);
-    
+
     if (!row) return null;
 
     return {
@@ -313,7 +316,7 @@ export class GameSaveRepository {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       checksum: row.checksum,
-      version: row.version
+      version: row.version,
     };
   }
 
@@ -324,10 +327,12 @@ export class GameSaveRepository {
 
     const dataString = JSON.stringify({
       playerData: save.playerData,
-      gameState: save.gameState
+      gameState: save.gameState,
     });
-    const computedChecksum = createHash('sha256').update(dataString).digest('hex');
-    
+    const computedChecksum = createHash('sha256')
+      .update(dataString)
+      .digest('hex');
+
     return computedChecksum === save.checksum;
   }
 }
@@ -336,6 +341,7 @@ export class GameSaveRepository {
 ### 数据备份与恢复策略
 
 **自动备份机制**：
+
 ```typescript
 // src/shared/database/backup-manager.ts
 import fs from 'fs-extra';
@@ -356,29 +362,28 @@ export class DatabaseBackupManager {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFileName = `game-data-${timestamp}.db`;
     const backupPath = path.join(this.backupDir, backupFileName);
-    
+
     const dbPath = path.join(app.getPath('userData'), 'game-data.db');
-    
+
     try {
       // 执行WAL检查点确保数据完整性
       await this.performWALCheckpoint();
-      
+
       // 复制数据库文件
       await fs.copy(dbPath, backupPath);
-      
+
       // 验证备份完整性
       const isValid = await this.validateBackup(backupPath);
       if (!isValid) {
         await fs.remove(backupPath);
         throw new Error('Backup validation failed');
       }
-      
+
       // 清理旧备份
       await this.cleanupOldBackups();
-      
+
       console.log(`Database backup created: ${backupFileName}`);
       return backupPath;
-      
     } catch (error) {
       console.error('Backup creation failed:', error);
       throw error;
@@ -387,25 +392,24 @@ export class DatabaseBackupManager {
 
   async restoreFromBackup(backupPath: string): Promise<void> {
     const dbPath = path.join(app.getPath('userData'), 'game-data.db');
-    
+
     try {
       // 验证备份文件
       const isValid = await this.validateBackup(backupPath);
       if (!isValid) {
         throw new Error('Backup file is corrupted');
       }
-      
+
       // 创建当前数据库的紧急备份
       const emergencyBackup = path.join(this.backupDir, 'emergency-backup.db');
       if (await fs.pathExists(dbPath)) {
         await fs.copy(dbPath, emergencyBackup);
       }
-      
+
       // 恢复数据库
       await fs.copy(backupPath, dbPath);
-      
+
       console.log('Database restored from backup successfully');
-      
     } catch (error) {
       console.error('Database restore failed:', error);
       throw error;
@@ -416,11 +420,11 @@ export class DatabaseBackupManager {
     try {
       const Database = require('better-sqlite3');
       const db = new Database(backupPath, { readonly: true });
-      
+
       // 检查数据库完整性
       const result = db.pragma('integrity_check');
       db.close();
-      
+
       return result[0].integrity_check === 'ok';
     } catch (error) {
       return false;
@@ -434,7 +438,7 @@ export class DatabaseBackupManager {
       .map(file => ({
         name: file,
         path: path.join(this.backupDir, file),
-        mtime: fs.statSync(path.join(this.backupDir, file)).mtime
+        mtime: fs.statSync(path.join(this.backupDir, file)).mtime,
       }))
       .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
@@ -452,6 +456,7 @@ export class DatabaseBackupManager {
 ### 数据迁移和版本管理
 
 **Schema迁移系统**：
+
 ```typescript
 // src/shared/database/migration-manager.ts
 export interface Migration {
@@ -466,7 +471,7 @@ export class MigrationManager {
     {
       version: 1,
       description: 'Initial schema creation',
-      up: (db) => {
+      up: db => {
         // 创建初始表结构
         db.exec(`
           CREATE TABLE game_saves (
@@ -480,12 +485,12 @@ export class MigrationManager {
             version INTEGER DEFAULT 1
           );
         `);
-      }
+      },
     },
     {
       version: 2,
       description: 'Add achievements table',
-      up: (db) => {
+      up: db => {
         db.exec(`
           CREATE TABLE achievements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -499,8 +504,8 @@ export class MigrationManager {
             metadata JSON
           );
         `);
-      }
-    }
+      },
+    },
   ];
 
   constructor(private db: Database.Database) {
@@ -519,28 +524,31 @@ export class MigrationManager {
 
   public migrate(): void {
     const currentVersion = this.getCurrentVersion();
-    const pendingMigrations = this.migrations.filter(m => m.version > currentVersion);
-    
+    const pendingMigrations = this.migrations.filter(
+      m => m.version > currentVersion
+    );
+
     if (pendingMigrations.length === 0) {
       console.log('Database is up to date');
       return;
     }
 
     console.log(`Applying ${pendingMigrations.length} migrations...`);
-    
+
     const transaction = this.db.transaction(() => {
       for (const migration of pendingMigrations) {
-        console.log(`Applying migration ${migration.version}: ${migration.description}`);
-        
+        console.log(
+          `Applying migration ${migration.version}: ${migration.description}`
+        );
+
         try {
           migration.up(this.db);
-          
+
           // 记录迁移版本
           const stmt = this.db.prepare(`
             INSERT INTO schema_versions (version, description) VALUES (?, ?)
           `);
           stmt.run(migration.version, migration.description);
-          
         } catch (error) {
           console.error(`Migration ${migration.version} failed:`, error);
           throw error;
@@ -554,7 +562,9 @@ export class MigrationManager {
 
   private getCurrentVersion(): number {
     try {
-      const stmt = this.db.prepare('SELECT MAX(version) as version FROM schema_versions');
+      const stmt = this.db.prepare(
+        'SELECT MAX(version) as version FROM schema_versions'
+      );
       const result = stmt.get();
       return result?.version || 0;
     } catch {
@@ -566,29 +576,29 @@ export class MigrationManager {
 
 ### Positive Consequences
 
-* SQLite提供了优秀的ACID事务支持和数据完整性
-* WAL模式支持高并发读取操作，显著提升性能
-* 无需外部依赖，简化部署和分发
-* 跨平台兼容性好，支持所有Electron目标平台
-* 内置的全文搜索和JSON操作支持
-* 自动备份和恢复机制保障数据安全
-* 灵活的Schema迁移系统支持版本升级
+- SQLite提供了优秀的ACID事务支持和数据完整性
+- WAL模式支持高并发读取操作，显著提升性能
+- 无需外部依赖，简化部署和分发
+- 跨平台兼容性好，支持所有Electron目标平台
+- 内置的全文搜索和JSON操作支持
+- 自动备份和恢复机制保障数据安全
+- 灵活的Schema迁移系统支持版本升级
 
 ### Negative Consequences
 
-* SQLite不支持网络访问，仅限本地存储
-* 单文件数据库在大数据量时可能出现性能瓶颈
-* WAL模式会创建额外的日志文件，占用更多磁盘空间
-* 复杂查询的性能可能不如专业数据库
-* 备份和同步需要额外的实现工作
-* JSON列查询性能相对较低
+- SQLite不支持网络访问，仅限本地存储
+- 单文件数据库在大数据量时可能出现性能瓶颈
+- WAL模式会创建额外的日志文件，占用更多磁盘空间
+- 复杂查询的性能可能不如专业数据库
+- 备份和同步需要额外的实现工作
+- JSON列查询性能相对较低
 
 ## Verification
 
-* **测试验证**: tests/unit/database/sqlite-manager.spec.ts, tests/integration/data-persistence.spec.ts
-* **门禁脚本**: scripts/verify_database_integrity.mjs, scripts/test_backup_restore.mjs
-* **监控指标**: db.query_performance, db.wal_size, backup.success_rate, migration.execution_time
-* **数据完整性**: 定期校验和验证、自动备份验证、事务回滚测试
+- **测试验证**: tests/unit/database/sqlite-manager.spec.ts, tests/integration/data-persistence.spec.ts
+- **门禁脚本**: scripts/verify_database_integrity.mjs, scripts/test_backup_restore.mjs
+- **监控指标**: db.query_performance, db.wal_size, backup.success_rate, migration.execution_time
+- **数据完整性**: 定期校验和验证、自动备份验证、事务回滚测试
 
 ### 数据存储验证清单
 
@@ -603,6 +613,7 @@ export class MigrationManager {
 ## Operational Playbook
 
 ### 升级步骤
+
 1. **数据库配置**: 配置SQLite连接和WAL模式参数
 2. **Schema部署**: 执行初始Schema创建和索引优化
 3. **备份配置**: 设置自动备份计划和存储策略
@@ -611,6 +622,7 @@ export class MigrationManager {
 6. **数据验证**: 建立数据完整性检查和修复机制
 
 ### 回滚步骤
+
 1. **数据恢复**: 从最近的有效备份恢复数据库
 2. **版本回退**: 如需要，回滚到稳定的Schema版本
 3. **WAL清理**: 清理损坏的WAL文件并重建
@@ -619,6 +631,7 @@ export class MigrationManager {
 6. **问题分析**: 分析故障原因并制定预防措施
 
 ### 迁移指南
+
 - **数据迁移**: 现有数据需要迁移到新的表结构中
 - **配置更新**: 更新数据库连接配置和优化参数
 - **备份策略**: 建立定期备份和灾难恢复计划
@@ -627,12 +640,12 @@ export class MigrationManager {
 
 ## References
 
-* **CH章节关联**: CH05, CH06
-* **相关ADR**: ADR-0005-quality-gates, ADR-0007-ports-adapters
-* **外部文档**: 
+- **CH章节关联**: CH05, CH06
+- **相关ADR**: ADR-0005-quality-gates, ADR-0007-ports-adapters
+- **外部文档**:
   - [SQLite WAL Mode](https://www.sqlite.org/wal.html)
   - [better-sqlite3 Documentation](https://github.com/WiseLibs/better-sqlite3)
   - [Database Design Best Practices](https://www.sqlitetutorial.net/sqlite-database-design/)
   - [Electron Data Storage](https://www.electronjs.org/docs/tutorial/data-storage)
-* **性能基准**: SQLite Performance Tuning, Database Optimization Guide
-* **相关PRD-ID**: 适用于所有需要数据持久化的PRD模块
+- **性能基准**: SQLite Performance Tuning, Database Optimization Guide
+- **相关PRD-ID**: 适用于所有需要数据持久化的PRD模块

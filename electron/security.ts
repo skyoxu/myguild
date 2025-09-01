@@ -25,7 +25,7 @@ export function createSecureBrowserWindow(
       sandbox: true, // 启用沙箱模式
       allowRunningInsecureContent: false, // 禁止混合内容
       experimentalFeatures: false, // 禁用实验性功能
-      enableRemoteModule: false, // 禁用remote模块
+      // enableRemoteModule已废弃，不再需要此选项
       webSecurity: true, // 启用Web安全
 
       // 可配置选项
@@ -45,7 +45,7 @@ export function createSecureBrowserWindow(
  */
 export function hardenWindow(window: BrowserWindow): void {
   // 1. 窗口/弹窗拦截
-  window.webContents.setWindowOpenHandler(({ url, features }) => {
+  window.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[Security] 窗口打开请求被拦截: ${url}`);
 
     // 只允许内部协议或白名单域名
@@ -85,11 +85,11 @@ export function hardenWindow(window: BrowserWindow): void {
 
   // 3. 权限请求拦截
   window.webContents.session.setPermissionRequestHandler(
-    (webContents, permission, callback) => {
+    (_webContents, permission, callback) => {
       console.log(`[Security] 权限请求: ${permission}`);
 
       // 定义允许的权限白名单
-      const allowedPermissions: Electron.Permission[] = [
+      const allowedPermissions = [
         'clipboard-read',
         'clipboard-sanitized-write',
       ];
@@ -211,13 +211,14 @@ export function initializeSecurity(): void {
   setupCSPReporting();
 
   // 应用级安全事件监听
-  app.on('web-contents-created', (event, contents) => {
+  app.on('web-contents-created', (_event, contents) => {
     console.log('[Security] 新的web contents创建，应用安全策略');
 
-    // 对所有新创建的web contents应用安全策略
-    contents.on('new-window', (event, navigationUrl) => {
-      event.preventDefault();
-      shell.openExternal(navigationUrl);
+    // 使用新的setWindowOpenHandler API替代废弃的new-window事件
+    contents.setWindowOpenHandler(({ url }) => {
+      console.log(`[Security] 外部链接请求: ${url}`);
+      shell.openExternal(url);
+      return { action: 'deny' };
     });
 
     contents.on('will-attach-webview', event => {
@@ -243,16 +244,17 @@ export interface SecurityConfig {
 }
 
 export function validateSecurityConfig(window: BrowserWindow): SecurityConfig {
-  const webPreferences = window.webContents.getWebPreferences();
+  // 从BrowserWindow选项获取webPreferences配置
+  const options =
+    (window as any).webContents.browserWindowOptions?.webPreferences || {};
 
   return {
-    nodeIntegration: webPreferences.nodeIntegration || false,
-    contextIsolation: webPreferences.contextIsolation || false,
-    sandbox: webPreferences.sandbox || false,
-    webSecurity: webPreferences.webSecurity !== false,
-    allowRunningInsecureContent:
-      webPreferences.allowRunningInsecureContent || false,
-    experimentalFeatures: webPreferences.experimentalFeatures || false,
+    nodeIntegration: options.nodeIntegration || false,
+    contextIsolation: options.contextIsolation !== false, // 默认true
+    sandbox: options.sandbox || false,
+    webSecurity: options.webSecurity !== false, // 默认true
+    allowRunningInsecureContent: options.allowRunningInsecureContent || false,
+    experimentalFeatures: options.experimentalFeatures || false,
   };
 }
 

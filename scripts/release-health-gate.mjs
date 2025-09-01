@@ -468,7 +468,85 @@ async function checkReleaseHealth() {
     );
     
     // 2. 收集业务指标（如果配置了）
-    let businessMetrics = {};\n    let businessCollector;\n    if (Object.keys(CONFIG.businessThresholds).length > 0) {\n      try {\n        businessCollector = new BusinessMetricsCollector(CONFIG.dbPath);\n        businessMetrics = await businessCollector.collectBusinessMetrics();\n        console.log('✅ Business metrics collected successfully');\n      } catch (dbError) {\n        console.warn(`⚠️ Business metrics collection failed: ${dbError.message}`);\n        console.warn('   Continuing with Sentry metrics only...');\n      }\n    }\n    \n    // 3. 检查Sentry指标违规项\n    const violations = [];\n    \n    if (sentryMetrics.crashFreeUsers < CONFIG.thresholds.crashFreeUsers) {\n      violations.push({\n        category: 'sentry',\n        metric: 'crash_free_users',\n        actual: sentryMetrics.crashFreeUsers,\n        threshold: CONFIG.thresholds.crashFreeUsers,\n        severity: 'blocking',\n        impact: `${(100 - sentryMetrics.crashFreeUsers).toFixed(2)}% users experienced crashes`\n      });\n    }\n    \n    if (sentryMetrics.crashFreeSessions < CONFIG.thresholds.crashFreeSessions) {\n      violations.push({\n        category: 'sentry',\n        metric: 'crash_free_sessions', \n        actual: sentryMetrics.crashFreeSessions,\n        threshold: CONFIG.thresholds.crashFreeSessions,\n        severity: 'blocking',\n        impact: `${(100 - sentryMetrics.crashFreeSessions).toFixed(2)}% sessions crashed`\n      });\n    }\n    \n    // 4. 检查业务指标违规项\n    Object.entries(CONFIG.businessThresholds).forEach(([metricName, config]) => {\n      const businessData = businessMetrics[metricName];\n      if (!businessData) return;\n      \n      const actualValue = businessData.rate !== undefined ? businessData.rate : \n                         businessData.averageDuration !== undefined ? businessData.averageDuration :\n                         businessData.averageLoadTime;\n      \n      if (actualValue < config.threshold) {\n        violations.push({\n          category: 'business',\n          metric: metricName,\n          actual: actualValue,\n          threshold: config.threshold,\n          severity: 'blocking',\n          impact: `${config.description}: ${actualValue}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''} < ${config.threshold}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''}`,\n          observationWindow: config.observationWindow\n        });\n      }\n    });\n    \n    return {\n      passed: violations.length === 0,\n      sentryMetrics,\n      businessMetrics,\n      violations,\n      timestamp: new Date().toISOString(),\n      environment: CONFIG.environment,\n      sampleSize: sentryMetrics.sampleSize,\n      config: {\n        thresholds: CONFIG.thresholds,\n        businessThresholds: CONFIG.businessThresholds,\n        observationWindow: CONFIG.observationWindow\n      }\n    };\n    \n  } catch (error) {\n    throw new Error(`Release Health Gate 检查失败: ${error.message}`);\n  }\n}
+    let businessMetrics = {};
+    let businessCollector;
+    if (Object.keys(CONFIG.businessThresholds).length > 0) {
+      try {
+        businessCollector = new BusinessMetricsCollector(CONFIG.dbPath);
+        businessMetrics = await businessCollector.collectBusinessMetrics();
+        console.log('✅ Business metrics collected successfully');
+      } catch (dbError) {
+        console.warn(`⚠️ Business metrics collection failed: ${dbError.message}`);
+        console.warn('   Continuing with Sentry metrics only...');
+      }
+    }
+    
+    // 3. 检查Sentry指标违规项
+    const violations = [];
+    
+    if (sentryMetrics.crashFreeUsers < CONFIG.thresholds.crashFreeUsers) {
+      violations.push({
+        category: 'sentry',
+        metric: 'crash_free_users',
+        actual: sentryMetrics.crashFreeUsers,
+        threshold: CONFIG.thresholds.crashFreeUsers,
+        severity: 'blocking',
+        impact: `${(100 - sentryMetrics.crashFreeUsers).toFixed(2)}% users experienced crashes`
+      });
+    }
+    
+    if (sentryMetrics.crashFreeSessions < CONFIG.thresholds.crashFreeSessions) {
+      violations.push({
+        category: 'sentry',
+        metric: 'crash_free_sessions', 
+        actual: sentryMetrics.crashFreeSessions,
+        threshold: CONFIG.thresholds.crashFreeSessions,
+        severity: 'blocking',
+        impact: `${(100 - sentryMetrics.crashFreeSessions).toFixed(2)}% sessions crashed`
+      });
+    }
+    
+    // 4. 检查业务指标违规项
+    Object.entries(CONFIG.businessThresholds).forEach(([metricName, config]) => {
+      const businessData = businessMetrics[metricName];
+      if (!businessData) return;
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+      
+      if (actualValue < config.threshold) {
+        violations.push({
+          category: 'business',
+          metric: metricName,
+          actual: actualValue,
+          threshold: config.threshold,
+          severity: 'blocking',
+          impact: `${config.description}: ${actualValue}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''} < ${config.threshold}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''}`,
+          observationWindow: config.observationWindow
+        });
+      }
+    });
+    
+    return {
+      passed: violations.length === 0,
+      sentryMetrics,
+      businessMetrics,
+      violations,
+      timestamp: new Date().toISOString(),
+      environment: CONFIG.environment,
+      sampleSize: sentryMetrics.sampleSize,
+      config: {
+        thresholds: CONFIG.thresholds,
+        businessThresholds: CONFIG.businessThresholds,
+        observationWindow: CONFIG.observationWindow
+      }
+    };
+    
+  } catch (error) {
+    throw new Error(`Release Health Gate 检查失败: ${error.message}`);
+  }
+}
 
 /**
  * 生成 Markdown 格式的报告
@@ -500,7 +578,92 @@ function generateMarkdownReport(result) {
     ''
   ];
   
-  // 添加业务指标部分\n  if (Object.keys(result.businessMetrics || {}).length > 0) {\n    report.push('## 🏢 Business Metrics', '');\n    \n    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {\n      const businessData = result.businessMetrics[metricName];\n      if (!businessData) {\n        report.push(`- **${config.description}**: ❓ No data available`);\n        return;\n      }\n      \n      const actualValue = businessData.rate !== undefined ? businessData.rate : \n                         businessData.averageDuration !== undefined ? businessData.averageDuration :\n                         businessData.averageLoadTime;\n                         \n      const unit = config.unit === 'percent' ? '%' : \n                   config.unit === 'milliseconds' ? 'ms' : \n                   config.unit === 'seconds' ? 's' : '';\n                   \n      const status = actualValue >= config.threshold ? '✅' : '❌';\n      report.push(`- **${config.description}**: ${actualValue}${unit} (≥ ${config.threshold}${unit}) ${status}`);\n      \n      // 添加额外的详细信息\n      if (businessData.totalAttempts !== undefined) {\n        report.push(`  - Total Attempts: ${businessData.totalAttempts.toLocaleString()}`);\n      }\n      if (businessData.dau !== undefined) {\n        report.push(`  - DAU/MAU: ${businessData.dau}/${businessData.mau}`);\n      }\n      if (businessData.totalSessions !== undefined) {\n        report.push(`  - Sessions: ${businessData.totalSessions.toLocaleString()}`);\n      }\n      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {\n        report.push(`  - Sample Size: ${businessData.sampleCount.toLocaleString()}`);\n      }\n    });\n    \n    report.push('');\n  }\n  \n  if (result.violations.length > 0) {\n    report.push('## ⚠️ Violations', '');\n    \n    const sentryViolations = result.violations.filter(v => v.category === 'sentry');\n    const businessViolations = result.violations.filter(v => v.category === 'business');\n    \n    if (sentryViolations.length > 0) {\n      report.push('### 🚨 Sentry Health Violations', '');\n      sentryViolations.forEach(violation => {\n        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';\n        report.push(`#### ${severityEmoji} ${violation.metric}`);\n        report.push('');\n        report.push(`- **Actual**: ${violation.actual}%`);\n        report.push(`- **Threshold**: ≥ ${violation.threshold}%`);\n        report.push(`- **Impact**: ${violation.impact}`);\n        report.push('');\n      });\n    }\n    \n    if (businessViolations.length > 0) {\n      report.push('### 📉 Business Metric Violations', '');\n      businessViolations.forEach(violation => {\n        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';\n        report.push(`#### ${severityEmoji} ${violation.metric}`);\n        report.push('');\n        report.push(`- **Impact**: ${violation.impact}`);\n        report.push(`- **Observation Window**: ${violation.observationWindow}`);\n        report.push('');\n      });\n    }\n  }\n  \n  if (result.sentryMetrics.rawData) {\n    report.push('## 📈 Raw Sentry Data', '');\n    report.push(`- **Total Sessions**: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);\n    report.push(`- **Crashed Sessions**: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);\n    report.push(`- **Total Users**: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);\n    report.push(`- **Crashed Users**: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);\n    report.push('');\n  }\n  \n  report.push('---');\n  report.push('*Report generated by Enhanced Release Health Gate*');\n  \n  return report.join('\n');\n}
+  // 添加业务指标部分
+  if (Object.keys(result.businessMetrics || {}).length > 0) {
+    report.push('## 🏢 Business Metrics', '');
+    
+    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {
+      const businessData = result.businessMetrics[metricName];
+      if (!businessData) {
+        report.push(`- **${config.description}**: ❓ No data available`);
+        return;
+      }
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+                         
+      const unit = config.unit === 'percent' ? '%' : 
+                   config.unit === 'milliseconds' ? 'ms' : 
+                   config.unit === 'seconds' ? 's' : '';
+                   
+      const status = actualValue >= config.threshold ? '✅' : '❌';
+      report.push(`- **${config.description}**: ${actualValue}${unit} (≥ ${config.threshold}${unit}) ${status}`);
+      
+      // 添加额外的详细信息
+      if (businessData.totalAttempts !== undefined) {
+        report.push(`  - Total Attempts: ${businessData.totalAttempts.toLocaleString()}`);
+      }
+      if (businessData.dau !== undefined) {
+        report.push(`  - DAU/MAU: ${businessData.dau}/${businessData.mau}`);
+      }
+      if (businessData.totalSessions !== undefined) {
+        report.push(`  - Sessions: ${businessData.totalSessions.toLocaleString()}`);
+      }
+      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {
+        report.push(`  - Sample Size: ${businessData.sampleCount.toLocaleString()}`);
+      }
+    });
+    
+    report.push('');
+  }
+  
+  if (result.violations.length > 0) {
+    report.push('## ⚠️ Violations', '');
+    
+    const sentryViolations = result.violations.filter(v => v.category === 'sentry');
+    const businessViolations = result.violations.filter(v => v.category === 'business');
+    
+    if (sentryViolations.length > 0) {
+      report.push('### 🚨 Sentry Health Violations', '');
+      sentryViolations.forEach(violation => {
+        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        report.push(`#### ${severityEmoji} ${violation.metric}`);
+        report.push('');
+        report.push(`- **Actual**: ${violation.actual}%`);
+        report.push(`- **Threshold**: ≥ ${violation.threshold}%`);
+        report.push(`- **Impact**: ${violation.impact}`);
+        report.push('');
+      });
+    }
+    
+    if (businessViolations.length > 0) {
+      report.push('### 📉 Business Metric Violations', '');
+      businessViolations.forEach(violation => {
+        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        report.push(`#### ${severityEmoji} ${violation.metric}`);
+        report.push('');
+        report.push(`- **Impact**: ${violation.impact}`);
+        report.push(`- **Observation Window**: ${violation.observationWindow}`);
+        report.push('');
+      });
+    }
+  }
+  
+  if (result.sentryMetrics.rawData) {
+    report.push('## 📈 Raw Sentry Data', '');
+    report.push(`- **Total Sessions**: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);
+    report.push(`- **Crashed Sessions**: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);
+    report.push(`- **Total Users**: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);
+    report.push(`- **Crashed Users**: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);
+    report.push('');
+  }
+  
+  report.push('---');
+  report.push('*Report generated by Enhanced Release Health Gate*');
+  
+  return report.join('\n');
+}
 
 /**
  * 生成控制台格式的报告
@@ -529,7 +692,81 @@ function printConsoleReport(result) {
   console.log(`  Crash-Free Sessions: ${result.sentryMetrics.crashFreeSessions}% ${sessionsStatus}`);
   console.log('');
   
-  // 业务指标报告\n  if (Object.keys(result.businessMetrics || {}).length > 0) {\n    console.log('🏢 Business Metrics:');\n    \n    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {\n      const businessData = result.businessMetrics[metricName];\n      if (!businessData) {\n        console.log(`  ❓ ${config.description}: No data available`);\n        return;\n      }\n      \n      const actualValue = businessData.rate !== undefined ? businessData.rate : \n                         businessData.averageDuration !== undefined ? businessData.averageDuration :\n                         businessData.averageLoadTime;\n                         \n      const unit = config.unit === 'percent' ? '%' : \n                   config.unit === 'milliseconds' ? 'ms' : \n                   config.unit === 'seconds' ? 's' : '';\n                   \n      const status = actualValue >= config.threshold ? '✅' : '❌';\n      console.log(`  ${status} ${config.description}: ${actualValue}${unit} (≥ ${config.threshold}${unit})`);\n      \n      // 显示额外的详细信息\n      if (businessData.totalAttempts !== undefined && businessData.totalAttempts > 0) {\n        console.log(`      Attempts: ${businessData.totalAttempts.toLocaleString()}`);\n      }\n      if (businessData.dau !== undefined) {\n        console.log(`      DAU/MAU: ${businessData.dau}/${businessData.mau}`);\n      }\n      if (businessData.totalSessions !== undefined && businessData.totalSessions > 0) {\n        console.log(`      Sessions: ${businessData.totalSessions.toLocaleString()}`);\n      }\n      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {\n        console.log(`      Samples: ${businessData.sampleCount.toLocaleString()}`);\n      }\n    });\n    \n    console.log('');\n  }\n  \n  if (result.violations.length > 0) {\n    const sentryViolations = result.violations.filter(v => v.category === 'sentry');\n    const businessViolations = result.violations.filter(v => v.category === 'business');\n    \n    if (sentryViolations.length > 0) {\n      console.log('🚨 Sentry Violations:');\n      sentryViolations.forEach(violation => {\n        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';\n        console.log(`  ${severity} ${violation.metric}: ${violation.actual}% < ${violation.threshold}%`);\n        console.log(`     Impact: ${violation.impact}`);\n      });\n      console.log('');\n    }\n    \n    if (businessViolations.length > 0) {\n      console.log('📉 Business Metric Violations:');\n      businessViolations.forEach(violation => {\n        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';\n        console.log(`  ${severity} ${violation.metric}`);\n        console.log(`     Impact: ${violation.impact}`);\n        console.log(`     Window: ${violation.observationWindow}`);\n      });\n      console.log('');\n    }\n  }\n  \n  if (result.sentryMetrics.rawData) {\n    console.log('📈 Raw Sentry Data:');\n    console.log(`  Total Sessions: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);\n    console.log(`  Crashed Sessions: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);\n    console.log(`  Total Users: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);\n    console.log(`  Crashed Users: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);\n    console.log('');\n  }\n}
+  // 业务指标报告
+  if (Object.keys(result.businessMetrics || {}).length > 0) {
+    console.log('🏢 Business Metrics:');
+    
+    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {
+      const businessData = result.businessMetrics[metricName];
+      if (!businessData) {
+        console.log(`  ❓ ${config.description}: No data available`);
+        return;
+      }
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+                         
+      const unit = config.unit === 'percent' ? '%' : 
+                   config.unit === 'milliseconds' ? 'ms' : 
+                   config.unit === 'seconds' ? 's' : '';
+                   
+      const status = actualValue >= config.threshold ? '✅' : '❌';
+      console.log(`  ${status} ${config.description}: ${actualValue}${unit} (≥ ${config.threshold}${unit})`);
+      
+      // 显示额外的详细信息
+      if (businessData.totalAttempts !== undefined && businessData.totalAttempts > 0) {
+        console.log(`      Attempts: ${businessData.totalAttempts.toLocaleString()}`);
+      }
+      if (businessData.dau !== undefined) {
+        console.log(`      DAU/MAU: ${businessData.dau}/${businessData.mau}`);
+      }
+      if (businessData.totalSessions !== undefined && businessData.totalSessions > 0) {
+        console.log(`      Sessions: ${businessData.totalSessions.toLocaleString()}`);
+      }
+      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {
+        console.log(`      Samples: ${businessData.sampleCount.toLocaleString()}`);
+      }
+    });
+    
+    console.log('');
+  }
+  
+  if (result.violations.length > 0) {
+    const sentryViolations = result.violations.filter(v => v.category === 'sentry');
+    const businessViolations = result.violations.filter(v => v.category === 'business');
+    
+    if (sentryViolations.length > 0) {
+      console.log('🚨 Sentry Violations:');
+      sentryViolations.forEach(violation => {
+        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        console.log(`  ${severity} ${violation.metric}: ${violation.actual}% < ${violation.threshold}%`);
+        console.log(`     Impact: ${violation.impact}`);
+      });
+      console.log('');
+    }
+    
+    if (businessViolations.length > 0) {
+      console.log('📉 Business Metric Violations:');
+      businessViolations.forEach(violation => {
+        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        console.log(`  ${severity} ${violation.metric}`);
+        console.log(`     Impact: ${violation.impact}`);
+        console.log(`     Window: ${violation.observationWindow}`);
+      });
+      console.log('');
+    }
+  }
+  
+  if (result.sentryMetrics.rawData) {
+    console.log('📈 Raw Sentry Data:');
+    console.log(`  Total Sessions: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);
+    console.log(`  Crashed Sessions: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);
+    console.log(`  Total Users: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);
+    console.log(`  Crashed Users: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);
+    console.log('');
+  }
+}
 
 // ============================================================================
 // 主执行逻辑
@@ -651,9 +888,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // 导出函数供测试使用
-export { 
-  checkReleaseHealth, 
-  fetchReleaseHealthMetrics, 
-  generateMarkdownReport, 
-  CONFIG 
-};
+// export { checkReleaseHealth, fetchReleaseHealthMetrics, generateMarkdownReport, CONFIG };

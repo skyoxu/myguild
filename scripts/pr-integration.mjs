@@ -30,16 +30,18 @@ class GitHubClient {
     const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       headers: {
-        'Authorization': `token ${this.token}`,
-        'Accept': 'application/vnd.github.v3+json',
+        Authorization: `token ${this.token}`,
+        Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
-        ...options.headers
+        ...options.headers,
       },
-      ...options
+      ...options,
     });
 
     if (!response.ok) {
-      throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `GitHub API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -49,34 +51,44 @@ class GitHubClient {
    * 获取PR信息
    */
   async getPR(prNumber) {
-    return this.makeRequest(`/repos/${this.owner}/${this.repo}/pulls/${prNumber}`);
+    return this.makeRequest(
+      `/repos/${this.owner}/${this.repo}/pulls/${prNumber}`
+    );
   }
 
   /**
    * 创建PR评论
    */
   async createPRComment(prNumber, body) {
-    return this.makeRequest(`/repos/${this.owner}/${this.repo}/issues/${prNumber}/comments`, {
-      method: 'POST',
-      body: JSON.stringify({ body })
-    });
+    return this.makeRequest(
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/comments`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ body }),
+      }
+    );
   }
 
   /**
    * 更新已存在的PR评论
    */
   async updatePRComment(commentId, body) {
-    return this.makeRequest(`/repos/${this.owner}/${this.repo}/issues/comments/${commentId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ body })
-    });
+    return this.makeRequest(
+      `/repos/${this.owner}/${this.repo}/issues/comments/${commentId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ body }),
+      }
+    );
   }
 
   /**
    * 获取PR评论列表
    */
   async getPRComments(prNumber) {
-    return this.makeRequest(`/repos/${this.owner}/${this.repo}/issues/${prNumber}/comments`);
+    return this.makeRequest(
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/comments`
+    );
   }
 
   /**
@@ -84,9 +96,10 @@ class GitHubClient {
    */
   async findCommentBySignature(prNumber, signature) {
     const comments = await this.getPRComments(prNumber);
-    return comments.find(comment => 
-      comment.body.includes(signature) && 
-      comment.user.login === 'github-actions[bot]'
+    return comments.find(
+      comment =>
+        comment.body.includes(signature) &&
+        comment.user.login === 'github-actions[bot]'
     );
   }
 }
@@ -108,7 +121,8 @@ class WebVitalsProcessor {
       return null;
     }
 
-    const files = fs.readdirSync(vitalsDir)
+    const files = fs
+      .readdirSync(vitalsDir)
       .filter(f => f.endsWith('.json'))
       .sort((a, b) => b.localeCompare(a)); // 按时间倒序
 
@@ -141,15 +155,24 @@ class WebVitalsProcessor {
 
     ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'].forEach(metric => {
       if (current[metric] && baseline[metric]) {
-        const regression = ((current[metric] - baseline[metric]) / baseline[metric]) * 100;
-        const threshold = thresholds[metric] || { warning: 10, critical: 20, unit: 'percent' };
-        
+        const regression =
+          ((current[metric] - baseline[metric]) / baseline[metric]) * 100;
+        const threshold = thresholds[metric] || {
+          warning: 10,
+          critical: 20,
+          unit: 'percent',
+        };
+
         regressions[metric] = {
           current: current[metric],
           baseline: baseline[metric],
           regression: regression,
-          status: Math.abs(regression) < threshold.warning ? 'good' : 
-                  Math.abs(regression) < threshold.critical ? 'warning' : 'critical'
+          status:
+            Math.abs(regression) < threshold.warning
+              ? 'good'
+              : Math.abs(regression) < threshold.critical
+                ? 'warning'
+                : 'critical',
         };
       }
     });
@@ -167,13 +190,17 @@ class WebVitalsProcessor {
     if (!current || !baseline) {
       return {
         hasData: false,
-        message: 'No performance data available for analysis'
+        message: 'No performance data available for analysis',
       };
     }
 
     const regressions = this.calculateRegressions(current, baseline);
-    const critical = Object.values(regressions).filter(r => r.status === 'critical');
-    const warnings = Object.values(regressions).filter(r => r.status === 'warning');
+    const critical = Object.values(regressions).filter(
+      r => r.status === 'critical'
+    );
+    const warnings = Object.values(regressions).filter(
+      r => r.status === 'warning'
+    );
 
     return {
       hasData: true,
@@ -182,9 +209,14 @@ class WebVitalsProcessor {
         critical: critical.length,
         warnings: warnings.length,
         total: Object.keys(regressions).length,
-        status: critical.length > 0 ? 'critical' : warnings.length > 0 ? 'warning' : 'good'
+        status:
+          critical.length > 0
+            ? 'critical'
+            : warnings.length > 0
+              ? 'warning'
+              : 'good',
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }
@@ -211,8 +243,12 @@ ${analysisResult.message}
     }
 
     const { regressions, summary } = analysisResult;
-    const statusIcon = summary.status === 'critical' ? '🔴' : 
-                      summary.status === 'warning' ? '🟡' : '🟢';
+    const statusIcon =
+      summary.status === 'critical'
+        ? '🔴'
+        : summary.status === 'warning'
+          ? '🟡'
+          : '🟢';
 
     let comment = `${this.COMMENT_SIGNATURE}
 ## 🚀 Web Vitals Performance Report ${statusIcon}
@@ -228,9 +264,13 @@ ${analysisResult.message}
 |--------|---------|----------|------------|--------|`;
 
     Object.entries(regressions).forEach(([metric, data]) => {
-      const icon = data.status === 'critical' ? '🔴' : 
-                   data.status === 'warning' ? '🟡' : '🟢';
-      
+      const icon =
+        data.status === 'critical'
+          ? '🔴'
+          : data.status === 'warning'
+            ? '🟡'
+            : '🟢';
+
       comment += `\n| ${metric} | ${data.current.toFixed(2)}ms | ${data.baseline.toFixed(2)}ms | ${data.regression > 0 ? '+' : ''}${data.regression.toFixed(1)}% | ${icon} ${data.status} |`;
     });
 
@@ -265,7 +305,7 @@ This PR introduces **${summary.critical} critical performance regression(s)**. P
    */
   static generateBundleSizeComment(bundleData) {
     const statusIcon = bundleData.hasViolations ? '🔴' : '🟢';
-    
+
     return `${this.COMMENT_SIGNATURE}
 ## 📦 Bundle Size Report ${statusIcon}
 
@@ -277,10 +317,12 @@ This PR introduces **${summary.critical} critical performance regression(s)**. P
 
 | File | Size | Limit | Usage | Status |
 |------|------|-------|--------|--------|
-${bundleData.files.map(file => {
-  const icon = file.violation ? '🔴' : '🟢';
-  return `| ${file.name} | ${file.actualSize} | ${file.limitSize} | ${file.percentage}% | ${icon}`;
-}).join('\n')}
+${bundleData.files
+  .map(file => {
+    const icon = file.violation ? '🔴' : '🟢';
+    return `| ${file.name} | ${file.actualSize} | ${file.limitSize} | ${file.percentage}% | ${icon}`;
+  })
+  .join('\n')}
 
 *Report generated at: ${new Date().toISOString()}*`;
   }
@@ -301,9 +343,11 @@ class PRIntegration {
   initializeGitHub() {
     const token = process.env.GITHUB_TOKEN;
     const repository = process.env.GITHUB_REPOSITORY;
-    
+
     if (!token || !repository) {
-      throw new Error('GitHub token and repository environment variables are required');
+      throw new Error(
+        'GitHub token and repository environment variables are required'
+      );
     }
 
     const [owner, repo] = repository.split('/');
@@ -316,35 +360,47 @@ class PRIntegration {
   async runBundleCheck() {
     try {
       const { spawn } = await import('child_process');
-      
+
       return new Promise((resolve, reject) => {
         const child = spawn('node', ['scripts/bundle-size-check.mjs'], {
-          stdio: ['pipe', 'pipe', 'pipe']
+          stdio: ['pipe', 'pipe', 'pipe'],
         });
-        
+
         let stdout = '';
         let stderr = '';
-        
-        child.stdout.on('data', (data) => stdout += data.toString());
-        child.stderr.on('data', (data) => stderr += data.toString());
-        
-        child.on('close', (code) => {
+
+        child.stdout.on('data', data => (stdout += data.toString()));
+        child.stderr.on('data', data => (stderr += data.toString()));
+
+        child.on('close', code => {
           // 解析bundle检查结果（简化版）
           const hasViolations = code !== 0;
           const lines = stdout.split('\n');
-          
+
           resolve({
             hasViolations,
             totalSize: '4.54 KB', // 从输出解析
             violations: 0,
             totalFiles: 4,
             files: [
-              { name: 'main.js', actualSize: '3.8 KB', limitSize: '2MB', percentage: '0.2', violation: false },
-              { name: 'index.html', actualSize: '751 B', limitSize: '50KB', percentage: '1.5', violation: false }
-            ]
+              {
+                name: 'main.js',
+                actualSize: '3.8 KB',
+                limitSize: '2MB',
+                percentage: '0.2',
+                violation: false,
+              },
+              {
+                name: 'index.html',
+                actualSize: '751 B',
+                limitSize: '50KB',
+                percentage: '1.5',
+                violation: false,
+              },
+            ],
           });
         });
-        
+
         child.on('error', reject);
       });
     } catch (error) {
@@ -365,16 +421,18 @@ class PRIntegration {
 
     // 分析性能数据
     const performanceAnalysis = this.processor.analyzePerformance();
-    
+
     // 运行Bundle大小检查
     const bundleData = await this.runBundleCheck();
 
     // 生成评论内容
-    let commentBody = PRCommentGenerator.generatePerformanceComment(performanceAnalysis);
-    
+    let commentBody =
+      PRCommentGenerator.generatePerformanceComment(performanceAnalysis);
+
     // 如果有Bundle数据，添加Bundle报告
     if (bundleData) {
-      commentBody += '\n\n' + PRCommentGenerator.generateBundleSizeComment(bundleData);
+      commentBody +=
+        '\n\n' + PRCommentGenerator.generateBundleSizeComment(bundleData);
     }
 
     // 查找现有评论
@@ -397,7 +455,8 @@ class PRIntegration {
     return {
       performance: performanceAnalysis,
       bundle: bundleData,
-      shouldBlock: performanceAnalysis.summary?.critical > 0 || bundleData.hasViolations
+      shouldBlock:
+        performanceAnalysis.summary?.critical > 0 || bundleData.hasViolations,
     };
   }
 }
@@ -418,11 +477,11 @@ async function main() {
           console.error('❌ PR number is required for comment command');
           process.exit(1);
         }
-        
+
         const result = await integration.publishPRComment(parseInt(prNumber));
         console.log('\n📊 Analysis Result:');
         console.log(JSON.stringify(result, null, 2));
-        
+
         // 如果有critical问题，以非零状态码退出（用于CI阻断）
         if (result.shouldBlock) {
           console.log('❌ Critical issues detected, blocking PR');
@@ -462,7 +521,10 @@ Examples:
 }
 
 // 如果直接运行脚本
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('pr-integration.mjs')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1].endsWith('pr-integration.mjs')
+) {
   main();
 }
 

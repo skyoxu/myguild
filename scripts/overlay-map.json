@@ -6,13 +6,7 @@
     "公会管理器": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
-    "功能纵切设计": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
     "prd-guild-manager": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "08-功能纵切-公会管理器.md": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "guild": {
@@ -22,27 +16,6 @@
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "guild-manager": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "财务": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "finance": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "任务": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "权限": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "permission": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "角色": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "role": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "会长": {
@@ -63,94 +36,10 @@
     "elder": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
-    "管理员": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "admin": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "普通成员": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "regular-member": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
     "招募": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "recruit": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "审批": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "approve": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "踢出": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "kick": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "升职": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "promote": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "降职": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "demote": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "邀请": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "invite": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "申请": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "apply": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "退会": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "leave": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "转让": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "transfer": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "合并": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "merge": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "解散": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "disband": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "创建": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "create": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "活跃度": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "activity": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "贡献值": {
@@ -165,10 +54,16 @@
     "ranking": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
-    "历史": {
+    "仪表板": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
-    "history": {
+    "dashboard": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "权限": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "permission": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
     },
     "统计": {
@@ -176,27 +71,6 @@
     },
     "stats": {
       "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "dashboard": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "仪表板": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "搜索": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "search": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "筛选": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "filter": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    },
-    "acceptance_checklist.md": {
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
     }
   },
   "files": {
@@ -214,23 +88,19 @@
           "ADR-0009",
           "ADR-0010"
         ],
-        "Arch-Refs": [
-          "CH01",
-          "CH03",
-          "CH04",
-          "CH05",
-          "CH06"
-        ],
+        "Arch-Refs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
         "PRD-ID": "PRD-Guild-Manager"
       },
       "prdId": "PRD-Guild-Manager",
       "accept": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md",
       "anchors": {
-        "ui": "## 8.2 UI层设计",
-        "events": "## 8.3 事件系统设计",
-        "domain": "## 8.4 领域模型设计",
-        "persistence": "## 8.5 持久化层设计",
-        "acceptance": "## 8.7 验收标准"
+        "overview": "guild-overview",
+        "ui": "ui-layer",
+        "events": "events-design",
+        "domain": "domain-model",
+        "persistence": "persistence",
+        "integration": "integration-testing",
+        "acceptance": "acceptance"
       }
     },
     "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md": {

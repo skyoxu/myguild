@@ -13,7 +13,7 @@
     ]
   },
   "0.1.0": {
-    "path": "app-0.1.0.exe", 
+    "path": "app-0.1.0.exe",
     "sha512": "sha512-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567ABC890DEF123GHI456JKL789MNO012PQR==",
     "size": 52428800,
     "releaseDate": "2025-08-29T10:00:00.000Z",

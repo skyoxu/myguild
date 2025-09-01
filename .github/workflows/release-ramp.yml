@@ -4,19 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: "分阶段发布百分比"
+        description: '分阶段发布百分比'
         required: true
         type: choice
-        options: ["5", "25", "50", "100"]
-        default: "5"
+        options: ['5', '25', '50', '100']
+        default: '5'
       feed_file:
-        description: "Feed 文件路径"
+        description: 'Feed 文件路径'
         required: false
         type: choice
-        options: ["dist/latest.yml", "dist/latest-mac.yml", "dist/latest-linux.yml"]
-        default: "dist/latest.yml"
+        options:
+          ['dist/latest.yml', 'dist/latest-mac.yml', 'dist/latest-linux.yml']
+        default: 'dist/latest.yml'
       skip_health_check:
-        description: "跳过健康度检查 (仅用于测试)"
+        description: '跳过健康度检查 (仅用于测试)'
         required: false
         type: boolean
         default: false
@@ -27,11 +28,11 @@ env:
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || 'vitegame' }}
   APP_VERSION: ${{ vars.APP_VERSION || github.ref_name }}
   PREV_GA_VERSION: ${{ vars.PREV_GA_VERSION || '0.0.9' }}
-  
+
   # 健康度阈值
   THRESHOLD_CF_USERS: ${{ vars.THRESHOLD_CF_USERS || '0.995' }}
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
-  
+
   # 通知配置
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
@@ -42,52 +43,52 @@ jobs:
     permissions:
       contents: write
       actions: read
-    
+
     outputs:
       stage: ${{ inputs.stage }}
       health_passed: ${{ steps.health_check.outcome == 'success' }}
       rollback_executed: ${{ steps.rollback.outcome == 'success' }}
-    
+
     steps:
-      - name: "🚀 Checkout repository"
+      - name: '🚀 Checkout repository'
         uses: actions/checkout@v4
         with:
           # 获取完整历史以便提交
           fetch-depth: 0
-      
-      - name: "📦 Setup Node.js"
+
+      - name: '📦 Setup Node.js'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
-      - name: "🔧 Install dependencies"
+
+      - name: '🔧 Install dependencies'
         run: npm ci --only=production
-      
-      - name: "📋 Validate prerequisites"
+
+      - name: '📋 Validate prerequisites'
         run: |
           echo "🔍 验证必要文件存在..."
-          
+
           # 检查 feed 文件
           if [ ! -f "${{ inputs.feed_file }}" ]; then
             echo "❌ Feed 文件不存在: ${{ inputs.feed_file }}"
             exit 1
           fi
-          
+
           # 检查版本清单文件
           if [ ! -f "artifacts/manifest.json" ]; then
             echo "❌ 版本清单文件不存在: artifacts/manifest.json"
             echo "请先运行 npm run release:manifest:add 添加版本"
             exit 1
           fi
-          
+
           # 验证清单格式
           echo "📋 验证版本清单格式..."
           node scripts/release/manage-manifest.mjs validate
-          
+
           echo "✅ 前置条件验证通过"
-      
-      - name: "📊 Display current status"
+
+      - name: '📊 Display current status'
         run: |
           echo "🎯 渐进发布配置:"
           echo "  - 目标阶段: ${{ inputs.stage }}%"
@@ -96,33 +97,33 @@ jobs:
           echo "  - 上一稳定版本: $PREV_GA_VERSION"
           echo "  - Sentry 项目: $SENTRY_ORG/$SENTRY_PROJECT"
           echo "  - 跳过健康检查: ${{ inputs.skip_health_check }}"
-          
+
           echo ""
           echo "🔧 健康度阈值:"
           echo "  - Crash-Free Users: $THRESHOLD_CF_USERS (99.5%)"
           echo "  - Crash-Free Sessions: $THRESHOLD_CF_SESSIONS (99.5%)"
-          
+
           echo ""
           echo "📋 可用版本列表:"
           node scripts/release/manage-manifest.mjs list
-      
-      - name: "📈 Set staging percentage"
+
+      - name: '📈 Set staging percentage'
         id: staging
         run: |
           echo "🎯 设置分阶段发布百分比为 ${{ inputs.stage }}%..."
-          
+
           result=$(node scripts/release/patch-staging-percentage.mjs "${{ inputs.feed_file }}" "${{ inputs.stage }}")
           echo "staging_result=$result" >> $GITHUB_OUTPUT
-          
+
           echo "✅ 分阶段发布百分比设置成功"
           echo "$result" | jq '.'
-      
-      - name: "⏱️ Wait for metrics collection"
+
+      - name: '⏱️ Wait for metrics collection'
         if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
         run: |
           echo "⏳ 等待 Sentry 收集指标数据..."
           echo "分阶段发布需要时间让新版本被用户接收并产生遥测数据"
-          
+
           # 根据发布百分比调整等待时间
           case "${{ inputs.stage }}" in
             "25") wait_minutes=5 ;;
@@ -130,36 +131,36 @@ jobs:
             "100") wait_minutes=10 ;;
             *) wait_minutes=3 ;;
           esac
-          
+
           echo "⏰ 等待 ${wait_minutes} 分钟收集数据..."
           sleep $((wait_minutes * 60))
-      
-      - name: "🏥 Health check via Sentry Release Health"
+
+      - name: '🏥 Health check via Sentry Release Health'
         id: health_check
         if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           echo "🔍 检查版本 $APP_VERSION 的 Release Health..."
-          
+
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "⚠️  SENTRY_AUTH_TOKEN 未配置，跳过健康检查"
             echo "health_status=skipped" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # 执行健康度检查
           set +e  # 允许命令失败以便捕获退出码
           health_result=$(node scripts/release/auto-rollback.mjs)
           health_exit_code=$?
           set -e
-          
+
           echo "health_result=$health_result" >> $GITHUB_OUTPUT
           echo "health_exit_code=$health_exit_code" >> $GITHUB_OUTPUT
-          
+
           echo "📊 健康检查结果:"
           echo "$health_result" | jq '.'
-          
+
           case $health_exit_code in
             0)
               echo "✅ 健康检查通过 - 可以继续发布"
@@ -176,17 +177,17 @@ jobs:
               exit $health_exit_code
               ;;
           esac
-      
-      - name: "🚨 Execute automatic rollback"
+
+      - name: '🚨 Execute automatic rollback'
         id: rollback
         if: failure() && steps.health_check.outputs.health_exit_code == '42'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
           echo "🚨 健康检查失败，执行自动回滚..."
-          
+
           rollback_reason="Automated rollback: Release health below threshold (stage: ${{ inputs.stage }}%)"
-          
+
           # 执行完整回滚流程（紧急停止 + 版本回退）
           rollback_result=$(node scripts/release/execute-rollback.mjs \
             --feed="${{ inputs.feed_file }}" \
@@ -194,31 +195,31 @@ jobs:
             --manifest="artifacts/manifest.json" \
             --reason="$rollback_reason" \
             $([ -n "$WEBHOOK_URL" ] && echo "--notify"))
-          
+
           echo "rollback_result=$rollback_result" >> $GITHUB_OUTPUT
-          
+
           echo "📋 回滚执行结果:"
           echo "$rollback_result" | jq '.'
-          
+
           echo "✅ 自动回滚完成"
-          
+
           # 设置回滚状态用于后续步骤
           echo "rollback_executed=true" >> $GITHUB_OUTPUT
-      
-      - name: "💾 Commit feed changes"
+
+      - name: '💾 Commit feed changes'
         id: commit
         run: |
           # 配置 Git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           # 检查是否有变更
           if git diff --quiet "${{ inputs.feed_file }}"; then
             echo "📝 Feed 文件无变更，跳过提交"
             echo "committed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # 创建提交消息
           if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
             commit_msg="🚨 Auto rollback: ${{ inputs.feed_file }} → $PREV_GA_VERSION (health check failed at ${{ inputs.stage }}%)"
@@ -227,7 +228,7 @@ jobs:
             commit_msg="📈 Release ramp: ${{ inputs.feed_file }} → ${{ inputs.stage }}% staging"
             commit_type="ramp"
           fi
-          
+
           # 执行提交
           git add "${{ inputs.feed_file }}"
           git commit -m "$commit_msg" \
@@ -238,20 +239,20 @@ jobs:
             -m "🤖 Generated by GitHub Actions workflow" \
             -m "Workflow: ${{ github.workflow }}" \
             -m "Run: ${{ github.run_number }}"
-          
+
           echo "✅ 变更已提交: $commit_msg"
           echo "committed=true" >> $GITHUB_OUTPUT
           echo "commit_type=$commit_type" >> $GITHUB_OUTPUT
           echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-      
-      - name: "🚀 Push changes"
+
+      - name: '🚀 Push changes'
         if: steps.commit.outputs.committed == 'true'
         run: |
           echo "📤 推送变更到远程仓库..."
           git push origin ${{ github.ref }}
           echo "✅ 变更已推送"
-      
-      - name: "📊 Summary report"
+
+      - name: '📊 Summary report'
         if: always()
         run: |
           echo "## 🎯 渐进发布执行报告" >> $GITHUB_STEP_SUMMARY
@@ -263,7 +264,7 @@ jobs:
           echo "| 应用版本 | \`$APP_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # 健康检查状态
           health_status="${{ steps.health_check.outputs.health_status || 'skipped' }}"
           case "$health_status" in
@@ -273,24 +274,24 @@ jobs:
             "skipped") health_icon="⏭️"; health_text="跳过" ;;
             *) health_icon="❓"; health_text="未知" ;;
           esac
-          
+
           echo "### 📊 执行结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> $GITHUB_STEP_SUMMARY
           echo "- **健康检查**: $health_icon $health_text" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
             echo "- **自动回滚**: ✅ 已执行回滚到 \`$PREV_GA_VERSION\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **自动回滚**: ⏭️ 未触发" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [ "${{ steps.commit.outputs.committed }}" = "true" ]; then
             echo "- **Git 提交**: ✅ 变更已提交并推送 (\`${{ steps.commit.outputs.commit_sha }}\`)" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Git 提交**: ⏭️ 无变更需要提交" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # 添加健康检查详情（如果有）
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -299,11 +300,11 @@ jobs:
             echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # 下一步建议
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 下一步建议" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "$health_status" = "passed" ] && [ "${{ inputs.stage }}" != "100" ]; then
             case "${{ inputs.stage }}" in
               "5") next_stage="25" ;;
@@ -328,7 +329,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: "📢 Send notification (optional)"
+      - name: '📢 Send notification (optional)'
         if: env.WEBHOOK_URL != ''
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
@@ -347,7 +348,7 @@ jobs:
             color="warning" 
             message="Release ramp to ${{ needs.ramp.outputs.stage }}% completed (health check skipped)"
           fi
-          
+
           # 发送通知（简化的 webhook 调用）
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \

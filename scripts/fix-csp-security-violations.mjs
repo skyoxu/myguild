@@ -1,6 +1,6 @@
 /**
  * CSP Security Violations Emergency Fix Script
- * 
+ *
  * This script fixes critical CSP security violations found in 24 prd_chunks files:
  * 1. Removes 'unsafe-inline' from style-src (ADR-0002 violation)
  * 2. Fixes connect-src format errors ("https: //" -> "https://")
@@ -15,7 +15,7 @@ const FIXES_APPLIED = {
   unsafeInlineRemoved: 0,
   connectSrcFixed: 0,
   domainsReplacedWithPlaceholders: 0,
-  filesProcessed: 0
+  filesProcessed: 0,
 };
 
 /**
@@ -30,10 +30,10 @@ function getSecureCSPConfig() {
  */
 function fixCSPViolations(content, filePath) {
   let fixedContent = content;
-  let changesApplied = {
+  const changesApplied = {
     unsafeInlineRemoved: false,
     connectSrcFixed: false,
-    domainsReplacedWithPlaceholders: false
+    domainsReplacedWithPlaceholders: false,
   };
 
   // Pattern 1: Fix 'unsafe-inline' in style-src (Critical Security Violation)
@@ -48,7 +48,8 @@ function fixCSPViolations(content, filePath) {
   }
 
   // Pattern 2: Fix connect-src format errors ("https: //" -> "https://")
-  const connectSrcFormatPattern = /connect-src 'self' https: \/\/api\.guildmanager\.local/g;
+  const connectSrcFormatPattern =
+    /connect-src 'self' https: \/\/api\.guildmanager\.local/g;
   if (connectSrcFormatPattern.test(fixedContent)) {
     fixedContent = fixedContent.replace(
       connectSrcFormatPattern,
@@ -64,7 +65,7 @@ function fixCSPViolations(content, filePath) {
   if (hardcodedDomainPattern.test(fixedContent)) {
     fixedContent = fixedContent.replace(
       hardcodedDomainPattern,
-      "https://api.${PRODUCT_DOMAIN}"
+      'https://api.${PRODUCT_DOMAIN}'
     );
     changesApplied.domainsReplacedWithPlaceholders = true;
     console.log(`   ✓ Replaced hardcoded domain with placeholder`);
@@ -85,13 +86,15 @@ function validateFixes(content, filePath) {
   }
 
   // Check for format errors in connect-src
-  if (content.includes("https: //")) {
-    violations.push("connect-src format errors still present");
+  if (content.includes('https: //')) {
+    violations.push('connect-src format errors still present');
   }
 
   // Check for hardcoded domains (should use placeholders)
-  if (content.includes("api.guildmanager.local")) {
-    violations.push("hardcoded domain still present (should use ${PRODUCT_DOMAIN})");
+  if (content.includes('api.guildmanager.local')) {
+    violations.push(
+      'hardcoded domain still present (should use ${PRODUCT_DOMAIN})'
+    );
   }
 
   return violations;
@@ -103,19 +106,24 @@ function validateFixes(content, filePath) {
 async function processFile(filePath) {
   try {
     console.log(`\n📁 Processing: ${path.basename(filePath)}`);
-    
+
     const content = fs.readFileSync(filePath, 'utf8');
-    const { fixedContent, changesApplied } = fixCSPViolations(content, filePath);
-    
+    const { fixedContent, changesApplied } = fixCSPViolations(
+      content,
+      filePath
+    );
+
     // Apply changes if any fixes were made
     if (Object.values(changesApplied).some(applied => applied)) {
       fs.writeFileSync(filePath, fixedContent, 'utf8');
-      
+
       // Update global counters
-      if (changesApplied.unsafeInlineRemoved) FIXES_APPLIED.unsafeInlineRemoved++;
+      if (changesApplied.unsafeInlineRemoved)
+        FIXES_APPLIED.unsafeInlineRemoved++;
       if (changesApplied.connectSrcFixed) FIXES_APPLIED.connectSrcFixed++;
-      if (changesApplied.domainsReplacedWithPlaceholders) FIXES_APPLIED.domainsReplacedWithPlaceholders++;
-      
+      if (changesApplied.domainsReplacedWithPlaceholders)
+        FIXES_APPLIED.domainsReplacedWithPlaceholders++;
+
       // Validate fixes were applied correctly
       const violations = validateFixes(fixedContent, filePath);
       if (violations.length > 0) {
@@ -126,7 +134,9 @@ async function processFile(filePath) {
         return { success: true, violations: [] };
       }
     } else {
-      console.log(`   ⚠️  No CSP violations found (file might already be fixed)`);
+      console.log(
+        `   ⚠️  No CSP violations found (file might already be fixed)`
+      );
       return { success: true, violations: [] };
     }
   } catch (error) {
@@ -140,9 +150,11 @@ async function processFile(filePath) {
  */
 async function main() {
   console.log('🔧 CSP Security Violations Emergency Fix Script');
-  console.log('=' .repeat(60));
-  console.log('This script fixes critical security violations in PRD chunk files:');
-  console.log('• Removes \'unsafe-inline\' from style-src (ADR-0002 compliance)');
+  console.log('='.repeat(60));
+  console.log(
+    'This script fixes critical security violations in PRD chunk files:'
+  );
+  console.log("• Removes 'unsafe-inline' from style-src (ADR-0002 compliance)");
   console.log('• Fixes connect-src format errors');
   console.log('• Replaces hardcoded domains with placeholders');
   console.log('');
@@ -151,7 +163,7 @@ async function main() {
     // Find all PRD chunk files
     const prdChunksPattern = 'docs/prd_chunks/PRD-Guild-Manager_chunk_*.md';
     const files = await glob(prdChunksPattern);
-    
+
     if (files.length === 0) {
       console.log('❌ No PRD chunk files found.');
       process.exit(1);
@@ -171,9 +183,13 @@ async function main() {
     console.log('\n' + '='.repeat(60));
     console.log('📊 FIXES APPLIED SUMMARY:');
     console.log(`Files processed: ${FIXES_APPLIED.filesProcessed}`);
-    console.log(`'unsafe-inline' removed: ${FIXES_APPLIED.unsafeInlineRemoved}`);
+    console.log(
+      `'unsafe-inline' removed: ${FIXES_APPLIED.unsafeInlineRemoved}`
+    );
     console.log(`connect-src format fixed: ${FIXES_APPLIED.connectSrcFixed}`);
-    console.log(`Domains replaced with placeholders: ${FIXES_APPLIED.domainsReplacedWithPlaceholders}`);
+    console.log(
+      `Domains replaced with placeholders: ${FIXES_APPLIED.domainsReplacedWithPlaceholders}`
+    );
 
     // Check for any failures
     const failures = results.filter(r => !r.success);
@@ -185,9 +201,10 @@ async function main() {
       process.exit(1);
     } else {
       console.log(`\n✅ All ${files.length} files fixed successfully!`);
-      console.log('\n🔐 SECURITY STATUS: CSP violations resolved, ADR-0002 compliance restored');
+      console.log(
+        '\n🔐 SECURITY STATUS: CSP violations resolved, ADR-0002 compliance restored'
+      );
     }
-
   } catch (error) {
     console.error('❌ Script execution failed:', error.message);
     process.exit(1);

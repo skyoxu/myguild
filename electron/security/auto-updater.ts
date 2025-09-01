@@ -28,9 +28,9 @@ interface UpdateSecurityConfig {
  * 基于零信任原则的安全更新策略
  */
 const PRODUCTION_UPDATE_CONFIG: UpdateSecurityConfig = {
-  // 🔒 强制HTTPS更新源
-  feedUrl: 'https://your-update-server.com/updates', // 必须是HTTPS
-  provider: 'generic', // 可根据实际情况选择
+  // 🔒 强制HTTPS更新源（GitHub Releases）
+  feedUrl: 'https://api.github.com/repos/your-username/vitegame/releases', // GitHub Releases API
+  provider: 'github', // 使用GitHub provider
 
   // 🛡️ 安全要求（生产环境严格要求）
   requireCodeSigning: true, // 必须：代码签名验证
@@ -110,11 +110,21 @@ class SecureAutoUpdater {
       throw new Error('生产环境必须使用HTTPS更新源');
     }
 
-    // 设置更新源
-    autoUpdater.setFeedURL({
-      provider: this.config.provider,
-      url: this.config.feedUrl,
-    });
+    // 设置更新源（GitHub Releases）
+    if (this.config.provider === 'github') {
+      autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'your-username', // 从环境变量或配置获取
+        repo: 'vitegame',
+        private: false, // 公开仓库
+        token: process.env.GITHUB_TOKEN, // 可选：私有仓库需要
+      });
+    } else {
+      autoUpdater.setFeedURL({
+        provider: this.config.provider,
+        url: this.config.feedUrl,
+      });
+    }
 
     this.logSecurityEvent('info', `更新源配置: ${this.config.feedUrl}`);
   }
@@ -130,7 +140,7 @@ class SecureAutoUpdater {
     // 设置最小版本（防止降级攻击）
     if (!this.config.allowDowngrade) {
       autoUpdater.allowDowngrade = false;
-      autoUpdater.currentVersion = app.getVersion();
+      // currentVersion是只读属性，通过allowDowngrade控制降级
     }
 
     this.logSecurityEvent('info', '安全选项配置完成', {
@@ -165,7 +175,7 @@ class SecureAutoUpdater {
     });
 
     // 无可用更新
-    autoUpdater.on('update-not-available', info => {
+    autoUpdater.on('update-not-available', () => {
       this.logSecurityEvent('info', '当前已是最新版本', {
         currentVersion: app.getVersion(),
       });

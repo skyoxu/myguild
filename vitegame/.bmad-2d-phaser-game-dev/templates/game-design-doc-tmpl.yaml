@@ -4,8 +4,8 @@ template:
   version: 2.0
   output:
     format: markdown
-    filename: "docs/{{game_name}}-game-design-document.md"
-    title: "{{game_title}} Game Design Document (GDD)"
+    filename: 'docs/{{game_name}}-game-design-document.md'
+    title: '{{game_title}} Game Design Document (GDD)'
 
 workflow:
   mode: interactive
@@ -14,7 +14,7 @@ sections:
   - id: initial-setup
     instruction: |
       This template creates a comprehensive Game Design Document that will serve as the foundation for all game development work. The GDD should be detailed enough that developers can create user stories and epics from it. Focus on gameplay systems, mechanics, and technical requirements that can be broken down into implementable features.
-      
+
       If available, review any provided documents or ask if any are optionally available: Project Brief, Market Research, Competitive Analysis
 
   - id: executive-summary
@@ -42,7 +42,7 @@ sections:
         title: Unique Selling Points
         instruction: List 3-5 key features that differentiate this game from competitors
         type: numbered-list
-        template: "{{usp}}"
+        template: '{{usp}}'
 
   - id: core-gameplay
     title: Core Gameplay
@@ -59,7 +59,7 @@ sections:
         instruction: Define the 30-60 second loop that players will repeat. Be specific about timing and player actions.
         template: |
           **Primary Loop ({{duration}} seconds):**
-          
+
           1. {{action_1}} ({{time_1}}s)
           2. {{action_2}} ({{time_2}}s)
           3. {{action_3}} ({{time_3}}s)
@@ -69,12 +69,12 @@ sections:
         instruction: Clearly define success and failure states
         template: |
           **Victory Conditions:**
-          
+
           - {{win_condition_1}}
           - {{win_condition_2}}
-          
+
           **Failure States:**
-          
+
           - {{loss_condition_1}}
           - {{loss_condition_2}}
 
@@ -87,20 +87,20 @@ sections:
         repeatable: true
         sections:
           - id: mechanic
-            title: "{{mechanic_name}}"
+            title: '{{mechanic_name}}'
             template: |
               **Description:** {{detailed_description}}
-              
+
               **Player Input:** {{input_method}}
-              
+
               **System Response:** {{game_response}}
-              
+
               **Implementation Notes:**
-              
+
               - {{tech_requirement_1}}
               - {{tech_requirement_2}}
               - {{performance_consideration}}
-              
+
               **Dependencies:** {{other_mechanics_needed}}
       - id: controls
         title: Controls
@@ -119,9 +119,9 @@ sections:
         title: Player Progression
         template: |
           **Progression Type:** {{linear|branching|metroidvania}}
-          
+
           **Key Milestones:**
-          
+
           1. **{{milestone_1}}** - {{unlock_description}}
           2. **{{milestone_2}}** - {{unlock_description}}
           3. **{{milestone_3}}** - {{unlock_description}}
@@ -152,15 +152,15 @@ sections:
         repeatable: true
         sections:
           - id: level-type
-            title: "{{level_type_name}}"
+            title: '{{level_type_name}}'
             template: |
               **Purpose:** {{gameplay_purpose}}
               **Duration:** {{target_time}}
               **Key Elements:** {{required_mechanics}}
               **Difficulty:** {{relative_difficulty}}
-              
+
               **Structure Template:**
-              
+
               - Introduction: {{intro_description}}
               - Challenge: {{main_challenge}}
               - Resolution: {{completion_requirement}}
@@ -186,13 +186,13 @@ sections:
         title: Platform Specific
         template: |
           **Desktop:**
-          
+
           - Resolution: {{min_resolution}} - {{max_resolution}}
           - Input: Keyboard, Mouse, Gamepad
           - Browser: Chrome 80+, Firefox 75+, Safari 13+
-          
+
           **Mobile:**
-          
+
           - Resolution: {{mobile_min}} - {{mobile_max}}
           - Input: Touch, Tilt (optional)
           - OS: iOS 13+, Android 8+
@@ -201,14 +201,14 @@ sections:
         instruction: Define asset specifications for the art and audio teams
         template: |
           **Visual Assets:**
-          
+
           - Art Style: {{style_description}}
           - Color Palette: {{color_specification}}
           - Animation: {{animation_requirements}}
           - UI Resolution: {{ui_specs}}
-          
+
           **Audio Assets:**
-          
+
           - Music Style: {{music_genre}}
           - Sound Effects: {{sfx_requirements}}
           - Voice Acting: {{voice_needs}}
@@ -221,7 +221,7 @@ sections:
         title: Engine Configuration
         template: |
           **Phaser 3 Setup:**
-          
+
           - TypeScript: Strict mode enabled
           - Physics: {{physics_system}} (Arcade/Matter)
           - Renderer: WebGL with Canvas fallback
@@ -230,7 +230,7 @@ sections:
         title: Code Architecture
         template: |
           **Required Systems:**
-          
+
           - Scene Management
           - State Management
           - Asset Loading
@@ -242,7 +242,7 @@ sections:
         title: Data Management
         template: |
           **Save Data:**
-          
+
           - Progress tracking
           - Settings persistence
           - Statistics collection
@@ -253,10 +253,10 @@ sections:
     instruction: Break down the development into phases that can be converted to epics
     sections:
       - id: phase-1-core-systems
-        title: "Phase 1: Core Systems ({{duration}})"
+        title: 'Phase 1: Core Systems ({{duration}})'
         sections:
           - id: foundation-epic
-            title: "Epic: Foundation"
+            title: 'Epic: Foundation'
             type: bullet-list
             template: |
               - Engine setup and configuration
@@ -264,41 +264,41 @@ sections:
               - Core input handling
               - Asset loading pipeline
           - id: core-mechanics-epic
-            title: "Epic: Core Mechanics"
+            title: 'Epic: Core Mechanics'
             type: bullet-list
             template: |
               - {{primary_mechanic}} implementation
               - Basic physics and collision
               - Player controller
       - id: phase-2-gameplay-features
-        title: "Phase 2: Gameplay Features ({{duration}})"
+        title: 'Phase 2: Gameplay Features ({{duration}})'
         sections:
           - id: game-systems-epic
-            title: "Epic: Game Systems"
+            title: 'Epic: Game Systems'
             type: bullet-list
             template: |
               - {{mechanic_2}} implementation
               - {{mechanic_3}} implementation
               - Game state management
           - id: content-creation-epic
-            title: "Epic: Content Creation"
+            title: 'Epic: Content Creation'
             type: bullet-list
             template: |
               - Level loading system
               - First playable levels
               - Basic UI implementation
       - id: phase-3-polish-optimization
-        title: "Phase 3: Polish & Optimization ({{duration}})"
+        title: 'Phase 3: Polish & Optimization ({{duration}})'
         sections:
           - id: performance-epic
-            title: "Epic: Performance"
+            title: 'Epic: Performance'
             type: bullet-list
             template: |
               - Optimization and profiling
               - Mobile platform testing
               - Memory management
           - id: user-experience-epic
-            title: "Epic: User Experience"
+            title: 'Epic: User Experience'
             type: bullet-list
             template: |
               - Audio implementation
@@ -340,4 +340,4 @@ sections:
         title: References
         instruction: List any competitive analysis, inspiration, or research sources
         type: bullet-list
-        template: "{{reference}}"
+        template: '{{reference}}'

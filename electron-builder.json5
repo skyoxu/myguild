@@ -1,21 +1,126 @@
 {
-  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.yourcompany.yourapp",
-  "asar": true,
-  "directories": {
-    "output": "release/${version}"
+  $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
+  appId: 'com.vitegame.studio',
+  productName: 'ViteGame Studio',
+  copyright: 'Copyright © 2024 ViteGame Studio',
+  asar: true,
+  compression: 'maximum',
+  directories: {
+    output: 'release/${version}',
+    buildResources: 'build',
   },
-  "files": [
-    "dist",
-    "dist-electron"
+  files: [
+    'dist',
+    'dist-electron',
+    '!node_modules',
+    '!src',
+    '!electron',
+    '!tests',
+    '!**/*.ts',
+    '!**/*.map',
   ],
-  "mac": {
-    "target": "dmg"
+  extraMetadata: {
+    main: 'dist-electron/main.js',
   },
-  "win": {
-    "target": "nsis"
+  extraResources: [
+    {
+      from: 'assets',
+      to: 'assets',
+      filter: ['**/*'],
+    },
+  ],
+  publish: {
+    provider: 'github',
+    owner: 'your-username',
+    repo: 'vitegame',
+    releaseType: 'release',
+    publishAutoUpdate: true,
   },
-  "linux": {
-    "target": "AppImage"
-  }
+  win: {
+    target: [
+      {
+        target: 'nsis',
+        arch: ['x64'],
+      },
+      {
+        target: 'portable',
+        arch: ['x64'],
+      },
+    ],
+    icon: 'build/icon.ico',
+    requestedExecutionLevel: 'asInvoker',
+    verifyUpdateCodeSignature: false,
+    forceCodeSigning: false,
+    signAndEditExecutable: false,
+    artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
+  },
+  nsis: {
+    oneClick: false,
+    allowElevation: true,
+    allowToChangeInstallationDirectory: true,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: 'ViteGame Studio',
+    include: 'build/installer.nsh',
+    deleteAppDataOnUninstall: false,
+    displayLanguageSelector: false,
+    installerLanguages: ['en_US', 'zh_CN'],
+    license: 'LICENSE.txt',
+    warningsAsErrors: false,
+    packElevateHelper: false,
+    perMachine: false,
+    runAfterFinish: true,
+    menuCategory: 'Games',
+  },
+  mac: {
+    target: {
+      target: 'dmg',
+      arch: ['x64', 'arm64'],
+    },
+    icon: 'build/icon.icns',
+    category: 'public.app-category.games',
+  },
+  linux: {
+    target: [
+      {
+        target: 'AppImage',
+        arch: ['x64'],
+      },
+      {
+        target: 'deb',
+        arch: ['x64'],
+      },
+    ],
+    icon: 'build/icon.png',
+    category: 'Game',
+  },
+  dmg: {
+    icon: 'build/icon.icns',
+    iconSize: 128,
+    contents: [
+      {
+        x: 130,
+        y: 220,
+      },
+      {
+        x: 410,
+        y: 220,
+        type: 'link',
+        path: '/Applications',
+      },
+    ],
+  },
+  appImage: {
+    license: 'LICENSE.txt',
+  },
+  deb: {
+    packageCategory: 'games',
+  },
+  snap: {
+    summary: 'ViteGame - 深度生态模拟游戏',
+  },
+  buildVersion: '${env.BUILD_NUMBER}',
+  buildDependenciesFromSource: false,
+  nodeGypRebuild: false,
+  npmRebuild: false,
 }

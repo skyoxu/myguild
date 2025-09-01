@@ -3,6 +3,7 @@
 ## 🎯 方式一：对话式使用（最常用）
 
 ### 1. 项目规划
+
 ```
 你：Use planner to help me create a development roadmap for adding multiplayer functionality to my game
 
@@ -10,6 +11,7 @@
 ```
 
 ### 2. 代码分析
+
 ```
 你：Use analyze to examine the current game architecture and identify potential performance bottlenecks
 
@@ -17,6 +19,7 @@
 ```
 
 ### 3. 代码审查
+
 ```
 你：Use codereview to audit the game loop implementation in src/main.tsx
 
@@ -24,6 +27,7 @@
 ```
 
 ### 4. 调试帮助
+
 ```
 你：Use debug to help me figure out why the collision detection isn't working properly
 
@@ -33,6 +37,7 @@
 ## 🔧 方式二：命令行使用
 
 ### 启动zen服务器
+
 ```bash
 # 检查环境
 npm run zen:check
@@ -45,6 +50,7 @@ npm run zen:start
 ```
 
 ### 直接调用工具（高级用法）
+
 ```bash
 cd zen-mcp-server
 source ./Usersweiruan.zen-mcp-servervenv/Scripts/activate
@@ -60,16 +66,18 @@ tool = ChatTool()
 ## 🚀 实际使用场景
 
 ### 场景一：新功能开发
+
 ```
 流程：
 1. "Use planner to plan adding a boss battle system"
-2. "Use analyze to review current enemy system architecture" 
+2. "Use analyze to review current enemy system architecture"
 3. 开始编码
 4. "Use codereview to check the new boss AI code"
 5. "Use debug to solve any issues"
 ```
 
 ### 场景二：代码重构
+
 ```
 流程：
 1. "Use analyze to identify code smells in the game engine"
@@ -79,6 +87,7 @@ tool = ChatTool()
 ```
 
 ### 场景三：性能优化
+
 ```
 流程：
 1. "Use analyze to find performance bottlenecks"
@@ -90,16 +99,19 @@ tool = ChatTool()
 ## 💡 关键提示
 
 ### ✅ 正确的使用方式
+
 - 直接在对话中提及工具名称
 - 描述清楚你想要完成的任务
 - 让Claude自动选择和调用合适的工具
 
-### ❌ 错误的使用方式  
+### ❌ 错误的使用方式
+
 - 寻找`/zen`命令（不存在）
 - 期望工具菜单或GUI界面
 - 试图手动配置每个工具调用
 
 ### 🎯 最佳实践
+
 1. **明确目标**：清楚说明你想要什么结果
 2. **提供上下文**：告诉Claude相关的文件路径或代码位置
 3. **迭代改进**：基于工具输出继续对话和改进

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 测试覆盖率验证和E2E测试增强脚本
- * 
+ *
  * 功能：
  * 1. 验证现有测试覆盖率是否满足ADR-0005要求
  * 2. 分析安全修复相关的测试覆盖
@@ -26,17 +26,17 @@ const COVERAGE_THRESHOLDS = {
   lines: 90,
   branches: 85,
   functions: 90,
-  statements: 90
+  statements: 90,
 };
 
 // 安全相关文件模式
 const SECURITY_FILE_PATTERNS = [
   'electron/security.ts',
-  'electron/preload.ts', 
+  'electron/preload.ts',
   'electron/main.ts',
   'tests/e2e/security/',
   'scripts/verify_csp_policy.mjs',
-  'scripts/scan_electron_safety.mjs'
+  'scripts/scan_electron_safety.mjs',
 ];
 
 // 关键测试场景定义
@@ -49,10 +49,10 @@ const CRITICAL_TEST_SCENARIOS = {
       'CSP阻止内联脚本执行',
       'CSP阻止不安全的资源加载',
       'CSP违规报告功能',
-      'CSP策略完整性检查'
-    ]
+      'CSP策略完整性检查',
+    ],
   },
-  
+
   'electron-security': {
     description: 'Electron安全基线验证',
     priority: 'critical',
@@ -61,10 +61,10 @@ const CRITICAL_TEST_SCENARIOS = {
       'nodeIntegration禁用验证',
       'contextIsolation启用验证',
       'sandbox模式验证',
-      'preload API白名单验证'
-    ]
+      'preload API白名单验证',
+    ],
   },
-  
+
   'navigation-control': {
     description: '导航控制安全验证',
     priority: 'high',
@@ -73,21 +73,21 @@ const CRITICAL_TEST_SCENARIOS = {
       '外部导航拦截',
       '新窗口控制',
       'URL白名单验证',
-      '恶意重定向防护'
-    ]
+      '恶意重定向防护',
+    ],
   },
-  
+
   'api-exposure': {
     description: 'API暴露安全验证',
-    priority: 'high', 
+    priority: 'high',
     files: ['tests/unit/security/preload-whitelist.spec.ts'],
     scenarios: [
       'Context Bridge API白名单',
       'IPC通道访问控制',
       'API参数验证',
-      '权限边界检查'
-    ]
-  }
+      '权限边界检查',
+    ],
+  },
 };
 
 /**
@@ -96,34 +96,38 @@ const CRITICAL_TEST_SCENARIOS = {
 async function runUnitTestCoverage() {
   try {
     console.log('🧪 运行单元测试覆盖率分析...');
-    
-    const { stdout, stderr } = await execAsync('npm run test:unit -- --coverage --reporter=json', {
-      cwd: PROJECT_ROOT,
-      maxBuffer: 1024 * 1024 * 10 // 10MB buffer
-    });
-    
+
+    const { stdout, stderr } = await execAsync(
+      'npm run test:unit -- --coverage --reporter=json',
+      {
+        cwd: PROJECT_ROOT,
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      }
+    );
+
     if (stderr && !stderr.includes('warning')) {
       console.warn('测试警告:', stderr);
     }
-    
+
     // 解析覆盖率结果
     const coverageLines = stdout.split('\n');
-    const jsonReportLine = coverageLines.find(line => line.trim().startsWith('{'));
-    
+    const jsonReportLine = coverageLines.find(line =>
+      line.trim().startsWith('{')
+    );
+
     if (jsonReportLine) {
       const coverageReport = JSON.parse(jsonReportLine);
       return parseCoverageReport(coverageReport);
     }
-    
+
     // 回退到文本解析
     return parseTextCoverageReport(stdout);
-    
   } catch (error) {
     console.warn('单元测试覆盖率分析失败:', error.message);
     return {
       overall: { lines: 0, branches: 0, functions: 0, statements: 0 },
       files: {},
-      issues: ['Failed to run unit test coverage']
+      issues: ['Failed to run unit test coverage'],
     };
   }
 }
@@ -136,12 +140,12 @@ function parseCoverageReport(report) {
     lines: report.total?.lines?.pct || 0,
     branches: report.total?.branches?.pct || 0,
     functions: report.total?.functions?.pct || 0,
-    statements: report.total?.statements?.pct || 0
+    statements: report.total?.statements?.pct || 0,
   };
-  
+
   const files = {};
   const issues = [];
-  
+
   // 分析文件级覆盖率
   Object.entries(report.files || {}).forEach(([filePath, fileReport]) => {
     const relativePath = relative(PROJECT_ROOT, filePath);
@@ -149,9 +153,9 @@ function parseCoverageReport(report) {
       lines: fileReport.lines?.pct || 0,
       branches: fileReport.branches?.pct || 0,
       functions: fileReport.functions?.pct || 0,
-      statements: fileReport.statements?.pct || 0
+      statements: fileReport.statements?.pct || 0,
     };
-    
+
     // 检查安全相关文件的覆盖率
     if (isSecurityRelatedFile(relativePath)) {
       Object.entries(COVERAGE_THRESHOLDS).forEach(([metric, threshold]) => {
@@ -161,13 +165,13 @@ function parseCoverageReport(report) {
             file: relativePath,
             metric: metric,
             actual: fileReport[metric]?.pct,
-            threshold: threshold
+            threshold: threshold,
           });
         }
       });
     }
   });
-  
+
   return { overall, files, issues };
 }
 
@@ -178,11 +182,11 @@ function parseTextCoverageReport(output) {
   const lines = output.split('\n');
   const issues = [];
   const files = {};
-  
+
   // 查找总体覆盖率
   const summaryLine = lines.find(line => line.includes('All files'));
   let overall = { lines: 0, branches: 0, functions: 0, statements: 0 };
-  
+
   if (summaryLine) {
     const parts = summaryLine.split('|').map(s => s.trim());
     if (parts.length >= 5) {
@@ -190,11 +194,11 @@ function parseTextCoverageReport(output) {
         statements: parseFloat(parts[1]) || 0,
         branches: parseFloat(parts[2]) || 0,
         functions: parseFloat(parts[3]) || 0,
-        lines: parseFloat(parts[4]) || 0
+        lines: parseFloat(parts[4]) || 0,
       };
     }
   }
-  
+
   return { overall, files, issues };
 }
 
@@ -216,27 +220,28 @@ function isSecurityRelatedFile(filePath) {
 async function analyzeE2ETestCoverage() {
   try {
     console.log('🎭 分析E2E测试覆盖...');
-    
+
     const testFiles = await findTestFiles(join(PROJECT_ROOT, 'tests', 'e2e'));
     const testCoverage = {};
     const missingTests = [];
-    
-    for (const [scenarioId, scenario] of Object.entries(CRITICAL_TEST_SCENARIOS)) {
+
+    for (const [scenarioId, scenario] of Object.entries(
+      CRITICAL_TEST_SCENARIOS
+    )) {
       const coverage = await analyzeScenarioCoverage(scenario, testFiles);
       testCoverage[scenarioId] = coverage;
-      
+
       if (coverage.missingScenarios.length > 0) {
         missingTests.push({
           scenario: scenarioId,
           description: scenario.description,
           priority: scenario.priority,
-          missing: coverage.missingScenarios
+          missing: coverage.missingScenarios,
         });
       }
     }
-    
+
     return { testCoverage, missingTests };
-    
   } catch (error) {
     console.error('E2E测试覆盖分析失败:', error.message);
     return { testCoverage: {}, missingTests: [] };
@@ -248,14 +253,14 @@ async function analyzeE2ETestCoverage() {
  */
 async function findTestFiles(dir) {
   const testFiles = [];
-  
+
   try {
     const files = await readdir(dir);
-    
+
     for (const file of files) {
       const filePath = join(dir, file);
       const stats = await stat(filePath);
-      
+
       if (stats.isDirectory()) {
         const subFiles = await findTestFiles(filePath);
         testFiles.push(...subFiles);
@@ -267,7 +272,7 @@ async function findTestFiles(dir) {
     // 目录不存在或无法访问
     console.warn(`无法访问测试目录 ${dir}: ${error.message}`);
   }
-  
+
   return testFiles;
 }
 
@@ -277,20 +282,23 @@ async function findTestFiles(dir) {
 async function analyzeScenarioCoverage(scenario, testFiles) {
   const foundScenarios = [];
   const missingScenarios = [];
-  
+
   for (const expectedFile of scenario.files) {
     const fullPath = join(PROJECT_ROOT, expectedFile);
-    const fileExists = testFiles.some(testFile => testFile.endsWith(expectedFile));
-    
+    const fileExists = testFiles.some(testFile =>
+      testFile.endsWith(expectedFile)
+    );
+
     if (fileExists) {
       try {
         const content = await readFile(fullPath, 'utf-8');
-        
+
         for (const scenarioDesc of scenario.scenarios) {
-          const hasScenario = content.toLowerCase().includes(scenarioDesc.toLowerCase()) ||
-                             content.includes(scenarioDesc) ||
-                             checkScenarioPattern(content, scenarioDesc);
-          
+          const hasScenario =
+            content.toLowerCase().includes(scenarioDesc.toLowerCase()) ||
+            content.includes(scenarioDesc) ||
+            checkScenarioPattern(content, scenarioDesc);
+
           if (hasScenario) {
             foundScenarios.push(scenarioDesc);
           } else {
@@ -306,12 +314,14 @@ async function analyzeScenarioCoverage(scenario, testFiles) {
       missingScenarios.push(...scenario.scenarios);
     }
   }
-  
+
   return {
     totalScenarios: scenario.scenarios.length,
     coveredScenarios: foundScenarios,
     missingScenarios: missingScenarios,
-    coveragePercentage: Math.round((foundScenarios.length / scenario.scenarios.length) * 100)
+    coveragePercentage: Math.round(
+      (foundScenarios.length / scenario.scenarios.length) * 100
+    ),
   };
 }
 
@@ -320,16 +330,16 @@ async function analyzeScenarioCoverage(scenario, testFiles) {
  */
 function checkScenarioPattern(content, scenarioDesc) {
   const patterns = {
-    'CSP阻止内联脚本': /inline.*script.*block/i,
-    'CSP阻止不安全的资源': /unsafe.*resource.*block/i,
-    'nodeIntegration禁用': /nodeIntegration.*false/i,
-    'contextIsolation启用': /contextIsolation.*true/i,
-    'sandbox模式': /sandbox.*true/i,
-    '外部导航拦截': /external.*navigation.*block/i,
-    '新窗口控制': /window.*open.*control/i,
-    'API白名单': /whitelist.*api/i
+    CSP阻止内联脚本: /inline.*script.*block/i,
+    CSP阻止不安全的资源: /unsafe.*resource.*block/i,
+    nodeIntegration禁用: /nodeIntegration.*false/i,
+    contextIsolation启用: /contextIsolation.*true/i,
+    sandbox模式: /sandbox.*true/i,
+    外部导航拦截: /external.*navigation.*block/i,
+    新窗口控制: /window.*open.*control/i,
+    API白名单: /whitelist.*api/i,
   };
-  
+
   const pattern = patterns[scenarioDesc];
   return pattern && pattern.test(content);
 }
@@ -339,14 +349,14 @@ function checkScenarioPattern(content, scenarioDesc) {
  */
 async function generateEnhancedE2ETests(missingTests) {
   const testSuites = [];
-  
+
   for (const missing of missingTests) {
     if (missing.priority === 'critical') {
       const testSuite = await generateTestSuiteForScenario(missing);
       testSuites.push(testSuite);
     }
   }
-  
+
   return testSuites;
 }
 
@@ -388,7 +398,7 @@ ${missingTest.missing.map(scenario => generateTestCase(scenario, missingTest.sce
     scenario: missingTest.scenario,
     description: missingTest.description,
     content: testTemplate,
-    filename: `enhanced-${missingTest.scenario}.spec.ts`
+    filename: `enhanced-${missingTest.scenario}.spec.ts`,
   };
 }
 
@@ -397,7 +407,7 @@ ${missingTest.missing.map(scenario => generateTestCase(scenario, missingTest.sce
  */
 function generateTestCase(scenario, scenarioType) {
   const testCases = {
-    'CSP阻止内联脚本执行': `
+    CSP阻止内联脚本执行: `
   test('CSP应该阻止内联脚本执行', async () => {
     // 尝试执行内联脚本
     const scriptBlocked = await page.evaluate(async () => {
@@ -418,7 +428,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(scriptBlocked).toBe(true);
   });`,
 
-    'CSP阻止不安全的资源加载': `
+    CSP阻止不安全的资源加载: `
   test('CSP应该阻止不安全的外部资源', async () => {
     const resourceBlocked = await page.evaluate(async () => {
       return new Promise((resolve) => {
@@ -434,7 +444,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(resourceBlocked).toBe(true);
   });`,
 
-    'nodeIntegration禁用验证': `
+    nodeIntegration禁用验证: `
   test('渲染进程应该无法访问Node.js API', async () => {
     const nodeDisabled = await page.evaluate(() => {
       return typeof window.require === 'undefined' && 
@@ -445,7 +455,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(nodeDisabled).toBe(true);
   });`,
 
-    'contextIsolation启用验证': `
+    contextIsolation启用验证: `
   test('上下文隔离应该启用', async () => {
     const isolationEnabled = await page.evaluate(() => {
       return typeof window.electronAPI !== 'undefined' && 
@@ -455,7 +465,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(isolationEnabled).toBe(true);
   });`,
 
-    '外部导航拦截': `
+    外部导航拦截: `
   test('应该拦截外部导航尝试', async () => {
     const navigationBlocked = await page.evaluate(async () => {
       const originalLocation = window.location.href;
@@ -496,14 +506,17 @@ function generateTestCase(scenario, scenarioType) {
     
     expect(apiValidation.valid).toBe(true);
     expect(apiValidation.unexpected).toEqual([]);
-  });`
+  });`,
   };
 
-  return testCases[scenario] || `
+  return (
+    testCases[scenario] ||
+    `
   test('${scenario}', async () => {
     // TODO: 实现 ${scenario} 测试
     test.skip('测试用例需要实现');
-  });`;
+  });`
+  );
 }
 
 /**
@@ -511,7 +524,7 @@ function generateTestCase(scenario, scenarioType) {
  */
 function validateCoverageThresholds(coverageData) {
   const issues = [];
-  
+
   Object.entries(COVERAGE_THRESHOLDS).forEach(([metric, threshold]) => {
     if (coverageData.overall[metric] < threshold) {
       issues.push({
@@ -519,18 +532,22 @@ function validateCoverageThresholds(coverageData) {
         metric: metric,
         actual: coverageData.overall[metric],
         threshold: threshold,
-        deficit: threshold - coverageData.overall[metric]
+        deficit: threshold - coverageData.overall[metric],
       });
     }
   });
-  
+
   return issues;
 }
 
 /**
  * 生成测试覆盖率报告
  */
-async function generateTestCoverageReport(unitCoverage, e2eCoverage, enhancedTests) {
+async function generateTestCoverageReport(
+  unitCoverage,
+  e2eCoverage,
+  enhancedTests
+) {
   const report = {
     timestamp: new Date().toISOString(),
     summary: {
@@ -538,11 +555,13 @@ async function generateTestCoverageReport(unitCoverage, e2eCoverage, enhancedTes
       unitCoverageIssues: unitCoverage.issues.length,
       e2eScenarios: Object.keys(CRITICAL_TEST_SCENARIOS).length,
       e2eCoverage: Math.round(
-        Object.values(e2eCoverage.testCoverage).reduce((sum, cov) => sum + cov.coveragePercentage, 0) / 
-        Object.keys(e2eCoverage.testCoverage).length
+        Object.values(e2eCoverage.testCoverage).reduce(
+          (sum, cov) => sum + cov.coveragePercentage,
+          0
+        ) / Object.keys(e2eCoverage.testCoverage).length
       ),
       missingTests: e2eCoverage.missingTests.length,
-      enhancedTestSuites: enhancedTests.length
+      enhancedTestSuites: enhancedTests.length,
     },
     thresholds: COVERAGE_THRESHOLDS,
     unitTestResults: {
@@ -550,22 +569,24 @@ async function generateTestCoverageReport(unitCoverage, e2eCoverage, enhancedTes
       issues: unitCoverage.issues,
       securityFiles: Object.entries(unitCoverage.files)
         .filter(([path]) => isSecurityRelatedFile(path))
-        .reduce((obj, [path, coverage]) => ({ ...obj, [path]: coverage }), {})
+        .reduce((obj, [path, coverage]) => ({ ...obj, [path]: coverage }), {}),
     },
     e2eTestResults: {
       scenarios: e2eCoverage.testCoverage,
       missingTests: e2eCoverage.missingTests,
-      criticalGaps: e2eCoverage.missingTests.filter(test => test.priority === 'critical')
+      criticalGaps: e2eCoverage.missingTests.filter(
+        test => test.priority === 'critical'
+      ),
     },
     enhancedTests: enhancedTests.map(test => ({
       scenario: test.scenario,
       description: test.description,
       filename: test.filename,
-      testCases: (test.content.match(/test\(/g) || []).length
+      testCases: (test.content.match(/test\(/g) || []).length,
     })),
-    recommendations: generateRecommendations(unitCoverage, e2eCoverage)
+    recommendations: generateRecommendations(unitCoverage, e2eCoverage),
   };
-  
+
   return report;
 }
 
@@ -574,7 +595,7 @@ async function generateTestCoverageReport(unitCoverage, e2eCoverage, enhancedTes
  */
 function generateRecommendations(unitCoverage, e2eCoverage) {
   const recommendations = [];
-  
+
   // 单元测试覆盖率建议
   const coverageIssues = validateCoverageThresholds(unitCoverage);
   coverageIssues.forEach(issue => {
@@ -586,39 +607,44 @@ function generateRecommendations(unitCoverage, e2eCoverage) {
       actionItems: [
         `增加${issue.deficit.toFixed(1)}%的${issue.metric}覆盖率`,
         '重点关注安全相关模块的测试',
-        '添加边界条件和异常处理测试'
-      ]
+        '添加边界条件和异常处理测试',
+      ],
     });
   });
-  
+
   // E2E测试建议
-  const criticalMissing = e2eCoverage.missingTests.filter(test => test.priority === 'critical');
+  const criticalMissing = e2eCoverage.missingTests.filter(
+    test => test.priority === 'critical'
+  );
   if (criticalMissing.length > 0) {
     recommendations.push({
       type: 'E2E_CRITICAL',
       priority: 'critical',
       title: '补充关键E2E测试场景',
       description: `缺少${criticalMissing.length}个关键安全测试场景`,
-      actionItems: criticalMissing.map(test => 
-        `实现${test.description}相关测试: ${test.missing.join(', ')}`
-      )
+      actionItems: criticalMissing.map(
+        test => `实现${test.description}相关测试: ${test.missing.join(', ')}`
+      ),
     });
   }
-  
+
   // 安全测试建议
-  const securityIssues = unitCoverage.issues.filter(issue => issue.type === 'LOW_SECURITY_COVERAGE');
+  const securityIssues = unitCoverage.issues.filter(
+    issue => issue.type === 'LOW_SECURITY_COVERAGE'
+  );
   if (securityIssues.length > 0) {
     recommendations.push({
       type: 'SECURITY_COVERAGE',
       priority: 'critical',
       title: '加强安全模块测试覆盖',
       description: '安全相关文件的测试覆盖率不足',
-      actionItems: securityIssues.map(issue => 
-        `提高${issue.file}的${issue.metric}覆盖率到${issue.threshold}% (当前${issue.actual}%)`
-      )
+      actionItems: securityIssues.map(
+        issue =>
+          `提高${issue.file}的${issue.metric}覆盖率到${issue.threshold}% (当前${issue.actual}%)`
+      ),
     });
   }
-  
+
   return recommendations;
 }
 
@@ -627,27 +653,35 @@ function generateRecommendations(unitCoverage, e2eCoverage) {
  */
 async function saveEnhancedTests(enhancedTests) {
   const savedFiles = [];
-  
+
   for (const testSuite of enhancedTests) {
     try {
-      const testDir = join(PROJECT_ROOT, 'tests', 'e2e', 'security', 'enhanced');
+      const testDir = join(
+        PROJECT_ROOT,
+        'tests',
+        'e2e',
+        'security',
+        'enhanced'
+      );
       await ensureDirectoryExists(testDir);
-      
+
       const filePath = join(testDir, testSuite.filename);
       await writeFile(filePath, testSuite.content, 'utf-8');
-      
+
       savedFiles.push({
         path: relative(PROJECT_ROOT, filePath),
         scenario: testSuite.scenario,
-        description: testSuite.description
+        description: testSuite.description,
       });
-      
+
       console.log(`✅ 生成增强测试文件: ${relative(PROJECT_ROOT, filePath)}`);
     } catch (error) {
-      console.error(`❌ 保存测试文件失败 ${testSuite.filename}: ${error.message}`);
+      console.error(
+        `❌ 保存测试文件失败 ${testSuite.filename}: ${error.message}`
+      );
     }
   }
-  
+
   return savedFiles;
 }
 
@@ -668,49 +702,65 @@ async function ensureDirectoryExists(dir) {
  */
 async function main() {
   console.log('🧪 开始测试覆盖率验证和增强...\n');
-  
+
   try {
     // 1. 运行单元测试覆盖率分析
     const unitCoverage = await runUnitTestCoverage();
-    
+
     // 2. 分析E2E测试覆盖率
     const e2eCoverage = await analyzeE2ETestCoverage();
-    
+
     // 3. 生成增强的E2E测试
-    const enhancedTests = await generateEnhancedE2ETests(e2eCoverage.missingTests);
-    
+    const enhancedTests = await generateEnhancedE2ETests(
+      e2eCoverage.missingTests
+    );
+
     // 4. 保存增强的测试文件
     const savedTests = await saveEnhancedTests(enhancedTests);
-    
+
     // 5. 生成综合报告
-    const report = await generateTestCoverageReport(unitCoverage, e2eCoverage, enhancedTests);
-    
+    const report = await generateTestCoverageReport(
+      unitCoverage,
+      e2eCoverage,
+      enhancedTests
+    );
+
     // 6. 保存报告
     const reportPath = join(PROJECT_ROOT, 'logs', 'test-coverage-report.json');
     await writeFile(reportPath, JSON.stringify(report, null, 2), 'utf-8');
-    
+
     // 7. 显示结果
     console.log('📊 测试覆盖率分析结果');
     console.log('='.repeat(50));
     console.log(`单元测试覆盖率:`);
-    console.log(`  Lines: ${unitCoverage.overall.lines}% (阈值: ${COVERAGE_THRESHOLDS.lines}%)`);
-    console.log(`  Branches: ${unitCoverage.overall.branches}% (阈值: ${COVERAGE_THRESHOLDS.branches}%)`);
-    console.log(`  Functions: ${unitCoverage.overall.functions}% (阈值: ${COVERAGE_THRESHOLDS.functions}%)`);
-    console.log(`  Statements: ${unitCoverage.overall.statements}% (阈值: ${COVERAGE_THRESHOLDS.statements}%)\n`);
-    
+    console.log(
+      `  Lines: ${unitCoverage.overall.lines}% (阈值: ${COVERAGE_THRESHOLDS.lines}%)`
+    );
+    console.log(
+      `  Branches: ${unitCoverage.overall.branches}% (阈值: ${COVERAGE_THRESHOLDS.branches}%)`
+    );
+    console.log(
+      `  Functions: ${unitCoverage.overall.functions}% (阈值: ${COVERAGE_THRESHOLDS.functions}%)`
+    );
+    console.log(
+      `  Statements: ${unitCoverage.overall.statements}% (阈值: ${COVERAGE_THRESHOLDS.statements}%)\n`
+    );
+
     console.log(`E2E测试覆盖率: ${report.summary.e2eCoverage}%`);
     console.log(`缺失测试场景: ${report.summary.missingTests}个`);
     console.log(`生成增强测试: ${report.summary.enhancedTestSuites}个\n`);
-    
+
     if (report.recommendations.length > 0) {
       console.log('💡 改进建议:');
       report.recommendations.forEach((rec, index) => {
-        console.log(`   ${index + 1}. [${rec.priority.toUpperCase()}] ${rec.title}`);
+        console.log(
+          `   ${index + 1}. [${rec.priority.toUpperCase()}] ${rec.title}`
+        );
         console.log(`      ${rec.description}`);
       });
       console.log();
     }
-    
+
     if (savedTests.length > 0) {
       console.log('📝 已生成增强测试文件:');
       savedTests.forEach(file => {
@@ -718,14 +768,15 @@ async function main() {
       });
       console.log();
     }
-    
+
     console.log(`📄 详细报告已保存: ${relative(PROJECT_ROOT, reportPath)}`);
     console.log('✅ 测试覆盖率验证和增强完成!');
-    
+
     // 设置退出码
-    const hasCriticalIssues = report.recommendations.some(rec => rec.priority === 'critical');
+    const hasCriticalIssues = report.recommendations.some(
+      rec => rec.priority === 'critical'
+    );
     process.exit(hasCriticalIssues ? 1 : 0);
-    
   } catch (error) {
     console.error('❌ 测试覆盖率验证失败:', error.message);
     process.exit(1);
@@ -737,9 +788,9 @@ if (process.argv[1] && process.argv[1].endsWith('enhance-test-coverage.mjs')) {
   main().catch(console.error);
 }
 
-export { 
+export {
   runUnitTestCoverage,
-  analyzeE2ETestCoverage, 
+  analyzeE2ETestCoverage,
   generateEnhancedE2ETests,
-  validateCoverageThresholds 
+  validateCoverageThresholds,
 };

@@ -8,6 +8,7 @@
 ## 📋 核心依赖版本矩阵（严格匹配）
 
 ### 主要框架依赖
+
 ```json
 {
   "react": "19.0.0",
@@ -21,6 +22,7 @@
 ```
 
 ### 开发工具依赖
+
 ```json
 {
   "@types/react": "19.0.1",
@@ -32,6 +34,7 @@
 ```
 
 ### 测试框架依赖
+
 ```json
 {
   "playwright": "1.49.0",
@@ -42,6 +45,7 @@
 ```
 
 ### 监控和可观测性
+
 ```json
 {
   "@sentry/electron": "5.5.0"
@@ -53,6 +57,7 @@
 ## 🔧 核心配置文件完整模板
 
 ### `package.json` 脚本配置
+
 ```json
 {
   "name": "vitegame",
@@ -84,11 +89,12 @@
 ```
 
 ### `vite.config.ts` - 完整 Vite 7 配置
+
 ```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import electron from 'vite-plugin-electron'
-import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import electron from 'vite-plugin-electron';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   plugins: [
@@ -97,42 +103,44 @@ export default defineConfig({
       {
         // 主进程入口
         entry: 'electron/main.ts',
-        onstart: (args) => {
+        onstart: args => {
           if (process.env.VSCODE_DEBUG) {
-            console.log('[startup] Electron App')
+            console.log('[startup] Electron App');
           } else {
-            args.startup(['--inspect=5858'])
+            args.startup(['--inspect=5858']);
           }
         },
         vite: {
           build: {
             sourcemap: true,
-            outDir: 'dist-electron'
-          }
-        }
+            outDir: 'dist-electron',
+          },
+        },
       },
       {
         // 预加载脚本入口
         entry: 'electron/preload.ts',
-        onstart: (args) => args.reload(),
+        onstart: args => args.reload(),
         vite: {
           build: {
             sourcemap: 'inline',
-            outDir: 'dist-electron'
-          }
-        }
-      }
-    ])
+            outDir: 'dist-electron',
+          },
+        },
+      },
+    ]),
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
-  server: process.env.VSCODE_DEBUG ? {
-    host: '127.0.0.1',
-    port: 3000
-  } : undefined,
+  server: process.env.VSCODE_DEBUG
+    ? {
+        host: '127.0.0.1',
+        port: 3000,
+      }
+    : undefined,
   clearScreen: false,
   build: {
     outDir: 'dist',
@@ -140,15 +148,16 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          phaser: ['phaser']
-        }
-      }
-    }
-  }
-})
+          phaser: ['phaser'],
+        },
+      },
+    },
+  },
+});
 ```
 
 ### `tsconfig.json` - TypeScript 5.7 配置
+
 ```json
 {
   "compilerOptions": {
@@ -173,27 +182,20 @@ export default defineConfig({
     },
     "types": ["node", "electron", "vite/client"]
   },
-  "include": [
-    "src/**/*",
-    "electron/**/*",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "dist-electron"
-  ]
+  "include": ["src/**/*", "electron/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "dist-electron"]
 }
 ```
 
 ### `tailwind.config.js` - Tailwind CSS v4 配置
+
 ```javascript
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./electron/**/*.{js,ts}"
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+    './electron/**/*.{js,ts}',
   ],
   theme: {
     extend: {
@@ -202,16 +204,16 @@ export default {
           50: '#f0f9ff',
           500: '#3b82f6',
           600: '#2563eb',
-          700: '#1d4ed8'
-        }
+          700: '#1d4ed8',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif']
-      }
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [],
-}
+};
 ```
 
 ---
@@ -219,6 +221,7 @@ export default {
 ## 📁 目录结构模板
 
 ### 标准项目目录结构
+
 ```
 project-root/
 ├── src/                          # React 渲染进程源码
@@ -265,45 +268,47 @@ project-root/
 ## 🎯 React 19 特性配置
 
 ### React 19 新特性启用
+
 ```tsx
 // src/main.tsx - React 19 渲染配置
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
 
 // React 19 支持的新 createRoot API
-const root = createRoot(document.getElementById('root')!)
+const root = createRoot(document.getElementById('root')!);
 
 root.render(
   <StrictMode>
     <App />
   </StrictMode>
-)
+);
 ```
 
 ### React 19 Hooks 使用模式
+
 ```tsx
 // src/hooks/useElectronAPI.ts - Electron API 集成
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use } from 'react';
 
 interface ElectronAPI {
-  platform: string
-  version: string
-  isElectron: boolean
+  platform: string;
+  version: string;
+  isElectron: boolean;
 }
 
 export function useElectronAPI() {
-  const [electronAPI, setElectronAPI] = useState<ElectronAPI | null>(null)
-  
+  const [electronAPI, setElectronAPI] = useState<ElectronAPI | null>(null);
+
   useEffect(() => {
     // 检查预加载脚本暴露的 API
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
-      setElectronAPI((window as any).electronAPI)
+      setElectronAPI((window as any).electronAPI);
     }
-  }, [])
-  
-  return electronAPI
+  }, []);
+
+  return electronAPI;
 }
 ```
 
@@ -312,30 +317,31 @@ export function useElectronAPI() {
 ## 🎮 Phaser 3 游戏引擎集成
 
 ### Phaser 场景配置
+
 ```typescript
 // src/game/scenes/GameScene.ts
-import Phaser from 'phaser'
+import Phaser from 'phaser';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'GameScene' })
+    super({ key: 'GameScene' });
   }
-  
+
   preload() {
     // 资源加载逻辑
-    this.load.image('player', '/assets/player.png')
+    this.load.image('player', '/assets/player.png');
   }
-  
+
   create() {
     // 场景创建逻辑
-    const player = this.add.sprite(400, 300, 'player')
-    
+    const player = this.add.sprite(400, 300, 'player');
+
     // Electron 环境特定配置
     if ((window as any).electronAPI) {
-      console.log('在 Electron 环境中运行 Phaser')
+      console.log('在 Electron 环境中运行 Phaser');
     }
   }
-  
+
   update() {
     // 游戏循环更新逻辑
   }
@@ -343,24 +349,28 @@ export class GameScene extends Phaser.Scene {
 ```
 
 ### Phaser + React 通信桥接
+
 ```tsx
 // src/components/game/GameContainer.tsx
-import { useEffect, useRef } from 'react'
-import Phaser from 'phaser'
-import { GameScene } from '@/game/scenes/GameScene'
+import { useEffect, useRef } from 'react';
+import Phaser from 'phaser';
+import { GameScene } from '@/game/scenes/GameScene';
 
 interface GameContainerProps {
-  width?: number
-  height?: number
+  width?: number;
+  height?: number;
 }
 
-export function GameContainer({ width = 800, height = 600 }: GameContainerProps) {
-  const gameRef = useRef<Phaser.Game | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  
+export function GameContainer({
+  width = 800,
+  height = 600,
+}: GameContainerProps) {
+  const gameRef = useRef<Phaser.Game | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!containerRef.current || gameRef.current) return
-    
+    if (!containerRef.current || gameRef.current) return;
+
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width,
@@ -371,22 +381,22 @@ export function GameContainer({ width = 800, height = 600 }: GameContainerProps)
         default: 'arcade',
         arcade: {
           gravity: { x: 0, y: 300 },
-          debug: process.env.NODE_ENV === 'development'
-        }
-      }
-    }
-    
-    gameRef.current = new Phaser.Game(config)
-    
+          debug: process.env.NODE_ENV === 'development',
+        },
+      },
+    };
+
+    gameRef.current = new Phaser.Game(config);
+
     return () => {
       if (gameRef.current) {
-        gameRef.current.destroy(true)
-        gameRef.current = null
+        gameRef.current.destroy(true);
+        gameRef.current = null;
       }
-    }
-  }, [width, height])
-  
-  return <div ref={containerRef} className="game-container" />
+    };
+  }, [width, height]);
+
+  return <div ref={containerRef} className="game-container" />;
 }
 ```
 
@@ -395,17 +405,19 @@ export function GameContainer({ width = 800, height = 600 }: GameContainerProps)
 ## 🔨 构建和开发脚本
 
 ### 开发环境启动脚本
+
 ```json
 // package.json scripts 部分的详细说明
 {
-  "dev": "vite",                          // 纯 Web 开发模式
+  "dev": "vite", // 纯 Web 开发模式
   "dev:electron": "vite --mode electron", // Electron 开发模式
   "build": "tsc && vite build && electron-builder", // 完整构建
-  "build:electron": "vite build --mode electron"    // 仅 Electron 构建
+  "build:electron": "vite build --mode electron" // 仅 Electron 构建
 }
 ```
 
 ### Electron Builder 配置
+
 ```json
 // electron-builder 配置 (package.json)
 {
@@ -442,6 +454,7 @@ export function GameContainer({ width = 800, height = 600 }: GameContainerProps)
 ## ⚡ 性能优化配置
 
 ### Vite 构建优化
+
 ```typescript
 // vite.config.ts 中的性能优化配置
 export default defineConfig({
@@ -451,23 +464,24 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           phaser: ['phaser'],
-          utils: ['lodash', 'date-fns']
-        }
-      }
+          utils: ['lodash', 'date-fns'],
+        },
+      },
     },
     chunkSizeWarningLimit: 1000,
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
-      }
-    }
-  }
-})
+        drop_debugger: true,
+      },
+    },
+  },
+});
 ```
 
 ### TypeScript 编译优化
+
 ```json
 // tsconfig.json 性能配置
 {
@@ -489,15 +503,19 @@ export default defineConfig({
 ### 版本兼容性问题
 
 #### Vite 7.0 + Electron 插件兼容性
+
 **问题**: `vite-plugin-electron@0.28.8` 可能与 Vite 7.0 不完全兼容  
 **解决方案**: 使用固定版本组合，避免自动更新
+
 ```bash
 npm install vite@7.0.4 vite-plugin-electron@0.28.8 --save-exact
 ```
 
 #### React 19 第三方库兼容性
+
 **问题**: 部分第三方库可能不支持 React 19  
 **解决方案**: 检查兼容性列表，必要时使用 `--legacy-peer-deps`
+
 ```bash
 npm install --legacy-peer-deps
 ```
@@ -505,8 +523,10 @@ npm install --legacy-peer-deps
 ### 开发环境问题
 
 #### Tailwind v4 Beta 稳定性
+
 **问题**: Beta 版本可能存在不稳定性  
 **解决方案**: 锁定具体 beta 版本，监控官方发布
+
 ```json
 {
   "@tailwindcss/cli": "4.0.0-beta.7"
@@ -518,6 +538,7 @@ npm install --legacy-peer-deps
 ## 📊 成功验证指标
 
 ### 技术栈层验证清单
+
 - ✅ React 19.0.0 正确安装并可使用新特性
 - ✅ Electron 37.2.4 成功启动桌面应用
 - ✅ Vite 7.0.4 开发服务器正常运行
@@ -528,6 +549,7 @@ npm install --legacy-peer-deps
 - ✅ 构建产物能够正常打包和分发
 
 ### 验证命令
+
 ```bash
 # 版本检查
 npm list react electron vite typescript

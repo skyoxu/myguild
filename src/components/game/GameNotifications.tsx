@@ -51,7 +51,11 @@ export function GameNotifications({
       });
 
       // 自动移除（如果设置了duration且不是持久通知）
-      if (newNotification.duration && newNotification.duration > 0 && !newNotification.persistent) {
+      if (
+        newNotification.duration &&
+        newNotification.duration > 0 &&
+        !newNotification.persistent
+      ) {
         setTimeout(() => {
           removeNotification(newNotification.id);
         }, newNotification.duration);
@@ -167,7 +171,10 @@ export function GameNotifications({
     const uiSubscription = gameEvents.subscribe(
       'guild.ui.notification.shown',
       event => {
-        const notificationData = event.data as { message?: string; type?: 'info' | 'success' | 'warning' | 'error' };
+        const notificationData = event.data as {
+          message?: string;
+          type?: 'info' | 'success' | 'warning' | 'error';
+        };
         addNotification({
           type: notificationData.type || 'info',
           title: '游戏消息',
@@ -372,30 +379,32 @@ export function GameNotifications({
             </div>
 
             {/* 进度条（显示剩余时间） */}
-            {notification.duration && notification.duration > 0 && !notification.persistent && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  overflow: 'hidden',
-                  borderRadius: '0 0 8px 8px',
-                }}
-              >
+            {notification.duration &&
+              notification.duration > 0 &&
+              !notification.persistent && (
                 <div
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: colors.border,
-                    animation: `shrinkWidth ${notification.duration}ms linear`,
-                    transformOrigin: 'left center',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    overflow: 'hidden',
+                    borderRadius: '0 0 8px 8px',
                   }}
-                />
-              </div>
-            )}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: colors.border,
+                      animation: `shrinkWidth ${notification.duration}ms linear`,
+                      transformOrigin: 'left center',
+                    }}
+                  />
+                </div>
+              )}
           </div>
         );
       })}

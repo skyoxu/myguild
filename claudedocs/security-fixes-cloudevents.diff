@@ -1,0 +1,230 @@
+# CloudEvents安全契约修复建议
+
+## 1. 增强输入验证 (cloudevents-core.ts)
+
+```diff
+/**
+ * 增强的URI格式验证
+ */
+function isValidUri(str: string): boolean {
++ // 检查长度限制，防止DoS攻击
++ if (str.length > 2048) {
++   return false;
++ }
++ 
++ // 检查危险协议
++ const dangerousSchemes = ['javascript:', 'data:', 'vbscript:', 'file:'];
++ if (dangerousSchemes.some(scheme => str.toLowerCase().startsWith(scheme))) {
++   return false;
++ }
++ 
+  try {
+    new URL(str);
+    return true;
+  } catch {
+-   // 简单的scheme检查作为fallback
+-   return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(str);
++   // 更严格的scheme检查
++   const validSchemePattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/;
++   return validSchemePattern.test(str) && str.length >= 10;
+  }
+}
+
++ /**
++  * 验证时间戳的合理性范围
++  */
++ function isValidTimestamp(timeString: string): boolean {
++   try {
++     const date = new Date(timeString);
++     const now = new Date();
++     
++     // 检查时间是否在合理范围内（过去10年到未来1年）
++     const tenYearsAgo = new Date(now.getFullYear() - 10, 0, 1);
++     const oneYearFromNow = new Date(now.getFullYear() + 1, 11, 31);
++     
++     return date >= tenYearsAgo && date <= oneYearFromNow;
++   } catch {
++     return false;
++   }
++ }
+
+export function assertCe(o: any): asserts o is CeBase {
++ // 预检查：防止原型污染攻击
++ if (o === null || typeof o !== 'object' || Array.isArray(o)) {
++   throw new Error('CloudEvent must be a valid object');
++ }
++ 
++ // 检查字段数量，防止对象膨胀攻击
++ const fieldCount = Object.keys(o).length;
++ if (fieldCount > 20) {
++   throw new Error('CloudEvent has too many fields (max: 20)');
++ }
+
+  const required = ['id', 'source', 'type', 'specversion', 'time'];
+
+  for (const field of required) {
+    if (!o?.[field]) {
+      throw new Error(`CloudEvent missing required field: ${field}`);
+    }
++   
++   // 检查字段类型
++   if (typeof o[field] !== 'string') {
++     throw new Error(`CloudEvent field '${field}' must be a string`);
++   }
++   
++   // 检查字段长度
++   if (o[field].length > 1024) {
++     throw new Error(`CloudEvent field '${field}' is too long (max: 1024 chars)`);
++   }
+  }
+
+  if (o.specversion !== '1.0') {
+    throw new Error(
+      `Unsupported CloudEvents specversion: ${o.specversion}, expected '1.0'`
+    );
+  }
+
+- // 验证时间格式（ISO 8601）
+- if (typeof o.time === 'string' && isNaN(Date.parse(o.time))) {
+-   throw new Error(`Invalid time format: ${o.time}, expected ISO 8601`);
+- }
++ // 增强时间验证
++ if (typeof o.time === 'string') {
++   if (isNaN(Date.parse(o.time))) {
++     throw new Error('Invalid time format, expected ISO 8601');
++   }
++   if (!isValidTimestamp(o.time)) {
++     throw new Error('Time value outside reasonable range');
++   }
++ }
+
+- // 验证source格式（应该是URI）
+- if (typeof o.source === 'string' && !isValidUri(o.source)) {
+-   console.warn(`CloudEvent source should be a valid URI: ${o.source}`);
+- }
++ // 严格验证source格式
++ if (typeof o.source === 'string') {
++   if (!isValidUri(o.source)) {
++     throw new Error('CloudEvent source must be a valid, safe URI');
++   }
++ }
++ 
++ // 验证id格式（应该是合理的标识符）
++ if (typeof o.id === 'string') {
++   if (!/^[a-zA-Z0-9._-]+$/.test(o.id)) {
++     throw new Error('CloudEvent id contains invalid characters');
++   }
++   if (o.id.length < 1 || o.id.length > 128) {
++     throw new Error('CloudEvent id length must be 1-128 characters');
++   }
++ }
++ 
++ // 验证type格式（reverse DNS style）
++ if (typeof o.type === 'string') {
++   if (!/^[a-zA-Z0-9._-]+$/.test(o.type)) {
++     throw new Error('CloudEvent type contains invalid characters');
++   }
++   if (o.type.length > 255) {
++     throw new Error('CloudEvent type is too long (max: 255 chars)');
++   }
++ }
+}
+```
+
+## 2. 增强数据验证和清理
+
+```diff
+// 序列化前的数据清理
+export function serializeEvent(event: CloudEvent): string {
+  assertCe(event);
++ 
++ // 深拷贝以避免意外修改原对象
++ const cleanEvent = JSON.parse(JSON.stringify(event));
++ 
++ // 检查序列化后的大小
++ const serialized = JSON.stringify(cleanEvent);
++ if (serialized.length > 1024 * 1024) { // 1MB限制
++   throw new Error('CloudEvent payload too large (max: 1MB)');
++ }
++ 
++ return serialized;
+- return JSON.stringify(event);
+}
+
+export function deserializeEvent<T = unknown>(json: string): CloudEvent<T> {
++ // 检查输入长度
++ if (json.length > 1024 * 1024) { // 1MB限制
++   throw new Error('CloudEvent JSON payload too large');
++ }
++ 
++ let event: any;
++ try {
+    event = JSON.parse(json);
++ } catch (error) {
++   throw new Error('Invalid JSON format');
++ }
++ 
+  assertCe(event);
+  return event as CloudEvent<T>;
+}
+```
+
+## 3. 新增安全测试用例 (cloudevents.spec.ts)
+
+```diff
++ describe('Security Validation Tests', () => {
++   it('拒绝危险的URI schemes', () => {
++     const dangerousEvents = [
++       { source: 'javascript:alert(1)', type: 'test.dangerous' },
++       { source: 'data:text/html,<script>alert(1)</script>', type: 'test.dangerous' },
++       { source: 'file:///etc/passwd', type: 'test.dangerous' },
++       { source: 'vbscript:msgbox(1)', type: 'test.dangerous' },
++     ];
++     
++     dangerousEvents.forEach(eventData => {
++       expect(() => mkEvent(eventData)).toThrow('CloudEvent source must be a valid, safe URI');
++     });
++   });
++   
++   it('拒绝过大的事件数据', () => {
++     const largeData = 'x'.repeat(1024 * 1024 + 1); // 超过1MB
++     const event = mkEvent({
++       source: 'app://test',
++       type: 'test.large',
++       data: largeData,
++     });
++     
++     expect(() => serializeEvent(event)).toThrow('CloudEvent payload too large');
++   });
++   
++   it('拒绝恶意的时间戳', () => {
++     const maliciousEvents = [
++       { source: 'app://test', type: 'test.time', time: '1900-01-01T00:00:00Z' }, // 太早
++       { source: 'app://test', type: 'test.time', time: '2050-01-01T00:00:00Z' }, // 太晚
++       { source: 'app://test', type: 'test.time', time: 'not-a-date' }, // 无效格式
++     ];
++     
++     maliciousEvents.forEach(eventData => {
++       expect(() => assertCe({ ...eventData, id: 'test', specversion: '1.0' }))
++         .toThrow();
++     });
++   });
++   
++   it('防止对象膨胀攻击', () => {
++     const bloatedEvent: any = {
++       id: 'test',
++       source: 'app://test',
++       type: 'test.bloat',
++       specversion: '1.0',
++       time: new Date().toISOString(),
++     };
++     
++     // 添加大量额外字段
++     for (let i = 0; i < 25; i++) {
++       bloatedEvent[`field${i}`] = `value${i}`;
++     }
++     
++     expect(() => assertCe(bloatedEvent)).toThrow('CloudEvent has too many fields');
++   });
++ });
+```

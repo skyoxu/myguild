@@ -606,21 +606,8 @@ export class GameEngineAdapter implements GameEnginePort {
   }
 
   /**
-   * 增强的handleDomainEvent，同时发布到EventBus
+   * 将域事件发布到EventBus供React监听
    */
-  private handleDomainEvent(event: DomainEvent): void {
-    // 转发事件给所有本地监听器
-    this.eventCallbacks.forEach(callback => {
-      try {
-        callback(event);
-      } catch (error) {
-        console.error('Error in event callback:', error);
-      }
-    });
-
-    // 将某些重要事件也发布到EventBus供React监听
-    this.publishDomainEventToEventBus(event);
-  }
 
   /**
    * 将域事件转换并发布到EventBus

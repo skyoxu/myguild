@@ -7,6 +7,7 @@
 ## 使用方法
 
 ### 命令行运行
+
 ```bash
 # 扫描并生成映射文件
 npm run docs:scan-overlays
@@ -16,12 +17,13 @@ node scripts/scan-overlays.cjs
 ```
 
 ### 编程调用
+
 ```javascript
 const { scanOverlays } = require('./scripts/scan-overlays.cjs');
 
 async function example() {
-    const overlayMap = await scanOverlays();
-    console.log('总关键词数:', overlayMap.metadata.totalKeywords);
+  const overlayMap = await scanOverlays();
+  console.log('总关键词数:', overlayMap.metadata.totalKeywords);
 }
 ```
 
@@ -30,6 +32,7 @@ async function example() {
 生成 `scripts/overlay-map.json`，包含：
 
 ### 结构说明
+
 ```json
 {
   "metadata": {
@@ -57,15 +60,18 @@ async function example() {
 ## 关键词提取规则
 
 ### 1. Front-matter 字段
+
 - **title**: 标题分词（中英文混合）
 - **keywords/tags**: 关键词标签
 - **aliases**: 别名
 
 ### 2. 文档路径信息
+
 - **PRD-ID**: 从目录名提取（如 `PRD-Guild-Manager`）
 - **文件名**: 去除前缀后分词
 
 ### 3. 分词策略
+
 - **英文数字**: 完整保留
 - **中文**: 按字符分割 + 保留完整词
 - **Slug化**: 小写、连字符标准化

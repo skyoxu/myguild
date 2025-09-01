@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main, master, develop]
-  
+
   # 允许手动触发
   workflow_dispatch:
     inputs:
@@ -22,33 +22,33 @@ jobs:
   performance-check:
     name: Web Vitals & Bundle Size Check
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build project
         run: |
           npm run build
           npm run build:electron
         continue-on-error: true
-      
+
       - name: Create performance data directories
         run: |
           mkdir -p data/web-vitals
           mkdir -p logs/performance
-      
+
       - name: Generate baseline performance data (if missing)
         run: |
           if [ ! -f "data/web-vitals/baseline.json" ]; then
@@ -67,7 +67,7 @@ jobs:
           EOF
           fi
         shell: bash
-      
+
       - name: Run performance analysis
         run: |
           # 模拟当前性能数据（实际项目中应该从真实测试获取）
@@ -84,17 +84,17 @@ jobs:
             "pr_number": "${{ github.event.number || inputs.pr_number }}"
           }
           EOF
-          
+
           # 运行PR集成分析
           node scripts/pr-integration.mjs analyze
         continue-on-error: true
-      
+
       - name: Run bundle size check
         run: |
           npm run build 2>/dev/null || echo "Build completed with warnings"
           node scripts/bundle-size-check.mjs
         continue-on-error: true
-      
+
       - name: Post PR comment
         if: github.event_name == 'pull_request'
         env:
@@ -105,7 +105,7 @@ jobs:
           PR_NUMBER="${{ github.event.number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
           node scripts/pr-integration.mjs comment "${PR_NUMBER}"
-      
+
       - name: Post PR comment (manual trigger)
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -116,7 +116,7 @@ jobs:
           PR_NUMBER="${{ inputs.pr_number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
           node scripts/pr-integration.mjs comment "${PR_NUMBER}"
-      
+
       - name: Upload performance artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -127,15 +127,15 @@ jobs:
             logs/performance/
             dist/
           retention-days: 30
-      
+
       - name: Performance gate check
         run: |
           echo "Checking performance gates..."
-          
+
           # 检查是否有critical回归
           ANALYSIS_RESULT=$(node scripts/pr-integration.mjs analyze)
           echo "$ANALYSIS_RESULT"
-          
+
           # 如果有critical问题，失败构建
           if echo "$ANALYSIS_RESULT" | grep -q '"critical":[1-9]'; then
             echo "❌ Critical performance regressions detected!"
@@ -143,43 +143,43 @@ jobs:
             echo "Please review the changes and optimize before merging."
             exit 1
           fi
-          
+
           echo "✅ Performance gates passed!"
 
   # 可选：运行实际的Web Vitals测试（需要配置Playwright等工具）
   web-vitals-test:
     name: Real Web Vitals Test (Optional)
     runs-on: ubuntu-latest
-    if: false  # 默认禁用，需要时启用
-    
+    if: false # 默认禁用，需要时启用
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
-      
+
       - name: Build and serve
         run: |
           npm run build
           npm run preview &
           sleep 5
-        
+
       - name: Run Web Vitals measurement
         run: |
           # 这里应该运行实际的Web Vitals测试
           # 例如使用Playwright + web-vitals库
           echo "Placeholder for real Web Vitals testing"
-          
+
       - name: Upload Web Vitals results
         uses: actions/upload-artifact@v4
         if: always()

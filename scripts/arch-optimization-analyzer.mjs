@@ -44,39 +44,43 @@ class ArchitectureOptimizer {
    */
   async analyze() {
     console.log('🏗️ 开始架构实施细节与文档完整性分析...');
-    
+
     // 读取ADR分析报告
     const adrReport = await this.loadADRReport();
-    
+
     // 分析架构实施状态
-    const implementationAssessment = await this.assessImplementationStatus(adrReport);
-    
+    const implementationAssessment =
+      await this.assessImplementationStatus(adrReport);
+
     // 分析文档完整性
     const documentationGaps = await this.analyzeDocumentationGaps();
-    
+
     // 分析配置一致性
     const configConsistency = await this.analyzeConfigConsistency(adrReport);
-    
+
     // 生成优化建议
     const optimizationPlan = await this.generateOptimizationPlan(
-      implementationAssessment, 
-      documentationGaps, 
+      implementationAssessment,
+      documentationGaps,
       configConsistency
     );
-    
+
     // 生成报告
     const report = {
       timestamp: this.timestamp,
-      summary: this.generateSummary(implementationAssessment, documentationGaps),
+      summary: this.generateSummary(
+        implementationAssessment,
+        documentationGaps
+      ),
       implementationAssessment,
       documentationGaps,
       configConsistency,
-      optimizationPlan
+      optimizationPlan,
     };
-    
+
     await this.saveReport(report);
     await this.generateOptimizedFiles(optimizationPlan);
-    
+
     this.displayResults(report);
   }
 
@@ -89,7 +93,7 @@ class ArchitectureOptimizer {
       console.warn('⚠️ ADR linkage report not found, using fallback analysis');
       return null;
     }
-    
+
     const content = fs.readFileSync(reportPath, 'utf8');
     return JSON.parse(content);
   }
@@ -103,38 +107,61 @@ class ArchitectureOptimizer {
         name: 'Electron安全基线',
         adr: 'ADR-0002',
         files: ['electron/main.ts', 'electron/preload.ts', 'index.html'],
-        requirements: ['contextIsolation', 'nodeIntegration=false', 'sandbox', 'CSP policy']
+        requirements: [
+          'contextIsolation',
+          'nodeIntegration=false',
+          'sandbox',
+          'CSP policy',
+        ],
       },
       {
         name: '可观测性系统',
-        adr: 'ADR-0003', 
+        adr: 'ADR-0003',
         files: ['src/shared/observability/', '.release-health.json'],
-        requirements: ['Sentry integration', 'Error tracking', 'Performance monitoring', 'Release health']
+        requirements: [
+          'Sentry integration',
+          'Error tracking',
+          'Performance monitoring',
+          'Release health',
+        ],
       },
       {
         name: '事件总线契约',
         adr: 'ADR-0004',
         files: ['src/shared/contracts/events.ts', 'src/core/events/'],
-        requirements: ['Event typing', 'CloudEvents format', 'IPC communication']
+        requirements: [
+          'Event typing',
+          'CloudEvents format',
+          'IPC communication',
+        ],
       },
       {
         name: '质量门禁',
         adr: 'ADR-0005',
         files: ['tests/', 'scripts/quality_gates.mjs', 'playwright.config.ts'],
-        requirements: ['E2E tests', 'Unit tests', 'Coverage gates', 'Security tests']
+        requirements: [
+          'E2E tests',
+          'Unit tests',
+          'Coverage gates',
+          'Security tests',
+        ],
       },
       {
         name: 'SQLite数据存储',
         adr: 'ADR-0006',
         files: ['src/shared/db/', 'electron/db/'],
-        requirements: ['WAL mode', 'Migration system', 'Type safety']
+        requirements: ['WAL mode', 'Migration system', 'Type safety'],
       },
       {
         name: '端口适配器架构',
         adr: 'ADR-0007',
         files: ['src/ports/', 'src/adapters/', 'src/domain/'],
-        requirements: ['Port definitions', 'Adapter implementations', 'Domain isolation']
-      }
+        requirements: [
+          'Port definitions',
+          'Adapter implementations',
+          'Domain isolation',
+        ],
+      },
     ];
 
     const assessments = [];
@@ -162,24 +189,40 @@ class ArchitectureOptimizer {
     });
 
     // 分析配置问题
-    const configIssues = adrReport?.configIssues?.filter(issue => 
-      issue.source === component.adr || issue.target === component.adr
-    ) || [];
+    const configIssues =
+      adrReport?.configIssues?.filter(
+        issue =>
+          issue.source === component.adr || issue.target === component.adr
+      ) || [];
 
     const completeness = Math.round(
-      (existingFiles.length / component.files.length) * 100 * 
-      Math.max(0.3, 1 - (configIssues.length * 0.1))
+      (existingFiles.length / component.files.length) *
+        100 *
+        Math.max(0.3, 1 - configIssues.length * 0.1)
     );
 
-    const status = this.determineComponentStatus(completeness, configIssues.length);
-    const priority = this.determinePriority(component.adr, completeness, configIssues.length);
+    const status = this.determineComponentStatus(
+      completeness,
+      configIssues.length
+    );
+    const priority = this.determinePriority(
+      component.adr,
+      completeness,
+      configIssues.length
+    );
 
     const missingElements = [
       ...missingFiles.map(file => `Missing file: ${file}`),
-      ...configIssues.map(issue => `Config issue: ${issue.config} - ${issue.type}`)
+      ...configIssues.map(
+        issue => `Config issue: ${issue.config} - ${issue.type}`
+      ),
     ];
 
-    const recommendations = this.generateComponentRecommendations(component, missingElements, configIssues);
+    const recommendations = this.generateComponentRecommendations(
+      component,
+      missingElements,
+      configIssues
+    );
 
     return {
       component: component.name,
@@ -191,7 +234,7 @@ class ArchitectureOptimizer {
       configIssues: configIssues.length,
       missingElements,
       recommendations,
-      priority
+      priority,
     };
   }
 
@@ -210,11 +253,11 @@ class ArchitectureOptimizer {
    */
   determinePriority(adr, completeness, configIssues) {
     const criticalADRs = ['ADR-0002', 'ADR-0003', 'ADR-0005'];
-    
+
     if (criticalADRs.includes(adr) && (completeness < 70 || configIssues > 2)) {
       return 'critical';
     }
-    
+
     if (completeness < 50 || configIssues > 1) return 'high';
     if (completeness < 80) return 'medium';
     return 'low';
@@ -254,7 +297,7 @@ class ArchitectureOptimizer {
    */
   async analyzeDocumentationGaps() {
     const gaps = [];
-    
+
     // 检查Base文档完整性
     const baseDocsPath = path.join(this.docsDir, 'architecture', 'base');
     if (fs.existsSync(baseDocsPath)) {
@@ -283,7 +326,7 @@ class ArchitectureOptimizer {
     const gaps = [];
     const requiredDocs = [
       '01-约束与目标-增强版.md',
-      '02-安全基线(Electron).md', 
+      '02-安全基线(Electron).md',
       '03-可观测性(Sentry+日志)增强版.md',
       '04-系统上下文与C4+事件流.md',
       '05-数据模型与存储端口.md',
@@ -291,7 +334,7 @@ class ArchitectureOptimizer {
       '07-开发与构建+质量门禁.md',
       '08-功能纵切-template.md',
       '09-性能与容量规划.md',
-      '10-国际化·运维·发布.md'
+      '10-国际化·运维·发布.md',
     ];
 
     for (const doc of requiredDocs) {
@@ -302,19 +345,21 @@ class ArchitectureOptimizer {
           gapType: 'missing',
           description: `缺失Base文档: ${doc}`,
           affectedADRs: this.getAffectedADRsForDoc(doc),
-          severity: this.getDocumentationSeverity(doc)
+          severity: this.getDocumentationSeverity(doc),
         });
       } else {
         // 检查文档内容完整性
         const content = fs.readFileSync(docPath, 'utf8');
         const contentGaps = this.analyzeDocumentContent(content, doc);
-        gaps.push(...contentGaps.map(gap => ({
-          docPath: `docs/architecture/base/${doc}`,
-          gapType: 'incomplete',
-          description: gap,
-          affectedADRs: this.getAffectedADRsForDoc(doc),
-          severity: 'medium'
-        })));
+        gaps.push(
+          ...contentGaps.map(gap => ({
+            docPath: `docs/architecture/base/${doc}`,
+            gapType: 'incomplete',
+            description: gap,
+            affectedADRs: this.getAffectedADRsForDoc(doc),
+            severity: 'medium',
+          }))
+        );
       }
     }
 
@@ -327,11 +372,11 @@ class ArchitectureOptimizer {
   async analyzeADRDocumentation(adrPath) {
     const gaps = [];
     const adrFiles = fs.readdirSync(adrPath).filter(f => f.endsWith('.md'));
-    
+
     for (const adrFile of adrFiles) {
       const filePath = path.join(adrPath, adrFile);
       const content = fs.readFileSync(filePath, 'utf8');
-      
+
       // 检查ADR结构完整性
       const structureGaps = this.checkADRStructure(content, adrFile);
       gaps.push(...structureGaps);
@@ -345,8 +390,13 @@ class ArchitectureOptimizer {
    */
   checkADRStructure(content, filename) {
     const gaps = [];
-    const requiredSections = ['Status:', 'Context:', 'Decision:', 'Consequences:'];
-    
+    const requiredSections = [
+      'Status:',
+      'Context:',
+      'Decision:',
+      'Consequences:',
+    ];
+
     for (const section of requiredSections) {
       if (!content.includes(section)) {
         gaps.push({
@@ -354,7 +404,7 @@ class ArchitectureOptimizer {
           gapType: 'incomplete',
           description: `缺失必需的ADR章节: ${section}`,
           affectedADRs: [filename.replace('.md', '')],
-          severity: 'high'
+          severity: 'high',
         });
       }
     }
@@ -376,7 +426,7 @@ class ArchitectureOptimizer {
         gapType: 'missing',
         description: '缺失契约定义目录，影响事件总线和端口适配器架构实施',
         affectedADRs: ['ADR-0004', 'ADR-0007'],
-        severity: 'critical'
+        severity: 'critical',
       });
     }
 
@@ -396,7 +446,7 @@ class ArchitectureOptimizer {
       '06-运行时视图(循环+状态机+错误路径).md': ['ADR-0004', 'ADR-0007'],
       '07-开发与构建+质量门禁.md': ['ADR-0005'],
       '09-性能与容量规划.md': ['ADR-0001', 'ADR-0006'],
-      '10-国际化·运维·发布.md': ['ADR-0008', 'ADR-0009', 'ADR-0010']
+      '10-国际化·运维·发布.md': ['ADR-0008', 'ADR-0009', 'ADR-0010'],
     };
     return mapping[docName] || [];
   }
@@ -405,7 +455,11 @@ class ArchitectureOptimizer {
    * 获取文档严重程度
    */
   getDocumentationSeverity(docName) {
-    const critical = ['02-安全基线(Electron).md', '03-可观测性(Sentry+日志)增强版.md', '07-开发与构建+质量门禁.md'];
+    const critical = [
+      '02-安全基线(Electron).md',
+      '03-可观测性(Sentry+日志)增强版.md',
+      '07-开发与构建+质量门禁.md',
+    ];
     if (critical.includes(docName)) return 'critical';
     return 'high';
   }
@@ -415,9 +469,14 @@ class ArchitectureOptimizer {
    */
   analyzeDocumentContent(content, docName) {
     const gaps = [];
-    
+
     if (docName === '02-安全基线(Electron).md') {
-      const requiredContent = ['contextIsolation', 'nodeIntegration', 'sandbox', 'CSP'];
+      const requiredContent = [
+        'contextIsolation',
+        'nodeIntegration',
+        'sandbox',
+        'CSP',
+      ];
       for (const req of requiredContent) {
         if (!content.includes(req)) {
           gaps.push(`缺失关键安全配置说明: ${req}`);
@@ -453,7 +512,7 @@ class ArchitectureOptimizer {
           type: 'config-inheritance',
           description: '建立ADR配置继承机制，确保安全策略自动传播',
           affectedConfigs: [...new Set(typeIssues.map(i => i.config))],
-          implementation: 'scripts/adr-config-sync.mjs'
+          implementation: 'scripts/adr-config-sync.mjs',
         });
       }
 
@@ -462,7 +521,7 @@ class ArchitectureOptimizer {
           type: 'threshold-alignment',
           description: '统一质量门禁阈值，确保发布健康标准一致性',
           affectedConfigs: [...new Set(typeIssues.map(i => i.config))],
-          implementation: 'update .release-health.json and quality gates'
+          implementation: 'update .release-health.json and quality gates',
         });
       }
     }
@@ -473,24 +532,32 @@ class ArchitectureOptimizer {
   /**
    * 生成优化计划
    */
-  async generateOptimizationPlan(implementationAssessment, documentationGaps, configConsistency) {
+  async generateOptimizationPlan(
+    implementationAssessment,
+    documentationGaps,
+    configConsistency
+  ) {
     const plan = {
       immediateActions: [],
       mediumTermGoals: [],
       longTermImprovements: [],
-      implementations: []
+      implementations: [],
     };
 
     // 立即行动 - Critical和High优先级问题
-    const criticalComponents = implementationAssessment.filter(c => c.priority === 'critical');
-    const criticalGaps = documentationGaps.filter(g => g.severity === 'critical');
+    const criticalComponents = implementationAssessment.filter(
+      c => c.priority === 'critical'
+    );
+    const criticalGaps = documentationGaps.filter(
+      g => g.severity === 'critical'
+    );
 
     criticalComponents.forEach(component => {
       plan.immediateActions.push({
         action: `修复${component.component}的关键实施问题`,
         details: component.recommendations.slice(0, 2),
         deadline: '3天内',
-        owner: 'Architecture Team'
+        owner: 'Architecture Team',
       });
     });
 
@@ -499,18 +566,20 @@ class ArchitectureOptimizer {
         action: `补充关键文档: ${path.basename(gap.docPath)}`,
         details: [gap.description],
         deadline: '1周内',
-        owner: 'Documentation Team'
+        owner: 'Documentation Team',
       });
     });
 
     // 中期目标 - High和Medium优先级
-    const highPriorityComponents = implementationAssessment.filter(c => c.priority === 'high');
+    const highPriorityComponents = implementationAssessment.filter(
+      c => c.priority === 'high'
+    );
     highPriorityComponents.forEach(component => {
       plan.mediumTermGoals.push({
         goal: `完善${component.component}实施`,
         milestones: component.recommendations,
         timeline: '2-4周',
-        successCriteria: '完整性达到90%以上'
+        successCriteria: '完整性达到90%以上',
       });
     });
 
@@ -519,7 +588,7 @@ class ArchitectureOptimizer {
       improvement: '建立架构治理自动化',
       description: '实施持续的架构一致性检查和自动修复机制',
       timeline: '2-3个月',
-      benefits: ['减少手动维护', '提高架构一致性', '自动发现偏差']
+      benefits: ['减少手动维护', '提高架构一致性', '自动发现偏差'],
     });
 
     // 具体实施文件
@@ -536,18 +605,18 @@ class ArchitectureOptimizer {
       {
         file: 'scripts/arch-governance.mjs',
         purpose: '架构治理自动化脚本',
-        features: ['ADR状态检查', '配置同步', '实施验证']
+        features: ['ADR状态检查', '配置同步', '实施验证'],
       },
       {
         file: 'docs/architecture/base/missing-docs.md',
         purpose: '补充缺失的架构文档',
-        features: ['完整的章节结构', '实施指南', '验收标准']
+        features: ['完整的章节结构', '实施指南', '验收标准'],
       },
       {
         file: 'src/shared/contracts/events.ts',
         purpose: '事件契约定义',
-        features: ['类型安全', 'CloudEvents格式', '版本化支持']
-      }
+        features: ['类型安全', 'CloudEvents格式', '版本化支持'],
+      },
     ];
   }
 
@@ -556,14 +625,17 @@ class ArchitectureOptimizer {
    */
   generateSummary(implementationAssessment, documentationGaps) {
     const totalComponents = implementationAssessment.length;
-    const implementedComponents = implementationAssessment.filter(c => c.status === 'implemented').length;
+    const implementedComponents = implementationAssessment.filter(
+      c => c.status === 'implemented'
+    ).length;
     const averageCompleteness = Math.round(
-      implementationAssessment.reduce((sum, c) => sum + c.completeness, 0) / totalComponents
+      implementationAssessment.reduce((sum, c) => sum + c.completeness, 0) /
+        totalComponents
     );
 
     const criticalIssues = [
       ...implementationAssessment.filter(c => c.priority === 'critical'),
-      ...documentationGaps.filter(g => g.severity === 'critical')
+      ...documentationGaps.filter(g => g.severity === 'critical'),
     ].length;
 
     return {
@@ -572,7 +644,10 @@ class ArchitectureOptimizer {
       averageCompleteness,
       criticalIssues,
       documentationGaps: documentationGaps.length,
-      overallHealthScore: Math.max(0, averageCompleteness - (criticalIssues * 10))
+      overallHealthScore: Math.max(
+        0,
+        averageCompleteness - criticalIssues * 10
+      ),
     };
   }
 
@@ -584,7 +659,10 @@ class ArchitectureOptimizer {
       fs.mkdirSync(this.logsDir, { recursive: true });
     }
 
-    const reportPath = path.join(this.logsDir, 'architecture-optimization-report.json');
+    const reportPath = path.join(
+      this.logsDir,
+      'architecture-optimization-report.json'
+    );
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
     console.log(`📋 架构优化分析报告已保存: ${reportPath}`);
   }
@@ -595,10 +673,10 @@ class ArchitectureOptimizer {
   async generateOptimizedFiles(optimizationPlan) {
     // 生成架构治理脚本
     await this.generateArchGovernanceScript();
-    
+
     // 生成缺失的契约定义
     await this.generateContractsDefinition();
-    
+
     // 生成文档模板
     await this.generateDocumentationTemplate();
   }
@@ -607,7 +685,11 @@ class ArchitectureOptimizer {
    * 生成架构治理脚本
    */
   async generateArchGovernanceScript() {
-    const scriptPath = path.join(this.projectRoot, 'scripts', 'arch-governance.mjs');
+    const scriptPath = path.join(
+      this.projectRoot,
+      'scripts',
+      'arch-governance.mjs'
+    );
     const content = `/**
  * 架构治理自动化脚本
  * 持续监控和维护架构一致性
@@ -655,7 +737,7 @@ await governance.validateImplementation();
     if (!fs.existsSync(scriptsDir)) {
       fs.mkdirSync(scriptsDir, { recursive: true });
     }
-    
+
     fs.writeFileSync(scriptPath, content);
     console.log(`📝 已生成架构治理脚本: ${scriptPath}`);
   }
@@ -749,7 +831,10 @@ export interface EventSubscriber {
     }
 
     // 生成架构完整性检查清单
-    const checklistPath = path.join(baseDocsDir, 'architecture-completeness-checklist.md');
+    const checklistPath = path.join(
+      baseDocsDir,
+      'architecture-completeness-checklist.md'
+    );
     const checklistContent = `# 架构完整性检查清单
 
 ## 实施状态检查
@@ -828,11 +913,13 @@ export interface EventSubscriber {
     console.log('\n🎯 架构优化分析结果');
     console.log('==================================================');
     console.log(`📊 总体健康分数: ${report.summary.overallHealthScore}/100`);
-    console.log(`🏗️ 组件实施状态: ${report.summary.implementedComponents}/${report.summary.totalComponents} 已实施`);
+    console.log(
+      `🏗️ 组件实施状态: ${report.summary.implementedComponents}/${report.summary.totalComponents} 已实施`
+    );
     console.log(`📋 平均完整性: ${report.summary.averageCompleteness}%`);
     console.log(`🚨 Critical问题: ${report.summary.criticalIssues}个`);
     console.log(`📚 文档缺口: ${report.summary.documentationGaps}个`);
-    
+
     console.log('\n🔥 立即行动项:');
     report.optimizationPlan.immediateActions.forEach((action, index) => {
       console.log(`   ${index + 1}. ${action.action} (${action.deadline})`);
@@ -848,7 +935,9 @@ export interface EventSubscriber {
       console.log(`   📝 ${impl.file} - ${impl.purpose}`);
     });
 
-    console.log(`\n📋 详细报告已保存至: logs/architecture-optimization-report.json`);
+    console.log(
+      `\n📋 详细报告已保存至: logs/architecture-optimization-report.json`
+    );
   }
 }
 

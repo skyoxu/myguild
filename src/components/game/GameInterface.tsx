@@ -69,7 +69,12 @@ export function GameInterface({
       setIsGameRunning(true);
     } else if (event.type.includes('game.engine.ended')) {
       setIsGameRunning(false);
-    } else if (event.type.includes('game.error') && event.data && typeof event.data === 'object' && 'error' in event.data) {
+    } else if (
+      event.type.includes('game.error') &&
+      event.data &&
+      typeof event.data === 'object' &&
+      'error' in event.data
+    ) {
       setError((event.data as { error: string }).error);
     }
   }, []);
@@ -382,7 +387,7 @@ export function GameInterface({
               ...prevSettings,
               ...settings,
               ui: { ...prevSettings.ui, ...settings.ui },
-              gameplay: { ...prevSettings.gameplay, ...settings.gameplay }
+              gameplay: { ...prevSettings.gameplay, ...settings.gameplay },
             }));
             // 这里可以应用设置到游戏中
             console.log('Settings updated:', settings);

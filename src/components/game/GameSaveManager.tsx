@@ -29,13 +29,8 @@ export function GameSaveManager({
   );
 
   // 使用统一的状态管理
-  const {
-    saveFiles,
-    isLoadingSaves,
-    loadGame,
-    deleteSave,
-    refreshSaveList,
-  } = useSaveManager();
+  const { saveFiles, isLoadingSaves, loadGame, deleteSave, refreshSaveList } =
+    useSaveManager();
 
   const gameEvents = useGameEvents({
     context: 'game-save-manager',

@@ -16,7 +16,9 @@ last_generated: 2025-08-21
 ---
 
 ## 章节导航
+
 <!-- sec:nav -->
+
 - [6.0 架构总览（C4容器图）](#60-架构总览c4容器图)
 - [6.1 双环路（React/UI 与 Phaser/Game Loop）与帧预算（60fps≈16.7ms）](#61-双环路reactui-与-phasergame-loop与帧预算60fps167ms)
 - [6.2 事件处理与背压（TP95≤50ms）](#62-事件处理与背压tp9550ms)
@@ -28,6 +30,7 @@ last_generated: 2025-08-21
 ---
 
 ## 6.0 架构总览（C4容器图）
+
 <!-- sec:6.0 -->
 
 ### 运行时容器架构
@@ -49,16 +52,19 @@ C4Container
 ---
 
 ## 6.1 双环路（React/UI 与 Phaser/Game Loop）与帧预算（60fps≈16.7ms）
+
 <!-- sec:6.1 -->
 
 ### 核心挑战与设计原理
 
 **挑战识别**：
+
 - React 生命周期更新（useState, useEffect）与 Phaser 的 requestAnimationFrame 存在调度冲突
 - UI 状态变更可能触发大量 re-render，抢占 Phaser 的 16.7ms 帧预算
 - 不同硬件性能差异可达 10x，需要自适应预算分配
 
 **设计原理**：
+
 - 动态帧预算管理，替代固定分配策略
 - React 使用 `startTransition` 包装非紧急更新，确保游戏渲染优先级
 - 基于实时性能监控的自适应调整机制
@@ -82,14 +88,17 @@ C4Dynamic
 // src/shared/contracts/runtime.ts
 export interface FrameBudget {
   totalMs: 16.7;
-  allocated: { phaser: number; react: number; events: number; gc: number; };
+  allocated: { phaser: number; react: number; events: number; gc: number };
   remaining: number;
   overrun: boolean;
   frameId: number;
 }
 
 export interface FrameBudgetManager {
-  allocate(subsystem: 'react'|'phaser'|'events'|'gc', timeMs: number): boolean;
+  allocate(
+    subsystem: 'react' | 'phaser' | 'events' | 'gc',
+    timeMs: number
+  ): boolean;
   getRemainingBudget(): number;
   resetFrame(): void;
 }
@@ -135,11 +144,13 @@ export abstract class FrameBudgetAwareScene extends Phaser.Scene {
 ---
 
 ## 6.2 事件处理与背压（TP95≤50ms）
+
 <!-- sec:6.2 -->
 
 ### 双队列事件处理架构
 
 **设计原理**：
+
 - UI 事件（鼠标、键盘）优先处理，确保用户交互响应性
 - 游戏事件（AI 决策、物理计算）可延迟批处理，降低性能压力
 - 基于 TP95 延迟的自适应背压控制
@@ -188,20 +199,23 @@ export type EventPriority = 'immediate' | 'high' | 'normal' | 'low';
 export interface GameEvent extends CloudEventV1<unknown> {
   // CloudEvents必需字段已继承：id, source, type, time, specversion
   priority: EventPriority;
-  deadline?: number;       // 可选的截止时间
+  deadline?: number; // 可选的截止时间
   // 扩展属性用于云平台集成
-  subject?: string;        // 事件主题，便于AWS EventBridge/Azure Event Grid路由
-  traceparent?: string;    // W3C分布式追踪，与Sentry APM集成
+  subject?: string; // 事件主题，便于AWS EventBridge/Azure Event Grid路由
+  traceparent?: string; // W3C分布式追踪，与Sentry APM集成
 }
 
 // 云平台事件路由配置（保持Base-Clean，使用占位符）
 export const CLOUD_EVENT_ROUTING = {
   performance_degraded: {
     aws: { eventBusName: '${AWS_EVENT_BUS}', source: 'electron.performance' },
-    azure: { topicName: '${AZURE_EVENT_TOPIC}', eventType: 'Performance.Degraded' },
+    azure: {
+      topicName: '${AZURE_EVENT_TOPIC}',
+      eventType: 'Performance.Degraded',
+    },
     gcp: { topicName: '${GCP_PUBSUB_TOPIC}', messageType: 'performance-event' },
-    local: { endpoint: '${LOCAL_WEBHOOK_URL}' }
-  }
+    local: { endpoint: '${LOCAL_WEBHOOK_URL}' },
+  },
 } as const;
 ```
 
@@ -210,17 +224,21 @@ export const CLOUD_EVENT_ROUTING = {
 ```typescript
 // src/runtime/events/DualQueueEventProcessor.ts
 export class DualQueueEventProcessor {
-  private uiQueue = new PriorityQueue<GameEvent>(); private gameQueue = new PriorityQueue<GameEvent>();
-  private latencyMonitor = new LatencyMonitor(); private backpressureController = new BackpressureController();
+  private uiQueue = new PriorityQueue<GameEvent>();
+  private gameQueue = new PriorityQueue<GameEvent>();
+  private latencyMonitor = new LatencyMonitor();
+  private backpressureController = new BackpressureController();
   async processEvents(budgetMs: number): Promise<void> {
     const start = performance.now();
-    while (!this.uiQueue.isEmpty() && (performance.now() - start) < budgetMs) {
+    while (!this.uiQueue.isEmpty() && performance.now() - start < budgetMs) {
       await this.processUIEvent(this.uiQueue.dequeue());
     }
     const remaining = budgetMs - (performance.now() - start);
     if (remaining > 2) await this.processGameEvents(remaining);
-    const total = performance.now() - start; this.latencyMonitor.record(total);
-    if (this.latencyMonitor.getTP95() > 50) this.backpressureController.activate();
+    const total = performance.now() - start;
+    this.latencyMonitor.record(total);
+    if (this.latencyMonitor.getTP95() > 50)
+      this.backpressureController.activate();
   }
 }
 class CloudEventAdapter {
@@ -228,16 +246,37 @@ class CloudEventAdapter {
   async publishEvent(event: GameEvent): Promise<void> {
     const routing = CLOUD_EVENT_ROUTING.performance_degraded;
     switch (this.platform) {
-      case 'aws': await this.publishToEventBridge(event, routing.aws); break;
-      case 'azure': await this.publishToEventGrid(event, routing.azure); break;
-      case 'gcp': await this.publishToPubSub(event, routing.gcp); break;
-      default: await this.publishToLocal(event, routing.local);
+      case 'aws':
+        await this.publishToEventBridge(event, routing.aws);
+        break;
+      case 'azure':
+        await this.publishToEventGrid(event, routing.azure);
+        break;
+      case 'gcp':
+        await this.publishToPubSub(event, routing.gcp);
+        break;
+      default:
+        await this.publishToLocal(event, routing.local);
     }
   }
-  private async publishToEventBridge(event: GameEvent, config: any): Promise<void> { console.log('AWS EventBridge:', { event, config }); }
-  private async publishToEventGrid(event: GameEvent, config: any): Promise<void> { console.log('Azure Event Grid:', { event, config }); }
-  private async publishToPubSub(event: GameEvent, config: any): Promise<void> { console.log('GCP Pub/Sub:', { event, config }); }
-  private async publishToLocal(event: GameEvent, config: any): Promise<void> { console.log('Local endpoint:', { event, config }); }
+  private async publishToEventBridge(
+    event: GameEvent,
+    config: any
+  ): Promise<void> {
+    console.log('AWS EventBridge:', { event, config });
+  }
+  private async publishToEventGrid(
+    event: GameEvent,
+    config: any
+  ): Promise<void> {
+    console.log('Azure Event Grid:', { event, config });
+  }
+  private async publishToPubSub(event: GameEvent, config: any): Promise<void> {
+    console.log('GCP Pub/Sub:', { event, config });
+  }
+  private async publishToLocal(event: GameEvent, config: any): Promise<void> {
+    console.log('Local endpoint:', { event, config });
+  }
 }
 ```
 
@@ -246,32 +285,46 @@ class CloudEventAdapter {
 ```typescript
 // src/runtime/events/BackpressureController.ts
 export class BackpressureController {
-  private isActive = false; private dropCounter = 0; private lastActivation = 0;
-  activate(): void { this.isActive = true; this.lastActivation = Date.now(); }
+  private isActive = false;
+  private dropCounter = 0;
+  private lastActivation = 0;
+  activate(): void {
+    this.isActive = true;
+    this.lastActivation = Date.now();
+  }
   shouldDropEvent(event: GameEvent): boolean {
     if (!this.isActive) return false;
     switch (event.priority) {
-      case 'immediate': return false;
-      case 'high': return this.dropCounter % 10 === 0;
-      case 'normal': return this.dropCounter % 5 === 0;
-      case 'low': return this.dropCounter % 2 === 0;
+      case 'immediate':
+        return false;
+      case 'high':
+        return this.dropCounter % 10 === 0;
+      case 'normal':
+        return this.dropCounter % 5 === 0;
+      case 'low':
+        return this.dropCounter % 2 === 0;
     }
   }
-  deactivate(): void { this.isActive = false; this.dropCounter = 0; }
+  deactivate(): void {
+    this.isActive = false;
+    this.dropCounter = 0;
+  }
 }
 ```
 
 ---
 
 ## 6.3 状态机与错误路径（降级/熔断/重试）
+
 <!-- sec:6.3 -->
 
 ### 四级性能状态机
 
 **状态定义**：
+
 - **Normal**：全功能运行，60FPS 稳定
 - **Degraded**：轻度降级，减少特效质量
-- **Critical**：重度降级，禁用非关键动画  
+- **Critical**：重度降级，禁用非关键动画
 - **Emergency**：紧急模式，基础 2D 渲染
 
 ### 性能状态转换图
@@ -297,7 +350,7 @@ stateDiagram-v2
 C4Dynamic
     title 紧急降级与恢复序列
     Container(monitor, "性能监控器", "PerformanceMonitor")
-    Container(statemachine, "状态机", "PerformanceStateMachine") 
+    Container(statemachine, "状态机", "PerformanceStateMachine")
     Container(engines, "渲染引擎", "Phaser+React")
     System_Ext(sentry, "Sentry SDK")
     Rel(monitor, statemachine, 1, "ft:35ms→emergency", "evaluateTransition()")
@@ -310,7 +363,11 @@ C4Dynamic
 export interface DegradeEvent {
   from: 'normal' | 'degraded' | 'critical' | 'emergency';
   to: 'normal' | 'degraded' | 'critical' | 'emergency';
-  trigger: 'frame_overrun' | 'event_latency' | 'memory_pressure' | 'gc_pressure';
+  trigger:
+    | 'frame_overrun'
+    | 'event_latency'
+    | 'memory_pressure'
+    | 'gc_pressure';
   timestamp: number;
   metrics: {
     currentFPS: number;
@@ -328,29 +385,50 @@ export type PerformanceState = 'normal' | 'degraded' | 'critical' | 'emergency';
 ```typescript
 // src/runtime/performance/PerformanceStateMachine.ts
 export class PerformanceStateMachine {
-  private currentState: PerformanceState = 'normal'; private stateHistory: Array<{ state: PerformanceState; timestamp: number }> = [];
-  private eventEmitter = new EventEmitter(); 
-  private thresholds = { normal: { maxFrameTime: 16, maxEventLatency: 30, maxMemoryMB: 512 },
+  private currentState: PerformanceState = 'normal';
+  private stateHistory: Array<{ state: PerformanceState; timestamp: number }> =
+    [];
+  private eventEmitter = new EventEmitter();
+  private thresholds = {
+    normal: { maxFrameTime: 16, maxEventLatency: 30, maxMemoryMB: 512 },
     degraded: { maxFrameTime: 20, maxEventLatency: 40, maxMemoryMB: 768 },
     critical: { maxFrameTime: 25, maxEventLatency: 50, maxMemoryMB: 1024 },
-    emergency: { maxFrameTime: 33, maxEventLatency: 100, maxMemoryMB: 1536 } };
+    emergency: { maxFrameTime: 33, maxEventLatency: 100, maxMemoryMB: 1536 },
+  };
   evaluateStateTransition(metrics: PerformanceMetrics): void {
     const newState = this.determineOptimalState(metrics);
     if (newState !== this.currentState) this.transitionTo(newState, metrics);
   }
   private determineOptimalState(metrics: PerformanceMetrics): PerformanceState {
     const { frameTime, eventLatency, memoryUsageMB } = metrics;
-    if (frameTime > 30 || eventLatency > 80 || memoryUsageMB > 1200) return 'emergency';
-    if (frameTime > 23 || eventLatency > 60 || memoryUsageMB > 900) return 'critical';
-    if (frameTime > 18 || eventLatency > 45 || memoryUsageMB > 600) return 'degraded';
+    if (frameTime > 30 || eventLatency > 80 || memoryUsageMB > 1200)
+      return 'emergency';
+    if (frameTime > 23 || eventLatency > 60 || memoryUsageMB > 900)
+      return 'critical';
+    if (frameTime > 18 || eventLatency > 45 || memoryUsageMB > 600)
+      return 'degraded';
     return 'normal';
   }
-  private transitionTo(newState: PerformanceState, metrics: PerformanceMetrics): void {
-    const degradeEvent: DegradeEvent = { from: this.currentState, to: newState, trigger: this.identifyTrigger(metrics),
-      timestamp: Date.now(), metrics: { currentFPS: 1000 / metrics.frameTime, eventTP95: metrics.eventLatency,
-        memoryUsageMB: metrics.memoryUsageMB, gcFrequency: metrics.gcFrequency } };
-    this.currentState = newState; this.stateHistory.push({ state: newState, timestamp: Date.now() });
-    this.eventEmitter.emit('stateChange', degradeEvent); this.executeStateActions(newState);
+  private transitionTo(
+    newState: PerformanceState,
+    metrics: PerformanceMetrics
+  ): void {
+    const degradeEvent: DegradeEvent = {
+      from: this.currentState,
+      to: newState,
+      trigger: this.identifyTrigger(metrics),
+      timestamp: Date.now(),
+      metrics: {
+        currentFPS: 1000 / metrics.frameTime,
+        eventTP95: metrics.eventLatency,
+        memoryUsageMB: metrics.memoryUsageMB,
+        gcFrequency: metrics.gcFrequency,
+      },
+    };
+    this.currentState = newState;
+    this.stateHistory.push({ state: newState, timestamp: Date.now() });
+    this.eventEmitter.emit('stateChange', degradeEvent);
+    this.executeStateActions(newState);
   }
   private executeStateActions(state: PerformanceState): void {
     switch (state) {
@@ -376,15 +454,27 @@ export class PerformanceStateMachine {
 ```typescript
 // src/runtime/recovery/ErrorRecoveryManager.ts
 export class ErrorRecoveryManager {
-  private retryAttempts = new Map<string, number>(); private maxRetries = 3; private backoffMultiplier = 2;
+  private retryAttempts = new Map<string, number>();
+  private maxRetries = 3;
+  private backoffMultiplier = 2;
   async handleRenderError(error: Error, context: string): Promise<void> {
-    const errorKey = `${context}:${error.name}`; const attempts = this.retryAttempts.get(errorKey) || 0;
-    if (attempts >= this.maxRetries) { this.triggerCircuitBreaker(context); return; }
-    const delay = Math.pow(this.backoffMultiplier, attempts) * 100; await this.sleep(delay);
-    this.retryAttempts.set(errorKey, attempts + 1); this.reportError(error, context, attempts);
+    const errorKey = `${context}:${error.name}`;
+    const attempts = this.retryAttempts.get(errorKey) || 0;
+    if (attempts >= this.maxRetries) {
+      this.triggerCircuitBreaker(context);
+      return;
+    }
+    const delay = Math.pow(this.backoffMultiplier, attempts) * 100;
+    await this.sleep(delay);
+    this.retryAttempts.set(errorKey, attempts + 1);
+    this.reportError(error, context, attempts);
   }
   private triggerCircuitBreaker(context: string): void {
-    this.eventEmitter.emit('circuitBreaker', { context, timestamp: Date.now(), action: 'open' });
+    this.eventEmitter.emit('circuitBreaker', {
+      context,
+      timestamp: Date.now(),
+      action: 'open',
+    });
     this.performanceStateMachine.forceTransition('emergency');
   }
 }
@@ -393,21 +483,25 @@ export class ErrorRecoveryManager {
 ---
 
 ## 6.4 性能观测点与降级策略联动
+
 <!-- sec:6.4 -->
 
 ### 三层监控架构
 
 **L1 - 实时监控**（每帧）：
+
 - 帧时间测量
 - 事件队列长度
 - 内存使用量快照
 
 **L2 - 趋势分析**（10帧滑动窗口）：
+
 - TP95/TP99 计算
 - 趋势检测（上升/下降）
 - 预测性告警
 
 **L3 - 长期健康度**（Sentry 集成）：
+
 - Release Health 指标
 - 性能回归检测
 - 用户影响面分析
@@ -418,9 +512,9 @@ export class ErrorRecoveryManager {
 // src/runtime/monitoring/SentryReleaseHealth.ts
 export interface ReleaseHealthConfig {
   crashFreeSessionsThreshold: 99.5; // 99.5%崩溃率阈值
-  crashFreeUsersThreshold: 99.8;    // 99.8%用户崩溃率阈值
-  adoptionThreshold: 80;             // 80%用户采用率
-  sessionDurationMinMs: 30000;       // 最小会话时长30秒
+  crashFreeUsersThreshold: 99.8; // 99.8%用户崩溃率阈值
+  adoptionThreshold: 80; // 80%用户采用率
+  sessionDurationMinMs: 30000; // 最小会话时长30秒
 }
 
 // 发布门禁检查脚本
@@ -428,10 +522,11 @@ export function checkReleaseHealth(): Promise<boolean> {
   return Sentry.getReleaseHealth({
     project: '${SENTRY_PROJECT}',
     organization: '${SENTRY_ORG}',
-    release: '${RELEASE_PREFIX}@${VERSION}'
+    release: '${RELEASE_PREFIX}@${VERSION}',
   }).then(metrics => {
-    return metrics.crashFreeSessionRate >= 99.5 &&
-           metrics.crashFreeUserRate >= 99.8;
+    return (
+      metrics.crashFreeSessionRate >= 99.5 && metrics.crashFreeUserRate >= 99.8
+    );
   });
 }
 
@@ -445,18 +540,18 @@ export function initReleaseHealth(): void {
     // 启用Performance监控
     tracesSampleRate: 1.0,
     // 配置发布健康度
-    beforeSend: (event) => {
+    beforeSend: event => {
       // 添加性能上下文
       event.contexts = event.contexts || {};
       event.contexts.performance = {
         frameRate: getCurrentFPS(),
         eventLatency: getCurrentTP95(),
-        memoryUsage: getMemoryUsage()
+        memoryUsage: getMemoryUsage(),
       };
       return event;
-    }
+    },
   });
-  
+
   // 开始会话追踪
   Sentry.startSession();
 }
@@ -465,7 +560,8 @@ export function initReleaseHealth(): void {
 ```typescript
 // src/runtime/monitoring/PerformanceMonitor.ts
 export class PerformanceMonitor {
-  private frameTimeSamples = new CircularBuffer<number>(60); private eventLatencySamples = new CircularBuffer<number>(100);
+  private frameTimeSamples = new CircularBuffer<number>(60);
+  private eventLatencySamples = new CircularBuffer<number>(100);
   private memorySnapshots = new CircularBuffer<number>(30);
   recordFrame(frameTime: number): void {
     this.frameTimeSamples.push(frameTime);
@@ -474,13 +570,24 @@ export class PerformanceMonitor {
   }
   private analyzeTrends(): void {
     const tp95 = this.calculateTP95(this.frameTimeSamples.getLast(10));
-    if (tp95 > 18) this.triggerTrendAlert('performance_degradation', { tp95, trend: 'rising' });
+    if (tp95 > 18)
+      this.triggerTrendAlert('performance_degradation', {
+        tp95,
+        trend: 'rising',
+      });
   }
   reportToSentry(): void {
-    const metrics = { frameTimeTP95: this.calculateTP95(this.frameTimeSamples.getAll()),
+    const metrics = {
+      frameTimeTP95: this.calculateTP95(this.frameTimeSamples.getAll()),
       eventLatencyTP95: this.calculateTP95(this.eventLatencySamples.getAll()),
-      avgMemoryUsage: this.calculateAverage(this.memorySnapshots.getAll()) };
-    Sentry.addBreadcrumb({ category: 'performance', message: 'Performance metrics snapshot', data: metrics, level: 'info' });
+      avgMemoryUsage: this.calculateAverage(this.memorySnapshots.getAll()),
+    };
+    Sentry.addBreadcrumb({
+      category: 'performance',
+      message: 'Performance metrics snapshot',
+      data: metrics,
+      level: 'info',
+    });
   }
 }
 ```
@@ -490,10 +597,21 @@ export class PerformanceMonitor {
 ```typescript
 // src/runtime/integration/ObservabilityDegradationBridge.ts
 export class ObservabilityDegradationBridge {
-  constructor(private monitor: PerformanceMonitor, private stateMachine: PerformanceStateMachine) { this.setupEventListeners(); }
+  constructor(
+    private monitor: PerformanceMonitor,
+    private stateMachine: PerformanceStateMachine
+  ) {
+    this.setupEventListeners();
+  }
   private setupEventListeners(): void {
-    this.monitor.on('alert', (alert) => { const metrics = this.monitor.getCurrentMetrics(); this.stateMachine.evaluateStateTransition(metrics); });
-    this.stateMachine.on('stateChange', (event: DegradeEvent) => { this.adjustObservabilityConfig(event.to); this.reportDegradationEvent(event); });
+    this.monitor.on('alert', alert => {
+      const metrics = this.monitor.getCurrentMetrics();
+      this.stateMachine.evaluateStateTransition(metrics);
+    });
+    this.stateMachine.on('stateChange', (event: DegradeEvent) => {
+      this.adjustObservabilityConfig(event.to);
+      this.reportDegradationEvent(event);
+    });
   }
   private adjustObservabilityConfig(state: PerformanceState): void {
     const rates = { emergency: 0.1, critical: 0.3, degraded: 0.7, normal: 1.0 };
@@ -505,49 +623,51 @@ export class ObservabilityDegradationBridge {
 ---
 
 ## 6.5 追踪表
+
 <!-- sec:6.5 -->
 
 ### 帧预算追踪表
 
-| 组件 | 正常模式 | 降级模式 | 危急模式 | 紧急模式 | 监控指标 |
-|------|----------|----------|----------|----------|----------|
-| Phaser渲染 | 8-10ms | 6-8ms | 4-6ms | 2-4ms | frameTime |
-| React更新 | 3-4ms | 2-3ms | 1-2ms | 0.5-1ms | renderTime |
-| 事件处理 | 2-3ms | 1.5-2ms | 1ms | 0.5ms | eventLatency |
-| GC预留 | 2-3ms | 2ms | 2ms | 1.5ms | gcPressure |
+| 组件       | 正常模式 | 降级模式 | 危急模式 | 紧急模式 | 监控指标     |
+| ---------- | -------- | -------- | -------- | -------- | ------------ |
+| Phaser渲染 | 8-10ms   | 6-8ms    | 4-6ms    | 2-4ms    | frameTime    |
+| React更新  | 3-4ms    | 2-3ms    | 1-2ms    | 0.5-1ms  | renderTime   |
+| 事件处理   | 2-3ms    | 1.5-2ms  | 1ms      | 0.5ms    | eventLatency |
+| GC预留     | 2-3ms    | 2ms      | 2ms      | 1.5ms    | gcPressure   |
 
 ### 状态转换追踪表
 
-| 触发条件 | 从状态 | 到状态 | 动作 | 恢复条件 |
-|----------|--------|--------|------|----------|
-| 帧时间>18ms | normal | degraded | 降低特效质量 | 连续30帧<16ms |
-| 帧时间>23ms | degraded | critical | 禁用动画 | 连续60帧<18ms |
-| 帧时间>30ms | critical | emergency | 2D模式 | 连续120帧<20ms |
-| 事件延迟>50ms | any | +1级降级 | 启用背压 | TP95<30ms |
+| 触发条件      | 从状态   | 到状态    | 动作         | 恢复条件       |
+| ------------- | -------- | --------- | ------------ | -------------- |
+| 帧时间>18ms   | normal   | degraded  | 降低特效质量 | 连续30帧<16ms  |
+| 帧时间>23ms   | degraded | critical  | 禁用动画     | 连续60帧<18ms  |
+| 帧时间>30ms   | critical | emergency | 2D模式       | 连续120帧<20ms |
+| 事件延迟>50ms | any      | +1级降级  | 启用背压     | TP95<30ms      |
 
 ### 性能指标追踪表
 
-| 指标 | 目标值 | 告警阈值 | 熔断阈值 | 数据源 | 上报频率 |
-|------|--------|----------|----------|--------|----------|
-| 帧率 | 60 FPS | <55 FPS | <30 FPS | RAF计时 | 每帧 |
-| 事件延迟TP95 | <30ms | >40ms | >80ms | 事件队列 | 10帧/次 |
-| 内存使用 | <512MB | >768MB | >1GB | performance.memory | 30帧/次 |
-| GC频率 | <10次/秒 | >20次/秒 | >50次/秒 | GC观察器 | 持续监控 |
+| 指标         | 目标值   | 告警阈值 | 熔断阈值 | 数据源             | 上报频率 |
+| ------------ | -------- | -------- | -------- | ------------------ | -------- |
+| 帧率         | 60 FPS   | <55 FPS  | <30 FPS  | RAF计时            | 每帧     |
+| 事件延迟TP95 | <30ms    | >40ms    | >80ms    | 事件队列           | 10帧/次  |
+| 内存使用     | <512MB   | >768MB   | >1GB     | performance.memory | 30帧/次  |
+| GC频率       | <10次/秒 | >20次/秒 | >50次/秒 | GC观察器           | 持续监控 |
 
 ### C4图表追踪表
 
-| 图表类型 | 场景覆盖 | 编号序列 | Base-Clean合规 | 渲染验证 |
-|----------|----------|----------|----------------|----------|
-| C4容器图 | 静态架构 | N/A | ✅占位符 | ✅Mermaid |
-| C4动态图-冷启动 | 初始化序列 | 1-7 | ✅占位符 | ✅Mermaid |
-| C4动态图-背压 | 高压输入处理 | 1-7 | ✅占位符 | ✅Mermaid |
-| C4动态图-降级 | 紧急恢复 | 1-8 | ✅占位符 | ✅Mermaid |
-| Mermaid状态图 | 四态转换 | 状态节点 | ✅阈值一致 | ✅语法正确 |
-| Mermaid时序图 | 背压回路 | 时序步骤 | ✅技术无关 | ✅语法正确 |
+| 图表类型        | 场景覆盖     | 编号序列 | Base-Clean合规 | 渲染验证   |
+| --------------- | ------------ | -------- | -------------- | ---------- |
+| C4容器图        | 静态架构     | N/A      | ✅占位符       | ✅Mermaid  |
+| C4动态图-冷启动 | 初始化序列   | 1-7      | ✅占位符       | ✅Mermaid  |
+| C4动态图-背压   | 高压输入处理 | 1-7      | ✅占位符       | ✅Mermaid  |
+| C4动态图-降级   | 紧急恢复     | 1-8      | ✅占位符       | ✅Mermaid  |
+| Mermaid状态图   | 四态转换     | 状态节点 | ✅阈值一致     | ✅语法正确 |
+| Mermaid时序图   | 背压回路     | 时序步骤 | ✅技术无关     | ✅语法正确 |
 
 ---
 
 ## 6.6 验收清单
+
 <!-- sec:6.6 -->
 
 ### 功能验收清单
@@ -557,7 +677,7 @@ export class ObservabilityDegradationBridge {
   - [ ] 预算超限检测及时准确
   - [ ] 支持实时配置调整
 
-- [ ] **双环路协调**  
+- [ ] **双环路协调**
   - [ ] React startTransition 集成工作正常
   - [ ] Phaser RAF 优先级确保渲染流畅
   - [ ] UI事件与游戏渲染无冲突
@@ -580,30 +700,36 @@ export class ObservabilityDegradationBridge {
 ### 验收清单（综合）
 
 **性能验收**：
+
 - [ ] 60FPS稳定（P95>58）；降级模式符合预期；极端负载≥30FPS
 - [ ] UI事件TP95≤30ms，游戏事件TP95≤50ms，背压不丢关键事件
 - [ ] 运行内存<512MB，无内存泄漏，GC压力可控
 
 **观测验收**：
+
 - [ ] 三层监控完整，关键指标100%覆盖，Sentry集成准确
 - [ ] 性能告警及时，信息包含上下文，误报率<5%
 - [ ] 性能事件记录完整，状态转换可追溯
 
 **图表验收**：
+
 - [ ] C4容器图+3个动态图覆盖关键场景，Mermaid状态图含四态转换
 - [ ] 占位符（${APP_NAME}等）使用规范，无厂商绑定，Mermaid语法通过
 
 **互操作验收**：
+
 - [ ] CloudEventV1标准合规，必需字段齐全（id/source/type/time/specversion）
 - [ ] 云平台路由配置完整（AWS/Azure/GCP），Base-Clean占位符规范
 - [ ] 性能降级事件符合CloudEvents格式，不影响运行时性能
 
 **兼容性验收**：
+
 - [ ] 低端设备正常运行，高端设备充分利用，分辨率表现一致
 - [ ] Chromium内核+WebGL兼容良好，安全策略无影响
 - [ ] Windows主版本+macOS基础支持，跨平台性能差异可控
 
 **Release Health验收**：
+
 - [ ] Sentry配置：autoSessionTracking+Release追踪，${SENTRY_ORG}/${SENTRY_PROJECT}正确
 - [ ] 门禁阈值：Crash-Free Sessions≥99.5%，Users≥99.8%，会话≥30秒，检查脚本可执行
 
@@ -614,37 +740,63 @@ export class ObservabilityDegradationBridge {
 ```typescript
 // src/shared/contracts/runtime.ts
 export interface FrameBudget {
-  totalMs: 16.7; allocated: { phaser: number; react: number; events: number; gc: number };
-  remaining: number; overrun: boolean; frameId: number;
+  totalMs: 16.7;
+  allocated: { phaser: number; react: number; events: number; gc: number };
+  remaining: number;
+  overrun: boolean;
+  frameId: number;
 }
 export interface EventLatencyBudget {
-  uiEventMaxMs: 30; gameEventMaxMs: 50; currentTP95: number;
-  queueLength: number; backpressureActive: boolean;
+  uiEventMaxMs: 30;
+  gameEventMaxMs: 50;
+  currentTP95: number;
+  queueLength: number;
+  backpressureActive: boolean;
 }
 export interface DegradeEvent {
-  from: 'normal'|'degraded'|'critical'|'emergency'; to: 'normal'|'degraded'|'critical'|'emergency';
-  trigger: 'frame_overrun'|'event_latency'|'memory_pressure'|'gc_pressure'; timestamp: number;
-  metrics: { currentFPS: number; eventTP95: number; memoryUsageMB: number; gcFrequency: number; };
+  from: 'normal' | 'degraded' | 'critical' | 'emergency';
+  to: 'normal' | 'degraded' | 'critical' | 'emergency';
+  trigger:
+    | 'frame_overrun'
+    | 'event_latency'
+    | 'memory_pressure'
+    | 'gc_pressure';
+  timestamp: number;
+  metrics: {
+    currentFPS: number;
+    eventTP95: number;
+    memoryUsageMB: number;
+    gcFrequency: number;
+  };
 }
 export interface ReleaseHealthConfig {
-  crashFreeSessionsThreshold: 99.5; crashFreeUsersThreshold: 99.8;
-  adoptionThreshold: 80; sessionDurationMinMs: 30000;
+  crashFreeSessionsThreshold: 99.5;
+  crashFreeUsersThreshold: 99.8;
+  adoptionThreshold: 80;
+  sessionDurationMinMs: 30000;
 }
 export function createFrameBudget(): FrameBudget {
-  return { totalMs: 16.7, allocated: { phaser: 8, react: 4, events: 2, gc: 2.7 },
-    remaining: 16.7, overrun: false, frameId: 0 };
+  return {
+    totalMs: 16.7,
+    allocated: { phaser: 8, react: 4, events: 2, gc: 2.7 },
+    remaining: 16.7,
+    overrun: false,
+    frameId: 0,
+  };
 }
 ```
 
 ---
 
 **ADR 引用说明**：本章节的技术方案基于以下架构决策记录：
+
 - **ADR-0001**：技术栈选择（Electron + React + Phaser）
 - **ADR-0005**：质量门禁要求（60FPS目标、TP95监控）
 - **ADR-0004**：事件总线架构支持
 - **ADR-0002**：Electron安全配置不影响性能监控
 
 **Base-Clean 2.1评分提升**：
+
 - 原版V2：19/23分 → 补充C4图表后：23/23分（满分）
 - C4容器图：静态架构清晰 (+2分)
 - C4动态图×3：运行时场景完整 (+2分)

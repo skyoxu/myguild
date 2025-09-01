@@ -1,0 +1,139 @@
+# E2E测试安全验证修复建议
+
+## 1. Playwright配置优化 (playwright.config.ts)
+
+```diff
+// 移除不安全的测试参数
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: undefined,
+          args: [
+-           '--disable-web-security', // 移除：生产环境必须启用web安全
+-           '--allow-running-insecure-content',
+-           '--no-sandbox', // 移除：沙盒是重要安全特性
+            '--disable-features=VizDisplayCompositor',
+            '--offline', // 保留：E2E网络隔离
++           '--enable-features=ElectronSerialChooser', // 添加：启用安全特性
++           '--force-renderer-accessibility', // 添加：可访问性测试支持
+          ],
+```
+
+## 2. 增强安全基线测试 (smoke.electron.spec.ts)
+
+```diff
++ test('安全基线：预加载脚本功能验证（严格模式）', async () => {
++   // 在严格的沙盒模式下，验证预加载脚本是否正确限制功能
++   const securityValidation = await page.evaluate(() => {
++     return {
++       // 验证不应存在的危险全局变量
++       hasNodeRequire: typeof (window as any).require !== 'undefined',
++       hasNodeProcess: typeof (window as any).process !== 'undefined',
++       hasNodeBuffer: typeof (window as any).Buffer !== 'undefined',
++       hasNodeFS: typeof (window as any).fs !== 'undefined',
++       hasNodePath: typeof (window as any).path !== 'undefined',
++       
++       // 验证应存在的安全API
++       hasElectronAPI: typeof (window as any).electronAPI === 'object',
++       electronAPIKeys: (window as any).electronAPI ? Object.keys((window as any).electronAPI) : [],
++       
++       // 验证CSP执行
++       canEvalJS: (() => {
++         try {
++           eval('1+1'); // 应该被CSP阻止
++           return true;
++         } catch {
++           return false; // 期望结果
++         }
++       })(),
++     };
++   });
++
++   // 严格验证：所有Node.js全局变量必须不存在
++   expect(securityValidation.hasNodeRequire).toBe(false);
++   expect(securityValidation.hasNodeProcess).toBe(false);
++   expect(securityValidation.hasNodeBuffer).toBe(false);
++   expect(securityValidation.hasNodeFS).toBe(false);
++   expect(securityValidation.hasNodePath).toBe(false);
++   
++   // CSP应阻止eval执行
++   expect(securityValidation.canEvalJS).toBe(false);
++   
++   console.log('✅ 严格安全基线验证通过');
++ });
+
++ test('权限请求处理：恶意权限阻止测试', async () => {
++   // 测试应用是否正确拒绝危险权限请求
++   const permissionTests = await page.evaluate(async () => {
++     const results = [];
++     
++     // 测试媒体权限（应被拒绝）
++     try {
++       await navigator.mediaDevices.getUserMedia({ video: true });
++       results.push({ permission: 'camera', granted: true });
++     } catch (error) {
++       results.push({ permission: 'camera', granted: false, error: error.name });
++     }
++     
++     // 测试地理位置权限（应被拒绝）
++     try {
++       await new Promise((resolve, reject) => {
++         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 1000 });
++       });
++       results.push({ permission: 'geolocation', granted: true });
++     } catch (error) {
++       results.push({ permission: 'geolocation', granted: false, error: error.message });
++     }
++     
++     return results;
++   });
++   
++   // 验证所有危险权限都被正确拒绝
++   const cameraTest = permissionTests.find(p => p.permission === 'camera');
++   const geolocationTest = permissionTests.find(p => p.permission === 'geolocation');
++   
++   expect(cameraTest?.granted).toBe(false);
++   expect(geolocationTest?.granted).toBe(false);
++   
++   console.log('✅ 权限请求正确被拒绝:', permissionTests);
++ });
+```
+
+## 3. 新增网络安全测试
+
+```diff
++ test('网络安全：外部请求阻止验证', async () => {
++   // 验证应用是否正确阻止外部网络请求
++   const networkTests = await page.evaluate(async () => {
++     const testUrls = [
++       'https://evil-domain.com/steal-data',
++       'http://malicious-site.net/xss',
++       'https://tracking-ads.com/beacon',
++     ];
++     
++     const results = [];
++     
++     for (const url of testUrls) {
++       try {
++         const response = await fetch(url, { 
++           method: 'GET',
++           mode: 'no-cors',
++           credentials: 'omit',
++         });
++         results.push({ url, blocked: false, status: response.status });
++       } catch (error) {
++         results.push({ url, blocked: true, error: error.name });
++       }
++     }
++     
++     return results;
++   });
++   
++   // 验证所有外部请求都被阻止
++   networkTests.forEach(test => {
++     expect(test.blocked).toBe(true);
++   });
++   
++   console.log('✅ 外部网络请求正确被阻止');
++ });
+```

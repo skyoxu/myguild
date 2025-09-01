@@ -12,6 +12,7 @@ last_generated: 2025-08-21
 > 目标：在 optimized 基础上引入**可执行门禁矩阵**、**Windows 兼容脚本**与**可追溯矩阵**，对齐 03 章 Release Health 放量口径。
 
 ## 0.1 开发构建容器视图（C4 Container）
+
 ```mermaid
 C4Container
     title Development & Build Toolchain for ${PRODUCT_NAME}
@@ -34,7 +35,7 @@ C4Container
         Container(release_health, "Release Health Check", "Sentry API", "发布健康门禁")
     }
     System_Ext(sentry, "${SENTRY_ORG}", "监控与发布健康")
-    
+
     Rel(dev, vscode, "编写代码", "TypeScript/React")
     Rel(vscode, vite, "启动开发服务器", "npm run dev")
     Rel(vite, electron_main, "构建主进程", "esbuild")
@@ -49,6 +50,7 @@ C4Container
 ```
 
 ## 0.2 质量门禁执行流程（C4 Dynamic）
+
 ```mermaid
 C4Dynamic
     title Quality Gates Execution Flow for ${PRODUCT_NAME}
@@ -59,7 +61,7 @@ C4Dynamic
     Container(security_scan, "Security Scanner", "scan_electron_safety.mjs")
     Container(release_health, "Release Health", "release_health_check.mjs")
     System_Ext(sentry, "${SENTRY_ORG}")
-    
+
     Rel(dev, local_env, "1. 提交代码", "git push")
     Rel(local_env, ci_runner, "2. 触发CI", "webhook")
     Rel(ci_runner, quality_gates, "3. 执行门禁脚本", "pnpm guard:ci")
@@ -76,17 +78,19 @@ C4Dynamic
 ```
 
 ## A) 质量门禁矩阵（最小可执行）
-| Gate | 工具 | 阈值/策略 | 失败动作 |
-|---|---|---|---|
-| TS | `tsc --noEmit` | 严格模式 | fail |
-| Lint | `eslint` | `maxWarnings:0` | fail |
-| Unit | `vitest --coverage` | lines≥90%/branches≥85% | fail |
-| E2E | `playwright` | retries=2（CI） | fail |
-| Security | `scan_electron_safety.mjs` | nodeIntegration=false 等 | fail |
-| Base | `verify_base_clean.mjs` | 禁业务耦合/占位符齐全 | fail |
-| ReleaseHealth | `release_health_check.mjs` | crash‑free 用户/会话 + 采用率 | fail |
+
+| Gate          | 工具                       | 阈值/策略                     | 失败动作 |
+| ------------- | -------------------------- | ----------------------------- | -------- |
+| TS            | `tsc --noEmit`             | 严格模式                      | fail     |
+| Lint          | `eslint`                   | `maxWarnings:0`               | fail     |
+| Unit          | `vitest --coverage`        | lines≥90%/branches≥85%        | fail     |
+| E2E           | `playwright`               | retries=2（CI）               | fail     |
+| Security      | `scan_electron_safety.mjs` | nodeIntegration=false 等      | fail     |
+| Base          | `verify_base_clean.mjs`    | 禁业务耦合/占位符齐全         | fail     |
+| ReleaseHealth | `release_health_check.mjs` | crash‑free 用户/会话 + 采用率 | fail     |
 
 ## B) Windows 兼容（.ps1 变体）
+
 ```powershell
 # scripts/quality-gates.ps1
 $ErrorActionPreference = "Stop"
@@ -100,40 +104,55 @@ pnpm guard:base
 ```
 
 ## C) Electron 安全基线 & CSP 验证
+
 ```js
 // scripts/verify_csp.mjs（片段）
-import fs from "node:fs"; import { JSDOM } from "jsdom";
-const html=fs.readFileSync("dist/index.html","utf-8");
-const csp=new JSDOM(html).window.document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-if(!csp) throw new Error("Missing CSP meta");
-if(!/default-src 'self'/.test(csp.getAttribute("content"))) throw new Error("CSP must restrict to 'self'");
+import fs from 'node:fs';
+import { JSDOM } from 'jsdom';
+const html = fs.readFileSync('dist/index.html', 'utf-8');
+const csp = new JSDOM(html).window.document.querySelector(
+  'meta[http-equiv="Content-Security-Policy"]'
+);
+if (!csp) throw new Error('Missing CSP meta');
+if (!/default-src 'self'/.test(csp.getAttribute('content')))
+  throw new Error("CSP must restrict to 'self'");
 ```
 
 ## D) Release Health（含 ENV 覆盖）
+
 ```json
 // src/config/sentry-gate.json（示例）
-{ "crashFreeSessionsThreshold": 0.990, "crashFreeUsersThreshold": 0.995, "minAdoptionRate": 0.20, "releaseFormat": "${RELEASE_PREFIX}@${VERSION}" }
+{
+  "crashFreeSessionsThreshold": 0.99,
+  "crashFreeUsersThreshold": 0.995,
+  "minAdoptionRate": 0.2,
+  "releaseFormat": "${RELEASE_PREFIX}@${VERSION}"
+}
 ```
 
 ## E) 可追溯矩阵（变更→ADR/测试）
-| 变更项 | 关联 ADR | 覆盖测试 |
-|---|---|---|
-| 安全基线扫描 | ADR-0002 | T07-SEC-01 |
-| Release Health Gate | ADR-0003 | T07-RH-01 |
-| 质量门禁聚合 | ADR-0005 | T07-QG-01 |
+
+| 变更项              | 关联 ADR | 覆盖测试   |
+| ------------------- | -------- | ---------- |
+| 安全基线扫描        | ADR-0002 | T07-SEC-01 |
+| Release Health Gate | ADR-0003 | T07-RH-01  |
+| 质量门禁聚合        | ADR-0005 | T07-QG-01  |
 
 ## F) Playwright官方API升级（Windows兼容性）
+
 ```typescript
 // tests/e2e/utils/electron-launcher.ts（官方API模式）
 import { _electron as electron, ElectronApplication } from '@playwright/test';
 
-export async function launchApp(extraArgs: string[] = []): Promise<ElectronApplication> {
+export async function launchApp(
+  extraArgs: string[] = []
+): Promise<ElectronApplication> {
   const appEntry = path.resolve(__dirname, '../../../dist-electron/main.js');
-  
+
   return electron.launch({
     args: [appEntry, ...extraArgs],
     timeout: 30000, // 30秒启动超时
-    
+
     // Windows兼容性配置
     env: {
       ...process.env,
@@ -142,51 +161,60 @@ export async function launchApp(extraArgs: string[] = []): Promise<ElectronAppli
       // 测试模式标识
       NODE_ENV: 'test',
       // 禁用GPU加速（CI环境兼容）
-      ELECTRON_DISABLE_GPU: 'true'
+      ELECTRON_DISABLE_GPU: 'true',
     },
-    
+
     // 开发调试选项（仅非CI环境）
-    ...(process.env.CI ? {} : {
-      headless: false,
-      devtools: true
-    })
+    ...(process.env.CI
+      ? {}
+      : {
+          headless: false,
+          devtools: true,
+        }),
   });
 }
 ```
 
 ### F.1) Windows E2E测试优化策略
-| 配置项 | Windows值 | 说明 |
-|---|---|---|
-| `ELECTRON_DISABLE_SANDBOX` | `'true'` | 避免Chrome沙箱权限问题 |
-| `ELECTRON_DISABLE_GPU` | `'true'` | CI环境GPU加速兼容 |
-| `timeout` | `30000ms` | Windows启动较慢，增加超时 |
-| `workers` | `1`（CI环境） | 避免Electron进程冲突 |
+
+| 配置项                     | Windows值     | 说明                      |
+| -------------------------- | ------------- | ------------------------- |
+| `ELECTRON_DISABLE_SANDBOX` | `'true'`      | 避免Chrome沙箱权限问题    |
+| `ELECTRON_DISABLE_GPU`     | `'true'`      | CI环境GPU加速兼容         |
+| `timeout`                  | `30000ms`     | Windows启动较慢，增加超时 |
+| `workers`                  | `1`（CI环境） | 避免Electron进程冲突      |
 
 ### F.2) 测试启动器种类（按场景优化）
+
 ```typescript
 // 安全测试专用启动器
-export async function launchAppForSecurity(extraArgs: string[] = []): Promise<ElectronApplication> {
+export async function launchAppForSecurity(
+  extraArgs: string[] = []
+): Promise<ElectronApplication> {
   return launchApp([
     '--test-mode',
     '--enable-features=ElectronSerialChooser',
     '--disable-features=VizDisplayCompositor',
-    ...extraArgs
+    ...extraArgs,
   ]);
 }
 
 // 性能测试专用启动器
-export async function launchAppForPerformance(extraArgs: string[] = []): Promise<ElectronApplication> {
+export async function launchAppForPerformance(
+  extraArgs: string[] = []
+): Promise<ElectronApplication> {
   return launchApp([
     '--disable-web-security', // 仅测试环境
     '--disable-extensions',
     '--disable-default-apps',
     '--test-mode',
-    ...extraArgs
+    ...extraArgs,
   ]);
 }
 ```
 
 ## G) 验收清单（合并前）
+
 - [ ] `pnpm guard:ci` 全绿（本地与 CI）
 - [ ] `.ps1` 变体可在 Windows 运行
 - [ ] `.release-health.json` 的 crash-free 与 adoption 达标

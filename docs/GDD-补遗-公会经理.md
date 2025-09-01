@@ -3,7 +3,7 @@
 **版本**: 1.0  
 **日期**: 2025-01-18  
 **技术栈**: Electron + Vite + Phaser 3 + TypeScript  
-**基于**: PRD-Guild-Manager.md 第三章功能规格说明  
+**基于**: PRD-Guild-Manager.md 第三章功能规格说明
 
 ---
 
@@ -12,9 +12,10 @@
 基于PRD 3.0核心游戏循环设计 + 3.1事件池系统设计的5个核心乐趣支柱：
 
 ### 1.1 策略决策的深度乐趣（Strategy Depth）
+
 - **来源**: PRD 3.0.1 回合制系统架构 - 3阶段回合制
 - **核心机制**: 结算阶段→玩家阶段→AI模拟阶段的循环决策
-- **设计要素**: 
+- **设计要素**:
   - 强制决策点机制（LOW/MEDIUM/HIGH/CRITICAL四级紧急度）
   - 多选项分支决策（每个决策点3-5个选择）
   - 延迟后果系统（决策影响在未来1-3回合显现）
@@ -25,6 +26,7 @@
 - **PRD回写位置**: `PRD 3.0.2 强制决策点机制 → CriticalDecision接口`
 
 ### 1.2 不确定性的惊喜乐趣（Emergent Surprise）
+
 - **来源**: PRD 3.1.1 庞大事件池系统
 - **核心机制**: 随机事件触发、多主体参与、事件链连锁反应
 - **设计要素**:
@@ -38,6 +40,7 @@
 - **PRD回写位置**: `PRD 3.1.1 EventDefinition接口 → EventCategory枚举`
 
 ### 1.3 成长与收集的成就乐趣（Progressive Achievement）
+
 - **来源**: PRD 3.5经验系统 + 3.4成就系统
 - **核心机制**: 成员等级提升、装备收集、公会声望积累
 - **设计要素**:
@@ -51,6 +54,7 @@
 - **PRD回写位置**: `PRD 3.5.2 MemberExperienceSystem接口 + 3.4.2 AchievementDefinition接口`
 
 ### 1.4 社交竞争的对抗乐趣（Competitive Social）
+
 - **来源**: PRD 3.1.2 AI生态系统
 - **核心机制**: 与10-20个NPC公会竞争、排名系统、声望对比
 - **设计要素**:
@@ -64,6 +68,7 @@
 - **PRD回写位置**: `PRD 3.1.2 NPCGuildAI类 → AIEcosystem接口`
 
 ### 1.5 管理控制的掌控乐趣（Management Control）
+
 - **来源**: PRD 3.2各功能模块
 - **核心机制**: 公会管理、人员调度、资源配置、战术制定
 - **设计要素**:
@@ -84,6 +89,7 @@
 基于PRD 3.3用户界面规格，针对Electron + Phaser 3 + TypeScript技术栈：
 
 ### 2.1 输入系统规格
+
 - **来源**: PRD 3.3.2 interactionPatterns
 - **主输入方式**:
   - 鼠标左键: 选择/确认操作
@@ -106,6 +112,7 @@
 - **PRD回写位置**: `PRD 3.3.2 DragDropSystem + ShortcutMap接口`
 
 ### 2.2 摄像机系统规格
+
 - **来源**: PRD 3.3.1 界面设计原则
 - **视角类型**: 2.5D等距固定视角（公会管理界面）
 - **缩放支持**:
@@ -123,6 +130,7 @@
 - **PRD回写位置**: `PRD 3.3.2 ModalManager + ContentArea接口`
 
 ### 2.3 动画响应规格
+
 - **来源**: PRD 3.2.1 工作面板 + 3.6活动结算系统
 - **状态反馈动画**:
   - 按钮按下效果: 100ms弹性动画
@@ -153,6 +161,7 @@
 基于PRD 3.2.2作战大厅模块 + 3.8世界Boss系统，设计3个渐进式里程碑关卡：
 
 ### 3.1 里程碑1：初始团队建设（Week 1-4）
+
 - **来源**: PRD 3.2.2 RaidDungeon minLevel设计
 - **核心挑战**: 5人小队副本"新手试炼洞穴"
 - **设计目标**:
@@ -180,6 +189,7 @@
 - **PRD回写位置**: `PRD 3.2.2 PlayerCountRange(5-5) + DifficultyLevel.BEGINNER枚举`
 
 ### 3.2 里程碑2：团队协作精通（Week 5-12）
+
 - **来源**: PRD 3.2.2 RaidDungeon 20人团本设计
 - **核心挑战**: 大型团本"古龙巢穴"，需要精确的职业配合
 - **设计目标**:
@@ -208,6 +218,7 @@
 - **PRD回写位置**: `PRD 3.2.2 RaidComposition + 3.2.3.2 TacticsLibrary接口`
 
 ### 3.3 里程碑3：跨公会竞争（Week 13+）
+
 - **来源**: PRD 3.8 世界Boss系统设计
 - **核心挑战**: 世界Boss"泰坦守护者"，需要多公会协作或竞争
 - **设计目标**:
@@ -241,6 +252,7 @@
 基于PRD 3.2.7后勤模块 + 3.5经验系统，设计平衡的经济循环：
 
 ### 4.1 资源产出曲线
+
 - **来源**: PRD 3.2.7.1 拍卖行系统 + 3.5.2 经验系统
 - **主要产出源**:
   - 任务奖励: 基础金币收入
@@ -250,7 +262,7 @@
 - **金币产出数值设计**:
   ```
   Level 1-20:  100-500 金币/小时
-  Level 21-40: 500-1500 金币/小时  
+  Level 21-40: 500-1500 金币/小时
   Level 41-60: 1500-3000 金币/小时
   ```
 - **经验获取设计**:
@@ -261,11 +273,12 @@
   ```
 - **稀有资源产出**:
   - 高级材料: 每10次活动产出1个
-  - 传说装备: 每100次活动产出1个  
+  - 传说装备: 每100次活动产出1个
   - 特殊货币: Boss战专属奖励
 - **PRD回写位置**: `PRD 3.2.7.1 PriceOracle接口 + 3.5.2 experienceToNext算法`
 
 ### 4.2 资源消耗设计
+
 - **来源**: PRD 3.2.7.2 训练系统 + 3.2.7.3 疲劳管理
 - **主要消耗项**:
   - 装备购买: 主要金币消耗
@@ -286,6 +299,7 @@
 - **PRD回写位置**: `PRD 3.2.7.2 TrainingProgram费用 + 3.2.7.3 RecoveryPlan成本`
 
 ### 4.3 通胀控制机制
+
 - **来源**: PRD 3.2.7.1 拍卖行系统设计
 - **核心控制手段**:
   - 拍卖行手续费: 10%交易税
@@ -316,10 +330,11 @@
 基于PRD 3.4成就系统 + 3.6活动结算AI评价反馈系统：
 
 ### 5.1 核心KPI指标
+
 - **来源**: PRD 3.4.3 验收标准 + 3.6.3 验收标准
 - **用户留存指标**:
   - 第1天留存率: > 80%
-  - 第7天留存率: > 60%  
+  - 第7天留存率: > 60%
   - 第30天留存率: > 25%
   - 第90天留存率: > 10%
 - **参与度指标**:
@@ -335,101 +350,123 @@
 - **PRD回写位置**: `PRD 3.4.3 成就触发统计 + 3.6.3 评价内容质量验收`
 
 ### 5.2 自动化测试脚本
+
 ```typescript
 // 可玩性测试套件
 class PlayabilityTestSuite {
   // 乐趣支柱验证
   async testFunPillars(): Promise<TestResult[]> {
     const results = [];
-    
+
     // 策略决策深度测试
-    results.push(await this.verifyStrategyDepth({
-      minDecisionTime: 30000,     // 30秒
-      minDecisionBranches: 3,
-      maxRegretRate: 0.2
-    }));
-    
-    // 惊喜乐趣测试  
-    results.push(await this.verifyEmergentSurprise({
-      minEventsPerTurn: 1,
-      maxEventsPerTurn: 3,
-      minEventDiversity: 0.8
-    }));
-    
+    results.push(
+      await this.verifyStrategyDepth({
+        minDecisionTime: 30000, // 30秒
+        minDecisionBranches: 3,
+        maxRegretRate: 0.2,
+      })
+    );
+
+    // 惊喜乐趣测试
+    results.push(
+      await this.verifyEmergentSurprise({
+        minEventsPerTurn: 1,
+        maxEventsPerTurn: 3,
+        minEventDiversity: 0.8,
+      })
+    );
+
     // 成长成就测试
-    results.push(await this.verifyProgressiveAchievement({
-      minExpPerHour: 100,
-      maxAchievementInterval: 600000  // 10分钟
-    }));
-    
+    results.push(
+      await this.verifyProgressiveAchievement({
+        minExpPerHour: 100,
+        maxAchievementInterval: 600000, // 10分钟
+      })
+    );
+
     return results;
   }
-  
+
   // 交互响应验证
   async testInteractionFeel(): Promise<TestResult[]> {
     const results = [];
-    
+
     // 输入延迟测试
-    results.push(await this.measureInputLatency({
-      maxLatency: 16,           // 16ms (60FPS)
-      minSampleSize: 1000
-    }));
-    
+    results.push(
+      await this.measureInputLatency({
+        maxLatency: 16, // 16ms (60FPS)
+        minSampleSize: 1000,
+      })
+    );
+
     // 动画流畅度测试
-    results.push(await this.testAnimationSmooth({
-      minFrameRate: 60,
-      maxFrameDrops: 0.05      // 5%帧率下降容忍
-    }));
-    
+    results.push(
+      await this.testAnimationSmooth({
+        minFrameRate: 60,
+        maxFrameDrops: 0.05, // 5%帧率下降容忍
+      })
+    );
+
     // 界面响应测试
-    results.push(await this.verifyUIResponsive({
-      maxManagementResponseTime: 200,  // 200ms
-      maxBatchOperationTime: 1000     // 1秒
-    }));
-    
+    results.push(
+      await this.verifyUIResponsive({
+        maxManagementResponseTime: 200, // 200ms
+        maxBatchOperationTime: 1000, // 1秒
+      })
+    );
+
     return results;
   }
-  
+
   // 经济平衡验证
   async testEconomicBalance(): Promise<TestResult[]> {
     const results = [];
-    
+
     // 经济循环模拟
-    results.push(await this.simulateEconomicCycle({
-      simulationDuration: 30 * 24 * 3600,  // 30天
-      maxInflationRate: 0.05,               // 5%
-      minTransactionVolume: 1000
-    }));
-    
+    results.push(
+      await this.simulateEconomicCycle({
+        simulationDuration: 30 * 24 * 3600, // 30天
+        maxInflationRate: 0.05, // 5%
+        minTransactionVolume: 1000,
+      })
+    );
+
     // 通胀控制测试
-    results.push(await this.testInflationControl({
-      maxWeeklyInflation: 0.05,
-      expectedPriceStability: 0.9
-    }));
-    
+    results.push(
+      await this.testInflationControl({
+        maxWeeklyInflation: 0.05,
+        expectedPriceStability: 0.9,
+      })
+    );
+
     return results;
   }
-  
+
   // 性能基准测试
   async testPerformanceBenchmarks(): Promise<TestResult[]> {
     const results = [];
-    
-    results.push(await this.testMemoryUsage({
-      maxPeakMemory: 2048 * 1024 * 1024,    // 2GB
-      maxAverageMemory: 1024 * 1024 * 1024  // 1GB
-    }));
-    
-    results.push(await this.testLoadingTimes({
-      maxInitialLoad: 10000,     // 10秒
-      maxSceneSwitch: 3000       // 3秒
-    }));
-    
+
+    results.push(
+      await this.testMemoryUsage({
+        maxPeakMemory: 2048 * 1024 * 1024, // 2GB
+        maxAverageMemory: 1024 * 1024 * 1024, // 1GB
+      })
+    );
+
+    results.push(
+      await this.testLoadingTimes({
+        maxInitialLoad: 10000, // 10秒
+        maxSceneSwitch: 3000, // 3秒
+      })
+    );
+
     return results;
   }
 }
 ```
 
 ### 5.3 人工测试检查项
+
 - **来源**: PRD 3.6.1 评价生成系统
 - **情感投入度检查**:
   - [ ] 玩家对公会成员产生情感连接
@@ -454,6 +491,7 @@ class PlayabilityTestSuite {
 - **PRD回写位置**: `PRD 3.6.1 EvaluatorType定义 + ActivityFeedbackSystem接口`
 
 ### 5.4 性能基准测试
+
 - **系统响应时间要求**:
   - 管理操作响应: < 200ms
   - 战斗结算计算: < 500ms
@@ -480,18 +518,21 @@ class PlayabilityTestSuite {
 ## 6. 技术实现约束与建议
 
 ### 6.1 Electron + Phaser 3 集成要点
+
 - **架构分离**: 主进程负责系统集成，渲染进程负责游戏逻辑
 - **IPC通信**: 使用contextBridge安全暴露API
 - **性能优化**: 大型数据集使用WebWorker处理
 - **内存管理**: 及时清理Phaser场景和纹理资源
 
 ### 6.2 TypeScript类型安全
+
 - **严格模式**: 启用严格的类型检查
 - **接口定义**: 所有PRD模块对应TypeScript接口
 - **类型守卫**: 运行时类型验证关键数据
 - **泛型约束**: 复用代码保持类型安全
 
 ### 6.3 测试策略建议
+
 - **单元测试**: Jest + TypeScript，覆盖率 > 85%
 - **集成测试**: Playwright，覆盖关键用户流程
 - **性能测试**: 自动化基准测试集成CI/CD
@@ -502,13 +543,14 @@ class PlayabilityTestSuite {
 **文档状态**: ✅ 已完成  
 **审核状态**: 待审核  
 **更新日期**: 2025-01-18  
-**下次审核**: 2025-02-18  
+**下次审核**: 2025-02-18
 
 ---
 
 **PRD模块映射摘要**:
+
 - Fun Pillars ↔ PRD 3.0 + 3.1 核心系统
-- 交互手感 ↔ PRD 3.3 + 3.2.1 界面系统  
+- 交互手感 ↔ PRD 3.3 + 3.2.1 界面系统
 - 关卡蓝图 ↔ PRD 3.2.2 + 3.8 战斗系统
 - 经济曲线 ↔ PRD 3.2.7 + 3.5 后勤系统
 - 验证清单 ↔ PRD 3.4 + 3.6 反馈系统

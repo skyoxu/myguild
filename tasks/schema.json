@@ -5,12 +5,12 @@
     "type": "object",
     "required": ["id", "title", "adrRefs", "archRefs"],
     "properties": {
-      "id":       { "type": "string", "minLength": 1 },
-      "title":    { "type": "string", "minLength": 3 },
-      "desc":     { "type": "string" },
-      "status":   { "type": "string" },
-      "owner":    { "type": "string" },
-      "labels":   { "type": "array", "items": { "type": "string" } },
+      "id": { "type": "string", "minLength": 1 },
+      "title": { "type": "string", "minLength": 3 },
+      "desc": { "type": "string" },
+      "status": { "type": "string" },
+      "owner": { "type": "string" },
+      "labels": { "type": "array", "items": { "type": "string" } },
 
       "adrRefs": {
         "type": "array",
@@ -23,14 +23,14 @@
         "items": { "type": "string", "pattern": "^CH\\d{2}$" }
       },
 
-      "overlay":   { "type": "string" },
-      "acceptance":{ "type": "array", "items": { "type": "string" } },
+      "overlay": { "type": "string" },
+      "acceptance": { "type": "array", "items": { "type": "string" } },
 
       "meta": {
         "type": "object",
         "properties": {
-          "prdId":   { "type": "string", "pattern": "^PRD-Guild-Manager$" },
-          "prdChunk":{ "type": "integer", "minimum": 1 }
+          "prdId": { "type": "string", "pattern": "^PRD-Guild-Manager$" },
+          "prdChunk": { "type": "integer", "minimum": 1 }
         },
         "additionalProperties": true
       }

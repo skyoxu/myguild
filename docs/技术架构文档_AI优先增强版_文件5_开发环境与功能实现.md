@@ -1,4 +1,4 @@
-# 技术架构文档_AI优先增强版_文件5_开发环境与功能实现
+# 技术架构文档*AI优先增强版*文件5\_开发环境与功能实现
 
 ## 第7章：开发环境与构建（融合维护策略+部署运维）
 
@@ -11,111 +11,107 @@
 ```json5
 // package.json - 完整的依赖管理
 {
-  "name": "guild-manager",
-  "version": "1.0.0",
-  "description": "《公会经理》- AI驱动的公会管理游戏",
-  "type": "module",
-  "main": "dist/main.js",
-  "scripts": {
+  name: 'guild-manager',
+  version: '1.0.0',
+  description: '《公会经理》- AI驱动的公会管理游戏',
+  type: 'module',
+  main: 'dist/main.js',
+  scripts: {
     // 开发环境
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
-    "dev:vite": "vite --host 0.0.0.0 --port 3000",
-    "dev:electron": "wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .",
-    
+    dev: 'concurrently "npm run dev:vite" "npm run dev:electron"',
+    'dev:vite': 'vite --host 0.0.0.0 --port 3000',
+    'dev:electron': 'wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .',
+
     // 构建脚本
-    "build": "npm run build:renderer && npm run build:main",
-    "build:renderer": "vite build",
-    "build:main": "tsc -p tsconfig.main.json && copyfiles -u 1 \"src/main/**/*.!(ts)\" dist/",
-    "build:prod": "npm run clean && npm run build && electron-builder",
-    
+    build: 'npm run build:renderer && npm run build:main',
+    'build:renderer': 'vite build',
+    'build:main': 'tsc -p tsconfig.main.json && copyfiles -u 1 "src/main/**/*.!(ts)" dist/',
+    'build:prod': 'npm run clean && npm run build && electron-builder',
+
     // 测试脚本
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    
+    test: 'vitest',
+    'test:ui': 'vitest --ui',
+    'test:coverage': 'vitest --coverage',
+    'test:e2e': 'playwright test',
+    'test:e2e:ui': 'playwright test --ui',
+
     // 质量检查
-    "lint": "eslint src --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
-    
+    lint: 'eslint src --ext .ts,.tsx --fix',
+    'type-check': 'tsc --noEmit',
+    format: 'prettier --write "src/**/*.{ts,tsx,json,md}"',
+
     // 数据库管理
-    "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js",
-    "db:backup": "node scripts/backup.js",
-    
+    'db:migrate': 'node scripts/migrate.js',
+    'db:seed': 'node scripts/seed.js',
+    'db:backup': 'node scripts/backup.js',
+
     // 部署脚本
-    "deploy:staging": "npm run build:prod && node scripts/deploy-staging.js",
-    "deploy:production": "npm run build:prod && node scripts/deploy-production.js",
-    
+    'deploy:staging': 'npm run build:prod && node scripts/deploy-staging.js',
+    'deploy:production': 'npm run build:prod && node scripts/deploy-production.js',
+
     // 维护脚本
-    "clean": "rimraf dist build coverage",
-    "postinstall": "electron-builder install-app-deps",
-    "audit:security": "npm audit --audit-level moderate",
-    "update:deps": "npm-check-updates -u"
+    clean: 'rimraf dist build coverage',
+    postinstall: 'electron-builder install-app-deps',
+    'audit:security': 'npm audit --audit-level moderate',
+    'update:deps': 'npm-check-updates -u',
   },
-  
+
   // 生产依赖
-  "dependencies": {
-    "electron": "^32.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "phaser": "^3.80.0",
-    "better-sqlite3": "^11.0.0",
-    "i18next": "^23.15.0",
-    "react-i18next": "^15.0.0",
-    "zustand": "^5.0.0",
-    "@tanstack/react-query": "^5.59.0",
-    "tailwindcss": "^4.0.0",
-    "framer-motion": "^11.11.0"
+  dependencies: {
+    electron: '^32.0.0',
+    react: '^19.0.0',
+    'react-dom': '^19.0.0',
+    phaser: '^3.80.0',
+    'better-sqlite3': '^11.0.0',
+    i18next: '^23.15.0',
+    'react-i18next': '^15.0.0',
+    zustand: '^5.0.0',
+    '@tanstack/react-query': '^5.59.0',
+    tailwindcss: '^4.0.0',
+    'framer-motion': '^11.11.0',
   },
-  
+
   // 开发依赖
-  "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@types/better-sqlite3": "^7.6.11",
-    "vite": "^6.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "electron-builder": "^25.0.0",
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
-    "@vitest/ui": "^2.1.0",
-    "@vitest/coverage-v8": "^2.1.0",
-    "playwright": "^1.48.0",
-    "eslint": "^9.12.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.0",
-    "prettier": "^3.3.0",
-    "concurrently": "^9.0.0",
-    "wait-on": "^8.0.0",
-    "cross-env": "^7.0.3",
-    "copyfiles": "^2.4.1",
-    "rimraf": "^6.0.0"
+  devDependencies: {
+    '@types/react': '^19.0.0',
+    '@types/react-dom': '^19.0.0',
+    '@types/better-sqlite3': '^7.6.11',
+    vite: '^6.0.0',
+    '@vitejs/plugin-react': '^4.3.0',
+    'electron-builder': '^25.0.0',
+    typescript: '^5.6.0',
+    vitest: '^2.1.0',
+    '@vitest/ui': '^2.1.0',
+    '@vitest/coverage-v8': '^2.1.0',
+    playwright: '^1.48.0',
+    eslint: '^9.12.0',
+    '@typescript-eslint/eslint-plugin': '^8.8.0',
+    prettier: '^3.3.0',
+    concurrently: '^9.0.0',
+    'wait-on': '^8.0.0',
+    'cross-env': '^7.0.3',
+    copyfiles: '^2.4.1',
+    rimraf: '^6.0.0',
   },
-  
+
   // Electron Builder配置
-  "build": {
-    "appId": "com.guildmanager.app",
-    "productName": "Guild Manager",
-    "directories": {
-      "output": "release"
+  build: {
+    appId: 'com.guildmanager.app',
+    productName: 'Guild Manager',
+    directories: {
+      output: 'release',
     },
-    "files": [
-      "dist/**/*",
-      "node_modules/**/*",
-      "package.json"
-    ],
-    "mac": {
-      "category": "public.app-category.games"
+    files: ['dist/**/*', 'node_modules/**/*', 'package.json'],
+    mac: {
+      category: 'public.app-category.games',
     },
-    "win": {
-      "target": "nsis"
+    win: {
+      target: 'nsis',
     },
-    "linux": {
-      "target": "AppImage"
-    }
-  }
+    linux: {
+      target: 'AppImage',
+    },
+  },
 }
 ```
 
@@ -143,14 +139,14 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    
+
     // 严格检查选项
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
-    
+
     // 路径别名
     "baseUrl": ".",
     "paths": {
@@ -218,10 +214,10 @@ export default defineConfig({
     react({
       // React 19 支持
       jsxImportSource: undefined,
-      jsxRuntime: 'automatic'
-    })
+      jsxRuntime: 'automatic',
+    }),
   ],
-  
+
   // 路径解析
   resolve: {
     alias: {
@@ -231,18 +227,18 @@ export default defineConfig({
       '@/modules': path.resolve(__dirname, './src/modules'),
       '@/types': path.resolve(__dirname, './src/types'),
       '@/utils': path.resolve(__dirname, './src/utils'),
-      '@/assets': path.resolve(__dirname, './src/assets')
-    }
+      '@/assets': path.resolve(__dirname, './src/assets'),
+    },
   },
-  
+
   // 开发服务器配置
   server: {
     port: 3000,
     host: '0.0.0.0',
     hmr: true,
-    cors: true
+    cors: true,
   },
-  
+
   // 构建配置
   build: {
     outDir: 'dist/renderer',
@@ -250,7 +246,7 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === 'development',
     minify: process.env.NODE_ENV === 'production',
     target: 'es2022',
-    
+
     // 代码分割
     rollupOptions: {
       output: {
@@ -260,53 +256,47 @@ export default defineConfig({
           'vendor-phaser': ['phaser'],
           'vendor-i18n': ['i18next', 'react-i18next'],
           'vendor-ui': ['framer-motion', '@tanstack/react-query'],
-          
+
           // 业务模块分块
           'core-systems': [
             './src/core/events',
             './src/core/state',
-            './src/core/ai'
+            './src/core/ai',
           ],
           'game-modules': [
             './src/modules/guild',
             './src/modules/combat',
-            './src/modules/economy'
-          ]
-        }
-      }
+            './src/modules/economy',
+          ],
+        },
+      },
     },
-    
+
     // 性能优化
     chunkSizeWarningLimit: 1000,
-    assetsInlineLimit: 4096
+    assetsInlineLimit: 4096,
   },
-  
+
   // 环境变量
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
   },
-  
+
   // CSS预处理
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "@/styles/variables.scss";`
-      }
-    }
+        additionalData: `@import "@/styles/variables.scss";`,
+      },
+    },
   },
-  
+
   // 优化配置
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'phaser',
-      'i18next',
-      'react-i18next'
-    ]
-  }
+    include: ['react', 'react-dom', 'phaser', 'i18next', 'react-i18next'],
+  },
 });
 ```
 
@@ -320,9 +310,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   NODE_VERSION: '20'
@@ -335,22 +325,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Type checking
         run: npm run type-check
-      
+
       - name: Linting
         run: npm run lint
-      
+
       - name: Security audit
         run: npm run audit:security
 
@@ -359,19 +349,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run unit tests
         run: npm run test:coverage
-      
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
@@ -383,28 +373,28 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-      
+
       - name: Build application
         run: npm run build
-      
+
       - name: Run E2E tests
         run: npm run test:e2e
-      
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -419,19 +409,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build application
         run: npm run build:prod
         env:
@@ -439,7 +429,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLEID: ${{ secrets.APPLEID }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
-      
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -451,10 +441,10 @@ jobs:
     needs: build-and-release
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Deploy to staging
         run: |
           echo "Deploying to staging environment..."
@@ -465,10 +455,10 @@ jobs:
     needs: build-and-release
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Deploy to production
         run: |
           echo "Deploying to production environment..."
@@ -495,172 +485,167 @@ class BuildAutomation {
   private readonly rootDir: string;
   private readonly distDir: string;
   private readonly releaseDir: string;
-  
+
   constructor() {
     this.rootDir = process.cwd();
     this.distDir = path.join(this.rootDir, 'dist');
     this.releaseDir = path.join(this.rootDir, 'release');
   }
-  
+
   // 完整构建流程
   async performBuild(options: BuildOptions): Promise<void> {
     console.log('🚀 Starting build automation...');
-    
+
     try {
       // 1. 清理环境
       await this.cleanEnvironment();
-      
+
       // 2. 环境检查
       await this.checkEnvironment();
-      
+
       // 3. 依赖安装
       await this.installDependencies();
-      
+
       // 4. 代码质量检查
       if (!options.skipTests) {
         await this.runQualityChecks();
       }
-      
+
       // 5. 构建应用
       await this.buildApplication(options);
-      
+
       // 6. 运行测试
       if (!options.skipTests) {
         await this.runTests();
       }
-      
+
       // 7. 打包应用
       await this.packageApplication(options);
-      
+
       // 8. 发布应用
       if (options.publish) {
         await this.publishApplication(options);
       }
-      
+
       console.log('✅ Build automation completed successfully!');
-      
     } catch (error) {
       console.error('❌ Build automation failed:', error);
       process.exit(1);
     }
   }
-  
+
   // 清理构建环境
   private async cleanEnvironment(): Promise<void> {
     console.log('🧹 Cleaning build environment...');
-    
+
     const dirsToClean = [
       this.distDir,
       this.releaseDir,
       path.join(this.rootDir, 'coverage'),
-      path.join(this.rootDir, 'playwright-report')
+      path.join(this.rootDir, 'playwright-report'),
     ];
-    
+
     for (const dir of dirsToClean) {
       if (await fs.pathExists(dir)) {
         await fs.remove(dir);
       }
     }
   }
-  
+
   // 环境检查
   private async checkEnvironment(): Promise<void> {
     console.log('🔍 Checking build environment...');
-    
+
     // 检查Node.js版本
     const nodeVersion = process.version;
     if (!nodeVersion.startsWith('v20')) {
       throw new Error(`Node.js 20.x required, got ${nodeVersion}`);
     }
-    
+
     // 检查必要文件
-    const requiredFiles = [
-      'package.json',
-      'tsconfig.json',
-      'vite.config.ts'
-    ];
-    
+    const requiredFiles = ['package.json', 'tsconfig.json', 'vite.config.ts'];
+
     for (const file of requiredFiles) {
-      if (!await fs.pathExists(path.join(this.rootDir, file))) {
+      if (!(await fs.pathExists(path.join(this.rootDir, file)))) {
         throw new Error(`Required file not found: ${file}`);
       }
     }
   }
-  
+
   // 安装依赖
   private async installDependencies(): Promise<void> {
     console.log('📦 Installing dependencies...');
-    
+
     this.execCommand('npm ci');
     this.execCommand('npm run postinstall');
   }
-  
+
   // 代码质量检查
   private async runQualityChecks(): Promise<void> {
     console.log('🔎 Running quality checks...');
-    
+
     // TypeScript类型检查
     this.execCommand('npm run type-check');
-    
+
     // ESLint检查
     this.execCommand('npm run lint');
-    
+
     // 安全审计
     this.execCommand('npm run audit:security');
   }
-  
+
   // 构建应用
   private async buildApplication(options: BuildOptions): Promise<void> {
     console.log('🏗️ Building application...');
-    
+
     // 设置环境变量
     process.env.NODE_ENV = options.env;
     process.env.BUILD_ENV = options.env;
-    
+
     // 构建渲染进程
     this.execCommand('npm run build:renderer');
-    
+
     // 构建主进程
     this.execCommand('npm run build:main');
-    
+
     // 数据库迁移
     if (options.env !== 'development') {
       this.execCommand('npm run db:migrate');
     }
   }
-  
+
   // 运行测试
   private async runTests(): Promise<void> {
     console.log('🧪 Running tests...');
-    
+
     // 单元测试
     this.execCommand('npm run test:coverage');
-    
+
     // E2E测试
     this.execCommand('npm run test:e2e');
   }
-  
+
   // 打包应用
   private async packageApplication(options: BuildOptions): Promise<void> {
     console.log('📦 Packaging application...');
-    
+
     const targets = this.getElectronTargets(options.platform);
-    
+
     await build({
       targets,
       config: {
         directories: {
-          output: this.releaseDir
+          output: this.releaseDir,
         },
-        publish: options.publish ? 'always' : 'never'
-      }
+        publish: options.publish ? 'always' : 'never',
+      },
     });
   }
-  
+
   // 获取Electron构建目标
   private getElectronTargets(platform: BuildOptions['platform']) {
     const { Platform } = require('electron-builder');
-    
+
     switch (platform) {
       case 'win':
         return Platform.WINDOWS.createTarget();
@@ -674,11 +659,11 @@ class BuildAutomation {
         return Platform.current().createTarget();
     }
   }
-  
+
   // 发布应用
   private async publishApplication(options: BuildOptions): Promise<void> {
     console.log('🚀 Publishing application...');
-    
+
     if (options.env === 'production') {
       // 发布到生产环境
       await this.publishToProduction();
@@ -687,19 +672,19 @@ class BuildAutomation {
       await this.publishToStaging();
     }
   }
-  
+
   // 执行命令
   private execCommand(command: string): void {
     console.log(`▶️ Executing: ${command}`);
     execSync(command, { stdio: 'inherit', cwd: this.rootDir });
   }
-  
+
   // 发布到生产环境
   private async publishToProduction(): Promise<void> {
     console.log('🌐 Publishing to production...');
     // 实现生产环境发布逻辑
   }
-  
+
   // 发布到预发布环境
   private async publishToStaging(): Promise<void> {
     console.log('🧪 Publishing to staging...');
@@ -710,14 +695,14 @@ class BuildAutomation {
 // CLI接口
 if (require.main === module) {
   const buildAutomation = new BuildAutomation();
-  
+
   const options: BuildOptions = {
     platform: (process.argv[2] as BuildOptions['platform']) || 'current',
     env: (process.argv[3] as BuildOptions['env']) || 'development',
     skipTests: process.argv.includes('--skip-tests'),
-    publish: process.argv.includes('--publish')
+    publish: process.argv.includes('--publish'),
   };
-  
+
   buildAutomation.performBuild(options);
 }
 ```
@@ -733,53 +718,53 @@ class SystemHealthMonitor {
   private monitoringInterval: NodeJS.Timer;
   private alertThresholds: AlertThresholds;
   private metricsCollector: MetricsCollector;
-  
+
   constructor(config: HealthMonitorConfig) {
     this.healthChecks = new Map();
     this.alertThresholds = config.alertThresholds;
     this.metricsCollector = new MetricsCollector();
-    
+
     this.initializeHealthChecks();
   }
-  
+
   // 初始化健康检查项
   private initializeHealthChecks(): void {
     // 数据库连接检查
     this.addHealthCheck('database', new DatabaseHealthCheck());
-    
+
     // 内存使用检查
     this.addHealthCheck('memory', new MemoryHealthCheck());
-    
+
     // CPU使用检查
     this.addHealthCheck('cpu', new CPUHealthCheck());
-    
+
     // 磁盘空间检查
     this.addHealthCheck('disk', new DiskHealthCheck());
-    
+
     // AI引擎健康检查
     this.addHealthCheck('ai-engine', new AIEngineHealthCheck());
-    
+
     // 事件系统健康检查
     this.addHealthCheck('event-system', new EventSystemHealthCheck());
   }
-  
+
   // 开始监控
   startMonitoring(): void {
     console.log('🏥 Starting system health monitoring...');
-    
+
     // 每30秒执行一次健康检查
     this.monitoringInterval = setInterval(async () => {
       await this.performHealthChecks();
     }, 30000);
-    
+
     // 立即执行一次检查
     this.performHealthChecks();
   }
-  
+
   // 执行健康检查
   private async performHealthChecks(): Promise<void> {
     const results: HealthCheckResult[] = [];
-    
+
     // 并行执行所有健康检查
     const checkPromises = Array.from(this.healthChecks.entries()).map(
       async ([name, check]) => {
@@ -791,80 +776,82 @@ class SystemHealthMonitor {
             name,
             status: 'critical',
             message: `Health check failed: ${error.message}`,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
         }
       }
     );
-    
+
     await Promise.all(checkPromises);
-    
+
     // 处理检查结果
     await this.processHealthResults(results);
   }
-  
+
   // 处理健康检查结果
-  private async processHealthResults(results: HealthCheckResult[]): Promise<void> {
+  private async processHealthResults(
+    results: HealthCheckResult[]
+  ): Promise<void> {
     const systemHealth: SystemHealthStatus = {
       overall: 'healthy',
       checks: results,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    
+
     // 确定整体健康状态
     const criticalIssues = results.filter(r => r.status === 'critical');
     const warningIssues = results.filter(r => r.status === 'warning');
-    
+
     if (criticalIssues.length > 0) {
       systemHealth.overall = 'critical';
     } else if (warningIssues.length > 0) {
       systemHealth.overall = 'warning';
     }
-    
+
     // 收集指标
     this.metricsCollector.recordHealthMetrics(systemHealth);
-    
+
     // 发送告警
     if (systemHealth.overall !== 'healthy') {
       await this.sendHealthAlert(systemHealth);
     }
-    
+
     // 记录健康日志
     this.logHealthStatus(systemHealth);
   }
-  
+
   // 发送健康告警
   private async sendHealthAlert(health: SystemHealthStatus): Promise<void> {
     const alert: HealthAlert = {
       severity: health.overall,
       message: this.generateAlertMessage(health),
       timestamp: Date.now(),
-      checks: health.checks.filter(c => c.status !== 'healthy')
+      checks: health.checks.filter(c => c.status !== 'healthy'),
     };
-    
+
     // 发送到日志系统
     console.warn('⚠️ System Health Alert:', alert);
-    
+
     // 发送到监控系统
     await this.metricsCollector.sendAlert(alert);
   }
-  
+
   // 生成告警消息
   private generateAlertMessage(health: SystemHealthStatus): string {
     const issues = health.checks.filter(c => c.status !== 'healthy');
     const critical = issues.filter(c => c.status === 'critical');
     const warnings = issues.filter(c => c.status === 'warning');
-    
+
     let message = `System health: ${health.overall}. `;
-    
+
     if (critical.length > 0) {
       message += `Critical issues: ${critical.map(c => c.name).join(', ')}. `;
     }
-    
+
     if (warnings.length > 0) {
       message += `Warnings: ${warnings.map(c => c.name).join(', ')}.`;
     }
-    
+
     return message;
   }
 }
@@ -875,39 +862,39 @@ class DatabaseHealthCheck implements HealthCheck {
     try {
       // 检查数据库连接
       const db = await this.getDatabaseConnection();
-      
+
       // 执行简单查询
       const result = db.prepare('SELECT 1 as test').get();
-      
+
       if (!result || result.test !== 1) {
         return {
           status: 'critical',
           message: 'Database query failed',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       // 检查数据库大小
       const dbSize = await this.getDatabaseSize();
-      if (dbSize > 1024 * 1024 * 1024) { // 1GB
+      if (dbSize > 1024 * 1024 * 1024) {
+        // 1GB
         return {
           status: 'warning',
           message: `Database size is large: ${(dbSize / 1024 / 1024).toFixed(2)}MB`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       return {
         status: 'healthy',
         message: 'Database connection is healthy',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
     } catch (error) {
       return {
         status: 'critical',
         message: `Database connection failed: ${error.message}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -921,46 +908,47 @@ class AIEngineHealthCheck implements HealthCheck {
       const workerPool = this.getAIWorkerPool();
       const activeWorkers = workerPool.getActiveWorkerCount();
       const totalWorkers = workerPool.getTotalWorkerCount();
-      
+
       if (activeWorkers === 0) {
         return {
           status: 'critical',
           message: 'No active AI workers',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       // 检查平均响应时间
       const avgResponseTime = workerPool.getAverageResponseTime();
-      if (avgResponseTime > 5000) { // 5秒
+      if (avgResponseTime > 5000) {
+        // 5秒
         return {
           status: 'warning',
           message: `AI response time is slow: ${avgResponseTime}ms`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       // 检查决策缓存命中率
       const cacheHitRate = workerPool.getCacheHitRate();
-      if (cacheHitRate < 0.7) { // 70%
+      if (cacheHitRate < 0.7) {
+        // 70%
         return {
           status: 'warning',
           message: `Low AI cache hit rate: ${(cacheHitRate * 100).toFixed(1)}%`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       return {
         status: 'healthy',
         message: `AI engine healthy: ${activeWorkers}/${totalWorkers} workers active`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
     } catch (error) {
       return {
         status: 'critical',
         message: `AI engine check failed: ${error.message}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -972,6 +960,7 @@ class AIEngineHealthCheck implements HealthCheck {
 #### 7.4.1 新人入职指南 (Onboarding Guide)
 
 **完整入职流程**
+
 ```typescript
 // src/docs/onboarding/OnboardingWorkflow.ts
 export interface OnboardingStep {
@@ -1252,7 +1241,7 @@ export const ONBOARDING_WORKFLOW: OnboardingStep[] = [
 // 入职进度跟踪
 export class OnboardingTracker {
   private progress: Map<string, OnboardingProgress> = new Map();
-  
+
   interface OnboardingProgress {
     stepId: string;
     status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
@@ -1262,7 +1251,7 @@ export class OnboardingTracker {
     mentorFeedback?: string;
     blockers: string[];
   }
-  
+
   // 开始入职流程
   startOnboarding(employeeId: string): void {
     ONBOARDING_WORKFLOW.forEach(step => {
@@ -1270,60 +1259,60 @@ export class OnboardingTracker {
         stepId: step.id,
         status: step.prerequisites.length === 0 ? 'not_started' : 'blocked',
         notes: [],
-        blockers: step.prerequisites.filter(prereq => 
+        blockers: step.prerequisites.filter(prereq =>
           !this.isStepCompleted(employeeId, prereq)
         )
       });
     });
   }
-  
+
   // 更新步骤状态
   updateStepStatus(
-    employeeId: string, 
-    stepId: string, 
+    employeeId: string,
+    stepId: string,
     status: OnboardingProgress['status'],
     notes?: string
   ): void {
     const progressId = `${employeeId}-${stepId}`;
     const progress = this.progress.get(progressId);
-    
+
     if (progress) {
       progress.status = status;
-      
+
       if (status === 'in_progress' && !progress.startTime) {
         progress.startTime = Date.now();
       }
-      
+
       if (status === 'completed') {
         progress.completionTime = Date.now();
-        
+
         // 解锁依赖此步骤的其他步骤
         this.unlockDependentSteps(employeeId, stepId);
       }
-      
+
       if (notes) {
         progress.notes.push(notes);
       }
-      
+
       this.progress.set(progressId, progress);
     }
   }
-  
+
   // 生成入职报告
   generateOnboardingReport(employeeId: string): OnboardingReport {
     const allProgress = Array.from(this.progress.entries())
       .filter(([key]) => key.startsWith(employeeId))
       .map(([, progress]) => progress);
-    
+
     const completed = allProgress.filter(p => p.status === 'completed').length;
     const inProgress = allProgress.filter(p => p.status === 'in_progress').length;
     const blocked = allProgress.filter(p => p.status === 'blocked').length;
     const notStarted = allProgress.filter(p => p.status === 'not_started').length;
-    
+
     const totalTime = allProgress
       .filter(p => p.startTime && p.completionTime)
       .reduce((total, p) => total + (p.completionTime! - p.startTime!), 0);
-    
+
     return {
       employeeId,
       totalSteps: ONBOARDING_WORKFLOW.length,
@@ -1341,6 +1330,7 @@ export class OnboardingTracker {
 ```
 
 **环境搭建自动化**
+
 ```bash
 #!/bin/bash
 # scripts/setup-dev-environment.sh - 开发环境自动化搭建脚本
@@ -1352,25 +1342,25 @@ echo "🚀 开始搭建《公会经理》开发环境..."
 # 检查系统要求
 check_system_requirements() {
   echo "📋 检查系统要求..."
-  
+
   # 检查Node.js版本
   if ! command -v node &> /dev/null; then
     echo "❌ Node.js 未安装，请安装 Node.js 20.x"
     exit 1
   fi
-  
+
   NODE_VERSION=$(node -v | cut -d'.' -f1 | sed 's/v//')
   if [ "$NODE_VERSION" -lt 20 ]; then
     echo "❌ Node.js 版本过低，需要 20.x，当前版本：$(node -v)"
     exit 1
   fi
-  
+
   # 检查Git
   if ! command -v git &> /dev/null; then
     echo "❌ Git 未安装，请安装 Git"
     exit 1
   fi
-  
+
   # 检查系统架构
   ARCH=$(uname -m)
   OS=$(uname -s)
@@ -1380,37 +1370,37 @@ check_system_requirements() {
 # 安装项目依赖
 install_dependencies() {
   echo "📦 安装项目依赖..."
-  
+
   # 清理旧的node_modules
   if [ -d "node_modules" ]; then
     echo "🧹 清理旧的依赖..."
     rm -rf node_modules package-lock.json
   fi
-  
+
   # 安装依赖
   npm ci
-  
+
   # 安装Playwright浏览器
   npx playwright install
-  
+
   echo "✅ 依赖安装完成"
 }
 
 # 配置开发工具
 setup_dev_tools() {
   echo "🔧 配置开发工具..."
-  
+
   # 配置Git hooks
   if [ -d ".git" ]; then
     echo "⚙️ 配置Git hooks..."
     npx husky install
   fi
-  
+
   # 配置VSCode设置（如果存在）
   if command -v code &> /dev/null; then
     echo "📝 配置VSCode设置..."
     mkdir -p .vscode
-    
+
     # 推荐的扩展列表
     cat > .vscode/extensions.json << EOF
 {
@@ -1425,7 +1415,7 @@ setup_dev_tools() {
   ]
 }
 EOF
-    
+
     # 工作区设置
     cat > .vscode/settings.json << EOF
 {
@@ -1442,7 +1432,7 @@ EOF
   ]
 }
 EOF
-    
+
     echo "✅ VSCode配置完成"
   fi
 }
@@ -1450,49 +1440,49 @@ EOF
 # 初始化数据库
 setup_database() {
   echo "🗄️ 初始化数据库..."
-  
+
   # 创建数据库目录
   mkdir -p data/database
-  
+
   # 运行数据库迁移
   npm run db:migrate
-  
+
   # 插入种子数据
   if [ "$1" = "--with-seed-data" ]; then
     echo "🌱 插入种子数据..."
     npm run db:seed
   fi
-  
+
   echo "✅ 数据库初始化完成"
 }
 
 # 运行测试验证
 run_verification_tests() {
   echo "🧪 运行验证测试..."
-  
+
   # 类型检查
   echo "🔍 TypeScript类型检查..."
   npm run type-check
-  
+
   # 代码规范检查
   echo "📏 代码规范检查..."
   npm run lint
-  
+
   # 单元测试
   echo "🎯 运行单元测试..."
   npm run test -- --run
-  
+
   # 构建测试
   echo "🏗️ 构建测试..."
   npm run build
-  
+
   echo "✅ 所有验证测试通过"
 }
 
 # 创建开发用户配置
 create_dev_config() {
   echo "⚙️ 创建开发配置..."
-  
+
   # 创建环境变量文件
   if [ ! -f ".env.local" ]; then
     cat > .env.local << EOF
@@ -1518,14 +1508,14 @@ EOF
 main() {
   echo "《公会经理》开发环境自动化搭建脚本 v1.0"
   echo "=================================================="
-  
+
   check_system_requirements
   install_dependencies
   setup_dev_tools
   create_dev_config
   setup_database $1
   run_verification_tests
-  
+
   echo ""
   echo "🎉 开发环境搭建完成！"
   echo ""
@@ -1549,13 +1539,19 @@ main $1
 #### 7.4.2 知识传递机制 (Knowledge Transfer)
 
 **知识库管理系统**
+
 ```typescript
 // src/core/knowledge/KnowledgeManager.ts
 export interface KnowledgeItem {
   id: string;
   title: string;
   content: string;
-  type: 'document' | 'video' | 'code-example' | 'best-practice' | 'troubleshooting';
+  type:
+    | 'document'
+    | 'video'
+    | 'code-example'
+    | 'best-practice'
+    | 'troubleshooting';
   category: string[];
   tags: string[];
   author: string;
@@ -1593,12 +1589,12 @@ export class KnowledgeManager {
   private knowledgeBase: Map<string, KnowledgeItem> = new Map();
   private categories: Map<string, KnowledgeCategory> = new Map();
   private searchIndex: Map<string, string[]> = new Map(); // 关键词 -> 知识项ID列表
-  
+
   constructor() {
     this.initializeCategories();
     this.initializeKnowledgeBase();
   }
-  
+
   // 初始化知识分类
   private initializeCategories(): void {
     const categories: KnowledgeCategory[] = [
@@ -1608,7 +1604,7 @@ export class KnowledgeManager {
         description: '系统架构设计、模式和最佳实践',
         icon: '🏗️',
         children: ['system-design', 'data-flow', 'security'],
-        itemCount: 0
+        itemCount: 0,
       },
       {
         id: 'development',
@@ -1616,7 +1612,7 @@ export class KnowledgeManager {
         description: '编码规范、开发流程和工具使用',
         icon: '💻',
         children: ['coding-standards', 'testing', 'debugging'],
-        itemCount: 0
+        itemCount: 0,
       },
       {
         id: 'deployment',
@@ -1624,7 +1620,7 @@ export class KnowledgeManager {
         description: '构建、部署、监控和运维相关知识',
         icon: '🚀',
         children: ['build-process', 'monitoring', 'troubleshooting'],
-        itemCount: 0
+        itemCount: 0,
       },
       {
         id: 'business',
@@ -1632,7 +1628,7 @@ export class KnowledgeManager {
         description: '产品需求、用户故事和业务逻辑',
         icon: '📊',
         children: ['product-features', 'user-scenarios', 'business-rules'],
-        itemCount: 0
+        itemCount: 0,
       },
       {
         id: 'team-process',
@@ -1640,15 +1636,15 @@ export class KnowledgeManager {
         description: '协作流程、会议制度和沟通规范',
         icon: '👥',
         children: ['collaboration', 'meetings', 'communication'],
-        itemCount: 0
-      }
+        itemCount: 0,
+      },
     ];
-    
+
     categories.forEach(category => {
       this.categories.set(category.id, category);
     });
   }
-  
+
   // 初始化知识库
   private initializeKnowledgeBase(): void {
     const knowledgeItems: KnowledgeItem[] = [
@@ -1667,7 +1663,7 @@ export class KnowledgeManager {
         difficulty: 'intermediate',
         estimatedReadTime: 15,
         relatedItems: ['security-checklist', 'electron-best-practices'],
-        feedback: []
+        feedback: [],
       },
       {
         id: 'react-19-migration',
@@ -1691,9 +1687,9 @@ export class KnowledgeManager {
             rating: 5,
             comment: '非常详细的迁移指南，帮助很大！',
             helpful: true,
-            timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000
-          }
-        ]
+            timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
+          },
+        ],
       },
       {
         id: 'ai-debugging-techniques',
@@ -1710,7 +1706,7 @@ export class KnowledgeManager {
         difficulty: 'intermediate',
         estimatedReadTime: 12,
         relatedItems: ['performance-profiling', 'worker-communication'],
-        feedback: []
+        feedback: [],
       },
       {
         id: 'code-review-checklist',
@@ -1727,173 +1723,189 @@ export class KnowledgeManager {
         difficulty: 'beginner',
         estimatedReadTime: 8,
         relatedItems: ['coding-standards', 'testing-guidelines'],
-        feedback: []
-      }
+        feedback: [],
+      },
     ];
-    
+
     knowledgeItems.forEach(item => {
       this.knowledgeBase.set(item.id, item);
       this.updateSearchIndex(item);
     });
   }
-  
+
   // 搜索知识项
-  searchKnowledge(query: string, options?: {
-    category?: string;
-    type?: KnowledgeItem['type'];
-    difficulty?: KnowledgeItem['difficulty'];
-    tags?: string[];
-  }): KnowledgeItem[] {
+  searchKnowledge(
+    query: string,
+    options?: {
+      category?: string;
+      type?: KnowledgeItem['type'];
+      difficulty?: KnowledgeItem['difficulty'];
+      tags?: string[];
+    }
+  ): KnowledgeItem[] {
     const searchTerms = query.toLowerCase().split(' ');
     const matchingIds = new Set<string>();
-    
+
     // 基于关键词搜索
     searchTerms.forEach(term => {
       const ids = this.searchIndex.get(term) || [];
       ids.forEach(id => matchingIds.add(id));
     });
-    
+
     let results = Array.from(matchingIds)
       .map(id => this.knowledgeBase.get(id)!)
       .filter(item => item.status === 'published');
-    
+
     // 应用过滤条件
     if (options?.category) {
-      results = results.filter(item => 
+      results = results.filter(item =>
         item.category.includes(options.category!)
       );
     }
-    
+
     if (options?.type) {
       results = results.filter(item => item.type === options.type);
     }
-    
+
     if (options?.difficulty) {
       results = results.filter(item => item.difficulty === options.difficulty);
     }
-    
+
     if (options?.tags && options.tags.length > 0) {
       results = results.filter(item =>
         options.tags!.some(tag => item.tags.includes(tag))
       );
     }
-    
+
     // 按相关性和更新时间排序
     return results.sort((a, b) => {
       // 计算相关性得分
       const scoreA = this.calculateRelevanceScore(a, query);
       const scoreB = this.calculateRelevanceScore(b, query);
-      
+
       if (scoreA !== scoreB) {
         return scoreB - scoreA;
       }
-      
+
       // 相关性相同时，按更新时间排序
       return b.updatedAt - a.updatedAt;
     });
   }
-  
+
   // 获取推荐知识项
   getRecommendations(userId: string, currentItemId?: string): KnowledgeItem[] {
     // 基于用户行为和当前浏览内容推荐
     const userHistory = this.getUserReadingHistory(userId);
-    const currentItem = currentItemId ? this.knowledgeBase.get(currentItemId) : null;
-    
-    let candidates = Array.from(this.knowledgeBase.values())
-      .filter(item => item.status === 'published');
-    
+    const currentItem = currentItemId
+      ? this.knowledgeBase.get(currentItemId)
+      : null;
+
+    let candidates = Array.from(this.knowledgeBase.values()).filter(
+      item => item.status === 'published'
+    );
+
     // 如果有当前项，优先推荐相关项
     if (currentItem) {
       const relatedItems = currentItem.relatedItems
         .map(id => this.knowledgeBase.get(id))
         .filter(Boolean) as KnowledgeItem[];
-      
-      const similarCategoryItems = candidates.filter(item => 
-        item.id !== currentItem.id &&
-        item.category.some(cat => currentItem.category.includes(cat))
+
+      const similarCategoryItems = candidates.filter(
+        item =>
+          item.id !== currentItem.id &&
+          item.category.some(cat => currentItem.category.includes(cat))
       );
-      
-      const similarTagItems = candidates.filter(item =>
-        item.id !== currentItem.id &&
-        item.tags.some(tag => currentItem.tags.includes(tag))
+
+      const similarTagItems = candidates.filter(
+        item =>
+          item.id !== currentItem.id &&
+          item.tags.some(tag => currentItem.tags.includes(tag))
       );
-      
+
       candidates = [
         ...relatedItems,
         ...similarCategoryItems.slice(0, 3),
-        ...similarTagItems.slice(0, 2)
+        ...similarTagItems.slice(0, 2),
       ];
     }
-    
+
     // 基于用户历史推荐
     const userInterests = this.analyzeUserInterests(userHistory);
     candidates = candidates.concat(
       this.getItemsByInterests(userInterests).slice(0, 3)
     );
-    
+
     // 去重并排序
     const uniqueItems = Array.from(
       new Map(candidates.map(item => [item.id, item])).values()
     );
-    
+
     return uniqueItems
-      .sort((a, b) => this.calculateRecommendationScore(b, userId) - 
-                     this.calculateRecommendationScore(a, userId))
+      .sort(
+        (a, b) =>
+          this.calculateRecommendationScore(b, userId) -
+          this.calculateRecommendationScore(a, userId)
+      )
       .slice(0, 5);
   }
-  
+
   // 添加知识项
-  addKnowledgeItem(item: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt'>): string {
+  addKnowledgeItem(
+    item: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt'>
+  ): string {
     const id = `knowledge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const knowledgeItem: KnowledgeItem = {
       ...item,
       id,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      feedback: []
+      feedback: [],
     };
-    
+
     this.knowledgeBase.set(id, knowledgeItem);
     this.updateSearchIndex(knowledgeItem);
     this.updateCategoryItemCount(item.category);
-    
+
     return id;
   }
-  
+
   // 更新知识项
   updateKnowledgeItem(id: string, updates: Partial<KnowledgeItem>): boolean {
     const item = this.knowledgeBase.get(id);
     if (!item) return false;
-    
+
     const updatedItem = { ...item, ...updates, updatedAt: Date.now() };
     this.knowledgeBase.set(id, updatedItem);
     this.updateSearchIndex(updatedItem);
-    
+
     return true;
   }
-  
+
   // 添加反馈
-  addFeedback(itemId: string, feedback: Omit<KnowledgeFeedback, 'id' | 'timestamp'>): boolean {
+  addFeedback(
+    itemId: string,
+    feedback: Omit<KnowledgeFeedback, 'id' | 'timestamp'>
+  ): boolean {
     const item = this.knowledgeBase.get(itemId);
     if (!item) return false;
-    
+
     const feedbackItem: KnowledgeFeedback = {
       ...feedback,
       id: `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    
+
     item.feedback.push(feedbackItem);
     item.updatedAt = Date.now();
-    
+
     return true;
   }
-  
+
   // 生成知识库报告
   generateKnowledgeReport(): KnowledgeReport {
     const items = Array.from(this.knowledgeBase.values());
     const categories = Array.from(this.categories.values());
-    
+
     return {
       totalItems: items.length,
       publishedItems: items.filter(i => i.status === 'published').length,
@@ -1904,20 +1916,24 @@ export class KnowledgeManager {
       recentlyUpdated: items
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .slice(0, 5)
-        .map(item => ({ id: item.id, title: item.title, updatedAt: item.updatedAt })),
+        .map(item => ({
+          id: item.id,
+          title: item.title,
+          updatedAt: item.updatedAt,
+        })),
       topRatedItems: items
         .filter(item => item.feedback.length > 0)
         .sort((a, b) => this.getAverageRating(b) - this.getAverageRating(a))
         .slice(0, 5)
-        .map(item => ({ 
-          id: item.id, 
-          title: item.title, 
+        .map(item => ({
+          id: item.id,
+          title: item.title,
           rating: this.getAverageRating(item),
-          feedbackCount: item.feedback.length
-        }))
+          feedbackCount: item.feedback.length,
+        })),
     };
   }
-  
+
   // 私有辅助方法
   private updateSearchIndex(item: KnowledgeItem): void {
     const searchableText = [
@@ -1925,11 +1941,13 @@ export class KnowledgeManager {
       item.content,
       ...item.tags,
       ...item.category,
-      item.author
-    ].join(' ').toLowerCase();
-    
+      item.author,
+    ]
+      .join(' ')
+      .toLowerCase();
+
     const words = searchableText.split(/\s+/).filter(word => word.length > 2);
-    
+
     words.forEach(word => {
       if (!this.searchIndex.has(word)) {
         this.searchIndex.set(word, []);
@@ -1940,24 +1958,28 @@ export class KnowledgeManager {
       }
     });
   }
-  
+
   private calculateRelevanceScore(item: KnowledgeItem, query: string): number {
     const queryTerms = query.toLowerCase().split(' ');
     let score = 0;
-    
+
     queryTerms.forEach(term => {
       if (item.title.toLowerCase().includes(term)) score += 3;
       if (item.tags.some(tag => tag.toLowerCase().includes(term))) score += 2;
-      if (item.category.some(cat => cat.toLowerCase().includes(term))) score += 2;
+      if (item.category.some(cat => cat.toLowerCase().includes(term)))
+        score += 2;
       if (item.content.toLowerCase().includes(term)) score += 1;
     });
-    
+
     return score;
   }
-  
+
   private getAverageRating(item: KnowledgeItem): number {
     if (item.feedback.length === 0) return 0;
-    const totalRating = item.feedback.reduce((sum, feedback) => sum + feedback.rating, 0);
+    const totalRating = item.feedback.reduce(
+      (sum, feedback) => sum + feedback.rating,
+      0
+    );
     return totalRating / item.feedback.length;
   }
 }
@@ -1966,6 +1988,7 @@ export class KnowledgeManager {
 #### 7.4.3 技术分享制度 (Technical Sharing)
 
 **技术分享管理系统**
+
 ```typescript
 // src/core/sharing/TechSharingManager.ts
 export interface TechSharingSession {
@@ -2035,36 +2058,36 @@ export class TechSharingManager {
   private sessions: Map<string, TechSharingSession> = new Map();
   private topics: Map<string, SharingTopic> = new Map();
   private schedule: Map<string, string[]> = new Map(); // 日期 -> session IDs
-  
+
   // 分享会话模板
   private readonly SESSION_TEMPLATES = {
     'lightning-talk': {
       duration: 15,
       description: '快速分享一个技术点、工具或经验',
-      format: '5分钟演示 + 10分钟讨论'
+      format: '5分钟演示 + 10分钟讨论',
     },
     'deep-dive': {
       duration: 45,
       description: '深入探讨某个技术主题的设计和实现',
-      format: '30分钟演示 + 15分钟讨论'
+      format: '30分钟演示 + 15分钟讨论',
     },
-    'demo': {
+    demo: {
       duration: 30,
       description: '演示新功能、工具或技术的实际使用',
-      format: '20分钟演示 + 10分钟讨论'
+      format: '20分钟演示 + 10分钟讨论',
     },
-    'workshop': {
+    workshop: {
       duration: 90,
       description: '动手实践工作坊，边学边做',
-      format: '15分钟介绍 + 60分钟实践 + 15分钟总结'
+      format: '15分钟介绍 + 60分钟实践 + 15分钟总结',
     },
-    'retrospective': {
+    retrospective: {
       duration: 60,
       description: '项目或技术实施的回顾和经验总结',
-      format: '20分钟回顾 + 30分钟讨论 + 10分钟行动计划'
-    }
+      format: '20分钟回顾 + 30分钟讨论 + 10分钟行动计划',
+    },
   };
-  
+
   // 创建分享会话
   createSharingSession(sessionData: {
     title: string;
@@ -2078,7 +2101,7 @@ export class TechSharingManager {
   }): string {
     const id = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const template = this.SESSION_TEMPLATES[sessionData.type];
-    
+
     const session: TechSharingSession = {
       id,
       ...sessionData,
@@ -2088,18 +2111,18 @@ export class TechSharingManager {
       attendees: [sessionData.presenterId], // 演讲者自动参加
       status: 'draft',
       feedback: [],
-      followUpTasks: []
+      followUpTasks: [],
     };
-    
+
     this.sessions.set(id, session);
     this.addToSchedule(sessionData.scheduledDate, id);
-    
+
     // 发送创建通知
     this.notifySessionCreated(session);
-    
+
     return id;
   }
-  
+
   // 建议分享主题
   suggestTopic(topicData: {
     title: string;
@@ -2113,7 +2136,7 @@ export class TechSharingManager {
     learningObjectives: string[];
   }): string {
     const id = `topic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const topic: SharingTopic = {
       id,
       priority: 'medium',
@@ -2123,160 +2146,175 @@ export class TechSharingManager {
       votes: 1, // 建议者自动投票
       voterIds: [topicData.suggestedBy],
       status: 'suggested',
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
-    
+
     this.topics.set(id, topic);
-    
+
     // 发送建议通知
     this.notifyTopicSuggested(topic);
-    
+
     return id;
   }
-  
+
   // 为主题投票
   voteForTopic(topicId: string, voterId: string): boolean {
     const topic = this.topics.get(topicId);
     if (!topic || topic.voterIds.includes(voterId)) {
       return false;
     }
-    
+
     topic.votes += 1;
     topic.voterIds.push(voterId);
-    
+
     this.topics.set(topicId, topic);
     return true;
   }
-  
+
   // 认领主题进行准备
   claimTopic(topicId: string, presenterId: string): boolean {
     const topic = this.topics.get(topicId);
     if (!topic || topic.status !== 'suggested') {
       return false;
     }
-    
+
     topic.assignedTo = presenterId;
     topic.status = 'in-preparation';
-    
+
     this.topics.set(topicId, topic);
-    
+
     // 发送认领通知
     this.notifyTopicClaimed(topic, presenterId);
-    
+
     return true;
   }
-  
+
   // 参加分享会话
   joinSession(sessionId: string, attendeeId: string): boolean {
     const session = this.sessions.get(sessionId);
-    if (!session || session.status === 'cancelled' || session.status === 'completed') {
+    if (
+      !session ||
+      session.status === 'cancelled' ||
+      session.status === 'completed'
+    ) {
       return false;
     }
-    
+
     if (session.attendees.includes(attendeeId)) {
       return true; // 已经参加了
     }
-    
-    if (session.maxAttendees && session.attendees.length >= session.maxAttendees) {
+
+    if (
+      session.maxAttendees &&
+      session.attendees.length >= session.maxAttendees
+    ) {
       return false; // 人数已满
     }
-    
+
     session.attendees.push(attendeeId);
     this.sessions.set(sessionId, session);
-    
+
     // 发送参加确认
     this.notifyAttendeeJoined(session, attendeeId);
-    
+
     return true;
   }
-  
+
   // 添加分享材料
   addSessionMaterial(sessionId: string, material: SharingMaterial): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
-    
+
     session.materials.push(material);
     this.sessions.set(sessionId, session);
-    
+
     // 通知参与者材料已添加
     this.notifyMaterialAdded(session, material);
-    
+
     return true;
   }
-  
+
   // 开始分享会话
   startSession(sessionId: string, startedBy: string): boolean {
     const session = this.sessions.get(sessionId);
-    if (!session || session.presenterId !== startedBy || session.status !== 'scheduled') {
+    if (
+      !session ||
+      session.presenterId !== startedBy ||
+      session.status !== 'scheduled'
+    ) {
       return false;
     }
-    
+
     session.status = 'in-progress';
     this.sessions.set(sessionId, session);
-    
+
     // 发送开始通知
     this.notifySessionStarted(session);
-    
+
     return true;
   }
-  
+
   // 完成分享会话
   completeSession(
-    sessionId: string, 
-    completedBy: string, 
+    sessionId: string,
+    completedBy: string,
     recording?: TechSharingSession['recording']
   ): boolean {
     const session = this.sessions.get(sessionId);
-    if (!session || session.presenterId !== completedBy || session.status !== 'in-progress') {
+    if (
+      !session ||
+      session.presenterId !== completedBy ||
+      session.status !== 'in-progress'
+    ) {
       return false;
     }
-    
+
     session.status = 'completed';
     if (recording) {
       session.recording = recording;
     }
-    
+
     this.sessions.set(sessionId, session);
-    
+
     // 发送完成通知和反馈邀请
     this.notifySessionCompleted(session);
     this.requestFeedback(session);
-    
+
     return true;
   }
-  
+
   // 添加会话反馈
   addSessionFeedback(
-    sessionId: string, 
+    sessionId: string,
     feedback: Omit<SessionFeedback, 'id' | 'timestamp'>
   ): boolean {
     const session = this.sessions.get(sessionId);
     if (!session || !session.attendees.includes(feedback.attendeeId)) {
       return false;
     }
-    
+
     const feedbackItem: SessionFeedback = {
       ...feedback,
       id: `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    
+
     session.feedback.push(feedbackItem);
     this.sessions.set(sessionId, session);
-    
+
     return true;
   }
-  
+
   // 获取会话日程安排
   getSchedule(startDate: number, endDate: number): ScheduleItem[] {
     const schedule: ScheduleItem[] = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
       const dateKey = date.toISOString().split('T')[0];
       const sessionIds = this.schedule.get(dateKey) || [];
-      
+
       sessionIds.forEach(sessionId => {
         const session = this.sessions.get(sessionId);
         if (session && session.status !== 'cancelled') {
@@ -2289,16 +2327,16 @@ export class TechSharingManager {
               type: session.type,
               duration: session.duration,
               attendeeCount: session.attendees.length,
-              maxAttendees: session.maxAttendees
-            }
+              maxAttendees: session.maxAttendees,
+            },
           });
         }
       });
     }
-    
+
     return schedule.sort((a, b) => a.date.localeCompare(b.date));
   }
-  
+
   // 获取热门主题
   getPopularTopics(limit: number = 10): SharingTopic[] {
     return Array.from(this.topics.values())
@@ -2314,27 +2352,34 @@ export class TechSharingManager {
       })
       .slice(0, limit);
   }
-  
+
   // 生成分享报告
   generateSharingReport(period: { start: number; end: number }): SharingReport {
-    const sessions = Array.from(this.sessions.values())
-      .filter(session => 
-        session.scheduledDate >= period.start && 
+    const sessions = Array.from(this.sessions.values()).filter(
+      session =>
+        session.scheduledDate >= period.start &&
         session.scheduledDate <= period.end
-      );
-    
+    );
+
     const completedSessions = sessions.filter(s => s.status === 'completed');
-    const totalAttendees = sessions.reduce((total, session) => 
-      total + session.attendees.length, 0);
-    const totalFeedback = completedSessions.reduce((total, session) => 
-      total + session.feedback.length, 0);
-    const averageRating = completedSessions.reduce((sum, session) => {
-      const sessionAvg = session.feedback.length > 0 
-        ? session.feedback.reduce((s, f) => s + f.rating, 0) / session.feedback.length
-        : 0;
-      return sum + sessionAvg;
-    }, 0) / (completedSessions.length || 1);
-    
+    const totalAttendees = sessions.reduce(
+      (total, session) => total + session.attendees.length,
+      0
+    );
+    const totalFeedback = completedSessions.reduce(
+      (total, session) => total + session.feedback.length,
+      0
+    );
+    const averageRating =
+      completedSessions.reduce((sum, session) => {
+        const sessionAvg =
+          session.feedback.length > 0
+            ? session.feedback.reduce((s, f) => s + f.rating, 0) /
+              session.feedback.length
+            : 0;
+        return sum + sessionAvg;
+      }, 0) / (completedSessions.length || 1);
+
     return {
       period,
       totalSessions: sessions.length,
@@ -2348,11 +2393,12 @@ export class TechSharingManager {
       popularCategories: this.getPopularCategories(sessions),
       sessionTypes: this.getSessionTypeDistribution(sessions),
       upcomingSessions: this.getUpcomingSessions(),
-      suggestedTopics: Array.from(this.topics.values())
-        .filter(t => t.status === 'suggested').length
+      suggestedTopics: Array.from(this.topics.values()).filter(
+        t => t.status === 'suggested'
+      ).length,
     };
   }
-  
+
   // 私有辅助方法
   private addToSchedule(date: number, sessionId: string): void {
     const dateKey = new Date(date).toISOString().split('T')[0];
@@ -2361,17 +2407,17 @@ export class TechSharingManager {
     }
     this.schedule.get(dateKey)!.push(sessionId);
   }
-  
+
   private notifySessionCreated(session: TechSharingSession): void {
     // 实现会话创建通知逻辑
     console.log(`📅 新分享会话创建: ${session.title} by ${session.presenter}`);
   }
-  
+
   private notifyTopicSuggested(topic: SharingTopic): void {
     // 实现主题建议通知逻辑
     console.log(`💡 新主题建议: ${topic.title}`);
   }
-  
+
   private requestFeedback(session: TechSharingSession): void {
     // 向参与者发送反馈请求
     session.attendees.forEach(attendeeId => {
@@ -2393,10 +2439,10 @@ export class SharingSessionFactory {
       description: `⚡ 快速分享: ${data.keyTakeaway}`,
       type: 'lightning-talk',
       category: data.techStack,
-      duration: 15
+      duration: 15,
     };
   }
-  
+
   static createTechDeepDive(data: {
     title: string;
     presenterId: string;
@@ -2407,15 +2453,16 @@ export class SharingSessionFactory {
   }): Partial<TechSharingSession> {
     return {
       title: data.title,
-      description: `🔍 深入探讨 ${data.technology} 的设计和实现\n\n` +
-                  `解决的问题:\n${data.problems.map(p => `• ${p}`).join('\n')}\n\n` +
-                  `技术方案:\n${data.solutions.map(s => `• ${s}`).join('\n')}`,
+      description:
+        `🔍 深入探讨 ${data.technology} 的设计和实现\n\n` +
+        `解决的问题:\n${data.problems.map(p => `• ${p}`).join('\n')}\n\n` +
+        `技术方案:\n${data.solutions.map(s => `• ${s}`).join('\n')}`,
       type: 'deep-dive',
       category: [data.technology, ...data.architecture],
-      duration: 45
+      duration: 45,
     };
   }
-  
+
   static createHandsOnWorkshop(data: {
     title: string;
     presenterId: string;
@@ -2426,13 +2473,14 @@ export class SharingSessionFactory {
   }): Partial<TechSharingSession> {
     return {
       title: data.title,
-      description: `🛠️ 动手工作坊\n\n` +
-                  `学习目标:\n${data.outcomes.map(o => `• ${o}`).join('\n')}\n\n` +
-                  `使用工具:\n${data.tools.map(t => `• ${t}`).join('\n')}\n\n` +
-                  `前置要求:\n${data.prerequisites.map(p => `• ${p}`).join('\n')}`,
+      description:
+        `🛠️ 动手工作坊\n\n` +
+        `学习目标:\n${data.outcomes.map(o => `• ${o}`).join('\n')}\n\n` +
+        `使用工具:\n${data.tools.map(t => `• ${t}`).join('\n')}\n\n` +
+        `前置要求:\n${data.prerequisites.map(p => `• ${p}`).join('\n')}`,
       type: 'workshop',
       category: data.skills,
-      duration: 90
+      duration: 90,
     };
   }
 }
@@ -2458,48 +2506,48 @@ export const SUPPORTED_LANGUAGES = {
   'zh-CN': {
     name: '简体中文',
     flag: '🇨🇳',
-    direction: 'ltr'
+    direction: 'ltr',
   },
   'zh-TW': {
     name: '繁體中文',
     flag: '🇹🇼',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'en': {
+  en: {
     name: 'English',
     flag: '🇺🇸',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'ja': {
+  ja: {
     name: '日本語',
     flag: '🇯🇵',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'ko': {
+  ko: {
     name: '한국어',
     flag: '🇰🇷',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'es': {
+  es: {
     name: 'Español',
     flag: '🇪🇸',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'fr': {
+  fr: {
     name: 'Français',
     flag: '🇫🇷',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'de': {
+  de: {
     name: 'Deutsch',
     flag: '🇩🇪',
-    direction: 'ltr'
+    direction: 'ltr',
   },
-  'ru': {
+  ru: {
     name: 'Русский',
     flag: '🇷🇺',
-    direction: 'ltr'
-  }
+    direction: 'ltr',
+  },
 } as const;
 
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;
@@ -2513,37 +2561,37 @@ i18n
     // 默认语言
     lng: 'zh-CN',
     fallbackLng: 'zh-CN',
-    
+
     // 调试模式
     debug: process.env.NODE_ENV === 'development',
-    
+
     // 命名空间
     defaultNS: 'common',
     ns: [
-      'common',      // 通用翻译
-      'ui',          // UI界面
-      'game',        // 游戏内容
-      'guild',       // 公会系统
-      'combat',      // 战斗系统
-      'economy',     // 经济系统
-      'social',      // 社交系统
-      'settings',    // 设置界面
-      'errors',      // 错误信息
-      'validation'   // 表单验证
+      'common', // 通用翻译
+      'ui', // UI界面
+      'game', // 游戏内容
+      'guild', // 公会系统
+      'combat', // 战斗系统
+      'economy', // 经济系统
+      'social', // 社交系统
+      'settings', // 设置界面
+      'errors', // 错误信息
+      'validation', // 表单验证
     ],
-    
+
     // 语言检测配置
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng'
+      lookupLocalStorage: 'i18nextLng',
     },
-    
+
     // 后端配置（文件系统）
     backend: {
-      loadPath: './src/assets/locales/{{lng}}/{{ns}}.json'
+      loadPath: './src/assets/locales/{{lng}}/{{ns}}.json',
     },
-    
+
     // 插值配置
     interpolation: {
       escapeValue: false, // React已经转义
@@ -2554,7 +2602,7 @@ i18n
         if (format === 'currency') {
           return new Intl.NumberFormat(lng, {
             style: 'currency',
-            currency: 'CNY' // 默认货币
+            currency: 'CNY', // 默认货币
           }).format(value);
         }
         if (format === 'date') {
@@ -2563,19 +2611,19 @@ i18n
         if (format === 'time') {
           return new Intl.DateTimeFormat(lng, {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
           }).format(new Date(value));
         }
         return value;
-      }
+      },
     },
-    
+
     // React配置
     react: {
       useSuspense: true,
       bindI18n: 'languageChanged',
-      bindI18nStore: 'added removed'
-    }
+      bindI18nStore: 'added removed',
+    },
   });
 
 export default i18n;
@@ -2718,47 +2766,47 @@ export function useTranslation(
   options?: ExtendedTranslationOptions
 ) {
   const { t, i18n, ready } = useI18nTranslation(ns, options);
-  
+
   // 增强的翻译函数
   const translate = useMemo(() => {
     return (key: string, params?: any) => {
       const defaultParams = options?.defaultInterpolation || {};
       const mergedParams = { ...defaultParams, ...params };
-      
+
       // 如果启用格式化，自动添加语言环境
       if (options?.enableFormatting) {
         mergedParams.lng = i18n.language;
       }
-      
+
       return t(key, mergedParams);
     };
   }, [t, i18n.language, options?.defaultInterpolation, options?.enableFormatting]);
-  
+
   // 语言切换函数
   const changeLanguage = async (lng: SupportedLanguage) => {
     await i18n.changeLanguage(lng);
-    
+
     // 保存到本地存储
     localStorage.setItem('i18nextLng', lng);
-    
+
     // 更新文档语言
     document.documentElement.lang = lng;
-    
+
     // 更新文档方向（RTL支持）
     document.documentElement.dir = SUPPORTED_LANGUAGES[lng].direction;
   };
-  
+
   // 获取当前语言信息
   const currentLanguage = useMemo(() => {
     const lng = i18n.language as SupportedLanguage;
     return SUPPORTED_LANGUAGES[lng] || SUPPORTED_LANGUAGES['zh-CN'];
   }, [i18n.language]);
-  
+
   // 格式化数字
   const formatNumber = (value: number, options?: Intl.NumberFormatOptions) => {
     return new Intl.NumberFormat(i18n.language, options).format(value);
   };
-  
+
   // 格式化货币
   const formatCurrency = (value: number, currency: string = 'CNY') => {
     return new Intl.NumberFormat(i18n.language, {
@@ -2766,19 +2814,19 @@ export function useTranslation(
       currency
     }).format(value);
   };
-  
+
   // 格式化日期
   const formatDate = (date: Date | string | number, options?: Intl.DateTimeFormatOptions) => {
     return new Intl.DateTimeFormat(i18n.language, options).format(new Date(date));
   };
-  
+
   // 格式化相对时间
   const formatRelativeTime = (date: Date | string | number) => {
     const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' });
     const now = Date.now();
     const target = new Date(date).getTime();
     const diffInSeconds = (target - now) / 1000;
-    
+
     const intervals = [
       { unit: 'year', seconds: 31536000 },
       { unit: 'month', seconds: 2592000 },
@@ -2787,17 +2835,17 @@ export function useTranslation(
       { unit: 'hour', seconds: 3600 },
       { unit: 'minute', seconds: 60 }
     ] as const;
-    
+
     for (const { unit, seconds } of intervals) {
       const diff = Math.round(diffInSeconds / seconds);
       if (Math.abs(diff) >= 1) {
         return rtf.format(diff, unit);
       }
     }
-    
+
     return rtf.format(0, 'second');
   };
-  
+
   return {
     t: translate,
     i18n,
@@ -2820,15 +2868,15 @@ export interface TranslationProps {
   as?: keyof JSX.IntrinsicElements;
 }
 
-export function Translation({ 
-  i18nKey, 
-  values, 
-  components, 
-  className, 
-  as: Component = 'span' 
+export function Translation({
+  i18nKey,
+  values,
+  components,
+  className,
+  as: Component = 'span'
 }: TranslationProps) {
   const { t } = useTranslation();
-  
+
   return (
     <Component className={className}>
       {t(i18nKey, { ...values, components })}
@@ -2839,7 +2887,7 @@ export function Translation({
 // 语言切换器组件
 export function LanguageSwitcher() {
   const { i18n, changeLanguage, currentLanguage } = useTranslation();
-  
+
   return (
     <div className="language-switcher">
       <select
@@ -2876,7 +2924,7 @@ export function LocalizedNumber({
   className
 }: LocalizedNumberProps) {
   const { formatNumber, formatCurrency } = useTranslation();
-  
+
   const formattedValue = useMemo(() => {
     if (style === 'currency') {
       return formatCurrency(value, currency);
@@ -2893,7 +2941,7 @@ export function LocalizedNumber({
       });
     }
   }, [value, style, currency, minimumFractionDigits, maximumFractionDigits, formatNumber, formatCurrency]);
-  
+
   return <span className={className}>{formattedValue}</span>;
 }
 
@@ -2906,22 +2954,22 @@ export interface LocalizedDateProps {
 
 export function LocalizedDate({ date, format = 'medium', className }: LocalizedDateProps) {
   const { formatDate, formatRelativeTime } = useTranslation();
-  
+
   const formattedDate = useMemo(() => {
     if (format === 'relative') {
       return formatRelativeTime(date);
     }
-    
+
     const formatOptions: Intl.DateTimeFormatOptions = {
       full: { dateStyle: 'full', timeStyle: 'short' },
       long: { dateStyle: 'long', timeStyle: 'short' },
       medium: { dateStyle: 'medium', timeStyle: 'short' },
       short: { dateStyle: 'short', timeStyle: 'short' }
     }[format] || { dateStyle: 'medium' };
-    
+
     return formatDate(date, formatOptions);
   }, [date, format, formatDate, formatRelativeTime]);
-  
+
   return <time className={className}>{formattedDate}</time>;
 }
 ```
@@ -2946,7 +2994,7 @@ interface GameState {
     experience: number;
     coins: number;
   } | null;
-  
+
   // 公会信息
   guild: {
     id: string;
@@ -2956,7 +3004,7 @@ interface GameState {
     memberLimit: number;
     resources: Record<string, number>;
   } | null;
-  
+
   // UI状态
   ui: {
     activeTab: string;
@@ -2965,7 +3013,7 @@ interface GameState {
     notifications: Notification[];
     modals: Modal[];
   };
-  
+
   // 游戏设置
   settings: {
     language: string;
@@ -2978,7 +3026,7 @@ interface GameState {
       sound: boolean;
     };
   };
-  
+
   // 缓存数据
   cache: {
     guilds: Guild[];
@@ -2994,11 +3042,11 @@ interface GameActions {
   setUser: (user: GameState['user']) => void;
   updateUserCoins: (amount: number) => void;
   updateUserExperience: (amount: number) => void;
-  
+
   // 公会操作
   setGuild: (guild: GameState['guild']) => void;
   updateGuildResources: (resources: Record<string, number>) => void;
-  
+
   // UI操作
   setActiveTab: (tab: string) => void;
   toggleSidebar: () => void;
@@ -3007,17 +3055,17 @@ interface GameActions {
   removeNotification: (id: string) => void;
   openModal: (modal: Modal) => void;
   closeModal: (id: string) => void;
-  
+
   // 设置操作
   updateSettings: (settings: Partial<GameState['settings']>) => void;
-  
+
   // 缓存操作
   updateCache: <T extends keyof GameState['cache']>(
     key: T,
     data: GameState['cache'][T]
   ) => void;
   invalidateCache: (key?: keyof GameState['cache']) => void;
-  
+
   // 重置操作
   resetGame: () => void;
 }
@@ -3033,7 +3081,7 @@ const initialState: GameState = {
     sidebarCollapsed: false,
     theme: 'system',
     notifications: [],
-    modals: []
+    modals: [],
   },
   settings: {
     language: 'zh-CN',
@@ -3043,15 +3091,15 @@ const initialState: GameState = {
     autoSave: true,
     notifications: {
       desktop: true,
-      sound: true
-    }
+      sound: true,
+    },
   },
   cache: {
     guilds: [],
     members: [],
     battles: [],
-    lastUpdated: {}
-  }
+    lastUpdated: {},
+  },
 };
 
 // 创建store
@@ -3060,145 +3108,163 @@ export const useGameStore = create<GameStore>()(
     persist(
       immer((set, get) => ({
         ...initialState,
-        
+
         // 用户操作实现
-        setUser: (user) => set((state) => {
-          state.user = user;
-        }),
-        
-        updateUserCoins: (amount) => set((state) => {
-          if (state.user) {
-            state.user.coins = Math.max(0, state.user.coins + amount);
-          }
-        }),
-        
-        updateUserExperience: (amount) => set((state) => {
-          if (state.user) {
-            state.user.experience += amount;
-            
-            // 自动升级逻辑
-            const newLevel = Math.floor(state.user.experience / 1000) + 1;
-            if (newLevel > state.user.level) {
-              state.user.level = newLevel;
-              
-              // 发送升级通知
-              state.ui.notifications.push({
-                id: `level-up-${Date.now()}`,
-                type: 'success',
-                title: '等级提升',
-                message: `恭喜！您的等级提升到了 ${newLevel}`,
-                timestamp: Date.now()
-              });
+        setUser: user =>
+          set(state => {
+            state.user = user;
+          }),
+
+        updateUserCoins: amount =>
+          set(state => {
+            if (state.user) {
+              state.user.coins = Math.max(0, state.user.coins + amount);
             }
-          }
-        }),
-        
+          }),
+
+        updateUserExperience: amount =>
+          set(state => {
+            if (state.user) {
+              state.user.experience += amount;
+
+              // 自动升级逻辑
+              const newLevel = Math.floor(state.user.experience / 1000) + 1;
+              if (newLevel > state.user.level) {
+                state.user.level = newLevel;
+
+                // 发送升级通知
+                state.ui.notifications.push({
+                  id: `level-up-${Date.now()}`,
+                  type: 'success',
+                  title: '等级提升',
+                  message: `恭喜！您的等级提升到了 ${newLevel}`,
+                  timestamp: Date.now(),
+                });
+              }
+            }
+          }),
+
         // 公会操作实现
-        setGuild: (guild) => set((state) => {
-          state.guild = guild;
-        }),
-        
-        updateGuildResources: (resources) => set((state) => {
-          if (state.guild) {
-            Object.assign(state.guild.resources, resources);
-          }
-        }),
-        
+        setGuild: guild =>
+          set(state => {
+            state.guild = guild;
+          }),
+
+        updateGuildResources: resources =>
+          set(state => {
+            if (state.guild) {
+              Object.assign(state.guild.resources, resources);
+            }
+          }),
+
         // UI操作实现
-        setActiveTab: (tab) => set((state) => {
-          state.ui.activeTab = tab;
-        }),
-        
-        toggleSidebar: () => set((state) => {
-          state.ui.sidebarCollapsed = !state.ui.sidebarCollapsed;
-        }),
-        
-        setTheme: (theme) => set((state) => {
-          state.ui.theme = theme;
-          
-          // 应用主题到文档
-          const root = document.documentElement;
-          if (theme === 'dark') {
-            root.classList.add('dark');
-          } else if (theme === 'light') {
-            root.classList.remove('dark');
-          } else {
-            // 系统主题
-            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            root.classList.toggle('dark', isDark);
-          }
-        }),
-        
-        addNotification: (notification) => set((state) => {
-          state.ui.notifications.push({
-            ...notification,
-            id: notification.id || `notification-${Date.now()}`,
-            timestamp: notification.timestamp || Date.now()
-          });
-          
-          // 限制通知数量
-          if (state.ui.notifications.length > 10) {
-            state.ui.notifications = state.ui.notifications.slice(-10);
-          }
-        }),
-        
-        removeNotification: (id) => set((state) => {
-          const index = state.ui.notifications.findIndex(n => n.id === id);
-          if (index !== -1) {
-            state.ui.notifications.splice(index, 1);
-          }
-        }),
-        
-        openModal: (modal) => set((state) => {
-          state.ui.modals.push({
-            ...modal,
-            id: modal.id || `modal-${Date.now()}`
-          });
-        }),
-        
-        closeModal: (id) => set((state) => {
-          const index = state.ui.modals.findIndex(m => m.id === id);
-          if (index !== -1) {
-            state.ui.modals.splice(index, 1);
-          }
-        }),
-        
+        setActiveTab: tab =>
+          set(state => {
+            state.ui.activeTab = tab;
+          }),
+
+        toggleSidebar: () =>
+          set(state => {
+            state.ui.sidebarCollapsed = !state.ui.sidebarCollapsed;
+          }),
+
+        setTheme: theme =>
+          set(state => {
+            state.ui.theme = theme;
+
+            // 应用主题到文档
+            const root = document.documentElement;
+            if (theme === 'dark') {
+              root.classList.add('dark');
+            } else if (theme === 'light') {
+              root.classList.remove('dark');
+            } else {
+              // 系统主题
+              const isDark = window.matchMedia(
+                '(prefers-color-scheme: dark)'
+              ).matches;
+              root.classList.toggle('dark', isDark);
+            }
+          }),
+
+        addNotification: notification =>
+          set(state => {
+            state.ui.notifications.push({
+              ...notification,
+              id: notification.id || `notification-${Date.now()}`,
+              timestamp: notification.timestamp || Date.now(),
+            });
+
+            // 限制通知数量
+            if (state.ui.notifications.length > 10) {
+              state.ui.notifications = state.ui.notifications.slice(-10);
+            }
+          }),
+
+        removeNotification: id =>
+          set(state => {
+            const index = state.ui.notifications.findIndex(n => n.id === id);
+            if (index !== -1) {
+              state.ui.notifications.splice(index, 1);
+            }
+          }),
+
+        openModal: modal =>
+          set(state => {
+            state.ui.modals.push({
+              ...modal,
+              id: modal.id || `modal-${Date.now()}`,
+            });
+          }),
+
+        closeModal: id =>
+          set(state => {
+            const index = state.ui.modals.findIndex(m => m.id === id);
+            if (index !== -1) {
+              state.ui.modals.splice(index, 1);
+            }
+          }),
+
         // 设置操作实现
-        updateSettings: (newSettings) => set((state) => {
-          Object.assign(state.settings, newSettings);
-        }),
-        
+        updateSettings: newSettings =>
+          set(state => {
+            Object.assign(state.settings, newSettings);
+          }),
+
         // 缓存操作实现
-        updateCache: (key, data) => set((state) => {
-          state.cache[key] = data;
-          state.cache.lastUpdated[key] = Date.now();
-        }),
-        
-        invalidateCache: (key) => set((state) => {
-          if (key) {
-            delete state.cache.lastUpdated[key];
-          } else {
-            state.cache.lastUpdated = {};
-          }
-        }),
-        
+        updateCache: (key, data) =>
+          set(state => {
+            state.cache[key] = data;
+            state.cache.lastUpdated[key] = Date.now();
+          }),
+
+        invalidateCache: key =>
+          set(state => {
+            if (key) {
+              delete state.cache.lastUpdated[key];
+            } else {
+              state.cache.lastUpdated = {};
+            }
+          }),
+
         // 重置操作
-        resetGame: () => set(() => ({
-          ...initialState,
-          settings: get().settings // 保留设置
-        }))
+        resetGame: () =>
+          set(() => ({
+            ...initialState,
+            settings: get().settings, // 保留设置
+          })),
       })),
       {
         name: 'game-store',
-        partialize: (state) => ({
+        partialize: state => ({
           user: state.user,
           guild: state.guild,
-          settings: state.settings
-        })
+          settings: state.settings,
+        }),
       }
     ),
     {
-      name: 'game-store'
+      name: 'game-store',
     }
   )
 );
@@ -3223,13 +3289,14 @@ export const queryKeys = {
   all: ['game'] as const,
   guilds: () => [...queryKeys.all, 'guilds'] as const,
   guild: (id: string) => [...queryKeys.guilds(), id] as const,
-  guildMembers: (guildId: string) => [...queryKeys.guild(guildId), 'members'] as const,
+  guildMembers: (guildId: string) =>
+    [...queryKeys.guild(guildId), 'members'] as const,
   battles: () => [...queryKeys.all, 'battles'] as const,
   battle: (id: string) => [...queryKeys.battles(), id] as const,
   economy: () => [...queryKeys.all, 'economy'] as const,
   auctions: () => [...queryKeys.economy(), 'auctions'] as const,
   user: () => [...queryKeys.all, 'user'] as const,
-  userStats: () => [...queryKeys.user(), 'stats'] as const
+  userStats: () => [...queryKeys.user(), 'stats'] as const,
 };
 
 // 公会相关查询
@@ -3238,7 +3305,7 @@ export function useGuilds() {
     queryKey: queryKeys.guilds(),
     queryFn: api.getGuilds,
     staleTime: 5 * 60 * 1000, // 5分钟
-    gcTime: 10 * 60 * 1000 // 10分钟
+    gcTime: 10 * 60 * 1000, // 10分钟
   });
 }
 
@@ -3247,7 +3314,7 @@ export function useGuild(guildId: string | undefined) {
     queryKey: queryKeys.guild(guildId!),
     queryFn: () => api.getGuild(guildId!),
     enabled: !!guildId,
-    staleTime: 2 * 60 * 1000 // 2分钟
+    staleTime: 2 * 60 * 1000, // 2分钟
   });
 }
 
@@ -3256,7 +3323,7 @@ export function useGuildMembers(guildId: string | undefined) {
     queryKey: queryKeys.guildMembers(guildId!),
     queryFn: () => api.getGuildMembers(guildId!),
     enabled: !!guildId,
-    staleTime: 1 * 60 * 1000 // 1分钟
+    staleTime: 1 * 60 * 1000, // 1分钟
   });
 }
 
@@ -3264,62 +3331,64 @@ export function useGuildMembers(guildId: string | undefined) {
 export function useCreateGuild() {
   const queryClient = useQueryClient();
   const { setGuild } = useGameStore();
-  
+
   return useMutation({
     mutationFn: api.createGuild,
-    onSuccess: (newGuild) => {
+    onSuccess: newGuild => {
       // 更新本地状态
       setGuild(newGuild);
-      
+
       // 使缓存失效
       queryClient.invalidateQueries({ queryKey: queryKeys.guilds() });
-      
+
       // 添加成功通知
       useGameStore.getState().addNotification({
         type: 'success',
         title: '公会创建成功',
-        message: `公会《${newGuild.name}》创建成功！`
+        message: `公会《${newGuild.name}》创建成功！`,
       });
     },
-    onError: (error) => {
+    onError: error => {
       useGameStore.getState().addNotification({
         type: 'error',
         title: '公会创建失败',
-        message: error.message
+        message: error.message,
       });
-    }
+    },
   });
 }
 
 export function useJoinGuild() {
   const queryClient = useQueryClient();
   const { setGuild } = useGameStore();
-  
+
   return useMutation({
     mutationFn: ({ guildId, userId }: { guildId: string; userId: string }) =>
       api.joinGuild(guildId, userId),
     onSuccess: (guild, { guildId }) => {
       // 更新本地状态
       setGuild(guild);
-      
+
       // 更新相关缓存
       queryClient.invalidateQueries({ queryKey: queryKeys.guild(guildId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.guildMembers(guildId) });
-      
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.guildMembers(guildId),
+      });
+
       // 添加成功通知
       useGameStore.getState().addNotification({
         type: 'success',
         title: '加入公会成功',
-        message: `成功加入公会《${guild.name}》`
+        message: `成功加入公会《${guild.name}》`,
       });
     },
-    onError: (error) => {
+    onError: error => {
       useGameStore.getState().addNotification({
         type: 'error',
         title: '加入公会失败',
-        message: error.message
+        message: error.message,
       });
-    }
+    },
   });
 }
 
@@ -3329,7 +3398,7 @@ export function useBattles() {
     queryKey: queryKeys.battles(),
     queryFn: api.getBattles,
     staleTime: 30 * 1000, // 30秒
-    refetchInterval: 60 * 1000 // 1分钟自动刷新
+    refetchInterval: 60 * 1000, // 1分钟自动刷新
   });
 }
 
@@ -3339,40 +3408,40 @@ export function useBattle(battleId: string | undefined) {
     queryFn: () => api.getBattle(battleId!),
     enabled: !!battleId,
     staleTime: 10 * 1000, // 10秒
-    refetchInterval: (data) => {
+    refetchInterval: data => {
       // 如果战斗还在进行中，每5秒刷新
       return data?.status === 'active' ? 5 * 1000 : false;
-    }
+    },
   });
 }
 
 // 战斗操作
 export function useInitiateBattle() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: api.initiateBattle,
-    onSuccess: (battle) => {
+    onSuccess: battle => {
       // 使战斗列表缓存失效
       queryClient.invalidateQueries({ queryKey: queryKeys.battles() });
-      
+
       // 添加新战斗到缓存
       queryClient.setQueryData(queryKeys.battle(battle.id), battle);
-      
+
       // 添加成功通知
       useGameStore.getState().addNotification({
         type: 'success',
         title: '战斗开始',
-        message: '战斗已成功发起！'
+        message: '战斗已成功发起！',
       });
     },
-    onError: (error) => {
+    onError: error => {
       useGameStore.getState().addNotification({
         type: 'error',
         title: '发起战斗失败',
-        message: error.message
+        message: error.message,
       });
-    }
+    },
   });
 }
 
@@ -3382,79 +3451,84 @@ export function useAuctions() {
     queryKey: queryKeys.auctions(),
     queryFn: api.getAuctions,
     staleTime: 30 * 1000, // 30秒
-    refetchInterval: 60 * 1000 // 1分钟自动刷新
+    refetchInterval: 60 * 1000, // 1分钟自动刷新
   });
 }
 
 export function usePlaceBid() {
   const queryClient = useQueryClient();
   const { updateUserCoins } = useGameStore();
-  
+
   return useMutation({
-    mutationFn: ({ auctionId, bidAmount }: { auctionId: string; bidAmount: number }) =>
-      api.placeBid(auctionId, bidAmount),
+    mutationFn: ({
+      auctionId,
+      bidAmount,
+    }: {
+      auctionId: string;
+      bidAmount: number;
+    }) => api.placeBid(auctionId, bidAmount),
     onSuccess: (result, { bidAmount }) => {
       // 更新用户金币（乐观更新）
       updateUserCoins(-bidAmount);
-      
+
       // 使拍卖缓存失效
       queryClient.invalidateQueries({ queryKey: queryKeys.auctions() });
-      
+
       // 添加成功通知
       useGameStore.getState().addNotification({
         type: 'success',
         title: '竞价成功',
-        message: `成功出价 ${bidAmount} 金币`
+        message: `成功出价 ${bidAmount} 金币`,
       });
     },
     onError: (error, { bidAmount }) => {
       // 回滚乐观更新
       updateUserCoins(bidAmount);
-      
+
       useGameStore.getState().addNotification({
         type: 'error',
         title: '竞价失败',
-        message: error.message
+        message: error.message,
       });
-    }
+    },
   });
 }
 
 // 用户统计查询
 export function useUserStats() {
   const user = useUser();
-  
+
   return useQuery({
     queryKey: queryKeys.userStats(),
     queryFn: () => api.getUserStats(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000 // 5分钟
+    staleTime: 5 * 60 * 1000, // 5分钟
   });
 }
 
 // 预加载Hook
 export function usePrefetch() {
   const queryClient = useQueryClient();
-  
+
   const prefetchGuild = (guildId: string) => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.guild(guildId),
       queryFn: () => api.getGuild(guildId),
-      staleTime: 2 * 60 * 1000
+      staleTime: 2 * 60 * 1000,
     });
   };
-  
+
   const prefetchBattle = (battleId: string) => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.battle(battleId),
       queryFn: () => api.getBattle(battleId),
-      staleTime: 10 * 1000
+      staleTime: 10 * 1000,
     });
   };
-  
+
   return {
     prefetchGuild,
-    prefetchBattle
+    prefetchBattle,
   };
 }
 ```

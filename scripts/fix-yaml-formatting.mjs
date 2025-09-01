@@ -15,8 +15,8 @@ class YAMLFormatter {
     this.projectRoot = path.resolve(__dirname, '..');
     this.targetDirectories = [
       'docs/adr',
-      'docs/prd_chunks', 
-      'docs/architecture/base'
+      'docs/prd_chunks',
+      'docs/architecture/base',
     ];
     this.fixedFiles = [];
     this.errors = [];
@@ -40,15 +40,16 @@ class YAMLFormatter {
    */
   async processDirectory(dirPath) {
     const fullDirPath = path.join(this.projectRoot, dirPath);
-    
+
     if (!fs.existsSync(fullDirPath)) {
       console.log(`⚠️  目录不存在: ${dirPath}`);
       return;
     }
 
     console.log(`📁 处理目录: ${dirPath}`);
-    
-    const files = fs.readdirSync(fullDirPath)
+
+    const files = fs
+      .readdirSync(fullDirPath)
       .filter(file => file.endsWith('.md'))
       .filter(file => this.hasNumberPrefix(file));
 
@@ -116,7 +117,7 @@ class YAMLFormatter {
       const beforeFrontMatter = lines.slice(0, frontMatterStart);
       const frontMatter = lines.slice(frontMatterStart, frontMatterEnd + 1);
       const afterFrontMatter = lines.slice(frontMatterEnd + 1);
-      
+
       lines = [''].concat(frontMatter, beforeFrontMatter, afterFrontMatter);
       frontMatterStart = 1;
       frontMatterEnd = frontMatter.length;
@@ -127,7 +128,7 @@ class YAMLFormatter {
     if (frontMatterStart >= 0 && frontMatterEnd >= 0) {
       for (let i = frontMatterStart + 1; i < frontMatterEnd; i++) {
         let line = lines[i];
-        let originalLine = line;
+        const originalLine = line;
 
         // 移除Tab字符，替换为2个空格
         line = line.replace(/\t/g, '  ');
@@ -150,8 +151,12 @@ class YAMLFormatter {
     if (frontMatterEnd < 0 && frontMatterStart >= 0) {
       // 找到第一个空行或非YAML行作为结尾
       for (let i = frontMatterStart + 1; i < lines.length; i++) {
-        if (lines[i].trim() === '' || 
-            (!lines[i].startsWith(' ') && !lines[i].includes(':') && !lines[i].startsWith('-'))) {
+        if (
+          lines[i].trim() === '' ||
+          (!lines[i].startsWith(' ') &&
+            !lines[i].includes(':') &&
+            !lines[i].startsWith('-'))
+        ) {
           lines.splice(i, 0, '---');
           fixed = true;
           break;
@@ -169,10 +174,10 @@ class YAMLFormatter {
     console.log('\n' + '='.repeat(60));
     console.log('📊 YAML格式修正结果');
     console.log('='.repeat(60));
-    
+
     console.log(`✅ 修正的文件数: ${this.fixedFiles.length}`);
     console.log(`❌ 处理失败数: ${this.errors.length}`);
-    
+
     if (this.fixedFiles.length > 0) {
       console.log('\n🔧 已修正的文件:');
       this.fixedFiles.forEach(file => {

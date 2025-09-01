@@ -1,0 +1,127 @@
+# Package.json 安全脚本集成建议
+
+```diff
+// package.json - scripts section
+{
+  "scripts": {
+    // ... 现有脚本 ...
+
++   // 新增安全相关脚本
++   "security:gate": "node scripts/ci/security-gate-comprehensive.mjs",
++   "security:gate:fix": "node scripts/ci/security-gate-comprehensive.mjs --fix",
++   "security:monitor": "node scripts/ci/security-monitoring.mjs",
++   "security:monitor:continuous": "node scripts/ci/security-monitoring.mjs --continuous",
++   "security:fix": "node scripts/security-auto-fix.mjs --apply",
++   "security:fix:dry": "node scripts/security-auto-fix.mjs --dry-run",
++   "security:fix:csp": "node scripts/security-auto-fix.mjs --apply --category=csp",
++   "security:fix:electron": "node scripts/security-auto-fix.mjs --apply --category=electron",
++   
++   // 更新现有的CI脚本，集成新的安全门禁
+    "guard:ci": "npm run typecheck && npm run lint && npm run test:unit && npm run security:audit:gate && npm run guard:electron && npm run test:e2e:arch-check && npm run test:e2e && npm run guard:quality && npm run guard:health && npm run guard:base && npm run guard:version && npm run docs:score:gate && npm run guard:adr && npm run guard:csp && npm run guard:bundle && npm run guard:web-vitals && npm run guard:db && npm run db:checkpoint:truncate && npm run observability:test && npm run pr:performance && npm run quality:bundle:build && npm run quality:deps && npm run quality:perf",
+    
++   // 增强的CI脚本，包含新的综合安全门禁
++   "guard:ci:enhanced": "npm run typecheck && npm run lint && npm run test:unit && npm run security:gate && npm run test:e2e:security && npm run guard:quality && npm run guard:health && npm run observability:test",
++   
++   // 生产部署前的安全检查
++   "predeploy:security": "npm run security:gate && npm run security:monitor",
++   
+    // ... 其他现有脚本 ...
+  }
+}
+```
+
+## GitHub Actions 工作流集成建议
+
+创建 `.github/workflows/security.yml`:
+
+```yaml
+name: Security Audit
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每日UTC 02:00运行安全扫描
+    - cron: '0 2 * * *'
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run comprehensive security gate
+      run: npm run security:gate
+      
+    - name: Run E2E security tests
+      run: npm run test:e2e:security
+      
+    - name: Auto-fix security issues (if any)
+      if: failure()
+      run: npm run security:fix
+      
+    - name: Create security report
+      if: always()
+      run: |
+        npm run security:monitor > security-report.json
+        
+    - name: Upload security report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: security-report.json
+        
+    - name: Comment PR with security status
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('security-report.json', 'utf8');
+          const reportData = JSON.parse(report);
+          
+          const comment = `## 🔒 安全审计报告
+          
+          **状态**: ${reportData.security_status}
+          **检查项**: ${reportData.summary.total_events}
+          **告警数**: ${reportData.summary.total_alerts}
+          
+          ${reportData.recommendations.map(r => `- ${r}`).join('\n')}
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+        
+    - name: Run npm audit
+      run: npm audit --audit-level high
+```

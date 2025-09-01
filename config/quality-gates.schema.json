@@ -45,7 +45,16 @@
         },
         "unit": {
           "type": "string",
-          "enum": ["bytes", "percent", "seconds", "milliseconds", "megabytes", "hours", "minutes", "count"]
+          "enum": [
+            "bytes",
+            "percent",
+            "seconds",
+            "milliseconds",
+            "megabytes",
+            "hours",
+            "minutes",
+            "count"
+          ]
         },
         "description": {
           "type": "string"

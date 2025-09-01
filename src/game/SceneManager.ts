@@ -5,9 +5,10 @@
 import Phaser from 'phaser';
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
+import { TestScene } from './scenes/TestScene';
 import type { DomainEvent } from '../shared/contracts/events';
 
-export type SceneKey = 'MenuScene' | 'GameScene';
+export type SceneKey = 'MenuScene' | 'GameScene' | 'TestScene';
 
 export interface SceneManagerConfig {
   onEvent?: (event: DomainEvent) => void;
@@ -59,7 +60,7 @@ export class SceneManager {
               height: 1200,
             },
           },
-          scene: [MenuScene, GameScene],
+          scene: [MenuScene, GameScene, TestScene],
           callbacks: {
             postBoot: () => {
               this.setupEventHandlers();
@@ -90,7 +91,7 @@ export class SceneManager {
     // 为每个场景设置事件转发
     const sceneManager = this.game.scene;
 
-    ['MenuScene', 'GameScene'].forEach(sceneKey => {
+    ['MenuScene', 'GameScene', 'TestScene'].forEach(sceneKey => {
       const scene = sceneManager.getScene(sceneKey);
       if (scene) {
         scene.events.on('domain-event', (event: DomainEvent) => {

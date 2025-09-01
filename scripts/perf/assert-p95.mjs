@@ -16,29 +16,29 @@ const __dirname = path.dirname(__filename);
 // 硬编码性能阈值（来自ADR-0005）- 不可调整
 const PERFORMANCE_THRESHOLDS = {
   frameTime: {
-    target: 16.7,        // 60 FPS = 16.7ms/frame
-    p95: 16.7,          // P95 不应超过目标帧时间
-    p99: 33.4,          // P99 允许偶尔翻倍（但仍需 >30fps）
-    description: '渲染帧时间'
+    target: 16.7, // 60 FPS = 16.7ms/frame
+    p95: 16.7, // P95 不应超过目标帧时间
+    p99: 33.4, // P99 允许偶尔翻倍（但仍需 >30fps）
+    description: '渲染帧时间',
   },
   interaction: {
-    target: 50,          // 目标交互响应时间
-    p95: 100,           // P95 ≤ 100ms 关键交互
-    p99: 200,           // P99 允许更高延迟
-    description: '交互响应时间'
+    target: 50, // 目标交互响应时间
+    p95: 100, // P95 ≤ 100ms 关键交互
+    p99: 200, // P99 允许更高延迟
+    description: '交互响应时间',
   },
   eventProcessing: {
-    target: 25,          // 目标事件处理时间
-    p95: 50,            // P95 ≤ 50ms 事件处理
-    p99: 100,           // P99 允许更高延迟
-    description: '事件处理时间'
+    target: 25, // 目标事件处理时间
+    p95: 50, // P95 ≤ 50ms 事件处理
+    p99: 100, // P99 允许更高延迟
+    description: '事件处理时间',
   },
   startup: {
-    target: 2000,        // 目标启动时间 2秒
-    p95: 3000,          // P95 ≤ 3秒应用启动
-    p99: 5000,          // P99 允许 5秒启动
-    description: '应用启动时间'
-  }
+    target: 2000, // 目标启动时间 2秒
+    p95: 3000, // P95 ≤ 3秒应用启动
+    p99: 5000, // P99 允许 5秒启动
+    description: '应用启动时间',
+  },
 };
 
 /**
@@ -48,7 +48,7 @@ const PERFORMANCE_THRESHOLDS = {
  */
 function calculateP95(values) {
   if (!values || values.length === 0) return 0;
-  
+
   const sorted = [...values].sort((a, b) => a - b);
   const index = Math.ceil(sorted.length * 0.95) - 1;
   return sorted[Math.max(0, index)];
@@ -56,12 +56,12 @@ function calculateP95(values) {
 
 /**
  * 计算P99值
- * @param {number[]} values 数值数组  
+ * @param {number[]} values 数值数组
  * @returns {number} P99值
  */
 function calculateP99(values) {
   if (!values || values.length === 0) return 0;
-  
+
   const sorted = [...values].sort((a, b) => a - b);
   const index = Math.ceil(sorted.length * 0.99) - 1;
   return sorted[Math.max(0, index)];
@@ -99,7 +99,7 @@ function validatePerformanceMetric(metricName, samples, thresholds) {
     failures.push(`P95 ${p95.toFixed(2)}ms > ${thresholds.p95}ms`);
   }
 
-  // P99断言  
+  // P99断言
   if (p99 > thresholds.p99) {
     failures.push(`P99 ${p99.toFixed(2)}ms > ${thresholds.p99}ms`);
   }
@@ -110,7 +110,9 @@ function validatePerformanceMetric(metricName, samples, thresholds) {
   }
 
   if (failures.length > 0) {
-    throw new Error(`${metricName} 性能门禁失败:\n${failures.map(f => `  - ${f}`).join('\n')}`);
+    throw new Error(
+      `${metricName} 性能门禁失败:\n${failures.map(f => `  - ${f}`).join('\n')}`
+    );
   }
 
   console.log(`✅ ${metricName} 性能门禁通过！`);
@@ -123,7 +125,7 @@ function validatePerformanceMetric(metricName, samples, thresholds) {
     min: min,
     max: max,
     thresholds: thresholds,
-    passed: true
+    passed: true,
   };
 }
 
@@ -150,28 +152,44 @@ function loadPerformanceReport(reportPath) {
  */
 function generateMockPerformanceData() {
   console.log('🧪 生成模拟性能数据进行演示...\n');
-  
+
   return {
     frameTime: [
       // 大部分帧符合60fps (16.7ms)，少数抖动
-      ...Array(40).fill(0).map(() => 14 + Math.random() * 5), // 14-19ms
-      ...Array(5).fill(0).map(() => 20 + Math.random() * 10), // 20-30ms 抖动
+      ...Array(40)
+        .fill(0)
+        .map(() => 14 + Math.random() * 5), // 14-19ms
+      ...Array(5)
+        .fill(0)
+        .map(() => 20 + Math.random() * 10), // 20-30ms 抖动
     ],
     interaction: [
       // 大部分交互响应快速，少数较慢
-      ...Array(35).fill(0).map(() => 30 + Math.random() * 40), // 30-70ms
-      ...Array(10).fill(0).map(() => 80 + Math.random() * 30), // 80-110ms
+      ...Array(35)
+        .fill(0)
+        .map(() => 30 + Math.random() * 40), // 30-70ms
+      ...Array(10)
+        .fill(0)
+        .map(() => 80 + Math.random() * 30), // 80-110ms
     ],
     eventProcessing: [
       // 事件处理大部分很快
-      ...Array(45).fill(0).map(() => 5 + Math.random() * 35), // 5-40ms
-      ...Array(5).fill(0).map(() => 45 + Math.random() * 15), // 45-60ms
+      ...Array(45)
+        .fill(0)
+        .map(() => 5 + Math.random() * 35), // 5-40ms
+      ...Array(5)
+        .fill(0)
+        .map(() => 45 + Math.random() * 15), // 45-60ms
     ],
     startup: [
       // 启动时间相对稳定
-      ...Array(15).fill(0).map(() => 1800 + Math.random() * 800), // 1.8-2.6s
-      ...Array(5).fill(0).map(() => 2800 + Math.random() * 400), // 2.8-3.2s
-    ]
+      ...Array(15)
+        .fill(0)
+        .map(() => 1800 + Math.random() * 800), // 1.8-2.6s
+      ...Array(5)
+        .fill(0)
+        .map(() => 2800 + Math.random() * 400), // 2.8-3.2s
+    ],
   };
 }
 
@@ -187,10 +205,15 @@ async function runPerformanceGates() {
 
   try {
     // 查找性能报告文件
-    const performanceReportPath = path.join(__dirname, '..', '..', '.performance-report.json');
-    
+    const performanceReportPath = path.join(
+      __dirname,
+      '..',
+      '..',
+      '.performance-report.json'
+    );
+
     let performanceData;
-    
+
     if (fs.existsSync(performanceReportPath)) {
       console.log('📊 读取性能报告文件...');
       performanceData = loadPerformanceReport(performanceReportPath);
@@ -232,13 +255,20 @@ async function runPerformanceGates() {
       }
     } else {
       console.log('⚠️  跳过交互检查：无数据');
-      results.interaction = { passed: true, skipped: true, reason: '无交互数据' };
+      results.interaction = {
+        passed: true,
+        skipped: true,
+        reason: '无交互数据',
+      };
     }
 
     console.log(''); // 空行分隔
 
     // 3. 验证事件处理性能
-    if (performanceData.eventProcessing && performanceData.eventProcessing.length > 0) {
+    if (
+      performanceData.eventProcessing &&
+      performanceData.eventProcessing.length > 0
+    ) {
       try {
         results.eventProcessing = validatePerformanceMetric(
           '事件处理',
@@ -251,7 +281,11 @@ async function runPerformanceGates() {
       }
     } else {
       console.log('⚠️  跳过事件处理检查：无数据');
-      results.eventProcessing = { passed: true, skipped: true, reason: '无事件处理数据' };
+      results.eventProcessing = {
+        passed: true,
+        skipped: true,
+        reason: '无事件处理数据',
+      };
     }
 
     console.log(''); // 空行分隔
@@ -280,7 +314,10 @@ async function runPerformanceGates() {
     }
 
     const timestamp = new Date().toISOString().split('T')[0];
-    const reportFile = path.join(reportDir, `performance-gates-${timestamp}.json`);
+    const reportFile = path.join(
+      reportDir,
+      `performance-gates-${timestamp}.json`
+    );
 
     const report = {
       timestamp: new Date().toISOString(),
@@ -289,9 +326,11 @@ async function runPerformanceGates() {
       summary: {
         totalChecks: Object.keys(results).length,
         passedChecks: Object.values(results).filter(r => r.passed).length,
-        failedChecks: Object.values(results).filter(r => !r.passed && !r.skipped).length,
-        skippedChecks: Object.values(results).filter(r => r.skipped).length
-      }
+        failedChecks: Object.values(results).filter(
+          r => !r.passed && !r.skipped
+        ).length,
+        skippedChecks: Object.values(results).filter(r => r.skipped).length,
+      },
     };
 
     fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
@@ -318,7 +357,6 @@ async function runPerformanceGates() {
       console.log('\n✅ 性能门禁检查全部通过！');
       console.log('🎉 性能指标均达到ADR-0005要求');
     }
-
   } catch (error) {
     console.error('❌ 性能门禁脚本执行失败:', error.message);
     console.error(error.stack);
@@ -332,7 +370,7 @@ export {
   validatePerformanceMetric,
   calculateP95,
   calculateP99,
-  PERFORMANCE_THRESHOLDS
+  PERFORMANCE_THRESHOLDS,
 };
 
 // 主执行逻辑

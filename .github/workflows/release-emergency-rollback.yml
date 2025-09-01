@@ -4,25 +4,31 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: "回滚原因"
+        description: '回滚原因'
         required: true
         type: string
-        default: "Emergency rollback requested"
+        default: 'Emergency rollback requested'
       target_version:
-        description: "回滚到的目标版本（留空使用环境变量）"
+        description: '回滚到的目标版本（留空使用环境变量）'
         required: false
         type: string
       feed_files:
-        description: "要回滚的 feed 文件"
+        description: '要回滚的 feed 文件'
         required: false
         type: choice
-        options: ["all", "dist/latest.yml", "dist/latest-mac.yml", "dist/latest-linux.yml"]
-        default: "all"
+        options:
+          [
+            'all',
+            'dist/latest.yml',
+            'dist/latest-mac.yml',
+            'dist/latest-linux.yml',
+          ]
+        default: 'all'
       triggered_by:
-        description: "触发者（内部使用）"
+        description: '触发者（内部使用）'
         required: false
         type: string
-        default: "manual"
+        default: 'manual'
 
 env:
   PREV_GA_VERSION: ${{ inputs.target_version || vars.PREV_GA_VERSION || '0.0.9' }}
@@ -38,9 +44,9 @@ jobs:
     environment:
       name: production
       # 可选：需要批准才能执行紧急回滚
-    
+
     steps:
-      - name: "🚨 Emergency rollback initiated"
+      - name: '🚨 Emergency rollback initiated'
         run: |
           echo "🚨🚨🚨 紧急回滚已启动 🚨🚨🚨"
           echo "📋 回滚信息:"
@@ -48,31 +54,31 @@ jobs:
           echo "  - 目标版本: $PREV_GA_VERSION"
           echo "  - Feed 文件: ${{ inputs.feed_files }}"
           echo "  - 触发者: ${{ inputs.triggered_by }}"
-      
-      - name: "🚀 Checkout repository"
+
+      - name: '🚀 Checkout repository'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - name: "📦 Setup Node.js"
+
+      - name: '📦 Setup Node.js'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
-      - name: "🔧 Install dependencies"
+
+      - name: '🔧 Install dependencies'
         run: npm ci --only=production
-      
-      - name: "🔍 Pre-rollback validation"
+
+      - name: '🔍 Pre-rollback validation'
         run: |
           echo "🔍 验证回滚前提条件..."
-          
+
           # 验证版本清单
           if [ ! -f "artifacts/manifest.json" ]; then
             echo "❌ 版本清单文件不存在"
             exit 1
           fi
-          
+
           # 验证目标版本在清单中存在
           if ! jq -e --arg version "$PREV_GA_VERSION" '.[$version]' artifacts/manifest.json > /dev/null; then
             echo "❌ 目标版本 $PREV_GA_VERSION 不在版本清单中"
@@ -80,18 +86,18 @@ jobs:
             jq -r 'keys[]' artifacts/manifest.json
             exit 1
           fi
-          
+
           echo "✅ 回滚前验证通过"
           echo "📦 目标版本: $PREV_GA_VERSION"
-      
-      - name: "🚨 Execute rollback for all feeds"
+
+      - name: '🚨 Execute rollback for all feeds'
         if: inputs.feed_files == 'all'
         id: rollback_all
         run: |
           echo "🚨 对所有 feed 文件执行紧急回滚..."
-          
+
           rollback_results="[]"
-          
+
           for feed_file in "dist/latest.yml" "dist/latest-mac.yml" "dist/latest-linux.yml"; do
             if [ -f "$feed_file" ]; then
               echo "🔄 回滚 $feed_file..."
@@ -118,36 +124,36 @@ jobs:
               rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": true, \"skipped\": true}" '. + [$item]')
             fi
           done
-          
+
           echo "rollback_results=$rollback_results" >> $GITHUB_OUTPUT
           echo "🚨 所有 feed 文件回滚操作完成"
-      
-      - name: "🚨 Execute rollback for single feed"
+
+      - name: '🚨 Execute rollback for single feed'
         if: inputs.feed_files != 'all'
         id: rollback_single
         run: |
           feed_file="${{ inputs.feed_files }}"
           echo "🚨 对 $feed_file 执行紧急回滚..."
-          
+
           if [ ! -f "$feed_file" ]; then
             echo "❌ Feed 文件不存在: $feed_file"
             exit 1
           fi
-          
+
           result=$(node scripts/release/execute-rollback.mjs \
             --feed="$feed_file" \
             --previous-version="$PREV_GA_VERSION" \
             --manifest="artifacts/manifest.json" \
             --reason="${{ inputs.reason }}" \
             $([ -n "$WEBHOOK_URL" ] && echo "--notify"))
-          
+
           echo "rollback_result=$result" >> $GITHUB_OUTPUT
           echo "✅ $feed_file 紧急回滚完成"
-      
-      - name: "🛑 Stop all running release workflows"
+
+      - name: '🛑 Stop all running release workflows'
         run: |
           echo "🛑 停止所有正在运行的发布相关工作流..."
-          
+
           # 获取当前运行的工作流
           running_workflows=$(gh run list \
             --repo ${{ github.repository }} \
@@ -155,7 +161,7 @@ jobs:
             --workflow "Release Ramp" \
             --json databaseId,headBranch \
             --jq '.[].databaseId')
-          
+
           if [ -n "$running_workflows" ]; then
             echo "发现正在运行的发布工作流，正在取消..."
             for run_id in $running_workflows; do
@@ -167,8 +173,8 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: "📧 Send emergency notification"
+
+      - name: '📧 Send emergency notification'
         if: always()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
@@ -177,9 +183,9 @@ jobs:
             echo "⚠️  WEBHOOK_URL 未配置，跳过通知"
             exit 0
           fi
-          
+
           echo "📧 发送紧急回滚通知..."
-          
+
           # 构建通知消息
           if [ "${{ steps.rollback_all.outcome }}" = "success" ] || [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
             status="🚨 Emergency Rollback Completed"
@@ -190,7 +196,7 @@ jobs:
             color="danger"
             message="Emergency rollback attempt failed. Manual intervention required."
           fi
-          
+
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{
@@ -207,21 +213,21 @@ jobs:
                 \"text\": \"$message\"
               }]
             }" || echo "Webhook notification failed (non-critical)"
-      
-      - name: "💾 Commit rollback changes"
+
+      - name: '💾 Commit rollback changes'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           # 检查是否有变更
           if git diff --quiet; then
             echo "📝 无变更需要提交"
             exit 0
           fi
-          
+
           # 提交紧急回滚变更
           git add dist/latest*.yml 2>/dev/null || true
-          
+
           if ! git diff --cached --quiet; then
             git commit -m "🚨 EMERGENCY ROLLBACK: v$PREV_GA_VERSION" \
               -m "Reason: ${{ inputs.reason }}" \
@@ -235,14 +241,14 @@ jobs:
             
             echo "✅ 紧急回滚变更已提交"
           fi
-      
-      - name: "🚀 Push emergency changes"
+
+      - name: '🚀 Push emergency changes'
         run: |
           echo "📤 推送紧急回滚变更..."
           git push origin ${{ github.ref }}
           echo "✅ 紧急回滚完成并已推送"
-      
-      - name: "📋 Emergency rollback summary"
+
+      - name: '📋 Emergency rollback summary'
         if: always()
         run: |
           echo "## 🚨 紧急回滚执行报告" >> $GITHUB_STEP_SUMMARY
@@ -257,7 +263,7 @@ jobs:
           echo "| 触发者 | ${{ inputs.triggered_by }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 执行时间 | $(date -u +%Y-%m-%dT%H:%M:%S.000Z) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
             echo "### 📊 批量回滚结果" >> $GITHUB_STEP_SUMMARY
@@ -270,7 +276,7 @@ jobs:
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 后续操作建议" >> $GITHUB_STEP_SUMMARY
           echo "1. 🔍 **立即调查** 导致回滚的根本原因" >> $GITHUB_STEP_SUMMARY
@@ -278,7 +284,7 @@ jobs:
           echo "3. 📢 **通知团队** 回滚情况和影响范围" >> $GITHUB_STEP_SUMMARY
           echo "4. 🔧 **修复问题** 在重新发布前解决根本原因" >> $GITHUB_STEP_SUMMARY
           echo "5. 📝 **事后分析** 更新发布流程以防止类似问题" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ inputs.triggered_by }}" = "monitor" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "⚡ **注意**: 此回滚由自动监控系统触发" >> $GITHUB_STEP_SUMMARY

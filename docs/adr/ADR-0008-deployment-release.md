@@ -2,7 +2,7 @@
 ADR-ID: ADR-0008
 title: 部署与发布策略 - Electron Builder + GitHub Releases
 status: Accepted
-decision-time: "2025-08-17"
+decision-time: '2025-08-17'
 deciders: [架构团队, DevOps团队, 安全团队]
 archRefs: [CH03, CH07, CH10]
 verification:
@@ -39,28 +39,27 @@ supersedes: []
 
 # ADR-0008: 部署发布与自动更新策略
 
-
 ## Context and Problem Statement
 
 Electron桌面应用需要建立可靠的部署发布流程和自动更新机制，支持跨平台分发（Windows、macOS、Linux），确保应用的安全性（代码签名）、可靠性（渐进式发布）和用户体验（无缝更新）。需要平衡安全性、用户体验和运维成本。
 
 ## Decision Drivers
 
-* 需要自动更新机制，减少用户手动更新成本
-* 需要代码签名确保应用安全性和用户信任
-* 需要支持渐进式发布，降低大规模部署风险
-* 需要跨平台兼容性（Windows/macOS/Linux）
-* 需要与Release Health监控集成（继承ADR-0003）
-* 需要支持快速回滚机制
-* 需要满足应用商店分发要求
+- 需要自动更新机制，减少用户手动更新成本
+- 需要代码签名确保应用安全性和用户信任
+- 需要支持渐进式发布，降低大规模部署风险
+- 需要跨平台兼容性（Windows/macOS/Linux）
+- 需要与Release Health监控集成（继承ADR-0003）
+- 需要支持快速回滚机制
+- 需要满足应用商店分发要求
 
 ## Considered Options
 
-* **electron-updater + 代码签名 + 渐进式发布** (选择方案)
-* **Squirrel.Windows + 手动分发**
-* **应用商店独占分发（限制灵活性）**
-* **Docker容器化桌面应用（技术复杂度高）**
-* **Web应用替代（功能受限）**
+- **electron-updater + 代码签名 + 渐进式发布** (选择方案)
+- **Squirrel.Windows + 手动分发**
+- **应用商店独占分发（限制灵活性）**
+- **Docker容器化桌面应用（技术复杂度高）**
+- **Web应用替代（功能受限）**
 
 ## Decision Outcome
 
@@ -69,6 +68,7 @@ Electron桌面应用需要建立可靠的部署发布流程和自动更新机制
 ### electron-updater核心配置
 
 **自动更新配置**：
+
 ```javascript
 // electron/main/auto-updater.ts
 import { autoUpdater } from 'electron-updater';
@@ -101,7 +101,7 @@ export class AutoUpdaterManager {
     // 配置更新行为
     autoUpdater.autoDownload = false; // 手动控制下载时机
     autoUpdater.autoInstallOnAppQuit = true;
-    
+
     // 允许预发布版本（可配置）
     autoUpdater.allowPrerelease = process.env.NODE_ENV === 'development';
   }
@@ -150,7 +150,7 @@ export class AutoUpdaterManager {
         version: info.version,
         files: info.files.map(f => ({ url: f.url, size: f.size }))
       });
-      
+
       // 显示安装确认对话框
       this.showInstallDialog(info);
     });
@@ -208,6 +208,7 @@ export class AutoUpdaterManager {
 ### 代码签名配置
 
 **Windows代码签名（Authenticode）**：
+
 ```javascript
 // electron-builder配置
 {
@@ -257,6 +258,7 @@ export class AutoUpdaterManager {
 ```
 
 **macOS代码签名和公证**：
+
 ```javascript
 {
   "mac": {
@@ -306,6 +308,7 @@ export class AutoUpdaterManager {
 ```
 
 **macOS entitlements.mac.plist**：
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -330,6 +333,7 @@ export class AutoUpdaterManager {
 ### 渐进式发布策略
 
 **发布阶段配置**：
+
 ```typescript
 // scripts/progressive-release.ts
 export interface ReleaseStage {
@@ -355,8 +359,8 @@ const RELEASE_STAGES: ReleaseStage[] = [
       crashFreeUsers: 99.0,
       crashFreeSessions: 99.5,
       minAdoption: 50,
-      maxErrorRate: 0.01
-    }
+      maxErrorRate: 0.01,
+    },
   },
   {
     name: 'beta',
@@ -366,8 +370,8 @@ const RELEASE_STAGES: ReleaseStage[] = [
       crashFreeUsers: 99.3,
       crashFreeSessions: 99.7,
       minAdoption: 500,
-      maxErrorRate: 0.005
-    }
+      maxErrorRate: 0.005,
+    },
   },
   {
     name: 'stable',
@@ -377,9 +381,9 @@ const RELEASE_STAGES: ReleaseStage[] = [
       crashFreeUsers: 99.5,
       crashFreeSessions: 99.8,
       minAdoption: 1000,
-      maxErrorRate: 0.002
-    }
-  }
+      maxErrorRate: 0.002,
+    },
+  },
 ];
 
 export class ProgressiveReleaseManager {
@@ -390,53 +394,61 @@ export class ProgressiveReleaseManager {
 
   async executeRelease(version: string): Promise<void> {
     let currentStage = 0;
-    
+
     for (const stage of RELEASE_STAGES) {
       console.log(`Starting ${stage.name} release (${stage.percentage}%)`);
-      
+
       // 更新GitHub Release为指定阶段
       await this.updateReleaseStage(version, stage);
-      
+
       // 等待指定时间
       await this.waitForDuration(stage.duration);
-      
+
       // 检查Release Health指标
       const metrics = await this.getReleaseHealthMetrics(version);
       const passed = this.validateCriteria(metrics, stage.criteria);
-      
+
       if (!passed) {
         console.error(`Stage ${stage.name} failed criteria validation`);
         await this.rollbackRelease(version, currentStage);
         throw new Error(`Release ${version} failed at ${stage.name} stage`);
       }
-      
+
       console.log(`Stage ${stage.name} completed successfully`);
       currentStage++;
     }
-    
+
     console.log(`Release ${version} completed successfully`);
   }
 
-  private async updateReleaseStage(version: string, stage: ReleaseStage): Promise<void> {
+  private async updateReleaseStage(
+    version: string,
+    stage: ReleaseStage
+  ): Promise<void> {
     // 更新GitHub Release的标签和描述
     await this.githubClient.updateRelease(version, {
       tag_name: `v${version}`,
       name: `${version} (${stage.name})`,
       body: this.generateReleaseNotes(version, stage),
       draft: false,
-      prerelease: stage.name !== 'stable'
+      prerelease: stage.name !== 'stable',
     });
   }
 
-  private async getReleaseHealthMetrics(version: string): Promise<ReleaseHealthMetrics> {
+  private async getReleaseHealthMetrics(
+    version: string
+  ): Promise<ReleaseHealthMetrics> {
     // 从Sentry获取Release Health数据
     return await this.sentryClient.getReleaseHealth(version, {
       statsPeriod: '1h',
-      project: 'build-game'
+      project: 'build-game',
     });
   }
 
-  private validateCriteria(metrics: ReleaseHealthMetrics, criteria: ReleaseCriteria): boolean {
+  private validateCriteria(
+    metrics: ReleaseHealthMetrics,
+    criteria: ReleaseCriteria
+  ): boolean {
     return (
       metrics.crashFreeUsers >= criteria.crashFreeUsers &&
       metrics.crashFreeSessions >= criteria.crashFreeSessions &&
@@ -445,15 +457,18 @@ export class ProgressiveReleaseManager {
     );
   }
 
-  private async rollbackRelease(version: string, stageIndex: number): Promise<void> {
+  private async rollbackRelease(
+    version: string,
+    stageIndex: number
+  ): Promise<void> {
     console.log(`Rolling back release ${version} from stage ${stageIndex}`);
-    
+
     // 标记发布为draft，停止自动更新推送
     await this.githubClient.updateRelease(version, {
       draft: true,
-      prerelease: true
+      prerelease: true,
     });
-    
+
     // 发送回滚通知
     await this.sendRollbackNotification(version, stageIndex);
   }
@@ -463,6 +478,7 @@ export class ProgressiveReleaseManager {
 ### CI/CD集成配置
 
 **GitHub Actions发布工作流**：
+
 ```yaml
 # .github/workflows/release.yml
 name: Release
@@ -475,33 +491,33 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run quality gates
         run: npm run guard:ci
-      
+
       - name: Import Windows certificate
         if: matrix.os == 'windows-latest'
         run: |
           echo "${{ secrets.WINDOWS_CERT_P12 }}" | base64 --decode > build/certificates/windows-cert.p12
         shell: bash
-      
+
       - name: Import macOS certificates
         if: matrix.os == 'macos-latest'
         env:
@@ -516,7 +532,7 @@ jobs:
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-      
+
       - name: Build and release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -525,13 +541,13 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run build:release
-      
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@v3
         with:
           name: release-${{ matrix.os }}
           path: dist/
-      
+
       - name: Start progressive release
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -540,6 +556,7 @@ jobs:
 ```
 
 **版本管理和发布脚本**：
+
 ```javascript
 // scripts/release.mjs
 import { execSync } from 'child_process';
@@ -553,38 +570,40 @@ class ReleaseManager {
 
   async createRelease(releaseType = 'patch') {
     console.log(`Creating ${releaseType} release...`);
-    
+
     // 1. 运行质量门禁
     console.log('Running quality gates...');
     execSync('npm run guard:ci', { stdio: 'inherit' });
-    
+
     // 2. 更新版本号
     const oldVersion = this.packageJson.version;
     const newVersion = semver.inc(oldVersion, releaseType);
-    
+
     this.packageJson.version = newVersion;
     writeFileSync('package.json', JSON.stringify(this.packageJson, null, 2));
-    
+
     console.log(`Version updated: ${oldVersion} → ${newVersion}`);
-    
+
     // 3. 构建应用
     console.log('Building application...');
     execSync('npm run build', { stdio: 'inherit' });
-    
+
     // 4. 构建安装包
     console.log('Building installers...');
     execSync('npm run build:electron', { stdio: 'inherit' });
-    
+
     // 5. 创建Git标签
     console.log('Creating git tag...');
     execSync(`git add package.json`, { stdio: 'inherit' });
-    execSync(`git commit -m "chore: bump version to ${newVersion}"`, { stdio: 'inherit' });
+    execSync(`git commit -m "chore: bump version to ${newVersion}"`, {
+      stdio: 'inherit',
+    });
     execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
-    
+
     // 6. 推送到远程
     console.log('Pushing to remote...');
     execSync('git push origin main --tags', { stdio: 'inherit' });
-    
+
     console.log(`Release ${newVersion} created successfully!`);
     return newVersion;
   }
@@ -594,7 +613,8 @@ class ReleaseManager {
 const releaseManager = new ReleaseManager();
 const releaseType = process.argv[2] || 'patch';
 
-releaseManager.createRelease(releaseType)
+releaseManager
+  .createRelease(releaseType)
   .then(version => {
     console.log(`\n✅ Release ${version} completed!`);
   })
@@ -607,6 +627,7 @@ releaseManager.createRelease(releaseType)
 ### 更新UI组件
 
 **更新进度组件**：
+
 ```tsx
 // src/components/UpdateProgress.tsx
 import React, { useState, useEffect } from 'react';
@@ -626,7 +647,9 @@ interface ProgressInfo {
 }
 
 export const UpdateProgress: React.FC = () => {
-  const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'downloaded'>('idle');
+  const [updateState, setUpdateState] = useState<
+    'idle' | 'checking' | 'available' | 'downloading' | 'downloaded'
+  >('idle');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -647,9 +670,12 @@ export const UpdateProgress: React.FC = () => {
       setUpdateState('idle');
     });
 
-    ipcRenderer.on('update-download-progress', (_event, progressObj: ProgressInfo) => {
-      setProgress(progressObj);
-    });
+    ipcRenderer.on(
+      'update-download-progress',
+      (_event, progressObj: ProgressInfo) => {
+        setProgress(progressObj);
+      }
+    );
 
     ipcRenderer.on('update-downloaded', () => {
       setUpdateState('downloaded');
@@ -703,7 +729,9 @@ export const UpdateProgress: React.FC = () => {
           <h3>发现新版本 {updateInfo.version}</h3>
           <div className="release-notes">
             <h4>更新内容：</h4>
-            <div dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }} />
+            <div
+              dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }}
+            />
           </div>
           <p>大小: {(updateInfo.size / 1024 / 1024).toFixed(2)} MB</p>
           <button onClick={handleDownload} className="download-btn">
@@ -716,13 +744,19 @@ export const UpdateProgress: React.FC = () => {
         <div className="update-downloading">
           <h3>正在下载更新...</h3>
           <div className="progress-bar">
-            <div 
+            <div
               className="progress-fill"
               style={{ width: `${progress.percent}%` }}
             />
           </div>
-          <p>{progress.percent.toFixed(1)}% - {(progress.bytesPerSecond / 1024).toFixed(1)} KB/s</p>
-          <p>{(progress.transferred / 1024 / 1024).toFixed(2)} MB / {(progress.total / 1024 / 1024).toFixed(2)} MB</p>
+          <p>
+            {progress.percent.toFixed(1)}% -{' '}
+            {(progress.bytesPerSecond / 1024).toFixed(1)} KB/s
+          </p>
+          <p>
+            {(progress.transferred / 1024 / 1024).toFixed(2)} MB /{' '}
+            {(progress.total / 1024 / 1024).toFixed(2)} MB
+          </p>
         </div>
       )}
 
@@ -742,29 +776,29 @@ export const UpdateProgress: React.FC = () => {
 
 ### Positive Consequences
 
-* 自动更新机制提供无缝的用户体验
-* 代码签名确保应用安全性和用户信任度
-* 渐进式发布降低大规模部署风险
-* 跨平台支持覆盖主要操作系统
-* 与Release Health监控集成，可快速发现问题
-* 支持快速回滚，减少故障影响时间
-* 满足应用商店和企业分发要求
+- 自动更新机制提供无缝的用户体验
+- 代码签名确保应用安全性和用户信任度
+- 渐进式发布降低大规模部署风险
+- 跨平台支持覆盖主要操作系统
+- 与Release Health监控集成，可快速发现问题
+- 支持快速回滚，减少故障影响时间
+- 满足应用商店和企业分发要求
 
 ### Negative Consequences
 
-* 代码签名证书成本和维护复杂度
-* 渐进式发布增加发布流程复杂性
-* macOS公证流程较为复杂，耗时较长
-* 自动更新可能在某些网络环境下失败
-* 需要维护多平台构建环境
-* 回滚机制需要额外的监控和告警系统
+- 代码签名证书成本和维护复杂度
+- 渐进式发布增加发布流程复杂性
+- macOS公证流程较为复杂，耗时较长
+- 自动更新可能在某些网络环境下失败
+- 需要维护多平台构建环境
+- 回滚机制需要额外的监控和告警系统
 
 ## Verification
 
-* **测试验证**: tests/e2e/auto-update.spec.ts, tests/integration/code-signing.spec.ts
-* **门禁脚本**: scripts/verify_signatures.mjs, scripts/test_update_flow.mjs
-* **监控指标**: update.success_rate, release.health_score, deployment.rollback_count, signing.cert_expiry
-* **部署验证**: 多平台安装测试、签名验证、更新流程验证
+- **测试验证**: tests/e2e/auto-update.spec.ts, tests/integration/code-signing.spec.ts
+- **门禁脚本**: scripts/verify_signatures.mjs, scripts/test_update_flow.mjs
+- **监控指标**: update.success_rate, release.health_score, deployment.rollback_count, signing.cert_expiry
+- **部署验证**: 多平台安装测试、签名验证、更新流程验证
 
 ### 部署发布验证清单
 
@@ -779,6 +813,7 @@ export const UpdateProgress: React.FC = () => {
 ## Operational Playbook
 
 ### 升级步骤
+
 1. **证书配置**: 获取和配置Windows/macOS代码签名证书
 2. **构建环境**: 设置跨平台构建环境和签名工具
 3. **更新集成**: 集成electron-updater到应用主进程
@@ -787,6 +822,7 @@ export const UpdateProgress: React.FC = () => {
 6. **渐进式发布**: 部署渐进式发布和自动回滚机制
 
 ### 回滚步骤
+
 1. **立即回滚**: 将有问题的版本标记为draft，停止推送
 2. **版本回退**: 恢复到上一个稳定版本的GitHub Release
 3. **通知机制**: 通过应用内通知告知用户回滚情况
@@ -795,6 +831,7 @@ export const UpdateProgress: React.FC = () => {
 6. **热修复**: 发布热修复版本解决关键问题
 
 ### 迁移指南
+
 - **证书迁移**: 现有应用需要重新签名和分发
 - **更新机制**: 集成自动更新到现有应用架构
 - **用户沟通**: 提前告知用户新的更新机制和流程
@@ -803,12 +840,12 @@ export const UpdateProgress: React.FC = () => {
 
 ## References
 
-* **CH章节关联**: CH07, CH10
-* **相关ADR**: ADR-0003-observability-release-health, ADR-0005-quality-gates, ADR-0002-electron-security
-* **外部文档**: 
+- **CH章节关联**: CH07, CH10
+- **相关ADR**: ADR-0003-observability-release-health, ADR-0005-quality-gates, ADR-0002-electron-security
+- **外部文档**:
   - [electron-updater Documentation](https://www.electron.build/auto-update)
   - [Windows Code Signing Guide](https://docs.microsoft.com/en-us/windows/win32/seccrypto/cryptography-tools)
   - [macOS Notarization Guide](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
   - [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
-* **工具链**: electron-builder, electron-updater, GitHub Actions
-* **相关PRD-ID**: 适用于所有需要桌面应用分发的PRD
+- **工具链**: electron-builder, electron-updater, GitHub Actions
+- **相关PRD-ID**: 适用于所有需要桌面应用分发的PRD

@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "监控的应用版本（留空使用环境变量）"
+        description: '监控的应用版本（留空使用环境变量）'
         required: false
         type: string
       force_check:
-        description: "强制检查（忽略时间限制）"
+        description: '强制检查（忽略时间限制）'
         required: false
         type: boolean
         default: false
@@ -32,21 +32,21 @@ jobs:
     permissions:
       contents: write
       actions: write
-    
+
     steps:
-      - name: "🚀 Checkout repository"
+      - name: '🚀 Checkout repository'
         uses: actions/checkout@v4
-      
-      - name: "📦 Setup Node.js"
+
+      - name: '📦 Setup Node.js'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
-      - name: "🔧 Install dependencies"
+
+      - name: '🔧 Install dependencies'
         run: npm ci --only=production
-      
-      - name: "⏰ Check monitoring conditions"
+
+      - name: '⏰ Check monitoring conditions'
         id: conditions
         run: |
           # 检查是否在工作时间（UTC 6:00 - 22:00，大致对应各时区的工作时间）
@@ -58,14 +58,14 @@ jobs:
               exit 0
             fi
           fi
-          
+
           # 检查是否有活跃的渐进发布
           if [ ! -f "dist/latest.yml" ]; then
             echo "📄 Feed 文件不存在，跳过监控"
             echo "should_monitor=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # 检查 stagingPercentage
           staging_pct=$(grep -E '^stagingPercentage:' dist/latest.yml | sed 's/stagingPercentage: *//' || echo "0")
           if [ "$staging_pct" = "0" ] || [ "$staging_pct" = "100" ]; then
@@ -73,12 +73,12 @@ jobs:
             echo "should_monitor=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "✅ 满足监控条件，开始健康检查"
           echo "should_monitor=true" >> $GITHUB_OUTPUT
           echo "staging_percentage=$staging_pct" >> $GITHUB_OUTPUT
-      
-      - name: "🏥 Continuous health monitoring"
+
+      - name: '🏥 Continuous health monitoring'
         id: health_monitor
         if: steps.conditions.outputs.should_monitor == 'true'
         env:
@@ -89,22 +89,22 @@ jobs:
             echo "monitor_status=skipped" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "🔍 监控版本 $APP_VERSION 的持续健康状态..."
           echo "📊 当前分阶段发布: ${{ steps.conditions.outputs.staging_percentage }}%"
-          
+
           # 执行健康度检查
           set +e
           health_result=$(DRY_RUN=true node scripts/release/auto-rollback.mjs)
           health_exit_code=$?
           set -e
-          
+
           echo "health_result=$health_result" >> $GITHUB_OUTPUT
           echo "health_exit_code=$health_exit_code" >> $GITHUB_OUTPUT
-          
+
           echo "📊 健康监控结果:"
           echo "$health_result" | jq '.'
-          
+
           case $health_exit_code in
             0)
               echo "✅ 持续健康监控：指标正常"
@@ -133,13 +133,13 @@ jobs:
               echo "monitor_status=error" >> $GITHUB_OUTPUT
               ;;
           esac
-      
-      - name: "📊 Update monitoring dashboard"
+
+      - name: '📊 Update monitoring dashboard'
         if: steps.conditions.outputs.should_monitor == 'true'
         run: |
           # 创建或更新监控状态文件
           mkdir -p .github/monitoring
-          
+
           cat > .github/monitoring/latest-status.json << EOF
           {
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
@@ -151,10 +151,10 @@ jobs:
             "next_check": "$(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
           }
           EOF
-          
+
           echo "📊 监控状态已更新"
-      
-      - name: "📢 Send health alert (if needed)"
+
+      - name: '📢 Send health alert (if needed)'
         if: steps.health_monitor.outputs.monitor_status == 'unhealthy'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
@@ -163,9 +163,9 @@ jobs:
             echo "⚠️  WEBHOOK_URL 未配置，跳过通知"
             exit 0
           fi
-          
+
           echo "🚨 发送健康告警通知..."
-          
+
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{
@@ -181,13 +181,13 @@ jobs:
                 \"text\": \"Continuous monitoring detected health issues. Emergency rollback has been initiated.\"
               }]
             }" || echo "Webhook notification failed (non-critical)"
-      
-      - name: "💾 Commit monitoring data"
+
+      - name: '💾 Commit monitoring data'
         if: steps.conditions.outputs.should_monitor == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           if [ -f ".github/monitoring/latest-status.json" ]; then
             git add .github/monitoring/latest-status.json
             git commit -m "📊 Release monitoring update: $APP_VERSION" \
@@ -198,15 +198,15 @@ jobs:
             
             git push origin ${{ github.ref }} || echo "Push failed (non-critical)"
           fi
-      
-      - name: "📋 Monitoring summary"
+
+      - name: '📋 Monitoring summary'
         if: always()
         run: |
           echo "## 📊 发布监控报告" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**监控时间**: $(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_STEP_SUMMARY
           echo "**应用版本**: \`$APP_VERSION\`" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.conditions.outputs.should_monitor }}" = "true" ]; then
             echo "**分阶段发布**: ${{ steps.conditions.outputs.staging_percentage }}%" >> $GITHUB_STEP_SUMMARY
             
@@ -231,6 +231,6 @@ jobs:
           else
             echo "**监控状态**: ⏭️ 跳过 (条件不满足)" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**下次检查**: $(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_STEP_SUMMARY

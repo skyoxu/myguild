@@ -234,7 +234,6 @@ export function GameControlPanel({
     color: '#ffffff',
   };
 
-
   return (
     <div
       className={`game-control-panel ${className}`}

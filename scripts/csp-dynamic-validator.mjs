@@ -74,25 +74,31 @@ class CSPDynamicValidator {
   extractCSPFromHTML(htmlContent) {
     // 分行查找 CSP meta 标签，避免复杂正则表达式
     const lines = htmlContent.split('\n');
-    
+
     for (const line of lines) {
-      if (line.includes('Content-Security-Policy') && line.includes('content=')) {
+      if (
+        line.includes('Content-Security-Policy') &&
+        line.includes('content=')
+      ) {
         // 提取 content 属性值 - 支持双引号包围的内容
         const contentMatch = line.match(/content="([^"]+)"/i);
         if (contentMatch && contentMatch[1]) {
           console.log('🎯 提取的完整 CSP 策略:', contentMatch[1]);
           return contentMatch[1];
         }
-        
+
         // 尝试单引号版本
         const singleContentMatch = line.match(/content='([^']+)'/i);
         if (singleContentMatch && singleContentMatch[1]) {
-          console.log('🎯 提取的完整 CSP 策略 (单引号):', singleContentMatch[1]);
+          console.log(
+            '🎯 提取的完整 CSP 策略 (单引号):',
+            singleContentMatch[1]
+          );
           return singleContentMatch[1];
         }
       }
     }
-    
+
     console.log('❌ 未能从 HTML 中提取 CSP 策略');
     return null;
   }
@@ -104,7 +110,7 @@ class CSPDynamicValidator {
     const cspConfig = this.config.security?.csp || {};
     const requiredDirectives = [
       'default-src',
-      'script-src', 
+      'script-src',
       'style-src',
       'img-src',
       'font-src',
@@ -112,7 +118,7 @@ class CSPDynamicValidator {
       'object-src',
       'base-uri',
       'form-action',
-      'frame-ancestors'
+      'frame-ancestors',
     ];
 
     // 检查必需指令
@@ -122,7 +128,7 @@ class CSPDynamicValidator {
           type: 'missing_directive',
           directive,
           severity: 'high',
-          message: `缺少必需的 CSP 指令: ${directive}`
+          message: `缺少必需的 CSP 指令: ${directive}`,
         });
       }
     });
@@ -138,7 +144,7 @@ class CSPDynamicValidator {
             directive,
             value: dangerous,
             severity: 'critical',
-            message: `检测到不安全的 CSP 值: ${directive} ${dangerous}`
+            message: `检测到不安全的 CSP 值: ${directive} ${dangerous}`,
           });
         }
       });
@@ -152,7 +158,7 @@ class CSPDynamicValidator {
           type: 'wildcard_usage',
           directive,
           severity: 'medium',
-          message: `${directive} 使用通配符 * 可能存在安全风险`
+          message: `${directive} 使用通配符 * 可能存在安全风险`,
         });
       }
     });
@@ -163,7 +169,7 @@ class CSPDynamicValidator {
    */
   validateEnvironmentSpecific(parser, environment) {
     const values = {
-      connect: parser.getDirectiveValues('connect-src')
+      connect: parser.getDirectiveValues('connect-src'),
     };
 
     if (environment === 'production') {
@@ -177,7 +183,7 @@ class CSPDynamicValidator {
               directive: 'connect-src',
               value: src,
               severity: 'high',
-              message: `生产环境检测到开发域名: ${src}`
+              message: `生产环境检测到开发域名: ${src}`,
             });
           }
         });
@@ -190,7 +196,7 @@ class CSPDynamicValidator {
         type: 'missing_sentry',
         directive: 'connect-src',
         severity: 'low',
-        message: '未在 connect-src 中发现 Sentry 配置，可能影响错误报告'
+        message: '未在 connect-src 中发现 Sentry 配置，可能影响错误报告',
       });
     }
   }
@@ -203,23 +209,23 @@ class CSPDynamicValidator {
       {
         directive: 'object-src',
         expectedValue: "'none'",
-        message: 'object-src 应设置为 none 以防止插件执行'
+        message: 'object-src 应设置为 none 以防止插件执行',
       },
       {
         directive: 'base-uri',
         expectedValue: "'self'",
-        message: 'base-uri 应限制为 self 以防止基础URI劫持'
+        message: 'base-uri 应限制为 self 以防止基础URI劫持',
       },
       {
         directive: 'form-action',
         expectedValue: "'self'",
-        message: 'form-action 应限制为 self 以防止表单提交到恶意站点'
+        message: 'form-action 应限制为 self 以防止表单提交到恶意站点',
       },
       {
         directive: 'frame-ancestors',
         expectedValue: "'none'",
-        message: 'frame-ancestors 应设置为 none 以防止点击劫持'
-      }
+        message: 'frame-ancestors 应设置为 none 以防止点击劫持',
+      },
     ];
 
     securityChecks.forEach(check => {
@@ -231,7 +237,7 @@ class CSPDynamicValidator {
           expected: check.expectedValue,
           actual: values.join(' '),
           severity: 'high',
-          message: check.message
+          message: check.message,
         });
       }
     });
@@ -242,7 +248,7 @@ class CSPDynamicValidator {
    */
   async validateCSPPolicy(htmlFile) {
     console.log(`🔍 验证 CSP 策略: ${htmlFile}`);
-    
+
     if (!fs.existsSync(htmlFile)) {
       throw new Error(`HTML 文件不存在: ${htmlFile}`);
     }
@@ -254,7 +260,7 @@ class CSPDynamicValidator {
       this.violations.push({
         type: 'missing_csp',
         severity: 'critical',
-        message: `文件中未找到 CSP meta 标签: ${htmlFile}`
+        message: `文件中未找到 CSP meta 标签: ${htmlFile}`,
       });
       return;
     }
@@ -272,7 +278,7 @@ class CSPDynamicValidator {
       policy: cspPolicy,
       parsed: parser.policy,
       violations: this.violations,
-      warnings: this.warnings
+      warnings: this.warnings,
     };
   }
 
@@ -291,7 +297,9 @@ class CSPDynamicValidator {
     if (this.violations.length > 0) {
       console.log('\n❌ 违规详情:');
       this.violations.forEach((violation, index) => {
-        console.log(`  ${index + 1}. [${violation.severity.toUpperCase()}] ${violation.message}`);
+        console.log(
+          `  ${index + 1}. [${violation.severity.toUpperCase()}] ${violation.message}`
+        );
         if (violation.directive) {
           console.log(`     指令: ${violation.directive}`);
         }
@@ -299,7 +307,9 @@ class CSPDynamicValidator {
           console.log(`     值: ${violation.value}`);
         }
         if (violation.expected && violation.actual) {
-          console.log(`     期望: ${violation.expected}, 实际: ${violation.actual}`);
+          console.log(
+            `     期望: ${violation.expected}, 实际: ${violation.actual}`
+          );
         }
       });
     }
@@ -307,7 +317,9 @@ class CSPDynamicValidator {
     if (this.warnings.length > 0) {
       console.log('\n⚠️  警告详情:');
       this.warnings.forEach((warning, index) => {
-        console.log(`  ${index + 1}. [${warning.severity.toUpperCase()}] ${warning.message}`);
+        console.log(
+          `  ${index + 1}. [${warning.severity.toUpperCase()}] ${warning.message}`
+        );
       });
     }
 
@@ -318,7 +330,7 @@ class CSPDynamicValidator {
     return {
       passed: this.violations.length === 0,
       violations: this.violations.length,
-      warnings: this.warnings.length
+      warnings: this.warnings.length,
     };
   }
 }
@@ -345,13 +357,20 @@ async function main() {
         // 保存报告到文件
         const reportFile = `./reports/csp-validation-${Date.now()}.json`;
         fs.mkdirSync('./reports', { recursive: true });
-        fs.writeFileSync(reportFile, JSON.stringify({
-          timestamp: new Date().toISOString(),
-          environment,
-          file: targetFile,
-          ...result,
-          summary: report
-        }, null, 2));
+        fs.writeFileSync(
+          reportFile,
+          JSON.stringify(
+            {
+              timestamp: new Date().toISOString(),
+              environment,
+              file: targetFile,
+              ...result,
+              summary: report,
+            },
+            null,
+            2
+          )
+        );
 
         console.log(`\n💾 详细报告已保存: ${reportFile}`);
 
@@ -389,7 +408,10 @@ CSP 动态验证器 - 使用方法:
 }
 
 // 如果直接运行脚本
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('csp-dynamic-validator.mjs')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1].endsWith('csp-dynamic-validator.mjs')
+) {
   main();
 }
 

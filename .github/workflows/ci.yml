@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   schedule:
     # 每日晨检 - 每天UTC 02:00 (北京时间10:00)
     - cron: '0 2 * * *'
@@ -12,35 +12,35 @@ on:
 env:
   NODE_VERSION_MATRIX: '18.x, 20.x, 22.x'
   COVERAGE_THRESHOLD: 90
-  
+
 jobs:
   # ==================== 质量门禁阶段 ====================
   quality-gates:
     name: 质量门禁检查
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🔍 ESLint 检查
         run: npm run lint
-        
+
       - name: 🏗️ TypeScript 编译检查
         run: npx tsc --noEmit
-        
+
       - name: 📊 可观测性门禁检查
         run: npm run ci:gate:sentry-up
         timeout-minutes: 2
@@ -51,29 +51,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: quality-gates
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🛡️ npm audit 安全检查
         run: npm run security:audit
-        
+
       - name: 🔐 Electronegativity 安全扫描
         run: npm run security:scan
-        
+
       - name: ✅ 安全验证脚本
         run: npm run security:validate
-        
+
       - name: 📋 上传安全扫描报告
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,31 +90,31 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: quality-gates
     timeout-minutes: 20
-    
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: ['18.x', '20.x', '22.x']
-        
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🧪 运行单元测试
         run: npm test
         env:
           NODE_ENV: test
-          
+
       - name: 📊 代码覆盖率检查
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
         run: |
@@ -127,30 +127,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality-gates, security-scan]
     timeout-minutes: 30
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🖥️ 安装系统依赖 (Electron)
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-          
+
       - name: 🛡️ 运行安全冒烟测试
         run: xvfb-run -a npm run test:e2e:security
         env:
           CI: true
-          
+
       - name: 📋 上传E2E测试报告
         if: always()
         uses: actions/upload-artifact@v4
@@ -167,34 +167,34 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: unit-tests
     timeout-minutes: 15
-    
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🏗️ 构建应用
         run: npm run build
-        
+
       - name: 🔍 验证构建产物
         run: |
           ls -la dist/
           # 验证关键文件存在
           test -f dist/index.html
           test -d dist/assets/
-          
+
       - name: 📦 Electron打包测试 (仅Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -207,20 +207,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality-gates
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 🔍 Snyk安全扫描
         uses: snyk/actions/node@master
         continue-on-error: true
@@ -228,7 +228,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
-          
+
       - name: 📊 License合规检查
         run: |
           npx license-checker --summary
@@ -240,28 +240,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: unit-tests
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: 📊 可观测性配置验证
         run: npm run test:observability
-        
+
       - name: 📈 生成可观测性报告
         run: |
           mkdir -p reports
           npm run test:observability > reports/observability-verification.json
-          
+
       - name: 📋 上传可观测性报告
         uses: actions/upload-artifact@v4
         with:
@@ -275,25 +275,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-verification
     timeout-minutes: 15
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-          
+
       - name: 🔧 安装依赖
         run: npm ci
-        
+
       - name: ⚡ 事件循环延迟基准
         run: |
           node scripts/benchmarks/event-loop-latency.ts
           # TODO: 配置性能回归阈值检查
-          
+
       - name: 📊 性能指标收集
         run: |
           # TODO: 集成性能监控指标收集
@@ -306,11 +306,11 @@ jobs:
     needs: [build-verification, e2e-security-tests, observability-verification]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-        
+
       - name: ✅ 所有检查通过
         run: |
           echo "🎉 所有质量门禁检查通过！"
@@ -322,7 +322,7 @@ jobs:
           echo "✅ 可观测性验证: 通过"
           echo ""
           echo "🚀 项目已就绪，可以部署！"
-          
+
       - name: 📊 生成部署清单
         run: |
           echo "部署清单 - $(date)" > deployment-checklist.md
@@ -330,7 +330,7 @@ jobs:
           echo "- [x] 安全基线验证" >> deployment-checklist.md
           echo "- [x] 功能测试覆盖" >> deployment-checklist.md
           echo "- [x] 可观测性配置" >> deployment-checklist.md
-          
+
       - name: 📋 上传部署清单
         uses: actions/upload-artifact@v4
         with:

@@ -230,7 +230,9 @@ export function useGameStateWatcher<T extends keyof GameState>(
   dependencies: any[] = []
 ) {
   const { gameState } = useGameState();
-  const lastValueRef = useRef<GameState[T] | undefined>(gameState ? gameState[field] : undefined);
+  const lastValueRef = useRef<GameState[T] | undefined>(
+    gameState ? gameState[field] : undefined
+  );
 
   useEffect(() => {
     if (!gameState) return;

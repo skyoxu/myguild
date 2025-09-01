@@ -2,31 +2,31 @@
 
 /**
  * 渐进发布：更新 feed 文件的分阶段发布百分比
- * 
+ *
  * 基于 ADR-0008 渐进发布策略实现
- * 
+ *
  * 功能：
  * - 修改 electron-updater feed 文件(latest.yml/latest-mac.yml)中的 stagingPercentage
  * - 支持 0-100% 范围的分阶段发布控制
  * - 输出 JSON 格式结果用于 CI/CD 管道集成
- * 
+ *
  * Usage:
  *   node scripts/release/patch-staging-percentage.mjs dist/latest.yml 10
  *   node scripts/release/patch-staging-percentage.mjs dist/latest-mac.yml 25
  *   node scripts/release/patch-staging-percentage.mjs dist/latest.yml 100  # 全量发布
- * 
+ *
  * 参数：
  *   feedFile     - electron-updater feed 文件路径 (latest.yml/latest-mac.yml)
  *   percentage   - 分阶段发布百分比 (0-100)
- * 
+ *
  * 输出格式：
  *   { "ok": true, "feedFile": "dist/latest.yml", "stagingPercentage": 10 }
- * 
+ *
  * Exit Codes:
  *   0 - 成功
  *   1 - 文件操作失败
  *   2 - 参数错误
- * 
+ *
  * 相关资料：
  * - electron-updater stagingPercentage: https://www.electron.build/auto-update#staged-rollouts
  * - Sentry Release Health 集成: ADR-0003
@@ -59,10 +59,11 @@ function validatePercentage(percentArg) {
  * @returns {boolean} 是否为有效的 feed 文件
  */
 function isValidFeedFile(feedFile) {
-  return feedFile.endsWith('.yml') && (
-    feedFile.includes('latest.yml') || 
-    feedFile.includes('latest-mac.yml') || 
-    feedFile.includes('latest-linux.yml')
+  return (
+    feedFile.endsWith('.yml') &&
+    (feedFile.includes('latest.yml') ||
+      feedFile.includes('latest-mac.yml') ||
+      feedFile.includes('latest-linux.yml'))
   );
 }
 
@@ -78,49 +79,52 @@ export function patchStagingPercentage(feedFile, percentArg) {
     if (!feedFile) {
       throw new Error('Feed file path is required');
     }
-    
+
     if (percentArg === undefined || percentArg === null) {
       throw new Error('Percentage argument is required');
     }
 
     // 验证文件类型
     if (!isValidFeedFile(feedFile)) {
-      console.warn(`⚠️  File ${feedFile} may not be a valid electron-updater feed file`);
+      console.warn(
+        `⚠️  File ${feedFile} may not be a valid electron-updater feed file`
+      );
     }
 
     // 规范化百分比
     const pct = validatePercentage(percentArg);
-    
+
     // 读取现有文件或创建空对象
     let doc = {};
     if (fs.existsSync(feedFile)) {
       const content = fs.readFileSync(feedFile, 'utf8');
       doc = yaml.load(content) || {};
     } else {
-      console.warn(`⚠️  File ${feedFile} does not exist, creating new feed file`);
+      console.warn(
+        `⚠️  File ${feedFile} does not exist, creating new feed file`
+      );
     }
-    
+
     // 设置分阶段发布百分比
     doc.stagingPercentage = pct;
-    
+
     // 确保目录存在
     const dir = feedFile.substring(0, feedFile.lastIndexOf('/'));
     if (dir && !fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     // 写入文件
     fs.writeFileSync(feedFile, yaml.dump(doc), 'utf8');
-    
-    const result = { 
-      ok: true, 
-      feedFile, 
+
+    const result = {
+      ok: true,
+      feedFile,
       stagingPercentage: pct,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     return result;
-    
   } catch (error) {
     throw new Error(`Failed to patch staging percentage: ${error.message}`);
   }
@@ -153,20 +157,22 @@ function showHelp() {
 
 // 主程序执行
 if (isMainModule) {
-  const [,, feedFile, percentArg] = process.argv;
-  
+  const [, , feedFile, percentArg] = process.argv;
+
   // 显示帮助
   if (!feedFile || feedFile === '--help' || feedFile === '-h') {
     showHelp();
     process.exit(feedFile ? 0 : 2);
   }
-  
+
   if (!percentArg) {
     console.error('❌ Error: Percentage argument is required');
-    console.error('Usage: node scripts/release/patch-staging-percentage.mjs <feedFile> <percentage>');
+    console.error(
+      'Usage: node scripts/release/patch-staging-percentage.mjs <feedFile> <percentage>'
+    );
     process.exit(2);
   }
-  
+
   try {
     const result = patchStagingPercentage(feedFile, percentArg);
     console.log(JSON.stringify(result));

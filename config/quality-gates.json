@@ -14,7 +14,7 @@
         "renderer": {
           "js": {
             "threshold": 1572864,
-            "unit": "bytes", 
+            "unit": "bytes",
             "description": "渲染进程JS大小限制: 1.5MB"
           },
           "css": {
@@ -144,7 +144,7 @@
           },
           "userEngagementRate": {
             "threshold": 60,
-            "unit": "percent", 
+            "unit": "percent",
             "description": "用户参与度（DAU/MAU比例）",
             "observationWindow": "7d"
           },
@@ -162,7 +162,7 @@
           },
           "errorRate": {
             "threshold": 1,
-            "unit": "percent", 
+            "unit": "percent",
             "description": "应用级错误率",
             "observationWindow": "1h"
           },
@@ -183,7 +183,7 @@
           },
           "walSizeThresholdMB": {
             "threshold": 10,
-            "unit": "megabytes", 
+            "unit": "megabytes",
             "description": "WAL大小checkpoint阈值"
           },
           "diskSpaceWarningMB": {

@@ -15,10 +15,7 @@
     },
     "preserveOutput": "always",
     "reporter": [
-      [
-        "list",
-        null
-      ],
+      ["list", null],
       [
         "html",
         {
@@ -49,9 +46,7 @@
         "name": "electron-security",
         "testDir": "C:/buildgame/vitegame/tests/e2e",
         "testIgnore": [],
-        "testMatch": [
-          "**/security-smoke.spec.ts"
-        ],
+        "testMatch": ["**/security-smoke.spec.ts"],
         "timeout": 60000
       }
     ],

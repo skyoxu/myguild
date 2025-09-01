@@ -14,7 +14,7 @@ class YAMLFormatterV2 {
   constructor() {
     this.projectRoot = path.resolve(__dirname, '..');
     this.targetDirectories = [
-      'docs/prd_chunks'  // 重点修正这个目录
+      'docs/prd_chunks', // 重点修正这个目录
     ];
     this.fixedFiles = [];
     this.errors = [];
@@ -38,15 +38,16 @@ class YAMLFormatterV2 {
    */
   async processDirectory(dirPath) {
     const fullDirPath = path.join(this.projectRoot, dirPath);
-    
+
     if (!fs.existsSync(fullDirPath)) {
       console.log(`⚠️  目录不存在: ${dirPath}`);
       return;
     }
 
     console.log(`📁 处理目录: ${dirPath}`);
-    
-    const files = fs.readdirSync(fullDirPath)
+
+    const files = fs
+      .readdirSync(fullDirPath)
       .filter(file => file.endsWith('.md'))
       .filter(file => this.hasNumberPrefix(file));
 
@@ -88,7 +89,7 @@ class YAMLFormatterV2 {
    * 修正YAML格式
    */
   fixYAMLFormatting(content) {
-    let lines = content.split('\n');
+    const lines = content.split('\n');
     let inFrontMatter = false;
     let frontMatterStart = -1;
     let frontMatterEnd = -1;
@@ -111,7 +112,7 @@ class YAMLFormatterV2 {
     if (frontMatterStart >= 0 && frontMatterEnd >= 0) {
       for (let i = frontMatterStart + 1; i < frontMatterEnd; i++) {
         let line = lines[i];
-        let originalLine = line;
+        const originalLine = line;
 
         // 移除Tab字符，替换为2个空格
         line = line.replace(/\t/g, '  ');
@@ -122,7 +123,10 @@ class YAMLFormatterV2 {
         line = line.replace(/^(\s*)([^:\s]+):\s*([^\s])/g, '$1$2: $3');
 
         // 特殊处理：如果冒号后面是引号开始的字符串，需要确保格式正确
-        line = line.replace(/^(\s*)([^:\s]+):\s*"([^"]*)"(\s*)$/g, '$1$2: "$3"');
+        line = line.replace(
+          /^(\s*)([^:\s]+):\s*"([^"]*)"(\s*)$/g,
+          '$1$2: "$3"'
+        );
 
         // 修正时间戳格式 - 将错误添加的空格移除
         line = line.replace(/T(\d{2}): (\d{2}): (\d{2})Z/g, 'T$1:$2:$3Z');
@@ -139,16 +143,21 @@ class YAMLFormatterV2 {
       // 查找第一个不是YAML格式的行
       for (let i = frontMatterStart + 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        
+
         // 如果是空行、注释或者明显的markdown内容，在此前添加---
         if (line === '' || line.startsWith('#') || line.startsWith('<!--')) {
           lines.splice(i, 0, '---');
           fixed = true;
           break;
         }
-        
+
         // 如果是明显不是YAML的内容
-        if (line && !line.includes(':') && !line.startsWith('-') && !line.match(/^\s/)) {
+        if (
+          line &&
+          !line.includes(':') &&
+          !line.startsWith('-') &&
+          !line.match(/^\s/)
+        ) {
           lines.splice(i, 0, '---');
           fixed = true;
           break;
@@ -166,10 +175,10 @@ class YAMLFormatterV2 {
     console.log('\n' + '='.repeat(60));
     console.log('📊 YAML格式修正结果 v2');
     console.log('='.repeat(60));
-    
+
     console.log(`✅ 修正的文件数: ${this.fixedFiles.length}`);
     console.log(`❌ 处理失败数: ${this.errors.length}`);
-    
+
     if (this.fixedFiles.length > 0) {
       console.log('\n🔧 已修正的文件:');
       this.fixedFiles.forEach(file => {

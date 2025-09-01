@@ -18,7 +18,12 @@ export function resolvePrdId(input, aliasDefs) {
     for (const p of def.patterns || []) {
       const re = new RegExp(p);
       const m = s.match(re);
-      if (m) return { canonical: def.canonical, chunk: m[1] ? Number(m[1]) : null, matched: true };
+      if (m)
+        return {
+          canonical: def.canonical,
+          chunk: m[1] ? Number(m[1]) : null,
+          matched: true,
+        };
     }
   }
 
