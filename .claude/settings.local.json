@@ -132,7 +132,9 @@
       "Bash(del test-electron.js)",
       "Bash(del test-csp-debug.cjs)",
       "Bash(git add:*)",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "additionalDirectories": [
