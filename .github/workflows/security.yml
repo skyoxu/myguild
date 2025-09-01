@@ -31,7 +31,7 @@ jobs:
 
       - name: Run Electronegativity scan
         run: |
-          electronegativity --input . --output security-scan.json
+          electronegativity --input . --output security-scan.csv
 
       - name: Run npm audit
         run: |
@@ -58,7 +58,7 @@ jobs:
         with:
           name: security-reports
           path: |
-            security-scan.json
+            security-scan.csv
             npm-audit-results.json
             snyk-results.json
 
@@ -75,10 +75,11 @@ jobs:
           TOTAL_ERRORS=0
 
           # 1. Electronegativity扫描结果检查
-          if [ -f security-scan.json ]; then
+          if [ -f security-scan.csv ]; then
             echo "📊 检查Electronegativity扫描结果..."
-            ELECTRO_CRITICAL=$(jq '[.[] | select(.severity == "critical")] | length' security-scan.json 2>/dev/null || echo "0")
-            ELECTRO_HIGH=$(jq '[.[] | select(.severity == "high")] | length' security-scan.json 2>/dev/null || echo "0")
+            # CSV格式解析：跳过头行，统计Critical和High级别问题
+            ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && tolower($3) == "critical" {count++} END {print count+0}' security-scan.csv)
+            ELECTRO_HIGH=$(awk -F',' 'NR>1 && tolower($3) == "high" {count++} END {print count+0}' security-scan.csv)
             
             echo "  - Critical: $ELECTRO_CRITICAL"
             echo "  - High: $ELECTRO_HIGH"
@@ -199,7 +200,7 @@ jobs:
         with:
           name: security-gate-report
           path: |
-            security-scan.json
+            security-scan.csv
             npm-audit-results.json
             snyk-results.json
             security-gate-report.html
