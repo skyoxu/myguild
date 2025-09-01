@@ -95,7 +95,7 @@ const ADR_TEMPLATES = {
 /**
  * 从现有ADR内容中提取基本信息
  */
-function extractADRInfo(content, adrId) {
+function extractADRInfo(content, _adrId) {
   const lines = content.split('\n');
   let title = '';
   let status = 'Accepted';

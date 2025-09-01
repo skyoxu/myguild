@@ -3,9 +3,6 @@
  * 持续监控和维护架构一致性
  */
 
-import fs from 'fs';
-import path from 'path';
-
 class ArchitectureGovernance {
   async validateImplementation() {
     console.log('🏗️ 开始架构实施验证...');

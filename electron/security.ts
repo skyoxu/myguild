@@ -182,11 +182,8 @@ export function setupCSPReporting(): void {
 
   ses.webRequest.onBeforeRequest((details, callback) => {
     // 监控可疑的请求模式
-    if (
-      details.url.includes('javascript:') ||
-      details.url.includes('data:text/html') ||
-      details.url.includes('blob:')
-    ) {
+    const suspiciousPatterns = ['javascript:', 'data:text/html', 'blob:'];
+    if (suspiciousPatterns.some(pattern => details.url.includes(pattern))) {
       console.warn(`[Security] 检测到可疑请求: ${details.url}`);
 
       // 可选：发送到监控系统

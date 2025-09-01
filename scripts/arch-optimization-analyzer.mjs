@@ -535,7 +535,7 @@ class ArchitectureOptimizer {
   async generateOptimizationPlan(
     implementationAssessment,
     documentationGaps,
-    configConsistency
+    _configConsistency
   ) {
     const plan = {
       immediateActions: [],

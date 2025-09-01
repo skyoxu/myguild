@@ -79,7 +79,7 @@ const ADR_MAPPING_RULES = {
 class AdrAnalyzer {
   analyzeContent(content) {
     const scores = {};
-    const contentLower = content.toLowerCase();
+    const _contentLower = content.toLowerCase();
 
     for (const [adrId, rule] of Object.entries(ADR_MAPPING_RULES)) {
       let score = 0;

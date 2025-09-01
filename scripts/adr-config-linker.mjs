@@ -414,7 +414,7 @@ function isStrictInheritance(sourceValue, targetValue, configName) {
 /**
  * 生成影响分析报告
  */
-function generateImpactAnalysis(adr, graph, adrList) {
+function generateImpactAnalysis(adr, graph, _adrList) {
   const directDependents = Array.from(graph.get(adr.id) || []);
   const allAffected = new Set();
 
