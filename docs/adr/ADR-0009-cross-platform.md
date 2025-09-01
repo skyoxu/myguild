@@ -2,7 +2,7 @@
 ADR-ID: ADR-0009
 title: 跨平台兼容策略 - Windows/macOS/Linux统一
 status: Accepted
-decision-time: "2025-08-17"
+decision-time: '2025-08-17'
 deciders: [架构团队, 开发团队, UX团队]
 archRefs: [CH04, CH09, CH11]
 verification:
@@ -37,28 +37,27 @@ supersedes: []
 
 # ADR-0009: 跨平台适配策略
 
-
 ## Context and Problem Statement
 
 Electron游戏应用需要在Windows、macOS、Linux三大平台上提供一致的用户体验，同时充分利用各平台的原生特性。需要处理平台间的差异，包括UI设计规范、文件系统、快捷键、系统集成、性能优化等方面，确保应用在各平台上都能正常运行并符合用户预期。
 
 ## Decision Drivers
 
-* 需要在三大主流平台（Windows、macOS、Linux）上提供一致的功能
-* 需要遵循各平台的UI/UX设计规范和用户习惯
-* 需要处理平台特定的文件路径、权限、系统调用
-* 需要优化各平台的性能表现和资源使用
-* 需要支持平台特定的系统集成功能
-* 需要简化跨平台开发和维护成本
-* 需要确保应用在所有平台上的稳定性
+- 需要在三大主流平台（Windows、macOS、Linux）上提供一致的功能
+- 需要遵循各平台的UI/UX设计规范和用户习惯
+- 需要处理平台特定的文件路径、权限、系统调用
+- 需要优化各平台的性能表现和资源使用
+- 需要支持平台特定的系统集成功能
+- 需要简化跨平台开发和维护成本
+- 需要确保应用在所有平台上的稳定性
 
 ## Considered Options
 
-* **统一适配器模式 + 平台检测** (选择方案)
-* **平台独立构建分支**
-* **仅支持主流平台（Windows+macOS）**
-* **Web应用替代（功能受限）**
-* **原生应用分别开发（成本过高）**
+- **统一适配器模式 + 平台检测** (选择方案)
+- **平台独立构建分支**
+- **仅支持主流平台（Windows+macOS）**
+- **Web应用替代（功能受限）**
+- **原生应用分别开发（成本过高）**
 
 ## Decision Outcome
 
@@ -67,12 +66,13 @@ Electron游戏应用需要在Windows、macOS、Linux三大平台上提供一致�
 ### 平台检测与抽象层
 
 **平台检测服务**：
+
 ```typescript
 // src/shared/platform/platform-detector.ts
 export enum Platform {
   WINDOWS = 'windows',
   MACOS = 'darwin',
-  LINUX = 'linux'
+  LINUX = 'linux',
 }
 
 export interface PlatformInfo {
@@ -119,7 +119,7 @@ export class PlatformDetector {
 
   private detectPlatform(): PlatformInfo {
     const os = require('os');
-    
+
     return {
       platform: os.platform() as Platform,
       version: os.release(),
@@ -128,16 +128,20 @@ export class PlatformDetector {
       isX64: os.arch() === 'x64',
       homeDir: os.homedir(),
       tempDir: os.tmpdir(),
-      executableName: this.getExecutableName(os.platform())
+      executableName: this.getExecutableName(os.platform()),
     };
   }
 
   private getExecutableName(platform: string): string {
     switch (platform) {
-      case 'win32': return 'BuildGame.exe';
-      case 'darwin': return 'BuildGame.app';
-      case 'linux': return 'buildgame';
-      default: return 'buildgame';
+      case 'win32':
+        return 'BuildGame.exe';
+      case 'darwin':
+        return 'BuildGame.app';
+      case 'linux':
+        return 'buildgame';
+      default:
+        return 'buildgame';
     }
   }
 }
@@ -146,6 +150,7 @@ export class PlatformDetector {
 ### 平台特定适配器
 
 **文件系统适配器**：
+
 ```typescript
 // src/shared/platform/adapters/file-system.adapter.ts
 export abstract class FileSystemAdapter {
@@ -198,11 +203,21 @@ export class WindowsFileSystemAdapter extends FileSystemAdapter {
 
 export class MacOSFileSystemAdapter extends FileSystemAdapter {
   getConfigPath(): string {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'BuildGame');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'BuildGame'
+    );
   }
 
   getDataPath(): string {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'BuildGame');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'BuildGame'
+    );
   }
 
   getLogPath(): string {
@@ -236,7 +251,7 @@ export class MacOSFileSystemAdapter extends FileSystemAdapter {
 export class LinuxFileSystemAdapter extends FileSystemAdapter {
   getConfigPath(): string {
     const xdgConfig = process.env.XDG_CONFIG_HOME;
-    return xdgConfig 
+    return xdgConfig
       ? path.join(xdgConfig, 'buildgame')
       : path.join(os.homedir(), '.config', 'buildgame');
   }
@@ -267,8 +282,14 @@ export class LinuxFileSystemAdapter extends FileSystemAdapter {
   async openFileExplorer(filePath: string): Promise<void> {
     const { spawn } = require('child_process');
     // 尝试多种文件管理器
-    const fileManagers = ['nautilus', 'dolphin', 'thunar', 'pcmanfm', 'xdg-open'];
-    
+    const fileManagers = [
+      'nautilus',
+      'dolphin',
+      'thunar',
+      'pcmanfm',
+      'xdg-open',
+    ];
+
     for (const manager of fileManagers) {
       try {
         spawn(manager, [filePath], { detached: true, stdio: 'ignore' });
@@ -282,15 +303,15 @@ export class LinuxFileSystemAdapter extends FileSystemAdapter {
   async openTerminal(workingDir?: string): Promise<void> {
     const { spawn } = require('child_process');
     const cwd = workingDir || this.getDataPath();
-    
+
     // 尝试多种终端模拟器
     const terminals = [
       ['gnome-terminal', '--working-directory=' + cwd],
       ['konsole', '--workdir', cwd],
       ['xfce4-terminal', '--default-working-directory=' + cwd],
-      ['xterm', '-e', 'cd ' + cwd + ' && bash']
+      ['xterm', '-e', 'cd ' + cwd + ' && bash'],
     ];
-    
+
     for (const [terminal, ...args] of terminals) {
       try {
         spawn(terminal, args, { detached: true, stdio: 'ignore' });
@@ -310,6 +331,7 @@ export class LinuxFileSystemAdapter extends FileSystemAdapter {
 ### 快捷键适配
 
 **快捷键适配器**：
+
 ```typescript
 // src/shared/platform/adapters/keyboard.adapter.ts
 export interface KeyboardShortcut {
@@ -329,12 +351,18 @@ export class WindowsKeyboardAdapter extends KeyboardAdapter {
     return new Map([
       ['new-game', { key: 'N', modifiers: ['Ctrl'], description: '新游戏' }],
       ['save-game', { key: 'S', modifiers: ['Ctrl'], description: '保存游戏' }],
-      ['open-settings', { key: ',', modifiers: ['Ctrl'], description: '打开设置' }],
-      ['toggle-fullscreen', { key: 'F11', modifiers: [], description: '全屏切换' }],
+      [
+        'open-settings',
+        { key: ',', modifiers: ['Ctrl'], description: '打开设置' },
+      ],
+      [
+        'toggle-fullscreen',
+        { key: 'F11', modifiers: [], description: '全屏切换' },
+      ],
       ['quit-app', { key: 'F4', modifiers: ['Alt'], description: '退出应用' }],
       ['minimize', { key: 'M', modifiers: ['Ctrl'], description: '最小化' }],
       ['copy', { key: 'C', modifiers: ['Ctrl'], description: '复制' }],
-      ['paste', { key: 'V', modifiers: ['Ctrl'], description: '粘贴' }]
+      ['paste', { key: 'V', modifiers: ['Ctrl'], description: '粘贴' }],
     ]);
   }
 
@@ -348,7 +376,7 @@ export class WindowsKeyboardAdapter extends KeyboardAdapter {
       'save-game': 'Ctrl+S',
       'open-settings': 'Ctrl+,',
       'toggle-fullscreen': 'F11',
-      'quit-app': 'Alt+F4'
+      'quit-app': 'Alt+F4',
     };
     return mapping[shortcut] || '';
   }
@@ -359,13 +387,19 @@ export class MacOSKeyboardAdapter extends KeyboardAdapter {
     return new Map([
       ['new-game', { key: 'N', modifiers: ['Cmd'], description: '新游戏' }],
       ['save-game', { key: 'S', modifiers: ['Cmd'], description: '保存游戏' }],
-      ['open-settings', { key: ',', modifiers: ['Cmd'], description: '打开设置' }],
-      ['toggle-fullscreen', { key: 'F', modifiers: ['Cmd', 'Ctrl'], description: '全屏切换' }],
+      [
+        'open-settings',
+        { key: ',', modifiers: ['Cmd'], description: '打开设置' },
+      ],
+      [
+        'toggle-fullscreen',
+        { key: 'F', modifiers: ['Cmd', 'Ctrl'], description: '全屏切换' },
+      ],
       ['quit-app', { key: 'Q', modifiers: ['Cmd'], description: '退出应用' }],
       ['minimize', { key: 'M', modifiers: ['Cmd'], description: '最小化' }],
       ['hide', { key: 'H', modifiers: ['Cmd'], description: '隐藏窗口' }],
       ['copy', { key: 'C', modifiers: ['Cmd'], description: '复制' }],
-      ['paste', { key: 'V', modifiers: ['Cmd'], description: '粘贴' }]
+      ['paste', { key: 'V', modifiers: ['Cmd'], description: '粘贴' }],
     ]);
   }
 
@@ -380,8 +414,8 @@ export class MacOSKeyboardAdapter extends KeyboardAdapter {
       'open-settings': 'CmdOrCtrl+,',
       'toggle-fullscreen': 'Cmd+Ctrl+F',
       'quit-app': 'CmdOrCtrl+Q',
-      'minimize': 'CmdOrCtrl+M',
-      'hide': 'Cmd+H'
+      minimize: 'CmdOrCtrl+M',
+      hide: 'Cmd+H',
     };
     return mapping[shortcut] || '';
   }
@@ -391,6 +425,7 @@ export class MacOSKeyboardAdapter extends KeyboardAdapter {
 ### UI主题适配
 
 **主题适配器**：
+
 ```typescript
 // src/shared/platform/adapters/theme.adapter.ts
 export interface PlatformTheme {
@@ -440,27 +475,27 @@ export class WindowsThemeAdapter extends ThemeAdapter {
         background: '#ffffff',
         surface: '#f5f5f5',
         text: '#323130',
-        border: '#d1d1d1'
+        border: '#d1d1d1',
       },
       typography: {
         fontFamily: 'Segoe UI, system-ui, sans-serif',
         fontSize: {
           small: '12px',
           medium: '14px',
-          large: '16px'
-        }
+          large: '16px',
+        },
       },
       spacing: {
         small: '4px',
         medium: '8px',
-        large: '16px'
+        large: '16px',
       },
       borderRadius: '2px',
       shadows: {
         light: '0 1px 3px rgba(0,0,0,0.12)',
         medium: '0 4px 6px rgba(0,0,0,0.15)',
-        heavy: '0 8px 20px rgba(0,0,0,0.20)'
-      }
+        heavy: '0 8px 20px rgba(0,0,0,0.20)',
+      },
     };
   }
 
@@ -485,27 +520,27 @@ export class MacOSThemeAdapter extends ThemeAdapter {
         background: '#ffffff',
         surface: '#f2f2f7',
         text: '#000000',
-        border: '#c6c6c8'
+        border: '#c6c6c8',
       },
       typography: {
         fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
         fontSize: {
           small: '11px',
           medium: '13px',
-          large: '15px'
-        }
+          large: '15px',
+        },
       },
       spacing: {
         small: '6px',
         medium: '12px',
-        large: '20px'
+        large: '20px',
       },
       borderRadius: '8px',
       shadows: {
         light: '0 1px 3px rgba(0,0,0,0.10)',
         medium: '0 4px 14px rgba(0,0,0,0.12)',
-        heavy: '0 25px 55px rgba(0,0,0,0.21)'
-      }
+        heavy: '0 25px 55px rgba(0,0,0,0.21)',
+      },
     };
   }
 
@@ -529,27 +564,27 @@ export class LinuxThemeAdapter extends ThemeAdapter {
         background: '#ffffff',
         surface: '#fafafa',
         text: '#2e3436',
-        border: '#c0bfbc'
+        border: '#c0bfbc',
       },
       typography: {
         fontFamily: 'Ubuntu, "Noto Sans", system-ui, sans-serif',
         fontSize: {
           small: '10px',
           medium: '12px',
-          large: '14px'
-        }
+          large: '14px',
+        },
       },
       spacing: {
         small: '4px',
         medium: '8px',
-        large: '16px'
+        large: '16px',
       },
       borderRadius: '4px',
       shadows: {
         light: '0 1px 3px rgba(0,0,0,0.16)',
         medium: '0 3px 6px rgba(0,0,0,0.20)',
-        heavy: '0 10px 20px rgba(0,0,0,0.25)'
-      }
+        heavy: '0 10px 20px rgba(0,0,0,0.25)',
+      },
     };
   }
 
@@ -568,6 +603,7 @@ export class LinuxThemeAdapter extends ThemeAdapter {
 ### 窗口管理适配
 
 **窗口适配器**：
+
 ```typescript
 // src/shared/platform/adapters/window.adapter.ts
 export interface WindowConfig {
@@ -598,16 +634,19 @@ export class WindowsWindowAdapter extends WindowAdapter {
       titleBarStyle: 'default',
       transparent: false,
       frame: true,
-      show: true
+      show: true,
     };
   }
 
   setupWindow(window: BrowserWindow): void {
     // Windows特定的窗口设置
     window.setMenuBarVisibility(false);
-    
+
     // Windows 11特效支持
-    if (process.platform === 'win32' && process.getSystemVersion() >= '10.0.22000') {
+    if (
+      process.platform === 'win32' &&
+      process.getSystemVersion() >= '10.0.22000'
+    ) {
       window.setBackgroundMaterial('acrylic');
     }
   }
@@ -618,7 +657,7 @@ export class WindowsWindowAdapter extends WindowAdapter {
       window.hide();
     });
 
-    window.on('close', (event) => {
+    window.on('close', event => {
       // 阻止默认关闭，最小化到系统托盘
       event.preventDefault();
       window.hide();
@@ -637,23 +676,23 @@ export class MacOSWindowAdapter extends WindowAdapter {
       vibrancy: 'window',
       transparent: true,
       frame: true,
-      show: true
+      show: true,
     };
   }
 
   setupWindow(window: BrowserWindow): void {
     // macOS特定的窗口设置
     window.setWindowButtonVisibility(true);
-    
+
     // 设置窗口级别
     window.setAlwaysOnTop(false);
-    
+
     // macOS原生全屏支持
     window.setFullScreenable(true);
   }
 
   handleWindowEvents(window: BrowserWindow): void {
-    window.on('close', (event) => {
+    window.on('close', event => {
       // macOS标准行为：隐藏窗口而不是退出应用
       if (!app.isQuittingAll) {
         event.preventDefault();
@@ -678,14 +717,14 @@ export class LinuxWindowAdapter extends WindowAdapter {
       titleBarStyle: 'default',
       transparent: false,
       frame: true,
-      show: true
+      show: true,
     };
   }
 
   setupWindow(window: BrowserWindow): void {
     // Linux特定的窗口设置
     window.setIcon(path.join(__dirname, '../assets/icon.png'));
-    
+
     // Wayland支持
     if (process.env.WAYLAND_DISPLAY) {
       window.setBackgroundColor('#ffffff');
@@ -704,6 +743,7 @@ export class LinuxWindowAdapter extends WindowAdapter {
 ### 系统集成适配
 
 **系统集成适配器**：
+
 ```typescript
 // src/shared/platform/adapters/system-integration.adapter.ts
 export abstract class SystemIntegrationAdapter {
@@ -717,25 +757,25 @@ export abstract class SystemIntegrationAdapter {
 export class WindowsSystemIntegrationAdapter extends SystemIntegrationAdapter {
   async setupAutoStart(enabled: boolean): Promise<void> {
     const { app } = require('electron');
-    
+
     app.setLoginItemSettings({
       openAtLogin: enabled,
       openAsHidden: true,
       path: app.getPath('exe'),
-      args: ['--hidden']
+      args: ['--hidden'],
     });
   }
 
   async createDesktopShortcut(): Promise<void> {
     const { shell, app } = require('electron');
     const shortcutPath = path.join(os.homedir(), 'Desktop', 'BuildGame.lnk');
-    
+
     shell.writeShortcutLink(shortcutPath, 'create', {
       target: app.getPath('exe'),
       cwd: path.dirname(app.getPath('exe')),
       description: 'Build Game - 桌面游戏应用',
       icon: app.getPath('exe'),
-      iconIndex: 0
+      iconIndex: 0,
     });
   }
 
@@ -743,27 +783,29 @@ export class WindowsSystemIntegrationAdapter extends SystemIntegrationAdapter {
     const { Tray, Menu, nativeImage } = require('electron');
     const iconPath = path.join(__dirname, '../assets/tray-icon.ico');
     const icon = nativeImage.createFromPath(iconPath);
-    
+
     const tray = new Tray(icon);
     tray.setToolTip('Build Game');
-    
+
     const contextMenu = Menu.buildFromTemplate([
       { label: '显示主窗口', click: () => this.showMainWindow() },
       { label: '新游戏', click: () => this.startNewGame() },
       { type: 'separator' },
-      { label: '退出', click: () => app.quit() }
+      { label: '退出', click: () => app.quit() },
     ]);
-    
+
     tray.setContextMenu(contextMenu);
     return tray;
   }
 
   handleDeepLinks(protocol: string): void {
     const { app } = require('electron');
-    
+
     if (process.defaultApp) {
       if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient(protocol, process.execPath, [path.resolve(process.argv[1])]);
+        app.setAsDefaultProtocolClient(protocol, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
       }
     } else {
       app.setAsDefaultProtocolClient(protocol);
@@ -779,7 +821,7 @@ export class WindowsSystemIntegrationAdapter extends SystemIntegrationAdapter {
       totalMemory: os.totalmem(),
       freeMemory: os.freemem(),
       cpus: os.cpus().length,
-      uptime: os.uptime()
+      uptime: os.uptime(),
     };
   }
 
@@ -796,6 +838,7 @@ export class WindowsSystemIntegrationAdapter extends SystemIntegrationAdapter {
 ### 平台适配工厂
 
 **适配器工厂**：
+
 ```typescript
 // src/shared/platform/platform-adapter.factory.ts
 export class PlatformAdapterFactory {
@@ -807,8 +850,9 @@ export class PlatformAdapterFactory {
 
   public static getFileSystemAdapter(): FileSystemAdapter {
     if (!this.fileSystemAdapter) {
-      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
-      
+      const platform =
+        PlatformDetector.getInstance().getPlatformInfo().platform;
+
       switch (platform) {
         case Platform.WINDOWS:
           this.fileSystemAdapter = new WindowsFileSystemAdapter();
@@ -826,8 +870,9 @@ export class PlatformAdapterFactory {
 
   public static getKeyboardAdapter(): KeyboardAdapter {
     if (!this.keyboardAdapter) {
-      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
-      
+      const platform =
+        PlatformDetector.getInstance().getPlatformInfo().platform;
+
       switch (platform) {
         case Platform.WINDOWS:
           this.keyboardAdapter = new WindowsKeyboardAdapter();
@@ -845,8 +890,9 @@ export class PlatformAdapterFactory {
 
   public static getThemeAdapter(): ThemeAdapter {
     if (!this.themeAdapter) {
-      const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
-      
+      const platform =
+        PlatformDetector.getInstance().getPlatformInfo().platform;
+
       switch (platform) {
         case Platform.WINDOWS:
           this.themeAdapter = new WindowsThemeAdapter();
@@ -868,7 +914,7 @@ export class PlatformAdapterFactory {
       keyboard: this.getKeyboardAdapter(),
       theme: this.getThemeAdapter(),
       window: this.getWindowAdapter(),
-      systemIntegration: this.getSystemIntegrationAdapter()
+      systemIntegration: this.getSystemIntegrationAdapter(),
     };
   }
 }
@@ -877,6 +923,7 @@ export class PlatformAdapterFactory {
 ### React跨平台UI组件
 
 **平台感知UI组件**：
+
 ```tsx
 // src/components/platform/PlatformButton.tsx
 import React from 'react';
@@ -893,7 +940,7 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
   children,
   onClick,
   variant = 'primary',
-  className = ''
+  className = '',
 }) => {
   const themeAdapter = PlatformAdapterFactory.getThemeAdapter();
   const theme = themeAdapter.getTheme();
@@ -905,21 +952,21 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
     borderRadius: theme.borderRadius,
     border: 'none',
     cursor: 'pointer',
-    transition: 'all 0.2s ease'
+    transition: 'all 0.2s ease',
   };
 
   const variantStyles = {
     primary: {
       backgroundColor: theme.colors.primary,
       color: '#ffffff',
-      boxShadow: theme.shadows.medium
+      boxShadow: theme.shadows.medium,
     },
     secondary: {
       backgroundColor: theme.colors.surface,
       color: theme.colors.text,
       border: `1px solid ${theme.colors.border}`,
-      boxShadow: theme.shadows.light
-    }
+      boxShadow: theme.shadows.light,
+    },
   };
 
   return (
@@ -927,10 +974,10 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
       className={className}
       style={{ ...baseStyles, ...variantStyles[variant] }}
       onClick={onClick}
-      onMouseOver={(e) => {
+      onMouseOver={e => {
         e.currentTarget.style.opacity = '0.9';
       }}
-      onMouseOut={(e) => {
+      onMouseOut={e => {
         e.currentTarget.style.opacity = '1';
       }}
     >
@@ -943,12 +990,13 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
 ### 性能优化配置
 
 **平台性能优化**：
+
 ```typescript
 // src/shared/platform/performance-optimizer.ts
 export class PlatformPerformanceOptimizer {
   public static optimizeForPlatform(): void {
     const platform = PlatformDetector.getInstance().getPlatformInfo().platform;
-    
+
     switch (platform) {
       case Platform.WINDOWS:
         this.optimizeForWindows();
@@ -965,11 +1013,11 @@ export class PlatformPerformanceOptimizer {
   private static optimizeForWindows(): void {
     // Windows特定优化
     const { app } = require('electron');
-    
+
     // 启用Windows硬件加速
     app.commandLine.appendSwitch('enable-gpu-rasterization');
     app.commandLine.appendSwitch('enable-zero-copy');
-    
+
     // Windows DPI适配
     app.commandLine.appendSwitch('high-dpi-support', '1');
     app.commandLine.appendSwitch('force-device-scale-factor', '1');
@@ -978,13 +1026,13 @@ export class PlatformPerformanceOptimizer {
   private static optimizeForMacOS(): void {
     // macOS特定优化
     const { app } = require('electron');
-    
+
     // 启用macOS原生渲染
     app.commandLine.appendSwitch('enable-quartz-compositor');
-    
+
     // Retina支持
     app.commandLine.appendSwitch('force-device-scale-factor', '2');
-    
+
     // 金属渲染支持
     app.commandLine.appendSwitch('enable-metal');
   }
@@ -992,11 +1040,11 @@ export class PlatformPerformanceOptimizer {
   private static optimizeForLinux(): void {
     // Linux特定优化
     const { app } = require('electron');
-    
+
     // 启用GPU加速
     app.commandLine.appendSwitch('enable-gpu');
     app.commandLine.appendSwitch('ignore-gpu-blacklist');
-    
+
     // Wayland支持
     if (process.env.WAYLAND_DISPLAY) {
       app.commandLine.appendSwitch('enable-features', 'UseOzonePlatform');
@@ -1008,29 +1056,29 @@ export class PlatformPerformanceOptimizer {
 
 ### Positive Consequences
 
-* 在所有主流平台上提供一致的功能和用户体验
-* 充分利用各平台的原生特性和设计规范
-* 统一的适配器模式简化了跨平台开发
-* 自动的平台检测和适配减少手动配置
-* 性能优化针对各平台特点进行调优
-* 支持平台特定的系统集成功能
-* 维护成本相对较低，代码复用率高
+- 在所有主流平台上提供一致的功能和用户体验
+- 充分利用各平台的原生特性和设计规范
+- 统一的适配器模式简化了跨平台开发
+- 自动的平台检测和适配减少手动配置
+- 性能优化针对各平台特点进行调优
+- 支持平台特定的系统集成功能
+- 维护成本相对较低，代码复用率高
 
 ### Negative Consequences
 
-* 适配器模式增加了代码复杂性
-* 需要在多个平台上进行测试验证
-* 平台特定功能可能存在兼容性问题
-* Linux平台的碎片化增加适配难度
-* 需要维护多套平台特定的资源文件
-* 某些高级平台功能可能无法统一抽象
+- 适配器模式增加了代码复杂性
+- 需要在多个平台上进行测试验证
+- 平台特定功能可能存在兼容性问题
+- Linux平台的碎片化增加适配难度
+- 需要维护多套平台特定的资源文件
+- 某些高级平台功能可能无法统一抽象
 
 ## Verification
 
-* **测试验证**: tests/e2e/platform-compatibility.spec.ts, tests/unit/platform-adapters/*.spec.ts
-* **门禁脚本**: scripts/test_cross_platform.mjs, scripts/verify_platform_resources.mjs
-* **监控指标**: platform.compatibility_score, ui.rendering_performance, system.integration_success
-* **平台验证**: 多平台自动化测试、UI一致性验证、性能基准测试
+- **测试验证**: tests/e2e/platform-compatibility.spec.ts, tests/unit/platform-adapters/\*.spec.ts
+- **门禁脚本**: scripts/test_cross_platform.mjs, scripts/verify_platform_resources.mjs
+- **监控指标**: platform.compatibility_score, ui.rendering_performance, system.integration_success
+- **平台验证**: 多平台自动化测试、UI一致性验证、性能基准测试
 
 ### 跨平台验证清单
 
@@ -1045,6 +1093,7 @@ export class PlatformPerformanceOptimizer {
 ## Operational Playbook
 
 ### 升级步骤
+
 1. **平台检测**: 部署平台检测和适配器工厂系统
 2. **适配器实现**: 为每个目标平台实现具体适配器
 3. **UI组件**: 创建平台感知的UI组件库
@@ -1053,6 +1102,7 @@ export class PlatformPerformanceOptimizer {
 6. **测试验证**: 在所有目标平台上进行完整测试
 
 ### 回滚步骤
+
 1. **功能降级**: 如遇兼容性问题，可临时禁用特定平台功能
 2. **适配器回退**: 回退到简化的适配器实现
 3. **UI统一**: 临时使用统一的UI样式而非平台特定样式
@@ -1060,6 +1110,7 @@ export class PlatformPerformanceOptimizer {
 5. **问题隔离**: 隔离有问题的平台，确保其他平台正常工作
 
 ### 迁移指南
+
 - **代码重构**: 现有代码需要适配平台检测和适配器模式
 - **资源整理**: 整理和准备平台特定的资源文件
 - **UI适配**: 调整UI组件以支持平台感知
@@ -1068,12 +1119,12 @@ export class PlatformPerformanceOptimizer {
 
 ## References
 
-* **CH章节关联**: CH09, CH01, CH10
-* **相关ADR**: ADR-0001-tech-stack, ADR-0008-deployment-release, ADR-0002-electron-security
-* **外部文档**: 
+- **CH章节关联**: CH09, CH01, CH10
+- **相关ADR**: ADR-0001-tech-stack, ADR-0008-deployment-release, ADR-0002-electron-security
+- **外部文档**:
   - [Electron Platform APIs](https://www.electronjs.org/docs/api/process)
   - [Windows Design Guidelines](https://docs.microsoft.com/en-us/windows/apps/design/)
   - [macOS Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/macos)
   - [GNOME Human Interface Guidelines](https://developer.gnome.org/hig/)
-* **设计规范**: Windows Fluent Design, macOS Big Sur Design, Material Design for Linux
-* **相关PRD-ID**: 适用于所有需要跨平台兼容的PRD模块
+- **设计规范**: Windows Fluent Design, macOS Big Sur Design, Material Design for Linux
+- **相关PRD-ID**: 适用于所有需要跨平台兼容的PRD模块

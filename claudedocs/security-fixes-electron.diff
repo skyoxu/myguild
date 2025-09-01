@@ -1,0 +1,321 @@
+# Electron安全基线修复建议
+
+## 1. 统一CSP策略配置
+
+### 新建统一CSP配置模块
+
+```typescript
+// electron/security/csp-policy.ts
+interface CSPDirectives {
+  'default-src': string[];
+  'script-src': string[];
+  'style-src': string[];
+  'img-src': string[];
+  'connect-src': string[];
+  'font-src': string[];
+  'object-src': string[];
+  'frame-ancestors': string[];
+  'base-uri': string[];
+  'form-action': string[];
+}
+
+export class CSPManager {
+  private static basePolicy: CSPDirectives = {
+    'default-src': ["'none'"],
+    'script-src': ["'self'"],
+    'style-src': ["'self'"],
+    'img-src': ["'self'", 'data:', 'blob:'],
+    'connect-src': ["'self'"],
+    'font-src': ["'self'"],
+    'object-src': ["'none'"],
+    'frame-ancestors': ["'none'"],
+    'base-uri': ["'none'"],
+    'form-action': ["'self'"],
+  };
+
+  static generateCSP(environment: 'development' | 'production', nonce?: string): string {
+    const policy = { ...this.basePolicy };
+    
+    if (environment === 'development') {
+      // 开发环境添加必需的源
+      policy['script-src'] = ["'self'", "'unsafe-inline'", 'localhost:*', '127.0.0.1:*'];
+      policy['connect-src'] = ["'self'", 'localhost:*', '127.0.0.1:*', 'ws:', 'wss:'];
+    }
+    
+    if (nonce) {
+      // 添加nonce支持，移除unsafe-inline
+      policy['script-src'] = policy['script-src']
+        .filter(src => src !== "'unsafe-inline'")
+        .concat([`'nonce-${nonce}'`]);
+    }
+    
+    // 生产环境添加必要的外部连接（如Sentry）
+    if (environment === 'production') {
+      policy['connect-src'].push('https://sentry.io', 'https://*.sentry.io');
+    }
+
+    return Object.entries(policy)
+      .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+      .join('; ');
+  }
+
+  static validateCSP(csp: string): boolean {
+    // 验证关键安全指令存在
+    const requiredDirectives = ['default-src', 'script-src', 'object-src'];
+    return requiredDirectives.every(directive => csp.includes(directive));
+  }
+}
+```
+
+### 修改main.ts使用统一CSP
+
+```diff
+// electron/main.ts
++ import { CSPManager } from './security/csp-policy';
+
+  // CSP策略：开发环境使用webRequest注入，生产环境依赖index.html meta标签
+  if (is.dev) {
+-   // 开发环境：动态注入CSP以支持热更新和开发工具
+    mainWindow.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+-       // 为每次导航生成唯一nonce
+        const crypto = require('crypto');
+        const nonce = crypto.randomBytes(16).toString('base64');
++       const cspPolicy = CSPManager.generateCSP('development', nonce);
+
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+-           'Content-Security-Policy': [
+-             "default-src 'none'; " +
+-               `script-src 'self' 'nonce-${nonce}'; ` +
+-               "style-src 'self'; " +
+-               "img-src 'self' data: blob:; " +
+-               "connect-src 'self'; " +
+-               "font-src 'self'; " +
+-               "object-src 'none'; " +
+-               "frame-ancestors 'none'; " +
+-               "base-uri 'none'; " +
+-               "form-action 'self'",
+-           ],
++           'Content-Security-Policy': [cspPolicy],
+            'X-CSP-Nonce': [nonce],
+          },
+        });
+      }
+    );
+  }
+```
+
+### 更新index.html使用一致的CSP
+
+```diff
+<!-- index.html -->
+    <meta
+      http-equiv="Content-Security-Policy"
+-     content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
++     content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://sentry.io https://*.sentry.io; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none';"
+    />
+```
+
+## 2. 加强测试模式安全性
+
+```diff
+// electron/main.ts
+  // 在测试模式下暴露安全配置供验证
+  if (process.env.SECURITY_TEST_MODE === 'true') {
++   // 限制暴露的信息，仅包含测试必需的数据
+    (global as any).__SECURITY_PREFS__ = {
+-     ...SECURITY_PREFERENCES,
+-     windowId: mainWindow.id,
+-     createdAt: new Date().toISOString(),
++     nodeIntegration: SECURITY_PREFERENCES.nodeIntegration,
++     contextIsolation: SECURITY_PREFERENCES.contextIsolation,
++     sandbox: SECURITY_PREFERENCES.sandbox,
++     webSecurity: SECURITY_PREFERENCES.webSecurity,
++     testMode: true,
++     windowId: `window-${Math.random().toString(36).substr(2, 9)}`, // 匿名化ID
+    };
+
+-   // 暴露安全策略管理器配置
+-   (global as any).__SECURITY_POLICY_CONFIG__ = {
+-     config: securityPolicyManager.getConfig(),
+-     isProduction: process.env.NODE_ENV === 'production',
+-     testMode: true,
+-     exposedAt: new Date().toISOString(),
+-   };
++   // 仅暴露必要的策略验证信息
++   (global as any).__SECURITY_POLICY_ENABLED__ = {
++     permissionHandler: true,
++     navigationHandler: true,
++     windowOpenHandler: true,
++     cspEnabled: true,
++   };
+
+-   // 暴露CSP配置信息
+-   (global as any).__CSP_CONFIG__ = {
+-     enabled: true,
+-     policies: [
+-       "default-src 'none'",
+-       "script-src 'self' 'nonce-*'",
+-       "style-src 'self'",
+-       "img-src 'self' data: blob:",
+-       "connect-src 'self'",
+-       "font-src 'self'",
+-       "object-src 'none'",
+-       "frame-ancestors 'none'",
+-       "base-uri 'none'",
+-       "form-action 'self'",
+-     ],
+-     nonceGeneration: true,
+-     configuredAt: new Date().toISOString(),
+-   };
+-
+-   // 暴露安全处理器状态
+-   (global as any).__SECURITY_HANDLERS__ = {
+-     permissionHandler: {
+-       enabled: true,
+-       type: 'setPermissionRequestHandler',
+-       scope: 'session.defaultSession',
+-     },
+-     navigationHandler: {
+-       enabled: true,
+-       events: ['will-navigate', 'will-attach-webview'],
+-     },
+-     windowOpenHandler: {
+-       enabled: true,
+-       type: 'setWindowOpenHandler',
+-       policy: 'deny-new-windows-redirect-external',
+-     },
+-     webRequestFiltering: {
+-       enabled: true,
+-       type: 'onBeforeRequest',
+-       scope: 'session.defaultSession.webRequest',
+-     },
+-     configuredAt: new Date().toISOString(),
+-   };
+  }
+```
+
+## 3. 增强权限管理器安全性
+
+```diff
+// electron/security/permissions.ts
+class SecurityPolicyManager {
+  /**
+   * 统一权限请求处理器
+   */
+  private setupPermissionHandler(): void {
+    session.defaultSession.setPermissionRequestHandler(
+      (_webContents, permission, callback, details) => {
++       // 记录权限请求用于安全审计
++       console.log(`🔐 权限请求: ${permission} from ${details.requestingUrl}`);
++       
+        const requestingOrigin = new URL(details.requestingUrl).origin;
+
+        // 检查源是否被允许
+        const isOriginAllowed = this.config.allowedOrigins.some(origin =>
+          requestingOrigin.startsWith(origin)
+        );
+
+        // 检查权限是否被允许
+        const isPermissionAllowed =
+          this.config.allowedPermissions.includes(permission);
+
+        const shouldAllow = isOriginAllowed && isPermissionAllowed;
+
++       // 对于敏感权限，即使配置允许也要额外检查
++       const sensitivePermissions = ['media', 'geolocation', 'notifications'];
++       if (sensitivePermissions.includes(permission)) {
++         // 生产环境默认拒绝敏感权限
++         if (this.isProduction) {
++           console.warn(`❌ 生产环境拒绝敏感权限: ${permission}`);
++           callback(false);
++           return;
++         }
++       }
+
+        if (shouldAllow) {
+          console.log(
+            `✅ 允许权限请求: ${permission} from ${requestingOrigin}`
+          );
+        } else {
+          console.warn(
+            `❌ 拒绝权限请求: ${permission} from ${requestingOrigin}`
+          );
+          console.warn(
+            `   - 源允许: ${isOriginAllowed}, 权限允许: ${isPermissionAllowed}`
+          );
+        }
+
+        callback(shouldAllow);
+      }
+    );
+  }
+}
+```
+
+## 4. 预加载脚本安全加固
+
+```diff
+// electron/preload.ts
++ // 验证上下文隔离是否正确启用
++ if (!process.contextIsolated) {
++   throw new Error('Context isolation must be enabled for security');
++ }
+
+if (process.contextIsolated) {
+  try {
++   // 验证沙盒模式状态
++   const isSandboxed = process.sandboxed;
++   if (!isSandboxed) {
++     console.warn('⚠️ Sandbox is not enabled - security may be compromised');
++   }
++   
+    // 统一使用 electronAPI 命名，与测试保持一致
+    contextBridge.exposeInMainWorld('electronAPI', {
+      // 基础系统信息
+      platform: process.platform,
+      version: process.versions.electron,
++     isSandboxed: process.sandboxed,
++     contextIsolated: process.contextIsolated,
+
+      // 扩展@electron-toolkit提供的API
+      ...electronAPI,
+    });
+
++   // 安全配置验证API（仅测试模式）
++   if (process.env.SECURITY_TEST_MODE === 'true') {
++     contextBridge.exposeInMainWorld('__SECURITY_VALIDATION__', {
++       isSandboxed: process.sandboxed,
++       contextIsolated: process.contextIsolated,
++       nodeIntegrationDisabled: typeof require === 'undefined',
++       exposedAt: new Date().toISOString(),
++     });
++   }
+
+    // 应用版本信息 - 用于Sentry Release Health
+    contextBridge.exposeInMainWorld(
+      '__APP_VERSION__',
+      process.env.APP_VERSION || '0.1.1'
+    );
+
+-   // 为了测试验证，额外暴露一个自定义API标识
+-   contextBridge.exposeInMainWorld('__CUSTOM_API__', {
+-     preloadExposed: true,
+-     exposedAt: new Date().toISOString(),
+-   });
++   // 简化的测试API标识（减少信息泄露）
++   contextBridge.exposeInMainWorld('__CUSTOM_API__', {
++     preloadExposed: true,
++   });
+  } catch (error) {
+    console.error('Failed to expose API:', error);
++   // 预加载失败时不应回退到非隔离模式
++   throw error;
+  }
+} else {
+- // 非隔离模式已弃用，不应使用
++ throw new Error('Context isolation is required and must be enabled');
+}
+```

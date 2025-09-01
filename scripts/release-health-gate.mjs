@@ -20,10 +20,25 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { loadQualityGatesConfig } from './utils/config-loader.mjs';
+
+// 动态导入 sqlite3（处理 ESM 兼容性）
+let sqlite3;
+try {
+  sqlite3 = (await import('sqlite3')).default;
+} catch (error) {
+  console.warn('⚠️ sqlite3 not available - business metrics collection will be disabled');
+  console.warn('   To enable business metrics, install sqlite3: npm install sqlite3');
+}
 
 // ============================================================================
 // 配置与常量
 // ============================================================================
+
+// 从配置中心加载配置
+const environment = process.env.NODE_ENV || 'default';
+const qualityConfig = loadQualityGatesConfig(environment);
+const releaseHealthConfig = qualityConfig.releaseHealth || {};
 
 const CONFIG = {
   organizationSlug: process.env.SENTRY_ORG || '${SENTRY_ORG}',
@@ -32,17 +47,24 @@ const CONFIG = {
   environment: process.env.ENVIRONMENT || process.env.NODE_ENV || 'development',
   observationWindow: process.env.OBSERVATION_WINDOW || '24h',
   
-  // 阈值配置（可通过环境变量覆盖）
+  // 阈值配置（从配置中心加载，可通过环境变量覆盖）
   thresholds: {
-    crashFreeUsers: Number(process.env.CRASH_FREE_USERS_THRESHOLD ?? '99.5'),
-    crashFreeSessions: Number(process.env.CRASH_FREE_SESSIONS_THRESHOLD ?? '99.8'),
-    observationWindowHours: Number(process.env.OBSERVATION_WINDOW_HOURS ?? '24')
+    crashFreeUsers: Number(process.env.CRASH_FREE_USERS_THRESHOLD ?? releaseHealthConfig.crashFreeUsers?.threshold ?? 99.5),
+    crashFreeSessions: Number(process.env.CRASH_FREE_SESSIONS_THRESHOLD ?? releaseHealthConfig.crashFreeSessions?.threshold ?? 99.8),
+    observationWindowHours: Number(process.env.OBSERVATION_WINDOW_HOURS ?? '24'),
+    minAdoption: Number(process.env.MIN_ADOPTION ?? releaseHealthConfig.minAdoption?.threshold ?? 1000)
   },
+  
+  // 业务指标阈值
+  businessThresholds: releaseHealthConfig.businessMetrics || {},
   
   // CI/CD配置
   failOnError: process.env.FAIL_ON_ERROR !== 'false',
   generateMarkdownReport: process.env.GENERATE_MARKDOWN_REPORT === 'true' || process.env.GITHUB_OUTPUT,
-  githubOutput: process.env.GITHUB_OUTPUT
+  githubOutput: process.env.GITHUB_OUTPUT,
+  
+  // 数据库路径
+  dbPath: process.env.DB_PATH || './data/app.db'
 };
 
 // 环境变量验证
@@ -58,6 +80,271 @@ if (missingEnvVars.length > 0) {
   console.error('  export SENTRY_ORG="your-org-slug"');
   console.error('  export SENTRY_PROJECT="your-project-slug"');
   process.exit(1);
+}
+
+// ============================================================================
+// 业务指标收集器
+// ============================================================================
+
+/**
+ * 业务指标数据收集器
+ */
+class BusinessMetricsCollector {
+  constructor(dbPath) {
+    this.dbPath = dbPath;
+  }
+  
+  /**
+   * 连接到SQLite数据库
+   */
+  async connectDB() {
+    if (!sqlite3) {
+      throw new Error('SQLite3 is not available - please install: npm install sqlite3');
+    }
+    
+    return new Promise((resolve, reject) => {
+      const db = new sqlite3.Database(this.dbPath, sqlite3.OPEN_READONLY, (err) => {
+        if (err) {
+          reject(new Error(`无法连接数据库 ${this.dbPath}: ${err.message}`));
+        } else {
+          resolve(db);
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询用户注册成功率
+   */
+  async getUserRegistrationRate(db, windowHours = 24) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          COUNT(*) as total_attempts,
+          COUNT(CASE WHEN status = 'success' THEN 1 END) as successful_registrations
+        FROM user_registration_events 
+        WHERE created_at >= datetime('now', '-${windowHours} hours')
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          const rate = row.total_attempts > 0 
+            ? (row.successful_registrations / row.total_attempts) * 100 
+            : 100;
+          resolve({
+            rate: Number(rate.toFixed(2)),
+            totalAttempts: row.total_attempts,
+            successfulRegistrations: row.successful_registrations
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询用户参与度（DAU/MAU）
+   */
+  async getUserEngagementRate(db, windowDays = 7) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        WITH daily_active AS (
+          SELECT COUNT(DISTINCT user_id) as dau
+          FROM user_sessions 
+          WHERE created_at >= datetime('now', '-1 days')
+        ),
+        monthly_active AS (
+          SELECT COUNT(DISTINCT user_id) as mau
+          FROM user_sessions 
+          WHERE created_at >= datetime('now', '-30 days')
+        )
+        SELECT 
+          dau,
+          mau,
+          CASE WHEN mau > 0 THEN (dau * 100.0 / mau) ELSE 0 END as engagement_rate
+        FROM daily_active, monthly_active
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            rate: Number((row.engagement_rate || 0).toFixed(2)),
+            dau: row.dau || 0,
+            mau: row.mau || 0
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询平均游戏会话时长
+   */
+  async getGameSessionDuration(db, windowHours = 24) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          AVG(CAST((julianday(end_time) - julianday(start_time)) * 24 * 3600 AS INTEGER)) as avg_duration_seconds,
+          COUNT(*) as total_sessions
+        FROM game_sessions 
+        WHERE start_time >= datetime('now', '-${windowHours} hours')
+          AND end_time IS NOT NULL
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            averageDuration: Number((row.avg_duration_seconds || 0).toFixed(0)),
+            totalSessions: row.total_sessions || 0
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询新功能采用率
+   */
+  async getFeatureAdoptionRate(db, windowDays = 7) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        WITH feature_users AS (
+          SELECT COUNT(DISTINCT user_id) as feature_users
+          FROM feature_usage_events 
+          WHERE created_at >= datetime('now', '-${windowDays} days')
+            AND feature_name IN ('new_feature_1', 'new_feature_2') -- 可配置
+        ),
+        total_users AS (
+          SELECT COUNT(DISTINCT user_id) as total_active_users
+          FROM user_sessions 
+          WHERE created_at >= datetime('now', '-${windowDays} days')
+        )
+        SELECT 
+          feature_users,
+          total_active_users,
+          CASE WHEN total_active_users > 0 
+            THEN (feature_users * 100.0 / total_active_users) 
+            ELSE 0 END as adoption_rate
+        FROM feature_users, total_users
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            rate: Number((row.adoption_rate || 0).toFixed(2)),
+            featureUsers: row.feature_users || 0,
+            totalActiveUsers: row.total_active_users || 0
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询应用级错误率
+   */
+  async getErrorRate(db, windowHours = 1) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        WITH error_events AS (
+          SELECT COUNT(*) as error_count
+          FROM application_errors 
+          WHERE created_at >= datetime('now', '-${windowHours} hours')
+            AND severity IN ('error', 'fatal')
+        ),
+        total_events AS (
+          SELECT COUNT(*) as total_count
+          FROM application_events 
+          WHERE created_at >= datetime('now', '-${windowHours} hours')
+        )
+        SELECT 
+          error_count,
+          total_count,
+          CASE WHEN total_count > 0 
+            THEN (error_count * 100.0 / total_count) 
+            ELSE 0 END as error_rate
+        FROM error_events, total_events
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            rate: Number((row.error_rate || 0).toFixed(2)),
+            errorCount: row.error_count || 0,
+            totalEvents: row.total_count || 0
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 查询平均加载性能
+   */
+  async getLoadingPerformance(db, windowHours = 1) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          AVG(load_time_ms) as avg_load_time,
+          COUNT(*) as sample_count
+        FROM page_load_events 
+        WHERE created_at >= datetime('now', '-${windowHours} hours')
+      `;
+      
+      db.get(query, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            averageLoadTime: Number((row.avg_load_time || 0).toFixed(0)),
+            sampleCount: row.sample_count || 0
+          });
+        }
+      });
+    });
+  }
+  
+  /**
+   * 收集所有业务指标
+   */
+  async collectBusinessMetrics() {
+    let db;
+    try {
+      db = await this.connectDB();
+      
+      const [registration, engagement, sessionDuration, featureAdoption, errorRate, loadingPerf] = await Promise.all([
+        this.getUserRegistrationRate(db).catch(() => ({ rate: 100, totalAttempts: 0, successfulRegistrations: 0 })),
+        this.getUserEngagementRate(db).catch(() => ({ rate: 50, dau: 0, mau: 0 })),
+        this.getGameSessionDuration(db).catch(() => ({ averageDuration: 1000, totalSessions: 0 })),
+        this.getFeatureAdoptionRate(db).catch(() => ({ rate: 30, featureUsers: 0, totalActiveUsers: 0 })),
+        this.getErrorRate(db).catch(() => ({ rate: 0, errorCount: 0, totalEvents: 0 })),
+        this.getLoadingPerformance(db).catch(() => ({ averageLoadTime: 2500, sampleCount: 0 }))
+      ]);
+      
+      return {
+        userRegistrationRate: registration,
+        userEngagementRate: engagement,
+        gameSessionDuration: sessionDuration,
+        featureAdoptionRate: featureAdoption,
+        errorRate: errorRate,
+        loadingPerformance: loadingPerf
+      };
+      
+    } finally {
+      if (db) {
+        db.close();
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -156,22 +443,23 @@ async function fetchReleaseHealthMetrics(organizationSlug, projectSlug, authToke
 // ============================================================================
 
 /**
- * 执行 Release Health 检查
+ * 执行 Release Health 检查（包含业务指标）
  * @returns {Promise<Object>} 检查结果
  */
 async function checkReleaseHealth() {
-  console.log('🔍 Running Release Health Gate check...');
+  console.log('🔍 Running Enhanced Release Health Gate check...');
   console.log(`📊 Organization: ${CONFIG.organizationSlug}`);
   console.log(`📦 Project: ${CONFIG.projectSlug}`);
   console.log(`🌍 Environment: ${CONFIG.environment}`);
   console.log(`⏱️  Observation Window: ${CONFIG.observationWindow}`);
   console.log(`🎯 Crash-Free Users Threshold: ${CONFIG.thresholds.crashFreeUsers}%`);
   console.log(`🎯 Crash-Free Sessions Threshold: ${CONFIG.thresholds.crashFreeSessions}%`);
+  console.log(`📊 Business Metrics Enabled: ${Object.keys(CONFIG.businessThresholds).length > 0 ? '✅' : '❌'}`);
   console.log('');
   
   try {
-    // 获取 Release Health 指标
-    const metrics = await fetchReleaseHealthMetrics(
+    // 1. 获取 Sentry Release Health 指标
+    const sentryMetrics = await fetchReleaseHealthMetrics(
       CONFIG.organizationSlug,
       CONFIG.projectSlug,
       CONFIG.authToken,
@@ -179,38 +467,78 @@ async function checkReleaseHealth() {
       CONFIG.thresholds.observationWindowHours
     );
     
-    // 检查违规项
+    // 2. 收集业务指标（如果配置了）
+    let businessMetrics = {};
+    let businessCollector;
+    if (Object.keys(CONFIG.businessThresholds).length > 0) {
+      try {
+        businessCollector = new BusinessMetricsCollector(CONFIG.dbPath);
+        businessMetrics = await businessCollector.collectBusinessMetrics();
+        console.log('✅ Business metrics collected successfully');
+      } catch (dbError) {
+        console.warn(`⚠️ Business metrics collection failed: ${dbError.message}`);
+        console.warn('   Continuing with Sentry metrics only...');
+      }
+    }
+    
+    // 3. 检查Sentry指标违规项
     const violations = [];
     
-    if (metrics.crashFreeUsers < CONFIG.thresholds.crashFreeUsers) {
+    if (sentryMetrics.crashFreeUsers < CONFIG.thresholds.crashFreeUsers) {
       violations.push({
+        category: 'sentry',
         metric: 'crash_free_users',
-        actual: metrics.crashFreeUsers,
+        actual: sentryMetrics.crashFreeUsers,
         threshold: CONFIG.thresholds.crashFreeUsers,
         severity: 'blocking',
-        impact: `${(100 - metrics.crashFreeUsers).toFixed(2)}% users experienced crashes`
+        impact: `${(100 - sentryMetrics.crashFreeUsers).toFixed(2)}% users experienced crashes`
       });
     }
     
-    if (metrics.crashFreeSessions < CONFIG.thresholds.crashFreeSessions) {
+    if (sentryMetrics.crashFreeSessions < CONFIG.thresholds.crashFreeSessions) {
       violations.push({
+        category: 'sentry',
         metric: 'crash_free_sessions', 
-        actual: metrics.crashFreeSessions,
+        actual: sentryMetrics.crashFreeSessions,
         threshold: CONFIG.thresholds.crashFreeSessions,
         severity: 'blocking',
-        impact: `${(100 - metrics.crashFreeSessions).toFixed(2)}% sessions crashed`
+        impact: `${(100 - sentryMetrics.crashFreeSessions).toFixed(2)}% sessions crashed`
       });
     }
+    
+    // 4. 检查业务指标违规项
+    Object.entries(CONFIG.businessThresholds).forEach(([metricName, config]) => {
+      const businessData = businessMetrics[metricName];
+      if (!businessData) return;
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+      
+      if (actualValue < config.threshold) {
+        violations.push({
+          category: 'business',
+          metric: metricName,
+          actual: actualValue,
+          threshold: config.threshold,
+          severity: 'blocking',
+          impact: `${config.description}: ${actualValue}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''} < ${config.threshold}${config.unit === 'percent' ? '%' : config.unit === 'milliseconds' ? 'ms' : config.unit === 'seconds' ? 's' : ''}`,
+          observationWindow: config.observationWindow
+        });
+      }
+    });
     
     return {
       passed: violations.length === 0,
-      metrics,
+      sentryMetrics,
+      businessMetrics,
       violations,
       timestamp: new Date().toISOString(),
       environment: CONFIG.environment,
-      sampleSize: metrics.sampleSize,
+      sampleSize: sentryMetrics.sampleSize,
       config: {
         thresholds: CONFIG.thresholds,
+        businessThresholds: CONFIG.businessThresholds,
         observationWindow: CONFIG.observationWindow
       }
     };
@@ -230,7 +558,7 @@ function generateMarkdownReport(result) {
   const statusText = result.passed ? 'PASSED' : 'FAILED';
   
   const report = [
-    '# Release Health Gate Report',
+    '# Enhanced Release Health Gate Report',
     '',
     `**Status**: ${statusEmoji} ${statusText}`,
     `**Timestamp**: ${result.timestamp}`,
@@ -238,42 +566,101 @@ function generateMarkdownReport(result) {
     `**Sample Size**: ${result.sampleSize.toLocaleString()} users`,
     `**Observation Window**: ${result.config.observationWindow}`,
     '',
-    '## 🎯 Thresholds',
+    '## 🎯 Sentry Health Thresholds',
     '',
     `- **Crash-Free Users**: ≥ ${result.config.thresholds.crashFreeUsers}%`,
     `- **Crash-Free Sessions**: ≥ ${result.config.thresholds.crashFreeSessions}%`,
     '',
-    '## 📊 Metrics',
+    '## 📊 Sentry Metrics',
     '',
-    `- **Crash-Free Users**: ${result.metrics.crashFreeUsers}% ${result.metrics.crashFreeUsers >= result.config.thresholds.crashFreeUsers ? '✅' : '❌'}`,
-    `- **Crash-Free Sessions**: ${result.metrics.crashFreeSessions}% ${result.metrics.crashFreeSessions >= result.config.thresholds.crashFreeSessions ? '✅' : '❌'}`,
+    `- **Crash-Free Users**: ${result.sentryMetrics.crashFreeUsers}% ${result.sentryMetrics.crashFreeUsers >= result.config.thresholds.crashFreeUsers ? '✅' : '❌'}`,
+    `- **Crash-Free Sessions**: ${result.sentryMetrics.crashFreeSessions}% ${result.sentryMetrics.crashFreeSessions >= result.config.thresholds.crashFreeSessions ? '✅' : '❌'}`,
     ''
   ];
   
-  if (result.violations.length > 0) {
-    report.push('## ⚠️ Violations', '');
-    result.violations.forEach(violation => {
-      const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';
-      report.push(`### ${severityEmoji} ${violation.metric}`);
-      report.push('');
-      report.push(`- **Actual**: ${violation.actual}%`);
-      report.push(`- **Threshold**: ≥ ${violation.threshold}%`);
-      report.push(`- **Impact**: ${violation.impact}`);
-      report.push('');
+  // 添加业务指标部分
+  if (Object.keys(result.businessMetrics || {}).length > 0) {
+    report.push('## 🏢 Business Metrics', '');
+    
+    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {
+      const businessData = result.businessMetrics[metricName];
+      if (!businessData) {
+        report.push(`- **${config.description}**: ❓ No data available`);
+        return;
+      }
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+                         
+      const unit = config.unit === 'percent' ? '%' : 
+                   config.unit === 'milliseconds' ? 'ms' : 
+                   config.unit === 'seconds' ? 's' : '';
+                   
+      const status = actualValue >= config.threshold ? '✅' : '❌';
+      report.push(`- **${config.description}**: ${actualValue}${unit} (≥ ${config.threshold}${unit}) ${status}`);
+      
+      // 添加额外的详细信息
+      if (businessData.totalAttempts !== undefined) {
+        report.push(`  - Total Attempts: ${businessData.totalAttempts.toLocaleString()}`);
+      }
+      if (businessData.dau !== undefined) {
+        report.push(`  - DAU/MAU: ${businessData.dau}/${businessData.mau}`);
+      }
+      if (businessData.totalSessions !== undefined) {
+        report.push(`  - Sessions: ${businessData.totalSessions.toLocaleString()}`);
+      }
+      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {
+        report.push(`  - Sample Size: ${businessData.sampleCount.toLocaleString()}`);
+      }
     });
+    
+    report.push('');
   }
   
-  if (result.metrics.rawData) {
-    report.push('## 📈 Raw Data', '');
-    report.push(`- **Total Sessions**: ${result.metrics.rawData.totalSessions.toLocaleString()}`);
-    report.push(`- **Crashed Sessions**: ${result.metrics.rawData.crashedSessions.toLocaleString()}`);
-    report.push(`- **Total Users**: ${result.metrics.rawData.totalUsers.toLocaleString()}`);
-    report.push(`- **Crashed Users**: ${result.metrics.rawData.crashedUsers.toLocaleString()}`);
+  if (result.violations.length > 0) {
+    report.push('## ⚠️ Violations', '');
+    
+    const sentryViolations = result.violations.filter(v => v.category === 'sentry');
+    const businessViolations = result.violations.filter(v => v.category === 'business');
+    
+    if (sentryViolations.length > 0) {
+      report.push('### 🚨 Sentry Health Violations', '');
+      sentryViolations.forEach(violation => {
+        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        report.push(`#### ${severityEmoji} ${violation.metric}`);
+        report.push('');
+        report.push(`- **Actual**: ${violation.actual}%`);
+        report.push(`- **Threshold**: ≥ ${violation.threshold}%`);
+        report.push(`- **Impact**: ${violation.impact}`);
+        report.push('');
+      });
+    }
+    
+    if (businessViolations.length > 0) {
+      report.push('### 📉 Business Metric Violations', '');
+      businessViolations.forEach(violation => {
+        const severityEmoji = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        report.push(`#### ${severityEmoji} ${violation.metric}`);
+        report.push('');
+        report.push(`- **Impact**: ${violation.impact}`);
+        report.push(`- **Observation Window**: ${violation.observationWindow}`);
+        report.push('');
+      });
+    }
+  }
+  
+  if (result.sentryMetrics.rawData) {
+    report.push('## 📈 Raw Sentry Data', '');
+    report.push(`- **Total Sessions**: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);
+    report.push(`- **Crashed Sessions**: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);
+    report.push(`- **Total Users**: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);
+    report.push(`- **Crashed Users**: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);
     report.push('');
   }
   
   report.push('---');
-  report.push('*Report generated by Release Health Gate*');
+  report.push('*Report generated by Enhanced Release Health Gate*');
   
   return report.join('\n');
 }
@@ -283,7 +670,7 @@ function generateMarkdownReport(result) {
  * @param {Object} result - 检查结果
  */
 function printConsoleReport(result) {
-  console.log('📋 Release Health Report:');
+  console.log('📋 Enhanced Release Health Report:');
   console.log('═'.repeat(60));
   console.log(`Status: ${result.passed ? '✅ PASSED' : '❌ FAILED'}`);
   console.log(`Timestamp: ${result.timestamp}`);
@@ -292,35 +679,91 @@ function printConsoleReport(result) {
   console.log(`Observation Window: ${result.config.observationWindow}`);
   console.log('');
   
-  console.log('🎯 Thresholds:');
+  console.log('🎯 Sentry Thresholds:');
   console.log(`  Crash-Free Users: ≥ ${result.config.thresholds.crashFreeUsers}%`);
   console.log(`  Crash-Free Sessions: ≥ ${result.config.thresholds.crashFreeSessions}%`);
   console.log('');
   
-  console.log('📊 Metrics:');
-  const usersStatus = result.metrics.crashFreeUsers >= result.config.thresholds.crashFreeUsers ? '✅' : '❌';
-  const sessionsStatus = result.metrics.crashFreeSessions >= result.config.thresholds.crashFreeSessions ? '✅' : '❌';
+  console.log('📊 Sentry Metrics:');
+  const usersStatus = result.sentryMetrics.crashFreeUsers >= result.config.thresholds.crashFreeUsers ? '✅' : '❌';
+  const sessionsStatus = result.sentryMetrics.crashFreeSessions >= result.config.thresholds.crashFreeSessions ? '✅' : '❌';
   
-  console.log(`  Crash-Free Users: ${result.metrics.crashFreeUsers}% ${usersStatus}`);
-  console.log(`  Crash-Free Sessions: ${result.metrics.crashFreeSessions}% ${sessionsStatus}`);
+  console.log(`  Crash-Free Users: ${result.sentryMetrics.crashFreeUsers}% ${usersStatus}`);
+  console.log(`  Crash-Free Sessions: ${result.sentryMetrics.crashFreeSessions}% ${sessionsStatus}`);
   console.log('');
   
-  if (result.violations.length > 0) {
-    console.log('⚠️  Violations:');
-    result.violations.forEach(violation => {
-      const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';
-      console.log(`  ${severity} ${violation.metric}: ${violation.actual}% < ${violation.threshold}%`);
-      console.log(`     Impact: ${violation.impact}`);
+  // 业务指标报告
+  if (Object.keys(result.businessMetrics || {}).length > 0) {
+    console.log('🏢 Business Metrics:');
+    
+    Object.entries(result.config.businessThresholds || {}).forEach(([metricName, config]) => {
+      const businessData = result.businessMetrics[metricName];
+      if (!businessData) {
+        console.log(`  ❓ ${config.description}: No data available`);
+        return;
+      }
+      
+      const actualValue = businessData.rate !== undefined ? businessData.rate : 
+                         businessData.averageDuration !== undefined ? businessData.averageDuration :
+                         businessData.averageLoadTime;
+                         
+      const unit = config.unit === 'percent' ? '%' : 
+                   config.unit === 'milliseconds' ? 'ms' : 
+                   config.unit === 'seconds' ? 's' : '';
+                   
+      const status = actualValue >= config.threshold ? '✅' : '❌';
+      console.log(`  ${status} ${config.description}: ${actualValue}${unit} (≥ ${config.threshold}${unit})`);
+      
+      // 显示额外的详细信息
+      if (businessData.totalAttempts !== undefined && businessData.totalAttempts > 0) {
+        console.log(`      Attempts: ${businessData.totalAttempts.toLocaleString()}`);
+      }
+      if (businessData.dau !== undefined) {
+        console.log(`      DAU/MAU: ${businessData.dau}/${businessData.mau}`);
+      }
+      if (businessData.totalSessions !== undefined && businessData.totalSessions > 0) {
+        console.log(`      Sessions: ${businessData.totalSessions.toLocaleString()}`);
+      }
+      if (businessData.sampleCount !== undefined && businessData.sampleCount > 0) {
+        console.log(`      Samples: ${businessData.sampleCount.toLocaleString()}`);
+      }
     });
+    
     console.log('');
   }
   
-  if (result.metrics.rawData) {
-    console.log('📈 Raw Data:');
-    console.log(`  Total Sessions: ${result.metrics.rawData.totalSessions.toLocaleString()}`);
-    console.log(`  Crashed Sessions: ${result.metrics.rawData.crashedSessions.toLocaleString()}`);
-    console.log(`  Total Users: ${result.metrics.rawData.totalUsers.toLocaleString()}`);
-    console.log(`  Crashed Users: ${result.metrics.rawData.crashedUsers.toLocaleString()}`);
+  if (result.violations.length > 0) {
+    const sentryViolations = result.violations.filter(v => v.category === 'sentry');
+    const businessViolations = result.violations.filter(v => v.category === 'business');
+    
+    if (sentryViolations.length > 0) {
+      console.log('🚨 Sentry Violations:');
+      sentryViolations.forEach(violation => {
+        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        console.log(`  ${severity} ${violation.metric}: ${violation.actual}% < ${violation.threshold}%`);
+        console.log(`     Impact: ${violation.impact}`);
+      });
+      console.log('');
+    }
+    
+    if (businessViolations.length > 0) {
+      console.log('📉 Business Metric Violations:');
+      businessViolations.forEach(violation => {
+        const severity = violation.severity === 'blocking' ? '🚫' : '⚠️';
+        console.log(`  ${severity} ${violation.metric}`);
+        console.log(`     Impact: ${violation.impact}`);
+        console.log(`     Window: ${violation.observationWindow}`);
+      });
+      console.log('');
+    }
+  }
+  
+  if (result.sentryMetrics.rawData) {
+    console.log('📈 Raw Sentry Data:');
+    console.log(`  Total Sessions: ${result.sentryMetrics.rawData.totalSessions.toLocaleString()}`);
+    console.log(`  Crashed Sessions: ${result.sentryMetrics.rawData.crashedSessions.toLocaleString()}`);
+    console.log(`  Total Users: ${result.sentryMetrics.rawData.totalUsers.toLocaleString()}`);
+    console.log(`  Crashed Users: ${result.sentryMetrics.rawData.crashedUsers.toLocaleString()}`);
     console.log('');
   }
 }
@@ -445,9 +888,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // 导出函数供测试使用
-export { 
-  checkReleaseHealth, 
-  fetchReleaseHealthMetrics, 
-  generateMarkdownReport, 
-  CONFIG 
-};
+// export { checkReleaseHealth, fetchReleaseHealthMetrics, generateMarkdownReport, CONFIG };

@@ -1,12 +1,12 @@
 /**
  * Architecture Base Index Generator - FIXED VERSION
- * 
+ *
  * 修正的语义错误：
  * 1. CH字段：从文件名前缀提取章节代码（01-xxx.md → CH01）
- * 2. ADRs字段：从front-matter的adr_refs字段正确提取  
+ * 2. ADRs字段：从front-matter的adr_refs字段正确提取
  * 3. 文件范围：只处理docs/architecture/base/下的12个标准章节
  * 4. 输出格式：标准NDJSON格式
- * 
+ *
  * 基于ThinkDeep分析和PageIndex最佳实践设计
  */
 
@@ -33,20 +33,24 @@ function extractFrontMatter(content) {
  */
 function parseYAMLField(frontMatter, fieldName) {
   // 处理标量字段: title: "value"
-  const scalarMatch = frontMatter.match(new RegExp(`^${fieldName}\\s*:\\s*(.+)$`, 'm'));
+  const scalarMatch = frontMatter.match(
+    new RegExp(`^${fieldName}\\s*:\\s*(.+)$`, 'm')
+  );
   if (scalarMatch) {
     return scalarMatch[1].replace(/^['"]|['"]$/g, '').trim();
   }
-  
+
   // 处理数组字段: adr_refs: [ADR-0001, ADR-0002]
-  const arrayMatch = frontMatter.match(new RegExp(`^${fieldName}\\s*:\\s*\\[(.*)\\]`, 'm'));
+  const arrayMatch = frontMatter.match(
+    new RegExp(`^${fieldName}\\s*:\\s*\\[(.*)\\]`, 'm')
+  );
   if (arrayMatch) {
     return arrayMatch[1]
       .split(',')
       .map(item => item.replace(/^['"]|['"]$/g, '').trim())
       .filter(Boolean);
   }
-  
+
   return null;
 }
 
@@ -71,7 +75,8 @@ function getBaseChapterFiles() {
     process.exit(1);
   }
 
-  const files = fs.readdirSync(BASE_DIR)
+  const files = fs
+    .readdirSync(BASE_DIR)
     .filter(file => file.endsWith('.md'))
     .filter(file => CHAPTER_PATTERN.test(file))
     .sort(); // 确保按章节顺序处理
@@ -87,13 +92,13 @@ function processChapterFile(filePath) {
   try {
     const fileName = path.basename(filePath);
     const content = fs.readFileSync(filePath, 'utf8');
-    
+
     // 提取章节代码
     const chapterCode = extractChapterCode(fileName);
     if (!chapterCode) {
       return {
         success: false,
-        error: `Invalid chapter file name format: ${fileName}`
+        error: `Invalid chapter file name format: ${fileName}`,
       };
     }
 
@@ -102,12 +107,13 @@ function processChapterFile(filePath) {
     if (!frontMatter) {
       return {
         success: false,
-        error: `No front-matter found in ${fileName}`
+        error: `No front-matter found in ${fileName}`,
       };
     }
 
     // 提取字段
-    const title = parseYAMLField(frontMatter, 'title') || fileName.replace('.md', '');
+    const title =
+      parseYAMLField(frontMatter, 'title') || fileName.replace('.md', '');
     const adrRefs = parseYAMLField(frontMatter, 'adr_refs') || [];
     const lastAdjusted = parseYAMLField(frontMatter, 'last_adjusted');
 
@@ -118,18 +124,17 @@ function processChapterFile(filePath) {
       title: title,
       CH: chapterCode, // 正确的章节代码
       ADRs: Array.isArray(adrRefs) ? adrRefs.join(', ') : adrRefs || '', // 从adr_refs提取
-      updatedAt: lastAdjusted || new Date().toISOString().split('T')[0] // YYYY-MM-DD格式
+      updatedAt: lastAdjusted || new Date().toISOString().split('T')[0], // YYYY-MM-DD格式
     };
 
     return {
       success: true,
-      record: record
+      record: record,
     };
-
   } catch (error) {
     return {
       success: false,
-      error: `Processing error in ${path.basename(filePath)}: ${error.message}`
+      error: `Processing error in ${path.basename(filePath)}: ${error.message}`,
     };
   }
 }
@@ -140,10 +145,10 @@ function processChapterFile(filePath) {
 function generateFixedArchitectureIndex() {
   console.log('🔧 Architecture Base Index Generator - FIXED VERSION');
   console.log('📋 Correcting semantic errors in CH/ADRs field mapping...\n');
-  
+
   // 获取章节文件
   const chapterFiles = getBaseChapterFiles();
-  
+
   if (chapterFiles.length === 0) {
     console.error('❌ No valid chapter files found');
     process.exit(1);
@@ -156,7 +161,7 @@ function generateFixedArchitectureIndex() {
   // 处理所有章节文件
   for (const filePath of chapterFiles) {
     const result = processChapterFile(filePath);
-    
+
     if (result.success) {
       results.push(result.record);
       chapters.add(result.record.CH);
@@ -168,9 +173,12 @@ function generateFixedArchitectureIndex() {
   }
 
   // 检查章节完整性
-  const expectedChapters = Array.from({length: 12}, (_, i) => `CH${String(i + 1).padStart(2, '0')}`);
+  const expectedChapters = Array.from(
+    { length: 12 },
+    (_, i) => `CH${String(i + 1).padStart(2, '0')}`
+  );
   const missingChapters = expectedChapters.filter(ch => !chapters.has(ch));
-  
+
   if (missingChapters.length > 0) {
     console.warn(`⚠️ Missing chapters: ${missingChapters.join(', ')}`);
   }
@@ -194,21 +202,25 @@ function generateFixedArchitectureIndex() {
     .sort((a, b) => a.CH.localeCompare(b.CH)) // 按章节排序
     .map(record => JSON.stringify(record))
     .join('\n');
-  
+
   fs.writeFileSync(OUTPUT_FILE, ndjsonContent, 'utf8');
 
   console.log(`\n🎯 Fixed Architecture Base Index Generation Complete:`);
-  console.log(`📄 Chapter files processed: ${results.length}/${expectedChapters.length}`);
+  console.log(
+    `📄 Chapter files processed: ${results.length}/${expectedChapters.length}`
+  );
   console.log(`📋 Index file: ${OUTPUT_FILE}`);
   console.log(`📊 Format: NDJSON (${results.length} records)`);
-  
+
   // 显示语义修正摘要
   console.log(`\n✅ Semantic Corrections Applied:`);
-  console.log(`   - CH field: Chapter codes (CH01-CH${String(results.length).padStart(2, '0')})`);
+  console.log(
+    `   - CH field: Chapter codes (CH01-CH${String(results.length).padStart(2, '0')})`
+  );
   console.log(`   - ADRs field: Extracted from adr_refs front-matter`);
   console.log(`   - File scope: ${results.length} base chapter files only`);
   console.log(`   - Output: Standard NDJSON format`);
-  
+
   // 显示示例记录
   if (results.length > 0) {
     console.log(`\n📋 Sample record (${results[0].CH}):`);

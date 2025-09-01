@@ -4,32 +4,45 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { PerformanceCollector, p95 } from '../../tests/utils/PerformanceTestUtils';
+import {
+  PerformanceCollector,
+  p95,
+} from '../../tests/utils/PerformanceTestUtils';
 
 describe('P95 采样方法论验证', () => {
-  
   it('演示单点测试的不稳定性 vs P95 的稳定性', () => {
     // 模拟真实性能测试中的波动情况
     // 大部分情况下性能良好 (50-80ms)，但偶尔出现抖动 (150-200ms)
     const simulatedPerformanceData = [
       // 大部分正常情况 (85% 良好性能)
-      ...Array(17).fill(0).map(() => 50 + Math.random() * 30), // 50-80ms
-      // 少数抖动情况 (15% 性能抖动)  
-      ...Array(3).fill(0).map(() => 150 + Math.random() * 50), // 150-200ms
+      ...Array(17)
+        .fill(0)
+        .map(() => 50 + Math.random() * 30), // 50-80ms
+      // 少数抖动情况 (15% 性能抖动)
+      ...Array(3)
+        .fill(0)
+        .map(() => 150 + Math.random() * 50), // 150-200ms
     ];
 
     // 随机打乱数据，模拟真实测试中的随机性
     for (let i = simulatedPerformanceData.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [simulatedPerformanceData[i], simulatedPerformanceData[j]] = 
-      [simulatedPerformanceData[j], simulatedPerformanceData[i]];
+      [simulatedPerformanceData[i], simulatedPerformanceData[j]] = [
+        simulatedPerformanceData[j],
+        simulatedPerformanceData[i],
+      ];
     }
 
-    console.log('模拟性能数据:', simulatedPerformanceData.map(v => v.toFixed(1)));
+    console.log(
+      '模拟性能数据:',
+      simulatedPerformanceData.map(v => v.toFixed(1))
+    );
 
     // 计算统计信息
     const p95Value = p95(simulatedPerformanceData);
-    const average = simulatedPerformanceData.reduce((a, b) => a + b) / simulatedPerformanceData.length;
+    const average =
+      simulatedPerformanceData.reduce((a, b) => a + b) /
+      simulatedPerformanceData.length;
     const max = Math.max(...simulatedPerformanceData);
     const min = Math.min(...simulatedPerformanceData);
 
@@ -63,7 +76,9 @@ describe('P95 采样方法论验证', () => {
     const failuresCount = singlePointResults.filter(v => v > 100).length;
     const failureRate = failuresCount / simulatedRuns;
 
-    console.log(`单点测试失败率: ${(failureRate * 100).toFixed(1)}% (${failuresCount}/${simulatedRuns})`);
+    console.log(
+      `单点测试失败率: ${(failureRate * 100).toFixed(1)}% (${failuresCount}/${simulatedRuns})`
+    );
 
     // 现在用 P95 方法测试同样的性能特征
     const p95Samples: number[] = [];
@@ -88,7 +103,7 @@ describe('P95 采样方法论验证', () => {
     const testData = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; // 10 个数
 
     const p95Value = p95(testData);
-    
+
     // 对于 10 个数字，P95 位置计算：
     // Math.ceil(10 * 0.95) - 1 = Math.ceil(9.5) - 1 = 10 - 1 = 9
     // 所以 P95 应该是索引 9 的值，即 100
@@ -97,7 +112,7 @@ describe('P95 采样方法论验证', () => {
     // 测试更大的数据集
     const largeData = Array.from({ length: 100 }, (_, i) => i + 1); // 1-100
     const p95Large = p95(largeData);
-    
+
     // 对于 100 个数字：Math.ceil(100 * 0.95) - 1 = 95 - 1 = 94
     // 所以 P95 应该是索引 94 的值，即 95
     expect(p95Large).toBe(95);
@@ -105,10 +120,10 @@ describe('P95 采样方法论验证', () => {
 
   it('验证 PerformanceCollector 的完整统计功能', () => {
     const collector = new PerformanceCollector();
-    
+
     // 添加模拟性能数据
     const performanceData = [45, 55, 65, 75, 85, 95, 105, 115, 125, 135];
-    
+
     performanceData.forEach(value => {
       collector.addMetric('test_metric', value);
     });

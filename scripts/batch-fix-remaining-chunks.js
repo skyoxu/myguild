@@ -22,8 +22,12 @@ class BatchChunkFixer {
   async fixRemainingChunks() {
     console.log('⚡ 快速批量修复剩余PRD分片...\n');
 
-    const files = fs.readdirSync(this.prdChunksDir)
-      .filter(file => file.startsWith('PRD-Guild-Manager_chunk_') && file.endsWith('.md'))
+    const files = fs
+      .readdirSync(this.prdChunksDir)
+      .filter(
+        file =>
+          file.startsWith('PRD-Guild-Manager_chunk_') && file.endsWith('.md')
+      )
       .sort();
 
     console.log(`📂 处理 ${files.length} 个文件...\n`);
@@ -37,7 +41,7 @@ class BatchChunkFixer {
 
   async quickFix(filename) {
     const filePath = path.join(this.prdChunksDir, filename);
-    
+
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       let newContent = content;
@@ -45,7 +49,10 @@ class BatchChunkFixer {
       const fixes = [];
 
       // 1. 快速ADR-0002修复
-      if (content.includes('CRASH_FREE_99.5') && !content.includes('"ADR-0002-electron-security-baseline"')) {
+      if (
+        content.includes('CRASH_FREE_99.5') &&
+        !content.includes('"ADR-0002-electron-security-baseline"')
+      ) {
         newContent = this.addADR0002(newContent);
         modified = true;
         fixes.push('ADR-0002添加');
@@ -58,7 +65,7 @@ class BatchChunkFixer {
         fixes.push('CloudEvents修复');
       }
 
-      // 3. 快速Release Gates修复  
+      // 3. 快速Release Gates修复
       if (this.needsReleaseGatesFix(content)) {
         newContent = this.fixReleaseGates(newContent);
         modified = true;
@@ -69,7 +76,7 @@ class BatchChunkFixer {
       if (content.includes('cspNotes:') && content.includes('默认CSP策略')) {
         newContent = content.replace(
           /cspNotes:\s*"[^"]+"/,
-          'cspNotes: "Electron CSP: script-src \'self\'; object-src \'none\'; base-uri \'self\'"'
+          "cspNotes: \"Electron CSP: script-src 'self'; object-src 'none'; base-uri 'self'\""
         );
         modified = true;
         fixes.push('CSP策略增强');
@@ -82,7 +89,6 @@ class BatchChunkFixer {
       } else {
         console.log(`⚪ ${filename}: 无需修复`);
       }
-
     } catch (error) {
       this.errors.push(`${filename}: ${error.message}`);
       console.error(`❌ ${filename}: ${error.message}`);
@@ -91,14 +97,18 @@ class BatchChunkFixer {
 
   addADR0002(content) {
     const adrsRegex = /(ADRs:\s*\n\s+- "[^"]+"\s*\n)/;
-    return content.replace(adrsRegex, '$1  - "ADR-0002-electron-security-baseline"\n');
+    return content.replace(
+      adrsRegex,
+      '$1  - "ADR-0002-electron-security-baseline"\n'
+    );
   }
 
   fixCloudEvents(content, filename) {
     const chunkNum = filename.match(/chunk_(\d{3})/)?.[1] || '000';
-    
-    const eventsRegex = /(\s+)events:\s*\n((?:\s+[^\n]+\s*\n)*?)(\s+interfaces:)/s;
-    
+
+    const eventsRegex =
+      /(\s+)events:\s*\n((?:\s+[^\n]+\s*\n)*?)(\s+interfaces:)/s;
+
     const newEventsContent = `    specversion: "1.0"
     id: "guild-manager-chunk-${chunkNum}-${Date.now().toString(36)}"
     time: "${new Date().toISOString()}"
@@ -113,9 +123,11 @@ class BatchChunkFixer {
   }
 
   needsReleaseGatesFix(content) {
-    return content.includes('Release_Gates:') && 
-           (content.includes('Quality_Gate:\nenabled:') || 
-            !content.includes('  Quality_Gate:'));
+    return (
+      content.includes('Release_Gates:') &&
+      (content.includes('Quality_Gate:\nenabled:') ||
+        !content.includes('  Quality_Gate:'))
+    );
   }
 
   fixReleaseGates(content) {
@@ -181,7 +193,7 @@ class BatchChunkFixer {
     console.log('\n' + '='.repeat(60));
     console.log('📊 批量修复结果摘要');
     console.log('='.repeat(60));
-    
+
     console.log(`✅ 成功修复: ${this.processed.length} 个文件`);
     console.log(`❌ 修复失败: ${this.errors.length} 个文件`);
 

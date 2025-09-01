@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-08-30T16:43:56.160Z",
+  "environment": "default",
+  "file": "index.html",
+  "policy": "default-src ",
+  "parsed": {
+    "default-src": []
+  },
+  "violations": [
+    {
+      "type": "missing_directive",
+      "directive": "script-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: script-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "style-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: style-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "img-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: img-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "font-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: font-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "connect-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: connect-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "object-src",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: object-src"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "base-uri",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: base-uri"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "form-action",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: form-action"
+    },
+    {
+      "type": "missing_directive",
+      "directive": "frame-ancestors",
+      "severity": "high",
+      "message": "缺少必需的 CSP 指令: frame-ancestors"
+    },
+    {
+      "type": "security_baseline_violation",
+      "directive": "object-src",
+      "expected": "'none'",
+      "actual": "",
+      "severity": "high",
+      "message": "object-src 应设置为 none 以防止插件执行"
+    },
+    {
+      "type": "security_baseline_violation",
+      "directive": "base-uri",
+      "expected": "'self'",
+      "actual": "",
+      "severity": "high",
+      "message": "base-uri 应限制为 self 以防止基础URI劫持"
+    },
+    {
+      "type": "security_baseline_violation",
+      "directive": "form-action",
+      "expected": "'self'",
+      "actual": "",
+      "severity": "high",
+      "message": "form-action 应限制为 self 以防止表单提交到恶意站点"
+    },
+    {
+      "type": "security_baseline_violation",
+      "directive": "frame-ancestors",
+      "expected": "'none'",
+      "actual": "",
+      "severity": "high",
+      "message": "frame-ancestors 应设置为 none 以防止点击劫持"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "missing_sentry",
+      "directive": "connect-src",
+      "severity": "low",
+      "message": "未在 connect-src 中发现 Sentry 配置，可能影响错误报告"
+    }
+  ],
+  "summary": {
+    "passed": false,
+    "violations": 13,
+    "warnings": 1
+  }
+}

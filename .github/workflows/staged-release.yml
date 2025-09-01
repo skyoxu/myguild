@@ -1,0 +1,381 @@
+name: 📊 Staged Release with Health Gates
+
+# 渐进发布工作流：5%/25%/50%/100% 阶梯发布 + Sentry健康门禁
+# 基于 ADR-0008 渐进发布策略和 ADR-0003 可观测性规范
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_percentage:
+        description: '发布百分比 (5, 25, 50, 100)'
+        required: true
+        default: '5'
+        type: choice
+        options:
+          - '5'
+          - '25'
+          - '50'
+          - '100'
+      version:
+        description: '发布版本号'
+        required: true
+        type: string
+      skip_health_check:
+        description: '跳过健康检查 (仅紧急情况)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Sentry 配置
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  # 发布配置
+  APP_VERSION: ${{ inputs.version }}
+  STAGING_PERCENTAGE: ${{ inputs.staging_percentage }}
+  FEED_FILE: 'dist/latest.yml'
+
+jobs:
+  # 1. 预检查：验证配置和依赖
+  pre_check:
+    name: 🔍 Pre-flight Check
+    runs-on: ubuntu-latest
+    outputs:
+      can_proceed: ${{ steps.validation.outputs.can_proceed }}
+      previous_stage: ${{ steps.current_status.outputs.percentage }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Check current release status
+        id: current_status
+        run: |
+          if [ -f "${{ env.FEED_FILE }}" ]; then
+            CURRENT_PCT=$(node scripts/release/patch-staging-percentage.mjs status "${{ env.FEED_FILE }}" | grep -o 'percentage: [0-9]*' | cut -d' ' -f2 || echo "0")
+            echo "percentage=${CURRENT_PCT}" >> $GITHUB_OUTPUT
+            echo "📊 当前发布百分比: ${CURRENT_PCT}%"
+          else
+            echo "percentage=0" >> $GITHUB_OUTPUT
+            echo "📦 首次发布，从0%开始"
+          fi
+
+      - name: Validate staging progression
+        id: validation
+        run: |
+          CURRENT_PCT="${{ steps.current_status.outputs.percentage }}"
+          TARGET_PCT="${{ env.STAGING_PERCENTAGE }}"
+
+          echo "🔍 验证发布阶段进展:"
+          echo "   当前: ${CURRENT_PCT}%"
+          echo "   目标: ${TARGET_PCT}%"
+
+          # 验证发布是递增的（允许回滚到0%）
+          if [ "$TARGET_PCT" = "0" ]; then
+            echo "🛑 紧急回滚到0%，允许执行"
+            echo "can_proceed=true" >> $GITHUB_OUTPUT
+          elif [ "$TARGET_PCT" -gt "$CURRENT_PCT" ]; then
+            echo "✅ 正常的阶段性递增，允许执行"
+            echo "can_proceed=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ 尝试降低发布百分比 (非紧急)，需要确认"
+            echo "can_proceed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Sentry configuration
+        if: ${{ !inputs.skip_health_check }}
+        run: |
+          if [ -z "${{ env.SENTRY_AUTH_TOKEN }}" ] || [ -z "${{ env.SENTRY_ORG }}" ] || [ -z "${{ env.SENTRY_PROJECT }}" ]; then
+            echo "❌ Sentry配置不完整，无法进行健康检查"
+            exit 1
+          fi
+          echo "✅ Sentry配置验证通过"
+
+  # 2. 健康度检查：检查当前版本的Sentry Health指标
+  health_check:
+    name: 🏥 Health Check
+    runs-on: ubuntu-latest
+    needs: pre_check
+    if: ${{ needs.pre_check.outputs.can_proceed == 'true' && !inputs.skip_health_check && inputs.staging_percentage != '5' }}
+    outputs:
+      health_passed: ${{ steps.health_gate.outputs.passed }}
+      health_data: ${{ steps.health_gate.outputs.data }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for health data (non-pilot releases)
+        if: ${{ inputs.staging_percentage != '5' }}
+        run: |
+          case "${{ env.STAGING_PERCENTAGE }}" in
+            "25")
+              echo "⏳ 25%发布：等待2小时收集健康数据..."
+              WAIT_TIME=2 ;;
+            "50")
+              echo "⏳ 50%发布：等待4小时收集健康数据..."
+              WAIT_TIME=4 ;;
+            "100")
+              echo "⏳ 100%发布：等待8小时收集健康数据..."
+              WAIT_TIME=8 ;;
+            *)
+              WAIT_TIME=1 ;;
+          esac
+
+          echo "健康检查等待时间: ${WAIT_TIME}小时"
+          # 在实际部署中，这里可能需要等待或检查时间戳
+
+      - name: Check Sentry Release Health
+        id: health_gate
+        run: |
+          echo "🏥 检查版本 ${{ env.APP_VERSION }} 的健康度..."
+
+          # 使用现有的auto-rollback脚本进行健康检查
+          set +e
+          HEALTH_RESULT=$(node scripts/release/auto-rollback.mjs 2>&1)
+          HEALTH_EXIT_CODE=$?
+          set -e
+
+          echo "健康检查结果："
+          echo "$HEALTH_RESULT"
+
+          if [ $HEALTH_EXIT_CODE -eq 0 ]; then
+            echo "✅ 健康检查通过"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          elif [ $HEALTH_EXIT_CODE -eq 42 ]; then
+            echo "❌ 健康检查失败 - 建议回滚"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "⚠️ 健康检查过程出错"
+            echo "passed=unknown" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # 提取健康数据用于后续步骤
+          echo "data=$HEALTH_RESULT" >> $GITHUB_OUTPUT
+
+  # 3. 发布部署：更新latest.yml并部署
+  deploy_release:
+    name: 🚀 Deploy Release
+    runs-on: ubuntu-latest
+    needs: [pre_check, health_check]
+    if: ${{ always() && needs.pre_check.outputs.can_proceed == 'true' && (needs.health_check.result == 'success' || needs.health_check.result == 'skipped' || inputs.skip_health_check) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure dist directory exists
+        run: mkdir -p dist
+
+      - name: Update staging percentage
+        id: update_feed
+        run: |
+          echo "📝 更新发布配置到 ${{ env.STAGING_PERCENTAGE }}%..."
+
+          # 使用发布管理脚本更新latest.yml
+          UPDATE_RESULT=$(node scripts/release/patch-staging-percentage.mjs update "${{ env.FEED_FILE }}" "${{ env.STAGING_PERCENTAGE }}")
+
+          echo "更新结果:"
+          echo "$UPDATE_RESULT"
+
+          # 验证更新结果
+          if echo "$UPDATE_RESULT" | grep -q '"success":true'; then
+            echo "✅ 发布配置更新成功"
+          else
+            echo "❌ 发布配置更新失败"
+            exit 1
+          fi
+
+      - name: Verify feed file
+        run: |
+          echo "📋 验证发布配置文件:"
+          node scripts/release/patch-staging-percentage.mjs validate "${{ env.FEED_FILE }}"
+
+          echo "📊 当前发布状态:"
+          node scripts/release/patch-staging-percentage.mjs status "${{ env.FEED_FILE }}"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-config-${{ env.STAGING_PERCENTAGE }}pct
+          path: |
+            ${{ env.FEED_FILE }}
+            ${{ env.FEED_FILE }}.backup-*
+
+      - name: Create GitHub release (for 100% releases)
+        if: ${{ env.STAGING_PERCENTAGE == '100' }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          release_name: 'Release v${{ env.APP_VERSION }} - 100% Rollout'
+          body: |
+            🚀 **完整发布 v${{ env.APP_VERSION }}**
+
+            📊 **发布进展**:
+            - ✅ 5% Pilot 发布
+            - ✅ 25% Early Adopters 发布  
+            - ✅ 50% Wide Release 发布
+            - ✅ 100% Complete Rollout
+
+            🏥 **健康度验证**:
+            ${{ needs.health_check.outputs.health_data }}
+
+            **注意**: 此版本已完成分阶段发布流程，所有健康门禁均已通过。
+
+          draft: false
+          prerelease: false
+
+  # 4. 发布后监控：设置持续的健康监控
+  post_deploy_monitoring:
+    name: 📊 Post-Deploy Monitoring
+    runs-on: ubuntu-latest
+    needs: [pre_check, deploy_release]
+    if: ${{ success() && inputs.staging_percentage != '100' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup monitoring schedule
+        run: |
+          echo "📊 设置版本 ${{ env.APP_VERSION }} 的监控计划..."
+
+          case "${{ env.STAGING_PERCENTAGE }}" in
+            "5")
+              echo "⏰ 5%发布：2小时后进行健康检查"
+              NEXT_CHECK="2 hours" ;;
+            "25") 
+              echo "⏰ 25%发布：4小时后进行健康检查"
+              NEXT_CHECK="4 hours" ;;
+            "50")
+              echo "⏰ 50%发布：8小时后进行健康检查"  
+              NEXT_CHECK="8 hours" ;;
+          esac
+
+          echo "下次健康检查时间: $NEXT_CHECK"
+
+          # 在实际部署中，这里可能会触发定时任务或设置监控规则
+          # 例如：创建 GitHub scheduled workflow 或外部监控系统
+
+      - name: Create monitoring issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🏥 Health Monitoring: v${{ env.APP_VERSION }} (${{ env.STAGING_PERCENTAGE }}% release)`,
+              body: `
+              ## 📊 发布监控 v${{ env.APP_VERSION }}
+              
+              **发布阶段**: ${{ env.STAGING_PERCENTAGE }}% Staged Release
+              **发布时间**: ${{ github.event.created_at }}
+              **负责人**: @${{ github.actor }}
+              
+              ### 🎯 监控检查清单
+              - [ ] 2小时后：初步健康度检查
+              - [ ] 4小时后：扩展健康度验证  
+              - [ ] 8小时后：全面健康评估
+              - [ ] 24小时后：长期稳定性确认
+              
+              ### 🚨 自动回滚条件
+              - Crash-Free Users < 99.5%
+              - Crash-Free Sessions < 99.8% 
+              - 严重错误激增
+              
+              ### 📈 监控链接
+              - [Sentry Release Dashboard](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)
+              - [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)
+              
+              ---
+              🤖 此Issue由GitHub Actions自动创建，用于跟踪发布健康度监控。
+              `,
+              labels: ['release', 'monitoring', 'health-check']
+            });
+
+            console.log(`Created monitoring issue #${issue.number}`);
+
+  # 5. 通知：发送发布状态通知
+  notify:
+    name: 📢 Notification
+    runs-on: ubuntu-latest
+    needs: [pre_check, health_check, deploy_release]
+    if: always()
+
+    steps:
+      - name: Determine overall status
+        id: status
+        run: |
+          if [ "${{ needs.deploy_release.result }}" = "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=✅ 发布成功完成" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.health_check.result }}" = "failure" ]; then
+            echo "status=health_failed" >> $GITHUB_OUTPUT  
+            echo "message=❌ 健康检查失败，发布已阻止" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.pre_check.outputs.can_proceed }}" = "false" ]; then
+            echo "status=validation_failed" >> $GITHUB_OUTPUT
+            echo "message=⚠️ 发布验证失败" >> $GITHUB_OUTPUT
+          else
+            echo "status=unknown" >> $GITHUB_OUTPUT
+            echo "message=❓ 发布状态未知" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post summary
+        run: |
+          echo "## 📊 分阶段发布总结" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**版本**: ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**发布阶段**: ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY  
+          echo "**状态**: ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**触发者**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.status.outputs.status }}" = "success" ]; then
+            echo "### ✅ 发布进展" >> $GITHUB_STEP_SUMMARY
+            echo "- [x] 预检查通过" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ inputs.skip_health_check }}" != "true" ] && [ "${{ env.STAGING_PERCENTAGE }}" != "5" ]; then
+              echo "- [x] 健康检查通过" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- [x] 发布配置更新到 ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY
+            echo "- [x] 监控设置完成" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 相关链接" >> $GITHUB_STEP_SUMMARY
+          echo "- [Sentry Release](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)" >> $GITHUB_STEP_SUMMARY

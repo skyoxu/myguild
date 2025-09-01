@@ -9,7 +9,8 @@
 ## 2. $ARGUMENTS 使用示例
 
 ### 基础参数传递
-```bash
+
+````bash
 # 定义命令 (在 .claude/commands/ 目录下)
 # deploy.md
 ---
@@ -22,11 +23,13 @@ description: 部署应用到指定环境
 bash```
 npm run build
 npm run deploy -- --env=$1 --config=$2
-```
+````
 
 # 使用方式
+
 /deploy production config/prod.json
-```
+
+````
 
 ### 高级参数处理
 ```bash
@@ -38,14 +41,14 @@ description: 高级部署命令，支持多个参数
 
 部署配置：
 - 环境: $1
-- 版本: $2  
+- 版本: $2
 - 功能标志: $3
 - 附加选项: $ARGUMENTS[3:]
 
 bash```
 echo "部署环境: $1"
 echo "版本号: $2"
-echo "功能标志: $3" 
+echo "功能标志: $3"
 echo "其他参数: ${@:4}"
 
 # 构建和部署
@@ -55,11 +58,13 @@ if [ "$3" = "true" ]; then
 else
   npm run deploy:standard
 fi
-```
+````
 
 # 使用
+
 /advanced-deploy staging v1.2.3 true --verbose --dry-run
-```
+
+````
 
 ## 3. Bash 预处理示例
 
@@ -88,13 +93,15 @@ else
   echo "支持的类型: unit, e2e, all"
   exit 1
 fi
-```
+````
 
 # 使用
+
 /test unit
 /test e2e  
 /test all
-```
+
+````
 
 ### 环境检查和设置
 ```bash
@@ -130,8 +137,9 @@ if [ -f "scripts/setup-$1.sh" ]; then
 fi
 
 echo "环境设置完成!"
-```
-```
+````
+
+````
 
 ## 4. 文件引用示例
 
@@ -157,15 +165,17 @@ bash```
 # 运行静态分析工具
 npx eslint $1
 npx tsc --noEmit $1 2>/dev/null || echo "TypeScript检查完成"
-```
+````
 
 # 使用
+
 /analyze src/components/GameEngine.ts
-```
+
+````
 
 ### 多文件对比
 ```bash
-# compare-files.md  
+# compare-files.md
 ---
 name: compare
 description: 对比两个文件的差异
@@ -176,7 +186,7 @@ description: 对比两个文件的差异
 ## 文件1: $1
 file:$1
 
-## 文件2: $2  
+## 文件2: $2
 file:$2
 
 请分析这两个文件的主要差异，并提供改进建议。
@@ -184,11 +194,13 @@ file:$2
 bash```
 # 使用git diff显示差异
 git diff --no-index $1 $2 || diff -u $1 $2
-```
+````
 
 # 使用
+
 /compare src/old-version.js src/new-version.js
-```
+
+````
 
 ## 5. MCP (Model Context Protocol) 集成示例
 
@@ -210,14 +222,17 @@ mcp:database-client```
     "format": "json"
   }
 }
-```
+````
 
 请分析查询结果并提供优化建议。
 
 bash```
+
 # 记录查询到日志
+
 echo "执行查询: $1" >> query.log
 echo "时间: $(date)" >> query.log
+
 ```
 
 # 使用
@@ -225,10 +240,11 @@ echo "时间: $(date)" >> query.log
 ```
 
 ### API 测试集成
-```bash
+
+````bash
 # api-test.md
 ---
-name: apitest  
+name: apitest
 description: 测试API端点
 ---
 
@@ -243,27 +259,32 @@ mcp:http-client```
     "Content-Type": "application/json"
   }
 }
-```
+````
 
 分析API响应并检查：
+
 1. 响应时间
 2. 状态码
 3. 数据结构
 4. 错误处理
 
 bash```
+
 # 使用curl进行备用测试
+
 curl -i -H "Authorization: Bearer $2" $1
+
 ```
 
-# 使用  
+# 使用
 /apitest https://api.example.com/users your-token-here
 ```
 
 ## 6. 复杂综合示例
 
 ### 全栈部署命令
-```bash
+
+````bash
 # fullstack-deploy.md
 ---
 name: deploy-fullstack
@@ -287,26 +308,32 @@ mcp:database-client```
     "version": "latest"
   }
 }
-```
+````
 
 ### 2. 后端部署
+
 bash```
 echo "=== 后端部署 ==="
+
 # 构建后端
+
 npm run build:backend
 
 # 运行测试
+
 npm run test:backend
 
 # 部署到云函数
-if [ "$1" = "production" ]; then
-  npm run deploy:backend:prod
-else
-  npm run deploy:backend:$1
-fi
-```
 
-### 3. 前端部署  
+if [ "$1" = "production" ]; then
+npm run deploy:backend:prod
+else
+npm run deploy:backend:$1
+fi
+
+````
+
+### 3. 前端部署
 bash```
 echo "=== 前端部署 ==="
 # 构建前端
@@ -317,15 +344,17 @@ npm run deploy:frontend:$1
 
 # 清除CDN缓存
 npm run cdn:purge
-```
+````
 
 ### 4. 健康检查
+
 mcp:http-client```
 {
-  "method": "GET", 
-  "url": "https://$1-api.example.com/health"
+"method": "GET",
+"url": "https://$1-api.example.com/health"
 }
-```
+
+````
 
 bash```
 # 等待服务启动
@@ -337,23 +366,26 @@ npm run test:e2e:$1
 echo "=== 部署完成 ==="
 echo "前端: https://$1.example.com"
 echo "API: https://$1-api.example.com"
-```
+````
 
 # 使用
+
 /deploy-fullstack staging
 /deploy-fullstack production
-```
+
+````
 
 ## 7. 最佳实践
 
 ### 错误处理
 ```bash
 set -e  # 遇到错误立即退出
-set -u  # 使用未定义变量时报错  
+set -u  # 使用未定义变量时报错
 set -o pipefail  # 管道中任何命令失败都报错
-```
+````
 
 ### 参数验证
+
 ```bash
 if [ $# -lt 2 ]; then
   echo "错误: 需要至少2个参数"
@@ -363,6 +395,7 @@ fi
 ```
 
 ### 日志记录
+
 ```bash
 LOG_FILE="logs/command-$(date +%Y%m%d).log"
 echo "[$(date)] 执行命令: $0 $*" >> $LOG_FILE

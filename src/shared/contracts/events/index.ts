@@ -17,3 +17,6 @@ export type EventHandler<T extends AppEvent = AppEvent> = (
 // 别名支持
 export type DomainEvent = AppEvent;
 export type EventType = AppEventType;
+
+// 导出游戏事件
+export * from './GameEvents';

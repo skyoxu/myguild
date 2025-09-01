@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 const filesToFix = [
   'PRD-Guild-Manager_chunk_005.md',
-  'PRD-Guild-Manager_chunk_006.md', 
+  'PRD-Guild-Manager_chunk_006.md',
   'PRD-Guild-Manager_chunk_007.md',
   'PRD-Guild-Manager_chunk_008.md',
   'PRD-Guild-Manager_chunk_009.md',
@@ -31,7 +31,7 @@ const filesToFix = [
   'PRD-Guild-Manager_chunk_021.md',
   'PRD-Guild-Manager_chunk_022.md',
   'PRD-Guild-Manager_chunk_023.md',
-  'PRD-Guild-Manager_chunk_024.md'
+  'PRD-Guild-Manager_chunk_024.md',
 ];
 
 const prdChunksDir = path.join(__dirname, '..', 'docs', 'prd_chunks');
@@ -43,18 +43,18 @@ let errorCount = 0;
 
 for (const filename of filesToFix) {
   const filePath = path.join(prdChunksDir, filename);
-  
+
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
-    
+
     // 查找ADRs部分并添加ADR-0002
     if (!content.includes('ADR-0002-electron-security-baseline')) {
       const adrsRegex = /(ADRs:\s*\n\s+- "ADR-0001-tech-stack"\s*\n)/;
       const newContent = content.replace(
-        adrsRegex, 
+        adrsRegex,
         '$1  - "ADR-0002-electron-security-baseline"\n'
       );
-      
+
       if (newContent !== content) {
         fs.writeFileSync(filePath, newContent, 'utf-8');
         console.log(`✅ ${filename}: ADR-0002已添加`);
@@ -65,7 +65,6 @@ for (const filename of filesToFix) {
     } else {
       console.log(`⚪ ${filename}: ADR-0002已存在`);
     }
-    
   } catch (error) {
     console.error(`❌ ${filename}: ${error.message}`);
     errorCount++;

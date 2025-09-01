@@ -9,7 +9,8 @@
 ### Windows PowerShell 脚本 (推荐)
 
 #### `setup-vitegame-environment.ps1` - 完整环境复制脚本
-```powershell
+
+```````powershell
 <#
 .SYNOPSIS
     ViteGame 项目环境一键复制脚本
@@ -74,42 +75,42 @@ function Main {
     Write-ColoredOutput "🎮 ViteGame 环境复制脚本启动" "Magenta"
     Write-ColoredOutput "项目名称: $ProjectName" "Gray"
     Write-ColoredOutput "=" * 50 "Gray"
-    
+
     try {
         # 步骤 1: 环境检查
         Test-Prerequisites
-        
+
         # 步骤 2: 创建项目目录
         Initialize-ProjectDirectory
-        
+
         # 步骤 3: 安装核心依赖
         Install-CoreDependencies
-        
+
         # 步骤 4: 复制配置文件
         Copy-ConfigurationFiles
-        
+
         # 步骤 5: 设置安全基线
         Setup-SecurityBaseline
-        
+
         # 步骤 6: 配置测试框架
         Setup-TestingFramework
-        
+
         # 步骤 7: 配置工具链
         Setup-Toolchain
-        
+
         # 步骤 8: 配置管理层
         Setup-ConfigurationManagement
-        
+
         # 步骤 9: 验证环境
         Verify-Environment
-        
+
         # 步骤 10: 生成使用指南
         Generate-UsageGuide
-        
+
         Write-Success "🎉 环境复制完成! 项目已就绪。"
         Write-ColoredOutput "📂 项目目录: $(Get-Location)\$ProjectName" "Gray"
         Write-ColoredOutput "📖 查看 USAGE_GUIDE.md 了解下一步操作" "Gray"
-        
+
     } catch {
         Write-Error "环境复制失败: $($_.Exception.Message)"
         exit 1
@@ -118,7 +119,7 @@ function Main {
 
 function Test-Prerequisites {
     Write-Step "检查先决条件"
-    
+
     # 检查 Node.js
     try {
         $nodeVersion = node --version
@@ -130,7 +131,7 @@ function Test-Prerequisites {
     } catch {
         throw "Node.js 未安装或版本过低"
     }
-    
+
     # 检查 Git
     try {
         $gitVersion = git --version
@@ -138,7 +139,7 @@ function Test-Prerequisites {
     } catch {
         throw "Git 未安装"
     }
-    
+
     # 检查 Python (用于某些 MCP 服务器)
     try {
         $pythonVersion = python --version 2>&1
@@ -146,13 +147,13 @@ function Test-Prerequisites {
     } catch {
         Write-Warning "Python 未安装，某些 MCP 服务器可能不可用"
     }
-    
+
     Write-Success "先决条件检查通过"
 }
 
 function Initialize-ProjectDirectory {
     Write-Step "创建项目目录结构"
-    
+
     # 创建主目录
     if (Test-Path $ProjectName) {
         $response = Read-Host "目录 '$ProjectName' 已存在，是否覆盖？(y/N)"
@@ -161,14 +162,14 @@ function Initialize-ProjectDirectory {
         }
         Remove-Item -Path $ProjectName -Recurse -Force
     }
-    
+
     New-Item -ItemType Directory -Path $ProjectName -Force | Out-Null
     Set-Location $ProjectName
-    
+
     # 创建子目录结构
     $directories = @(
         "src/components/ui",
-        "src/components/game", 
+        "src/components/game",
         "src/components/layout",
         "src/hooks",
         "src/utils",
@@ -179,7 +180,7 @@ function Initialize-ProjectDirectory {
         "tests/unit",
         "tests/e2e/smoke",
         "tests/e2e/security",
-        "tests/e2e/performance", 
+        "tests/e2e/performance",
         "tests/fixtures",
         "scripts",
         "claudedocs",
@@ -188,17 +189,17 @@ function Initialize-ProjectDirectory {
         ".claude/commands/bmad2dp",
         ".claude/commands/bmad2du"
     )
-    
+
     foreach ($dir in $directories) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
-    
+
     Write-Success "项目目录结构创建完成"
 }
 
 function Install-CoreDependencies {
     Write-Step "安装核心依赖（严格版本控制）"
-    
+
     # 初始化 package.json
     $packageJson = @{
         name = $ProjectName.ToLower()
@@ -227,22 +228,22 @@ function Install-CoreDependencies {
             "guard:ci" = "npm run typecheck && npm run lint && npm run test:unit && npm run guard:electron && npm run test:e2e && npm run guard:quality && npm run guard:base"
         }
     } | ConvertTo-Json -Depth 3
-    
+
     $packageJson | Out-File -FilePath "package.json" -Encoding UTF8
-    
+
     # 安装主要依赖（严格版本匹配）
     Write-Step "安装主要框架依赖..."
     $mainDeps = @(
         "react@19.0.0",
         "react-dom@19.0.0",
         "electron@37.2.4",
-        "vite@7.0.4", 
+        "vite@7.0.4",
         "typescript@5.7.2",
         "@tailwindcss/cli@4.0.0-beta.7",
         "phaser@3.85.2",
         "@sentry/electron@5.5.0"
     )
-    
+
     foreach ($dep in $mainDeps) {
         Write-ColoredOutput "  安装: $dep" "Gray"
         npm install $dep --save-exact
@@ -250,7 +251,7 @@ function Install-CoreDependencies {
             throw "依赖安装失败: $dep"
         }
     }
-    
+
     # 安装开发依赖
     Write-Step "安装开发工具依赖..."
     $devDeps = @(
@@ -260,14 +261,14 @@ function Install-CoreDependencies {
         "electron-builder@25.1.8",
         "vite-plugin-electron@0.28.8",
         "playwright@1.49.0",
-        "@playwright/test@1.49.0", 
+        "@playwright/test@1.49.0",
         "vitest@2.1.8",
         "@vitest/coverage-v8@2.1.8",
         "eslint@9.0.0",
         "@typescript-eslint/parser@8.0.0",
         "@typescript-eslint/eslint-plugin@8.0.0"
     )
-    
+
     foreach ($dep in $devDeps) {
         Write-ColoredOutput "  安装: $dep" "Gray"
         npm install -D $dep --save-exact
@@ -275,13 +276,13 @@ function Install-CoreDependencies {
             throw "开发依赖安装失败: $dep"
         }
     }
-    
+
     Write-Success "核心依赖安装完成"
 }
 
 function Copy-ConfigurationFiles {
     Write-Step "创建配置文件"
-    
+
     # Vite 配置
     $viteConfig = @'
 import { defineConfig } from 'vite'
@@ -345,7 +346,7 @@ export default defineConfig({
 })
 '@
     $viteConfig | Out-File -FilePath "vite.config.ts" -Encoding UTF8
-    
+
     # TypeScript 配置
     $tsConfig = @'
 {
@@ -384,7 +385,7 @@ export default defineConfig({
 }
 '@
     $tsConfig | Out-File -FilePath "tsconfig.json" -Encoding UTF8
-    
+
     # Tailwind 配置
     $tailwindConfig = @'
 /** @type {import('tailwindcss').Config} */
@@ -413,13 +414,13 @@ export default {
 }
 '@
     $tailwindConfig | Out-File -FilePath "tailwind.config.js" -Encoding UTF8
-    
+
     Write-Success "基础配置文件创建完成"
 }
 
 function Setup-SecurityBaseline {
     Write-Step "设置 Electron 安全基线"
-    
+
     # 主进程安全配置
     $mainTs = @'
 import { app, BrowserWindow, shell } from 'electron'
@@ -503,7 +504,7 @@ app.on('window-all-closed', () => {
 })
 '@
     $mainTs | Out-File -FilePath "electron/main.ts" -Encoding UTF8
-    
+
     # 预加载脚本
     $preloadTs = @'
 import { contextBridge } from 'electron'
@@ -516,12 +517,12 @@ if (process.contextIsolated) {
       isElectron: true,
       electronVersion: process.versions.electron
     })
-    
+
     contextBridge.exposeInMainWorld('__CUSTOM_API__', {
       preloadExposed: true,
       exposedAt: new Date().toISOString()
     })
-    
+
     console.log('✅ API暴露成功')
   } catch (error) {
     console.error('❌ API暴露失败:', error)
@@ -531,13 +532,13 @@ if (process.contextIsolated) {
 }
 '@
     $preloadTs | Out-File -FilePath "electron/preload.ts" -Encoding UTF8
-    
+
     Write-Success "安全基线配置完成"
 }
 
 function Setup-TestingFramework {
     Write-Step "配置测试框架"
-    
+
     # Playwright 配置
     $playwrightConfig = @'
 import { defineConfig, devices } from '@playwright/test'
@@ -548,19 +549,19 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  
+
   reporter: [
     ['html', { outputFolder: 'test-results/html-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/junit.xml' }]
   ],
-  
+
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
   },
-  
+
   projects: [
     {
       name: 'electron-smoke',
@@ -581,7 +582,7 @@ export default defineConfig({
 })
 '@
     $playwrightConfig | Out-File -FilePath "playwright.config.ts" -Encoding UTF8
-    
+
     # Vitest 配置
     $vitestConfig = @'
 import { defineConfig } from 'vitest/config'
@@ -624,20 +625,20 @@ export default defineConfig({
 })
 '@
     $vitestConfig | Out-File -FilePath "vitest.config.ts" -Encoding UTF8
-    
+
     # 安装 Playwright 浏览器
     Write-Step "安装 Playwright 浏览器..."
     npx playwright install --with-deps
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Playwright 浏览器安装失败，请手动运行: npx playwright install"
     }
-    
+
     Write-Success "测试框架配置完成"
 }
 
 function Setup-Toolchain {
     Write-Step "配置 AI 工具链"
-    
+
     # MCP 配置
     $mcpConfig = @'
 {
@@ -671,13 +672,13 @@ function Setup-Toolchain {
 }
 '@
     $mcpConfig | Out-File -FilePath ".mcp.json" -Encoding UTF8
-    
+
     # Claude Code 配置
     $claudeSettings = @'
 {
   "allowedTools": [
     "Edit",
-    "MultiEdit", 
+    "MultiEdit",
     "Read",
     "Write",
     "Bash(npm *)",
@@ -694,7 +695,7 @@ function Setup-Toolchain {
 }
 '@
     $claudeSettings | Out-File -FilePath ".claude/settings.json" -Encoding UTF8
-    
+
     # 安装 BMAD（可选）
     if ($InstallBMAD) {
         Write-Step "安装 BMAD 代理系统..."
@@ -706,13 +707,13 @@ function Setup-Toolchain {
             Write-Warning "BMAD 安装失败，请手动安装: npm install -g bmad-method@latest"
         }
     }
-    
+
     Write-Success "工具链配置完成"
 }
 
 function Setup-ConfigurationManagement {
     Write-Step "配置管理和监控"
-    
+
     # 环境变量模板
     $envTemplate = @'
 # ======================================
@@ -722,7 +723,7 @@ NODE_ENV=development
 ELECTRON_RENDERER_URL=http://localhost:3000
 VSCODE_DEBUG=false
 
-# ======================================  
+# ======================================
 # Sentry 监控配置
 # ======================================
 SENTRY_DSN=your-sentry-dsn-here
@@ -745,7 +746,7 @@ BMAD_VERSION=4.37.0
 BMAD_CONFIG_PATH=.claude/commands/
 '@
     $envTemplate | Out-File -FilePath ".env.template" -Encoding UTF8
-    
+
     # 质量门禁脚本（简化版）
     $qualityGates = @'
 #!/usr/bin/env node
@@ -757,16 +758,16 @@ console.log('🚀 运行质量门禁检查...')
 try {
   console.log('📝 TypeScript 检查...')
   execSync('npx tsc --noEmit', { stdio: 'inherit' })
-  
+
   console.log('🔍 ESLint 检查...')
   execSync('npx eslint . --ext .ts,.tsx', { stdio: 'inherit' })
-  
+
   console.log('🧪 单元测试...')
   execSync('npx vitest run --coverage', { stdio: 'inherit' })
-  
+
   console.log('🎭 E2E 测试...')
   execSync('npx playwright test', { stdio: 'inherit' })
-  
+
   console.log('✅ 所有质量门禁检查通过!')
 } catch (error) {
   console.error('❌ 质量门禁检查失败:', error.message)
@@ -774,7 +775,7 @@ try {
 }
 '@
     $qualityGates | Out-File -FilePath "scripts/quality_gates.mjs" -Encoding UTF8
-    
+
     # 安全扫描脚本（简化版）
     $securityScan = @'
 #!/usr/bin/env node
@@ -786,13 +787,13 @@ console.log('🔒 开始 Electron 安全基线扫描...')
 
 try {
   const mainContent = await readFile(join(process.cwd(), 'dist-electron/main.js'), 'utf-8')
-  
+
   const checks = [
     { name: 'Sandbox Mode', pattern: /sandbox:\s*true/, required: true },
     { name: 'Context Isolation', pattern: /contextIsolation:\s*true/, required: true },
     { name: 'Node Integration Disabled', pattern: /nodeIntegration:\s*false/, required: true }
   ]
-  
+
   let passed = 0
   for (const check of checks) {
     if (check.pattern.test(mainContent)) {
@@ -802,7 +803,7 @@ try {
       console.log(`❌ ${check.name}: FAIL`)
     }
   }
-  
+
   if (passed === checks.length) {
     console.log('🎉 安全基线检查通过!')
   } else {
@@ -814,20 +815,20 @@ try {
 }
 '@
     $securityScan | Out-File -FilePath "scripts/scan_electron_safety.mjs" -Encoding UTF8
-    
+
     Write-Success "配置管理设置完成"
 }
 
 function Verify-Environment {
     Write-Step "验证环境配置"
-    
+
     try {
         Write-ColoredOutput "  检查依赖..." "Gray"
         npm list --depth=0 | Out-Null
-        
+
         Write-ColoredOutput "  TypeScript 类型检查..." "Gray"
         npx tsc --noEmit
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Success "环境验证通过"
         } else {
@@ -840,7 +841,7 @@ function Verify-Environment {
 
 function Generate-UsageGuide {
     Write-Step "生成使用指南"
-    
+
     $usageGuide = @"
 # $ProjectName 使用指南
 
@@ -851,32 +852,35 @@ function Generate-UsageGuide {
 # 复制环境变量模板并填入真实的API密钥
 copy .env.template .env
 # 编辑 .env 文件，填入你的API密钥
-``````
+```````
 
 ### 2. 启动开发环境
-``````bash
+
+```bash
 # 启动 Vite 开发服务器
 npm run dev
 
 # 在另一个终端启动 Electron 应用
 npm run dev:electron
-``````
+```
 
 ### 3. 运行测试
-``````bash
+
+```bash
 # 单元测试
 npm run test:unit
 
 # E2E测试（需要先构建）
 npm run build
 npm run test:e2e
-``````
+```
 
 ### 4. 质量检查
-``````bash
+
+```bash
 # 完整质量门禁检查
 npm run guard:ci
-``````
+```
 
 ## 📁 项目结构
 
@@ -898,16 +902,18 @@ npm run guard:ci
 ## 🤖 AI 工具使用
 
 ### Claude Code CLI
-``````bash
+
+```bash
 # 在项目目录启动 Claude Code
 claude
 
 # 调试模式启动（查看MCP服务器连接）
 claude --mcp-debug
-``````
+```
 
 ### BMAD 代理系统
-``````bash
+
+```bash
 # 启动游戏设计师代理
 /game-designer
 
@@ -916,7 +922,7 @@ claude --mcp-debug
 
 # 创建游戏设计文档
 *create-doc game-design-document.yaml
-``````
+```
 
 ## 📋 下一步
 
@@ -927,19 +933,23 @@ claude --mcp-debug
 
 更多详细信息请参考 \`claudedocs/\` 目录中的文档。
 "@
-    $usageGuide | Out-File -FilePath "USAGE_GUIDE.md" -Encoding UTF8
-    
+$usageGuide | Out-File -FilePath "USAGE_GUIDE.md" -Encoding UTF8
+
     Write-Success "使用指南已生成"
+
 }
 
 # 执行主函数
+
 Main
 
 # 结束提示
+
 Write-ColoredOutput "`n🎮 ViteGame 环境复制完成!" "Green"
 Write-ColoredOutput "📖 请查看 USAGE_GUIDE.md 了解如何使用新环境" "Cyan"
-Write-ColoredOutput "⚠️  记得填写 .env 文件中的API密钥" "Yellow"
-```
+Write-ColoredOutput "⚠️ 记得填写 .env 文件中的API密钥" "Yellow"
+
+````
 
 ### Node.js 跨平台脚本
 
@@ -949,10 +959,10 @@ Write-ColoredOutput "⚠️  记得填写 .env 文件中的API密钥" "Yellow"
 
 /**
  * ViteGame 环境复制脚本 (跨平台 Node.js 版本)
- * 
+ *
  * 使用方法:
  *   node setup-environment.mjs [project-name] [options]
- * 
+ *
  * 选项:
  *   --skip-api-keys    跳过API密钥配置
  *   --skip-bmad       跳过BMAD安装
@@ -972,7 +982,7 @@ class EnvironmentReplicator {
     this.skipAPIKeys = options.skipAPIKeys || false
     this.skipBMAD = options.skipBMAD || false
     this.verbose = options.verbose || false
-    
+
     this.colors = {
       reset: '\x1b[0m',
       bright: '\x1b[1m',
@@ -985,31 +995,31 @@ class EnvironmentReplicator {
       white: '\x1b[37m'
     }
   }
-  
+
   log(message, color = 'white') {
     const colorCode = this.colors[color] || this.colors.white
     console.log(`${colorCode}${message}${this.colors.reset}`)
   }
-  
+
   step(message) {
     this.log(`🔄 ${message}`, 'cyan')
   }
-  
+
   success(message) {
     this.log(`✅ ${message}`, 'green')
   }
-  
+
   error(message) {
     this.log(`❌ ${message}`, 'red')
   }
-  
+
   warning(message) {
     this.log(`⚠️  ${message}`, 'yellow')
   }
-  
+
   execCommand(command, options = {}) {
     try {
-      const result = execSync(command, { 
+      const result = execSync(command, {
         encoding: 'utf-8',
         stdio: this.verbose ? 'inherit' : 'pipe',
         ...options
@@ -1019,12 +1029,12 @@ class EnvironmentReplicator {
       throw new Error(`命令执行失败: ${command}\n${error.message}`)
     }
   }
-  
+
   async run() {
     this.log('🎮 ViteGame 环境复制脚本启动', 'magenta')
     this.log(`项目名称: ${this.projectName}`)
     this.log('='.repeat(50))
-    
+
     try {
       await this.checkPrerequisites()
       await this.initializeProject()
@@ -1036,20 +1046,20 @@ class EnvironmentReplicator {
       await this.setupConfiguration()
       await this.verifySetup()
       await this.generateGuide()
-      
+
       this.success('🎉 环境复制完成! 项目已就绪。')
       this.log(`📂 项目目录: ${resolve(this.projectName)}`)
       this.log('📖 查看 USAGE_GUIDE.md 了解下一步操作')
-      
+
     } catch (error) {
       this.error(`环境复制失败: ${error.message}`)
       process.exit(1)
     }
   }
-  
+
   async checkPrerequisites() {
     this.step('检查先决条件')
-    
+
     // 检查 Node.js
     try {
       const nodeVersion = this.execCommand('node --version').trim()
@@ -1061,7 +1071,7 @@ class EnvironmentReplicator {
     } catch (error) {
       throw new Error('Node.js 未安装或版本过低')
     }
-    
+
     // 检查 npm
     try {
       const npmVersion = this.execCommand('npm --version').trim()
@@ -1069,7 +1079,7 @@ class EnvironmentReplicator {
     } catch (error) {
       throw new Error('npm 未安装')
     }
-    
+
     // 检查 Git
     try {
       const gitVersion = this.execCommand('git --version').trim()
@@ -1077,13 +1087,13 @@ class EnvironmentReplicator {
     } catch (error) {
       throw new Error('Git 未安装')
     }
-    
+
     this.success('先决条件检查通过')
   }
-  
+
   async initializeProject() {
     this.step('初始化项目目录')
-    
+
     // 检查项目目录是否存在
     try {
       await fs.access(this.projectName)
@@ -1092,11 +1102,11 @@ class EnvironmentReplicator {
     } catch (error) {
       // 目录不存在，继续
     }
-    
+
     // 创建项目目录
     await fs.mkdir(this.projectName, { recursive: true })
     process.chdir(this.projectName)
-    
+
     // 创建子目录结构
     const directories = [
       'src/components/ui',
@@ -1120,17 +1130,17 @@ class EnvironmentReplicator {
       '.claude/commands/bmad2dp',
       '.claude/commands/bmad2du'
     ]
-    
+
     for (const dir of directories) {
       await fs.mkdir(dir, { recursive: true })
     }
-    
+
     this.success('项目目录结构创建完成')
   }
-  
+
   async installDependencies() {
     this.step('安装依赖包')
-    
+
     // 创建 package.json
     const packageJson = {
       name: this.projectName.toLowerCase(),
@@ -1158,9 +1168,9 @@ class EnvironmentReplicator {
         "guard:ci": "npm run typecheck && npm run lint && npm run test:unit && npm run guard:electron && npm run test:e2e && npm run guard:quality"
       }
     }
-    
+
     await fs.writeFile('package.json', JSON.stringify(packageJson, null, 2))
-    
+
     // 安装主要依赖
     this.log('  安装核心框架...', 'cyan')
     const mainDeps = [
@@ -1173,9 +1183,9 @@ class EnvironmentReplicator {
       'phaser@3.85.2',
       '@sentry/electron@5.5.0'
     ]
-    
+
     this.execCommand(`npm install --save-exact ${mainDeps.join(' ')}`)
-    
+
     // 安装开发依赖
     this.log('  安装开发工具...', 'cyan')
     const devDeps = [
@@ -1189,24 +1199,24 @@ class EnvironmentReplicator {
       'vitest@2.1.8',
       '@vitest/coverage-v8@2.1.8'
     ]
-    
+
     this.execCommand(`npm install -D --save-exact ${devDeps.join(' ')}`)
-    
+
     this.success('依赖安装完成')
   }
-  
+
   async createConfiguration() {
     this.step('创建配置文件')
-    
+
     // 创建所有必要的配置文件
     await this.createViteConfig()
     await this.createTypeScriptConfig()
     await this.createTailwindConfig()
     await this.createESLintConfig()
-    
+
     this.success('配置文件创建完成')
   }
-  
+
   async createViteConfig() {
     const config = `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -1259,7 +1269,7 @@ export default defineConfig({
 `
     await fs.writeFile('vite.config.ts', config)
   }
-  
+
   async createTypeScriptConfig() {
     const config = {
       compilerOptions: {
@@ -1295,10 +1305,10 @@ export default defineConfig({
         "dist-electron"
       ]
     }
-    
+
     await fs.writeFile('tsconfig.json', JSON.stringify(config, null, 2))
   }
-  
+
   async createTailwindConfig() {
     const config = `/** @type {import('tailwindcss').Config} */
 export default {
@@ -1315,7 +1325,7 @@ export default {
 `
     await fs.writeFile('tailwind.config.js', config)
   }
-  
+
   async createESLintConfig() {
     const config = {
       extends: [
@@ -1325,10 +1335,10 @@ export default {
       plugins: ['@typescript-eslint'],
       rules: {}
     }
-    
+
     await fs.writeFile('.eslintrc.json', JSON.stringify(config, null, 2))
   }
-  
+
   // ... 其他方法继续 ...
 }
 
@@ -1341,10 +1351,10 @@ function parseArguments() {
     skipBMAD: false,
     verbose: false
   }
-  
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
-    
+
     if (!arg.startsWith('--') && !options.projectName.includes('vitegame-clone')) {
       // 第一个非选项参数作为项目名
       continue
@@ -1358,7 +1368,7 @@ function parseArguments() {
       options.verbose = true
     }
   }
-  
+
   return options
 }
 
@@ -1382,13 +1392,14 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // 运行脚本
 main().catch(console.error)
-```
+````
 
 ---
 
 ## 🛠️ 辅助工具脚本
 
 ### 环境验证脚本
+
 ```javascript
 // verify-environment.mjs - 环境验证工具
 #!/usr/bin/env node
@@ -1402,20 +1413,20 @@ class EnvironmentVerifier {
     this.errors = []
     this.warnings = []
   }
-  
+
   async verify() {
     console.log('🔍 开始环境验证...\n')
-    
+
     this.checkProjectStructure()
     this.checkDependencies()
     this.checkConfiguration()
     this.checkAPIKeys()
     this.checkBuildability()
     this.checkTestability()
-    
+
     this.generateReport()
   }
-  
+
   checkProjectStructure() {
     const requiredFiles = [
       'package.json',
@@ -1426,16 +1437,16 @@ class EnvironmentVerifier {
       'electron/main.ts',
       'electron/preload.ts'
     ]
-    
+
     const requiredDirs = [
       'src',
       'tests/e2e',
       'scripts',
       '.claude'
     ]
-    
+
     let passed = 0
-    
+
     requiredFiles.forEach(file => {
       if (existsSync(file)) {
         passed++
@@ -1445,7 +1456,7 @@ class EnvironmentVerifier {
         this.errors.push(`缺少必需文件: ${file}`)
       }
     })
-    
+
     requiredDirs.forEach(dir => {
       if (existsSync(dir)) {
         passed++
@@ -1456,7 +1467,7 @@ class EnvironmentVerifier {
       }
     })
   }
-  
+
   checkDependencies() {
     try {
       const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'))
@@ -1467,7 +1478,7 @@ class EnvironmentVerifier {
         'typescript': '5.7.2',
         'phaser': '3.85.2'
       }
-      
+
       let matched = 0
       Object.entries(requiredDeps).forEach(([dep, version]) => {
         const installedVersion = packageJson.dependencies?.[dep] || packageJson.devDependencies?.[dep]
@@ -1479,7 +1490,7 @@ class EnvironmentVerifier {
           this.errors.push(`依赖版本不匹配: ${dep}`)
         }
       })
-      
+
       // 检查依赖是否已安装
       try {
         execSync('npm list --depth=0', { stdio: 'pipe' })
@@ -1488,13 +1499,13 @@ class EnvironmentVerifier {
         this.addCheck('依赖安装', '不完整', 'FAIL')
         this.errors.push('存在未安装的依赖')
       }
-      
+
     } catch (error) {
       this.addCheck('package.json', '读取失败', 'FAIL')
       this.errors.push('无法读取package.json')
     }
   }
-  
+
   checkConfiguration() {
     // 检查 TypeScript 配置
     try {
@@ -1504,7 +1515,7 @@ class EnvironmentVerifier {
       this.addCheck('TypeScript 配置', '类型错误', 'FAIL')
       this.errors.push('TypeScript配置存在问题')
     }
-    
+
     // 检查 MCP 配置
     if (existsSync('.mcp.json')) {
       try {
@@ -1520,7 +1531,7 @@ class EnvironmentVerifier {
       this.warnings.push('MCP配置文件缺失')
     }
   }
-  
+
   checkAPIKeys() {
     if (existsSync('.env')) {
       const envContent = readFileSync('.env', 'utf-8')
@@ -1528,36 +1539,36 @@ class EnvironmentVerifier {
         'ANTHROPIC_API_KEY',
         'SENTRY_DSN'
       ]
-      
+
       const optionalKeys = [
         'PERPLEXITY_API_KEY',
         'CONTEXT7_API_KEY',
         'BRAVE_API_KEY'
       ]
-      
-      const missingRequired = requiredKeys.filter(key => 
+
+      const missingRequired = requiredKeys.filter(key =>
         !envContent.includes(`${key}=`) || envContent.includes(`${key}=your-`)
       )
-      
+
       const availableOptional = optionalKeys.filter(key =>
         envContent.includes(`${key}=`) && !envContent.includes(`${key}=your-`)
       )
-      
+
       if (missingRequired.length === 0) {
         this.addCheck('必需 API 密钥', '已配置', 'PASS')
       } else {
         this.addCheck('必需 API 密钥', `缺失 ${missingRequired.length} 个`, 'FAIL')
         this.errors.push(`缺失必需API密钥: ${missingRequired.join(', ')}`)
       }
-      
+
       this.addCheck('可选 API 密钥', `${availableOptional.length}/${optionalKeys.length} 已配置`, 'INFO')
-      
+
     } else {
       this.addCheck('环境变量', '未配置', 'WARN')
       this.warnings.push('请复制.env.template到.env并配置API密钥')
     }
   }
-  
+
   checkBuildability() {
     try {
       console.log('  正在测试构建能力...')
@@ -1568,7 +1579,7 @@ class EnvironmentVerifier {
       this.errors.push('项目无法正常构建')
     }
   }
-  
+
   checkTestability() {
     try {
       console.log('  正在测试单元测试...')
@@ -1579,20 +1590,20 @@ class EnvironmentVerifier {
       this.warnings.push('单元测试执行失败，可能需要先编写测试')
     }
   }
-  
+
   addCheck(name, result, status) {
     this.checks.push({ name, result, status })
   }
-  
+
   generateReport() {
     const passed = this.checks.filter(c => c.status === 'PASS').length
     const failed = this.checks.filter(c => c.status === 'FAIL').length
     const warnings = this.checks.filter(c => c.status === 'WARN').length
     const info = this.checks.filter(c => c.status === 'INFO').length
-    
+
     console.log('\n📋 环境验证报告:')
     console.log('='.repeat(60))
-    
+
     this.checks.forEach(check => {
       const icons = {
         'PASS': '✅',
@@ -1603,24 +1614,24 @@ class EnvironmentVerifier {
       const icon = icons[check.status] || '?'
       console.log(`${icon} ${check.name}: ${check.result}`)
     })
-    
+
     console.log('='.repeat(60))
     console.log(`📊 结果: ${passed} 通过 | ${failed} 失败 | ${warnings} 警告 | ${info} 信息`)
-    
+
     if (this.errors.length > 0) {
       console.log('\n🚨 错误:')
       this.errors.forEach((error, index) => {
         console.log(`   ${index + 1}. ${error}`)
       })
     }
-    
+
     if (this.warnings.length > 0) {
       console.log('\n⚠️ 警告:')
       this.warnings.forEach((warning, index) => {
         console.log(`   ${index + 1}. ${warning}`)
       })
     }
-    
+
     if (failed === 0) {
       console.log('\n🎉 环境验证通过! 项目已准备就绪。')
       process.exit(0)
@@ -1641,11 +1652,12 @@ verifier.verify().catch(console.error)
 ## 📋 使用说明和最佳实践
 
 ### 快速开始指南
+
 ```bash
 # Windows PowerShell 用户
 .\setup-vitegame-environment.ps1 -ProjectName "my-awesome-game"
 
-# 跨平台 Node.js 用户  
+# 跨平台 Node.js 用户
 node setup-environment.mjs my-awesome-game --verbose
 
 # 验证环境配置
@@ -1654,19 +1666,20 @@ node verify-environment.mjs
 
 ### 脚本功能对比
 
-| 功能 | PowerShell 脚本 | Node.js 脚本 | 验证脚本 |
-|------|----------------|--------------|----------|
-| 平台兼容性 | Windows | 跨平台 | 跨平台 |
-| 依赖安装 | ✅ | ✅ | - |
-| 配置生成 | ✅ | ✅ | - |
-| BMAD集成 | ✅ | ✅ | - |
-| 环境验证 | ✅ | ✅ | ✅ |
-| 详细报告 | ✅ | ✅ | ✅ |
-| 错误处理 | ✅ | ✅ | ✅ |
+| 功能       | PowerShell 脚本 | Node.js 脚本 | 验证脚本 |
+| ---------- | --------------- | ------------ | -------- |
+| 平台兼容性 | Windows         | 跨平台       | 跨平台   |
+| 依赖安装   | ✅              | ✅           | -        |
+| 配置生成   | ✅              | ✅           | -        |
+| BMAD集成   | ✅              | ✅           | -        |
+| 环境验证   | ✅              | ✅           | ✅       |
+| 详细报告   | ✅              | ✅           | ✅       |
+| 错误处理   | ✅              | ✅           | ✅       |
 
 ### 自定义选项
 
 #### PowerShell 脚本参数
+
 ```powershell
 # 基本使用
 .\setup-vitegame-environment.ps1
@@ -1685,6 +1698,7 @@ node verify-environment.mjs
 ```
 
 #### Node.js 脚本参数
+
 ```bash
 # 基本使用
 node setup-environment.mjs
@@ -1704,6 +1718,7 @@ node setup-environment.mjs --verbose
 ## ✅ 脚本验证清单
 
 ### 复制成功标准
+
 - ✅ **项目结构**: 所有必需目录和文件已创建
 - ✅ **依赖安装**: 所有依赖包按精确版本安装
 - ✅ **配置文件**: 所有配置文件正确生成
@@ -1714,6 +1729,7 @@ node setup-environment.mjs --verbose
 - ✅ **使用指南**: 详细的使用文档已生成
 
 ### 故障排除
+
 ```bash
 # 常见问题解决
 # 1. 权限问题

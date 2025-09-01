@@ -30,13 +30,14 @@ inclusion: always
     - Implementation details have changed
 
 - **Example Pattern Recognition:**
+
   ```typescript
   // If you see repeated patterns like:
   const data = await prisma.user.findMany({
     select: { id: true, email: true },
-    where: { status: 'ACTIVE' }
+    where: { status: 'ACTIVE' },
   });
-  
+
   // Consider adding to [prisma.md](.kiro/steering/prisma.md):
   // - Standard select fields
   // - Common where conditions
@@ -67,4 +68,4 @@ inclusion: always
   - Update references to external docs
   - Maintain links between related rules
   - Document breaking changes
-Follow [kiro_rules.md](.kiro/steering/kiro_rules.md) for proper rule formatting and structure.
+    Follow [kiro_rules.md](.kiro/steering/kiro_rules.md) for proper rule formatting and structure.

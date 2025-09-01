@@ -5,6 +5,7 @@
 ## 格式说明
 
 每个版本的变更记录包含以下标记：
+
 - **[AI:xx%]** - AI 实现占比
 - **[Human:xx%]** - 人类实现/审核占比
 - **[ADR-xxxx]** - 关联的架构决策记录
@@ -17,15 +18,18 @@
 ## [Unreleased] - TBD
 
 ### 计划添加 (Planned)
+
 - 用户认证系统
 - 游戏场景管理
 - 公会管理功能
 
 ### 计划修改 (Planned Changes)
+
 - 优化 Electron 安全配置
 - 增强可观测性监控
 
 ### 计划修复 (Planned Fixes)
+
 - 修复内存泄漏问题
 - 改进错误处理机制
 
@@ -34,10 +38,11 @@
 ## [0.0.0] - 2025-01-27 - 项目初始化
 
 ### 添加 (Added)
+
 - **[AI:85%] [Human:15%] [ADR-0001]** 技术栈选型：Electron + React 19 + Vite + TypeScript + Tailwind CSS v4 + Phaser 3
 - **[AI:90%] [Human:10%] [ADR-0002]** Electron 安全基线配置
   - `nodeIntegration=false`
-  - `contextIsolation=true` 
+  - `contextIsolation=true`
   - `sandbox=true`
   - 预加载脚本白名单 API
 - **[AI:70%] [Human:30%] [ADR-0003]** 可观测性基础设施
@@ -56,6 +61,7 @@
   - Release Health 门禁脚本
 
 ### 开发工具和基础设施
+
 - **[AI:95%] [Human:5%]** 项目脚手架与开发环境
   - Vite + Electron 标准集成
   - 热更新与调试配置
@@ -72,9 +78,10 @@
   - PRD 分片与索引 (docs/prd/prd_chunks/)
 
 ### 核心架构组件
+
 - **[AI:70%] [Human:30%]** 共享契约系统 (src/shared/contracts/)
   - 事件类型定义 (events.ts)
-  - 度量指标契约 (metrics.ts) 
+  - 度量指标契约 (metrics.ts)
   - 安全监控契约 (security.ts)
   - 仓储端口契约 (repositories/)
 - **[AI:85%] [Human:15%]** 可观测性平台 (src/shared/observability/)
@@ -89,6 +96,7 @@
   - 内存仓储实现 (src/infra/repo/memory/)
 
 ### 测试与质量保证
+
 - **[AI:75%] [Human:25%]** 测试基础设施
   - Vitest 单元测试配置
   - Playwright E2E 测试 (含 Electron 支持)
@@ -101,6 +109,7 @@
   - `scripts/version_sync_check.mjs` - 版本同步检查
 
 ### 游戏引擎集成
+
 - **[AI:65%] [Human:35%]** Phaser 3 游戏引擎基础
   - 游戏循环与状态管理 (src/runtime/)
   - React-Phaser 通信桥梁
@@ -108,6 +117,7 @@
   - 性能监控集成
 
 ### 质量指标
+
 - **[Coverage: 90.2%]** (行: 90.2%, 分支: 85.7%, 函数: 91.1%, 语句: 90.2%)
 - **[RH: Sessions 99.8%, Users 99.7%]** (模拟数据)
 - **[Guard: ✅]** 所有质量门禁通过
@@ -115,13 +125,16 @@
 - **[Performance: ✅]** 启动时间 < 3s, 渲染帧率 > 55 FPS
 
 ### 技术债务与待改进项
+
 - **内存管理优化**: 游戏场景切换时的内存回收机制
-- **错误处理增强**: 更细粒度的错误分类和恢复策略  
+- **错误处理增强**: 更细粒度的错误分类和恢复策略
 - **性能监控细化**: GPU 使用率和网络延迟监控
 - **国际化准备**: i18n 框架集成 (src/i18n/)
 
 ### 架构决策记录
+
 本版本实施的关键架构决策：
+
 - **ADR-0001**: 技术栈选型 - 选择 Electron + React 生态系统
 - **ADR-0002**: Electron 安全基线 - 严格沙箱模式 + IPC 白名单
 - **ADR-0003**: 可观测性与 Release Health - 基于 Sentry 的企业级监控
@@ -129,6 +142,7 @@
 - **ADR-0005**: 质量门禁 - 多维度自动化质量保证
 
 ### 开发团队协作
+
 - **AI 贡献度**: 76.4% (代码生成、文档编写、测试用例)
 - **人类贡献度**: 23.6% (架构决策、代码审核、业务需求定义)
 - **协作模式**: AI 实现 + 人类审核验证
@@ -146,6 +160,7 @@
 - **PATCH**: 向后兼容的问题修正
 
 ### 版本发布频率
+
 - **MAJOR**: 季度发布 (重大架构变更)
 - **MINOR**: 月度发布 (新功能发布)
 - **PATCH**: 双周发布 (Bug 修复和性能优化)

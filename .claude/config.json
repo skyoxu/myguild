@@ -12,20 +12,20 @@
   "claude_code_backup_enabled": true,
   "claude_code_backup_interval": 300,
   "truncate_context": false,
-  
+
   "chunking": {
     "enabled": true,
     "max_chars_per_chunk": 12000,
     "overlap_chars": 400,
     "summarize_long_chunks": true
   },
-  
+
   "claude_code_workspace": {
     "root": "C:\\buildgame\\vitegame",
     "ignore_patterns": [
       "node_modules/**",
       "dist/**",
-      "dist-electron/**", 
+      "dist-electron/**",
       "release/**",
       ".git/**",
       "*.log",
@@ -35,7 +35,7 @@
     ],
     "include_patterns": [
       "src/**/*.ts",
-      "src/**/*.tsx", 
+      "src/**/*.tsx",
       "src/**/*.js",
       "src/**/*.jsx",
       "src/**/*.vue",
@@ -46,7 +46,7 @@
       "*.toml"
     ]
   },
-  
+
   "claude_code_features": {
     "auto_formatting": true,
     "syntax_highlighting": true,
@@ -57,7 +57,7 @@
     "multi_file_editing": true,
     "project_analysis": true
   },
-  
+
   "claude_code_logging": {
     "level": "INFO",
     "file": "logs/claude-code.log",
@@ -66,7 +66,7 @@
     "include_timestamps": true,
     "include_context": true
   },
-  
+
   "claude_code_performance": {
     "cache_enabled": true,
     "cache_size": "200MB",
@@ -76,7 +76,7 @@
     "request_batching": true,
     "memory_limit": "2GB"
   },
-  
+
   "claude_code_security": {
     "scan_for_secrets": true,
     "prevent_data_leaks": true,
@@ -84,22 +84,22 @@
     "secure_temp_files": true,
     "encryption_at_rest": false
   },
-  
+
   "claude_code_project_settings": {
     "language": "typescript",
     "framework": "react",
-    "build_tool": "vite", 
+    "build_tool": "vite",
     "package_manager": "npm",
     "test_framework": "vitest",
     "linter": "eslint",
     "formatter": "prettier",
     "type_checker": "typescript"
   },
-  
+
   "claude_code_ai_preferences": {
     "code_style": "modern",
     "documentation_level": "comprehensive",
-    "error_handling": "robust", 
+    "error_handling": "robust",
     "testing_approach": "tdd",
     "performance_priority": "high",
     "security_priority": "high",
@@ -108,7 +108,7 @@
     "prefer_functional": false,
     "prefer_composition": true
   },
-  
+
   "claude_code_integrations": {
     "git": {
       "enabled": true,

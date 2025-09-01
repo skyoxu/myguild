@@ -1,0 +1,334 @@
+{
+  "$schema": "./quality-gates.schema.json",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-25",
+  "environments": {
+    "default": {
+      "description": "默认质量门禁配置",
+      "bundleSize": {
+        "mainProcess": {
+          "threshold": 2097152,
+          "unit": "bytes",
+          "description": "主进程bundle大小限制: 2MB"
+        },
+        "renderer": {
+          "js": {
+            "threshold": 1572864,
+            "unit": "bytes",
+            "description": "渲染进程JS大小限制: 1.5MB"
+          },
+          "css": {
+            "threshold": 204800,
+            "unit": "bytes",
+            "description": "CSS大小限制: 200KB"
+          },
+          "html": {
+            "threshold": 51200,
+            "unit": "bytes",
+            "description": "HTML大小限制: 50KB"
+          }
+        }
+      },
+      "webVitals": {
+        "baseline": {
+          "windowDays": 7,
+          "minSampleSize": 50,
+          "confidenceLevel": 0.95
+        },
+        "regressionThresholds": {
+          "LCP": {
+            "warning": 10,
+            "critical": 20,
+            "unit": "percent"
+          },
+          "INP": {
+            "warning": 15,
+            "critical": 30,
+            "unit": "percent"
+          },
+          "CLS": {
+            "warning": 25,
+            "critical": 50,
+            "unit": "percent"
+          },
+          "FCP": {
+            "warning": 10,
+            "critical": 25,
+            "unit": "percent"
+          },
+          "TTFB": {
+            "warning": 15,
+            "critical": 30,
+            "unit": "percent"
+          }
+        }
+      },
+      "coverage": {
+        "lines": {
+          "threshold": 90,
+          "unit": "percent",
+          "description": "行覆盖率要求"
+        },
+        "branches": {
+          "threshold": 85,
+          "unit": "percent",
+          "description": "分支覆盖率要求"
+        },
+        "functions": {
+          "threshold": 88,
+          "unit": "percent",
+          "description": "函数覆盖率要求"
+        },
+        "statements": {
+          "threshold": 90,
+          "unit": "percent",
+          "description": "语句覆盖率要求"
+        }
+      },
+      "e2e": {
+        "passRate": {
+          "threshold": 95,
+          "unit": "percent",
+          "description": "E2E测试通过率"
+        },
+        "maxDuration": {
+          "threshold": 300,
+          "unit": "seconds",
+          "description": "E2E最大执行时间"
+        },
+        "criticalPath": {
+          "threshold": 100,
+          "unit": "percent",
+          "description": "关键路径通过率"
+        }
+      },
+      "performance": {
+        "appStartTime": {
+          "threshold": 3000,
+          "unit": "milliseconds",
+          "description": "应用启动时间"
+        },
+        "memoryUsage": {
+          "threshold": 512,
+          "unit": "megabytes",
+          "description": "内存使用限制"
+        },
+        "cpuUsage": {
+          "threshold": 80,
+          "unit": "percent",
+          "description": "CPU使用率限制"
+        }
+      },
+      "releaseHealth": {
+        "crashFreeUsers": {
+          "threshold": 99.5,
+          "unit": "percent",
+          "description": "崩溃无关用户比例"
+        },
+        "crashFreeSessions": {
+          "threshold": 99.8,
+          "unit": "percent",
+          "description": "崩溃无关会话比例"
+        },
+        "minAdoption": {
+          "threshold": 1000,
+          "unit": "count",
+          "description": "最小采样会话数"
+        },
+        "businessMetrics": {
+          "userRegistrationRate": {
+            "threshold": 85,
+            "unit": "percent",
+            "description": "用户注册成功率",
+            "observationWindow": "24h"
+          },
+          "userEngagementRate": {
+            "threshold": 60,
+            "unit": "percent",
+            "description": "用户参与度（DAU/MAU比例）",
+            "observationWindow": "7d"
+          },
+          "gameSessionDuration": {
+            "threshold": 900,
+            "unit": "seconds",
+            "description": "平均游戏会话时长",
+            "observationWindow": "24h"
+          },
+          "featureAdoptionRate": {
+            "threshold": 40,
+            "unit": "percent",
+            "description": "新功能采用率",
+            "observationWindow": "7d"
+          },
+          "errorRate": {
+            "threshold": 1,
+            "unit": "percent",
+            "description": "应用级错误率",
+            "observationWindow": "1h"
+          },
+          "loadingPerformance": {
+            "threshold": 3000,
+            "unit": "milliseconds",
+            "description": "平均加载时间",
+            "observationWindow": "1h"
+          }
+        }
+      },
+      "database": {
+        "health": {
+          "dbSizeWarningMB": {
+            "threshold": 500,
+            "unit": "megabytes",
+            "description": "数据库大小警告阈值"
+          },
+          "walSizeThresholdMB": {
+            "threshold": 10,
+            "unit": "megabytes",
+            "description": "WAL大小checkpoint阈值"
+          },
+          "diskSpaceWarningMB": {
+            "threshold": 1000,
+            "unit": "megabytes",
+            "description": "磁盘空间警告阈值"
+          },
+          "intervalHours": {
+            "threshold": 6,
+            "unit": "hours",
+            "description": "健康检查间隔"
+          }
+        },
+        "checkpoint": {
+          "intervalMinutes": {
+            "threshold": 60,
+            "unit": "minutes",
+            "description": "定期checkpoint间隔"
+          },
+          "transactionThreshold": {
+            "threshold": 1000,
+            "unit": "count",
+            "description": "事务数阈值触发checkpoint"
+          }
+        }
+      },
+      "security": {
+        "audit": {
+          "level": "high",
+          "description": "npm audit安全等级",
+          "allowedVulnerabilities": []
+        },
+        "csp": {
+          "enforceMode": true,
+          "reportOnly": false,
+          "description": "CSP策略执行模式",
+          "validation": {
+            "enabled": true,
+            "strictMode": true,
+            "allowedUnsafeDomains": [],
+            "requiredDirectives": [
+              "default-src",
+              "script-src",
+              "style-src",
+              "img-src",
+              "font-src",
+              "connect-src",
+              "object-src",
+              "base-uri",
+              "form-action",
+              "frame-ancestors"
+            ],
+            "securityBaseline": {
+              "object-src": "'none'",
+              "base-uri": "'self'",
+              "form-action": "'self'",
+              "frame-ancestors": "'none'"
+            }
+          }
+        }
+      }
+    }
+  },
+  "overrides": {
+    "development": {
+      "webVitals": {
+        "regressionThresholds": {
+          "LCP": {
+            "warning": 20,
+            "critical": 40
+          },
+          "INP": {
+            "warning": 25,
+            "critical": 50
+          }
+        }
+      },
+      "coverage": {
+        "lines": {
+          "threshold": 80
+        },
+        "branches": {
+          "threshold": 75
+        }
+      },
+      "security": {
+        "csp": {
+          "reportOnly": true
+        }
+      }
+    },
+    "production": {
+      "bundleSize": {
+        "mainProcess": {
+          "threshold": 1835008
+        },
+        "renderer": {
+          "js": {
+            "threshold": 1310720
+          }
+        }
+      },
+      "releaseHealth": {
+        "crashFreeUsers": {
+          "threshold": 99.9
+        },
+        "crashFreeSessions": {
+          "threshold": 99.95
+        },
+        "minAdoption": {
+          "threshold": 5000
+        },
+        "businessMetrics": {
+          "userRegistrationRate": {
+            "threshold": 95
+          },
+          "userEngagementRate": {
+            "threshold": 75
+          },
+          "gameSessionDuration": {
+            "threshold": 1200
+          },
+          "featureAdoptionRate": {
+            "threshold": 50
+          },
+          "errorRate": {
+            "threshold": 0.5
+          },
+          "loadingPerformance": {
+            "threshold": 2000
+          }
+        }
+      }
+    },
+    "ci": {
+      "e2e": {
+        "maxDuration": {
+          "threshold": 600
+        }
+      },
+      "performance": {
+        "appStartTime": {
+          "threshold": 5000
+        }
+      }
+    }
+  }
+}

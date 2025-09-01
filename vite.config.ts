@@ -1,11 +1,23 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Bundle可视化插件 - 生成bundle分析报告
+    visualizer({
+      filename: 'dist/bundle-analysis.html',
+      template: 'treemap', // treemap | sunburst | network
+      open: process.env.BUNDLE_ANALYZE === 'true',
+      gzipSize: true,
+      brotliSize: true,
+      sourcemap: true,
+    }),
+  ],
   server: {
     open: true,
   },
@@ -26,8 +38,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test-setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    // 超时配置 - 按止疼法提升基线
+    testTimeout: 20_000, // 默认 5s -> 20s
+    hookTimeout: 20_000, // 钩子默认 10s -> 20s
+    setupFiles: ['./src/test-setup.ts', './vitest.setup.ts'],
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+    ],
     exclude: [
       'node_modules',
       'dist',

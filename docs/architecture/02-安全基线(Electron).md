@@ -1,70 +1,74 @@
 # 02 威胁模型与安全基线（Electron）
+
 > **硬护栏**：渲染层禁用 Node、启用 Context Isolation、严格 CSP、最小化 preload 白名单、启用 sandbox。主/渲染进程协作只通过受控的 IPC 通道。
 
 ## 一、威胁模型（详细）
 
 ### 1.1 资产识别与分类
+
 ```typescript
 // 资产重要性矩阵
 export const ASSET_CRITICALITY_MATRIX = {
   核心资产: {
-    用户存档数据: { 重要性: "🔴极高", 影响范围: "用户体验+数据完整性" },
-    游戏配置文件: { 重要性: "🔴极高", 影响范围: "应用可用性" },
-    内置脚本逻辑: { 重要性: "🟡高", 影响范围: "业务逻辑完整性" },
-    更新机制: { 重要性: "🟡高", 影响范围: "供应链安全" }
+    用户存档数据: { 重要性: '🔴极高', 影响范围: '用户体验+数据完整性' },
+    游戏配置文件: { 重要性: '🔴极高', 影响范围: '应用可用性' },
+    内置脚本逻辑: { 重要性: '🟡高', 影响范围: '业务逻辑完整性' },
+    更新机制: { 重要性: '🟡高', 影响范围: '供应链安全' },
   },
   系统资产: {
-    主进程权限: { 重要性: "🔴极高", 影响范围: "系统完整性" },
-    文件系统访问: { 重要性: "🟡高", 影响范围: "数据安全" },
-    网络通信通道: { 重要性: "🟡中", 影响范围: "隐私保护" },
-    IPC通信机制: { 重要性: "🟡高", 影响范围: "架构安全边界" }
-  }
+    主进程权限: { 重要性: '🔴极高', 影响范围: '系统完整性' },
+    文件系统访问: { 重要性: '🟡高', 影响范围: '数据安全' },
+    网络通信通道: { 重要性: '🟡中', 影响范围: '隐私保护' },
+    IPC通信机制: { 重要性: '🟡高', 影响范围: '架构安全边界' },
+  },
 } as const;
 ```
 
 ### 1.2 攻击面详细分析
 
 #### 1.2.1 Electron主进程攻击面
+
 ```typescript
 // 主进程攻击面映射（高风险区域）
 export const MAIN_PROCESS_ATTACK_SURFACE = {
   Node_API直接访问: {
-    风险描述: "完整的文件系统、网络、进程控制权限",
-    潜在威胁: ["任意文件读写", "进程注入", "网络监听"],
-    缓解措施: ["最小权限原则", "API调用白名单", "严格输入验证"]
+    风险描述: '完整的文件系统、网络、进程控制权限',
+    潜在威胁: ['任意文件读写', '进程注入', '网络监听'],
+    缓解措施: ['最小权限原则', 'API调用白名单', '严格输入验证'],
   },
   自动更新机制: {
-    风险描述: "自动下载和执行外部代码的能力",
-    潜在威胁: ["供应链攻击", "中间人攻击", "恶意更新包"],
-    缓解措施: ["数字签名验证", "HTTPS强制", "更新包完整性校验"]
+    风险描述: '自动下载和执行外部代码的能力',
+    潜在威胁: ['供应链攻击', '中间人攻击', '恶意更新包'],
+    缓解措施: ['数字签名验证', 'HTTPS强制', '更新包完整性校验'],
   },
   IPC消息处理: {
-    风险描述: "处理来自渲染进程的消息和调用",
-    潜在威胁: ["命令注入", "权限提升", "消息伪造"],
-    缓解措施: ["严格消息验证", "通道白名单", "参数类型校验"]
-  }
+    风险描述: '处理来自渲染进程的消息和调用',
+    潜在威胁: ['命令注入', '权限提升', '消息伪造'],
+    缓解措施: ['严格消息验证', '通道白名单', '参数类型校验'],
+  },
 } as const;
 ```
 
 #### 1.2.2 渲染进程攻击面
+
 ```typescript
 // 渲染进程攻击面映射
 export const RENDERER_ATTACK_SURFACE = {
   Web内容执行: {
-    风险描述: "执行HTML/CSS/JavaScript内容",
-    潜在威胁: ["XSS攻击", "CSRF攻击", "点击劫持"],
-    缓解措施: ["严格CSP策略", "内容安全过滤", "同源策略"]
+    风险描述: '执行HTML/CSS/JavaScript内容',
+    潜在威胁: ['XSS攻击', 'CSRF攻击', '点击劫持'],
+    缓解措施: ['严格CSP策略', '内容安全过滤', '同源策略'],
   },
   preload脚本暴露: {
-    风险描述: "通过contextBridge暴露的API接口",
-    潜在威胁: ["API滥用", "权限泄露", "接口调用伪造"],
-    缓解措施: ["API白名单管控", "参数严格校验", "调用频率限制"]
+    风险描述: '通过contextBridge暴露的API接口',
+    潜在威胁: ['API滥用', '权限泄露', '接口调用伪造'],
+    缓解措施: ['API白名单管控', '参数严格校验', '调用频率限制'],
   },
   外部资源加载: {
-    风险描述: "加载外部图片、字体等资源",
-    潜在威胁: ["资源投毒", "隐私泄露", "内容注入"],
-    缓解措施: ["CSP资源限制", "资源完整性校验", "代理过滤"]
-  }
+    风险描述: '加载外部图片、字体等资源',
+    潜在威胁: ['资源投毒', '隐私泄露', '内容注入'],
+    缓解措施: ['CSP资源限制', '资源完整性校验', '代理过滤'],
+  },
 } as const;
 ```
 
@@ -75,37 +79,37 @@ export const RENDERER_ATTACK_SURFACE = {
 export const TRUST_BOUNDARY_MODEL = {
   高信任区域: {
     主进程核心: {
-      信任级别: "🔴最高",
-      权限范围: "系统完整访问",
-      防护要求: "代码签名 + 最小攻击面"
-    }
+      信任级别: '🔴最高',
+      权限范围: '系统完整访问',
+      防护要求: '代码签名 + 最小攻击面',
+    },
   },
   中信任区域: {
     preload脚本: {
-      信任级别: "🟡中等",
-      权限范围: "受限API桥接",
-      防护要求: "白名单机制 + 输入验证"
+      信任级别: '🟡中等',
+      权限范围: '受限API桥接',
+      防护要求: '白名单机制 + 输入验证',
     },
     本地文件系统: {
-      信任级别: "🟡中等", 
-      权限范围: "应用数据目录",
-      防护要求: "路径限制 + 访问控制"
-    }
+      信任级别: '🟡中等',
+      权限范围: '应用数据目录',
+      防护要求: '路径限制 + 访问控制',
+    },
   },
   低信任区域: {
     渲染进程: {
-      信任级别: "🟢低",
-      权限范围: "沙箱化执行",
-      防护要求: "Context隔离 + CSP策略"
-    }
+      信任级别: '🟢低',
+      权限范围: '沙箱化执行',
+      防护要求: 'Context隔离 + CSP策略',
+    },
   },
   零信任区域: {
     外部网络内容: {
-      信任级别: "🚫零",
-      权限范围: "只读展示",
-      防护要求: "完全隔离 + 内容过滤"
-    }
-  }
+      信任级别: '🚫零',
+      权限范围: '只读展示',
+      防护要求: '完全隔离 + 内容过滤',
+    },
+  },
 } as const;
 ```
 
@@ -115,41 +119,41 @@ export const TRUST_BOUNDARY_MODEL = {
 // STRIDE威胁模型详细分析
 export const STRIDE_THREAT_ANALYSIS = {
   欺骗_Spoofing: {
-    威胁场景: "恶意进程伪装成合法的IPC调用者",
-    影响资产: ["IPC通信机制", "主进程权限"],
-    风险等级: "🟡中",
-    缓解策略: ["进程身份验证", "消息来源校验", "数字签名"]
+    威胁场景: '恶意进程伪装成合法的IPC调用者',
+    影响资产: ['IPC通信机制', '主进程权限'],
+    风险等级: '🟡中',
+    缓解策略: ['进程身份验证', '消息来源校验', '数字签名'],
   },
   篡改_Tampering: {
-    威胁场景: "恶意修改配置文件、存档数据或应用程序文件",
-    影响资产: ["用户存档数据", "游戏配置文件", "内置脚本"],
-    风险等级: "🔴高", 
-    缓解策略: ["文件完整性监控", "访问权限控制", "备份机制"]
+    威胁场景: '恶意修改配置文件、存档数据或应用程序文件',
+    影响资产: ['用户存档数据', '游戏配置文件', '内置脚本'],
+    风险等级: '🔴高',
+    缓解策略: ['文件完整性监控', '访问权限控制', '备份机制'],
   },
   否认_Repudiation: {
-    威胁场景: "否认游戏内交易或重要操作的执行",
-    影响资产: ["操作审计日志", "用户数据变更"],
-    风险等级: "🟡中",
-    缓解策略: ["操作日志记录", "数字签名确认", "时间戳验证"]
+    威胁场景: '否认游戏内交易或重要操作的执行',
+    影响资产: ['操作审计日志', '用户数据变更'],
+    风险等级: '🟡中',
+    缓解策略: ['操作日志记录', '数字签名确认', '时间戳验证'],
   },
   信息泄露_Information_Disclosure: {
-    威胁场景: "通过XSS、内存泄露或不当的API暴露获取敏感数据",
-    影响资产: ["用户存档数据", "应用内部状态", "系统信息"],
-    风险等级: "🔴高",
-    缓解策略: ["数据加密存储", "最小暴露原则", "内存清理"]
+    威胁场景: '通过XSS、内存泄露或不当的API暴露获取敏感数据',
+    影响资产: ['用户存档数据', '应用内部状态', '系统信息'],
+    风险等级: '🔴高',
+    缓解策略: ['数据加密存储', '最小暴露原则', '内存清理'],
   },
   拒绝服务_Denial_of_Service: {
-    威胁场景: "通过资源耗尽或恶意输入导致应用崩溃",
-    影响资产: ["应用可用性", "系统资源"],
-    风险等级: "🟡中",
-    缓解策略: ["资源限制", "输入验证", "异常恢复机制"]
+    威胁场景: '通过资源耗尽或恶意输入导致应用崩溃',
+    影响资产: ['应用可用性', '系统资源'],
+    风险等级: '🟡中',
+    缓解策略: ['资源限制', '输入验证', '异常恢复机制'],
   },
   特权提升_Elevation_of_Privilege: {
-    威胁场景: "从渲染进程沙箱逃逸，获得主进程或系统权限",
-    影响资产: ["主进程权限", "文件系统访问", "系统完整性"],
-    风险等级: "🔴极高",
-    缓解策略: ["严格沙箱配置", "Context隔离", "权限最小化"]
-  }
+    威胁场景: '从渲染进程沙箱逃逸，获得主进程或系统权限',
+    影响资产: ['主进程权限', '文件系统访问', '系统完整性'],
+    风险等级: '🔴极高',
+    缓解策略: ['严格沙箱配置', 'Context隔离', '权限最小化'],
+  },
 } as const;
 ```
 
@@ -159,38 +163,38 @@ export const STRIDE_THREAT_ANALYSIS = {
 // 关键安全控制映射
 export const CRITICAL_SECURITY_CONTROLS = {
   contextIsolation: {
-    威胁缓解: ["特权提升", "代码注入"],
-    配置要求: "必须设为 true",
-    验证方式: "E2E自动测试 + 运行时检查"
+    威胁缓解: ['特权提升', '代码注入'],
+    配置要求: '必须设为 true',
+    验证方式: 'E2E自动测试 + 运行时检查',
   },
   nodeIntegration: {
-    威胁缓解: ["Node API滥用", "文件系统攻击"],
-    配置要求: "必须设为 false",
-    验证方式: "静态配置扫描 + 运行时断言"
+    威胁缓解: ['Node API滥用', '文件系统攻击'],
+    配置要求: '必须设为 false',
+    验证方式: '静态配置扫描 + 运行时断言',
   },
   sandbox: {
-    威胁缓解: ["进程逃逸", "系统调用滥用"],
-    配置要求: "必须启用",
-    验证方式: "安全基线测试 + 权限验证"
+    威胁缓解: ['进程逃逸', '系统调用滥用'],
+    配置要求: '必须启用',
+    验证方式: '安全基线测试 + 权限验证',
   },
   CSP策略: {
-    威胁缓解: ["XSS攻击", "恶意脚本执行"],
-    配置要求: "严格的默认拒绝策略",
-    验证方式: "内容安全扫描 + 违规监控"
-  }
+    威胁缓解: ['XSS攻击', '恶意脚本执行'],
+    配置要求: '严格的默认拒绝策略',
+    验证方式: '内容安全扫描 + 违规监控',
+  },
 } as const;
 ```
 
 ### 1.6 风险优先级矩阵（DREAD）
 
-| 威胁类型 | 破坏性 | 可复现性 | 可利用性 | 影响用户数 | 可发现性 | **综合风险** | **优先级** |
-|---------|--------|----------|----------|-----------|-----------|------------|------------|
-| **特权提升** | 10 | 6 | 7 | 9 | 5 | **7.4** | **P0** |
-| **信息泄露** | 8 | 8 | 8 | 8 | 7 | **7.8** | **P0** |
-| **供应链攻击** | 9 | 4 | 6 | 10 | 3 | **6.4** | **P1** |
-| **IPC滥用** | 7 | 7 | 8 | 6 | 8 | **7.2** | **P1** |
-| **XSS攻击** | 6 | 9 | 9 | 7 | 9 | **8.0** | **P1** |
-| **拒绝服务** | 5 | 8 | 7 | 9 | 7 | **7.2** | **P2** |
+| 威胁类型       | 破坏性 | 可复现性 | 可利用性 | 影响用户数 | 可发现性 | **综合风险** | **优先级** |
+| -------------- | ------ | -------- | -------- | ---------- | -------- | ------------ | ---------- |
+| **特权提升**   | 10     | 6        | 7        | 9          | 5        | **7.4**      | **P0**     |
+| **信息泄露**   | 8      | 8        | 8        | 8          | 7        | **7.8**      | **P0**     |
+| **供应链攻击** | 9      | 4        | 6        | 10         | 3        | **6.4**      | **P1**     |
+| **IPC滥用**    | 7      | 7        | 8        | 6          | 8        | **7.2**      | **P1**     |
+| **XSS攻击**    | 6      | 9        | 9        | 7          | 9        | **8.0**      | **P1**     |
+| **拒绝服务**   | 5      | 8        | 7        | 9          | 7        | **7.2**      | **P2**     |
 
 ## 二、BrowserWindow & 预加载（preload）基线
 
@@ -201,32 +205,32 @@ export const CRITICAL_SECURITY_CONTROLS = {
 export const ELECTRON_SECURITY_CONFIG = {
   webPreferences: {
     // 🔒 【P0级别】核心安全护栏 - 禁止修改
-    contextIsolation: true,              // 上下文隔离 - 防止渲染进程污染主进程
-    nodeIntegration: false,              // 禁用Node.js集成 - 防止直接访问系统API
-    webSecurity: true,                   // 启用Web安全 - 强制同源策略
-    sandbox: true,                       // 启用沙箱 - 限制系统调用
-    
+    contextIsolation: true, // 上下文隔离 - 防止渲染进程污染主进程
+    nodeIntegration: false, // 禁用Node.js集成 - 防止直接访问系统API
+    webSecurity: true, // 启用Web安全 - 强制同源策略
+    sandbox: true, // 启用沙箱 - 限制系统调用
+
     // 🛡️ 【P1级别】高级防护配置
     allowRunningInsecureContent: false, // 禁止不安全内容 - 防止混合内容攻击
-    experimentalFeatures: false,         // 禁用实验性功能 - 避免未知安全风险
-    nodeIntegrationInWorker: false,      // Worker禁用Node.js - 防止后台进程权限泄露
-    nodeIntegrationInSubFrames: false,   // 子框架禁用Node.js - 防止iframe攻击
-    
+    experimentalFeatures: false, // 禁用实验性功能 - 避免未知安全风险
+    nodeIntegrationInWorker: false, // Worker禁用Node.js - 防止后台进程权限泄露
+    nodeIntegrationInSubFrames: false, // 子框架禁用Node.js - 防止iframe攻击
+
     // 🔐 【P2级别】攻击面缩减配置
-    webgl: false,                        // 禁用WebGL - 减少GPU相关攻击面
-    plugins: false,                      // 禁用插件系统 - 防止第三方插件安全风险
-    java: false,                         // 禁用Java - 减少Java相关漏洞
+    webgl: false, // 禁用WebGL - 减少GPU相关攻击面
+    plugins: false, // 禁用插件系统 - 防止第三方插件安全风险
+    java: false, // 禁用Java - 减少Java相关漏洞
     allowDisplayingInsecureContent: false, // 禁止显示不安全内容
-    
+
     // 📁 预加载脚本安全配置
     preload: path.join(__dirname, '../preload/secure-bridge.js'), // 安全预加载脚本
-    safeDialogs: true,                   // 安全对话框 - 防止对话框欺骗
-    safeDialogsMessage: "此应用正在尝试显示安全对话框", // 安全提示信息
-    
+    safeDialogs: true, // 安全对话框 - 防止对话框欺骗
+    safeDialogsMessage: '此应用正在尝试显示安全对话框', // 安全提示信息
+
     // 🌐 Blink引擎安全配置
-    blinkFeatures: '',                   // 禁用所有Blink实验性功能
+    blinkFeatures: '', // 禁用所有Blink实验性功能
     disableBlinkFeatures: 'Auxclick,AutoplayPolicy', // 禁用特定Blink功能
-  }
+  },
 } as const;
 ```
 
@@ -244,12 +248,12 @@ export function createSecureMainWindow(): BrowserWindow {
     width: 1200,
     height: 800,
     webPreferences: ELECTRON_SECURITY_CONFIG.webPreferences,
-    
+
     // 🖼️ 窗口安全配置
-    show: false,                    // 初始隐藏，避免白屏闪烁
-    titleBarStyle: 'default',       // 使用系统标题栏，避免自定义标题栏安全风险
-    autoHideMenuBar: true,          // 自动隐藏菜单栏，减少攻击面
-    
+    show: false, // 初始隐藏，避免白屏闪烁
+    titleBarStyle: 'default', // 使用系统标题栏，避免自定义标题栏安全风险
+    autoHideMenuBar: true, // 自动隐藏菜单栏，减少攻击面
+
     // 🔐 窗口行为限制
     minimizable: true,
     maximizable: true,
@@ -261,15 +265,15 @@ export function createSecureMainWindow(): BrowserWindow {
   // 🛡️ 外部链接安全处理 - 防止恶意重定向
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://') || url.startsWith('http://')) {
-      shell.openExternal(url);      // 使用系统浏览器打开外部链接
+      shell.openExternal(url); // 使用系统浏览器打开外部链接
     }
-    return { action: 'deny' };      // 拒绝在应用内打开
+    return { action: 'deny' }; // 拒绝在应用内打开
   });
 
   // 🔍 导航安全控制 - 防止恶意重定向
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
-    
+
     // 只允许导航到本地文件或信任域名
     if (parsedUrl.origin !== 'file://' && !isTrustedDomain(parsedUrl.origin)) {
       event.preventDefault();
@@ -278,11 +282,13 @@ export function createSecureMainWindow(): BrowserWindow {
   });
 
   // 📋 权限请求严格控制
-  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    // 拒绝所有权限请求，确保最小权限原则
-    console.warn(`⛔ 权限请求被拒绝: ${permission}`);
-    callback(false);
-  });
+  mainWindow.webContents.session.setPermissionRequestHandler(
+    (webContents, permission, callback) => {
+      // 拒绝所有权限请求，确保最小权限原则
+      console.warn(`⛔ 权限请求被拒绝: ${permission}`);
+      callback(false);
+    }
+  );
 
   return mainWindow;
 }
@@ -290,10 +296,10 @@ export function createSecureMainWindow(): BrowserWindow {
 /* 域名白名单检查 */
 function isTrustedDomain(origin: string): boolean {
   const trustedDomains = [
-    'file://',                      // 本地文件
+    'file://', // 本地文件
     // 在这里添加信任的外部域名（如果需要）
   ];
-  
+
   return trustedDomains.includes(origin);
 }
 
@@ -302,7 +308,7 @@ export function setupDevelopmentSecurity(mainWindow: BrowserWindow): void {
   if (process.env.NODE_ENV === 'development') {
     // 开发环境启用调试工具，但限制其功能
     mainWindow.webContents.openDevTools({ mode: 'detach' });
-    
+
     // 开发环境安全警告
     console.warn('🚧 开发环境模式 - 某些安全特性可能被放宽');
   }
@@ -319,27 +325,27 @@ import { contextBridge, ipcRenderer } from 'electron';
 const SAFE_CHANNELS = [
   // 应用基础API
   'app:get-version',
-  'app:get-platform', 
+  'app:get-platform',
   'app:quit',
-  
+
   // 系统信息API（只读）
   'sys:ping',
   'sys:get-memory-usage',
-  
+
   // 游戏数据API
   'game:save-data',
   'game:load-data',
   'game:get-stats',
-  
+
   // 用户设置API
   'settings:get',
   'settings:set',
-  
+
   // 安全事件API
   'security:report-violation',
 ] as const;
 
-type SafeChannel = typeof SAFE_CHANNELS[number];
+type SafeChannel = (typeof SAFE_CHANNELS)[number];
 
 /* 输入验证器 */
 class InputValidator {
@@ -354,18 +360,19 @@ class InputValidator {
       // 防止XSS - 移除潜在危险字符
       return input.replace(/<[^>]*>/g, '').trim();
     }
-    
+
     if (typeof input === 'object' && input !== null) {
       // 递归清理对象属性
       const cleaned: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(input)) {
-        if (typeof key === 'string' && key.length < 100) { // 限制键名长度
+        if (typeof key === 'string' && key.length < 100) {
+          // 限制键名长度
           cleaned[key] = this.sanitizeInput(value);
         }
       }
       return cleaned;
     }
-    
+
     return input;
   }
 
@@ -385,27 +392,29 @@ function createSecureInvoke(channel: SafeChannel) {
     try {
       // 输入验证和清理
       const sanitizedArgs = args.map(arg => InputValidator.sanitizeInput(arg));
-      
+
       // 执行IPC调用，带超时控制
       const result = await Promise.race([
         ipcRenderer.invoke(channel, ...sanitizedArgs),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('IPC调用超时')), 10000)
-        )
+        ),
       ]);
-      
+
       return result;
     } catch (error) {
       console.error(`❌ IPC调用失败 [${channel}]:`, error);
-      
+
       // 报告安全事件
-      ipcRenderer.invoke('security:report-violation', {
-        type: 'ipc-call-failed',
-        channel,
-        error: String(error),
-        timestamp: new Date().toISOString()
-      }).catch(() => {}); // 静默处理报告失败
-      
+      ipcRenderer
+        .invoke('security:report-violation', {
+          type: 'ipc-call-failed',
+          channel,
+          error: String(error),
+          timestamp: new Date().toISOString(),
+        })
+        .catch(() => {}); // 静默处理报告失败
+
       throw error;
     }
   };
@@ -419,31 +428,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getPlatform: createSecureInvoke('app:get-platform'),
     quit: createSecureInvoke('app:quit'),
   },
-  
+
   // 🖥️ 系统信息API（只读）
   system: {
     ping: createSecureInvoke('sys:ping'),
     getMemoryUsage: createSecureInvoke('sys:get-memory-usage'),
   },
-  
+
   // 🎮 游戏数据API（受控访问）
   game: {
     saveData: createSecureInvoke('game:save-data'),
     loadData: createSecureInvoke('game:load-data'),
     getStats: createSecureInvoke('game:get-stats'),
   },
-  
+
   // ⚙️ 用户设置API（受控访问）
   settings: {
     get: createSecureInvoke('settings:get'),
     set: createSecureInvoke('settings:set'),
   },
-  
+
   // 🛡️ 安全事件报告API
   security: {
     reportViolation: createSecureInvoke('security:report-violation'),
   },
-  
+
   // 📝 安全日志API
   log: {
     info: (message: string) => createSecureInvoke('sys:ping')(), // 复用ping通道作为示例
@@ -453,8 +462,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     error: (message: string) => {
       console.error(`[ERROR] ${message}`);
-    }
-  }
+    },
+  },
 });
 
 // 🚨 运行时安全检查
@@ -467,7 +476,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       throw new Error('Node.js integration must be disabled');
     }
   }
-  
+
   // 检查require是否意外暴露
   if (typeof require !== 'undefined') {
     console.error('🚨 安全违规: require函数暴露到渲染进程!');
@@ -475,7 +484,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       throw new Error('require function must not be exposed');
     }
   }
-  
+
   // 预加载完成标记
   window.dispatchEvent(new CustomEvent('preload-ready'));
   console.log('✅ 安全预加载脚本加载完成');
@@ -488,12 +497,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 <!-- src/renderer/index.html - 严格CSP配置 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- 🛡️ 严格的内容安全策略 - 防止XSS和代码注入 -->
-  <meta http-equiv="Content-Security-Policy" content="
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- 🛡️ 严格的内容安全策略 - 防止XSS和代码注入 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
     default-src 'self';
     script-src 'self' 'unsafe-inline';
     style-src 'self' 'unsafe-inline';
@@ -511,41 +522,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
     form-action 'self';
     frame-ancestors 'none';
     upgrade-insecure-requests;
-  ">
-  
-  <!-- 🔒 额外安全标头 -->
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="X-Frame-Options" content="DENY">
-  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-  
-  <title>Guild Manager - 安全桌面应用</title>
-</head>
-<body>
-  <div id="app"></div>
-  
-  <!-- 🧪 安全性验证脚本 -->
-  <script>
-    // 监听预加载脚本就绪事件
-    window.addEventListener('preload-ready', () => {
-      console.log('✅ 预加载脚本安全检查通过');
-      
-      // 验证安全API是否正确暴露
-      if (typeof window.electronAPI === 'object') {
-        console.log('✅ Electron API安全暴露');
-      } else {
-        console.error('❌ Electron API未正确暴露');
-      }
-      
-      // 验证危险API是否被隔离
-      if (typeof require === 'undefined' && typeof process === 'undefined') {
-        console.log('✅ 危险API已被隔离');
-      } else {
-        console.error('❌ 检测到危险API暴露');
-      }
-    });
-  </script>
-</body>
+  "
+    />
+
+    <!-- 🔒 额外安全标头 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta
+      http-equiv="Referrer-Policy"
+      content="strict-origin-when-cross-origin"
+    />
+
+    <title>Guild Manager - 安全桌面应用</title>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- 🧪 安全性验证脚本 -->
+    <script>
+      // 监听预加载脚本就绪事件
+      window.addEventListener('preload-ready', () => {
+        console.log('✅ 预加载脚本安全检查通过');
+
+        // 验证安全API是否正确暴露
+        if (typeof window.electronAPI === 'object') {
+          console.log('✅ Electron API安全暴露');
+        } else {
+          console.error('❌ Electron API未正确暴露');
+        }
+
+        // 验证危险API是否被隔离
+        if (typeof require === 'undefined' && typeof process === 'undefined') {
+          console.log('✅ 危险API已被隔离');
+        } else {
+          console.error('❌ 检测到危险API暴露');
+        }
+      });
+    </script>
+  </body>
 </html>
 ```
 
@@ -558,47 +573,47 @@ export class SecurityBaselineValidator {
   static validateWindowSecurity(window: BrowserWindow): ValidationResult {
     const webPreferences = window.webContents.getWebPreferences();
     const errors: string[] = [];
-    
+
     // P0级别检查 - 关键安全配置
     if (!webPreferences.contextIsolation) {
       errors.push('❌ CRITICAL: contextIsolation必须为true');
     }
-    
+
     if (webPreferences.nodeIntegration) {
       errors.push('❌ CRITICAL: nodeIntegration必须为false');
     }
-    
+
     if (!webPreferences.sandbox) {
       errors.push('❌ HIGH: sandbox建议启用');
     }
-    
+
     if (!webPreferences.webSecurity) {
       errors.push('❌ HIGH: webSecurity必须为true');
     }
-    
+
     return {
       passed: errors.length === 0,
       errors,
-      score: Math.max(0, 100 - errors.length * 25)
+      score: Math.max(0, 100 - errors.length * 25),
     };
   }
-  
+
   /* 生成安全报告 */
   static generateSecurityReport(results: ValidationResult): string {
     const { passed, errors, score } = results;
-    
+
     let report = '\n🔒 Electron安全基线验证报告\n';
     report += '='.repeat(40) + '\n';
     report += `总体评分: ${score}/100\n`;
     report += `验证状态: ${passed ? '✅ 通过' : '❌ 失败'}\n\n`;
-    
+
     if (errors.length > 0) {
       report += '发现的安全问题:\n';
-      errors.forEach(error => report += `  ${error}\n`);
+      errors.forEach(error => (report += `  ${error}\n`));
     } else {
       report += '✅ 所有安全检查均通过\n';
     }
-    
+
     return report;
   }
 }
@@ -650,7 +665,7 @@ export class IPCSecurityManager {
         const [channel, handler] = args;
         const secureHandler = this.wrapWithSecurity(channel, handler);
         return target.apply(thisArg, [channel, secureHandler]);
-      }
+      },
     });
   }
 
@@ -658,7 +673,7 @@ export class IPCSecurityManager {
   private wrapWithSecurity(channel: string, handler: Function) {
     return async (event: IpcMainInvokeEvent, ...args: unknown[]) => {
       const startTime = Date.now();
-      
+
       try {
         // 1. 通道白名单检查
         if (!this.isChannelAllowed(channel)) {
@@ -688,16 +703,15 @@ export class IPCSecurityManager {
         this.auditSuccess(channel, startTime, args.length);
 
         return validatedResult;
-
       } catch (error) {
         // 安全事件记录
         this.auditSecurityViolation(channel, error, event.processId, args);
-        
+
         // 根据错误类型决定是否抛出
         if (error instanceof SecurityViolation) {
           throw error;
         }
-        
+
         // 包装内部错误，避免信息泄露
         throw new Error('内部处理错误');
       }
@@ -707,7 +721,10 @@ export class IPCSecurityManager {
 
 /* 安全违规异常 */
 class SecurityViolation extends Error {
-  constructor(message: string, public readonly securityCode: string = 'SECURITY_VIOLATION') {
+  constructor(
+    message: string,
+    public readonly securityCode: string = 'SECURITY_VIOLATION'
+  ) {
     super(message);
     this.name = 'SecurityViolation';
   }
@@ -720,48 +737,53 @@ class SecurityViolation extends Error {
 // src/shared/security/channel-whitelist.ts - 严格通道管控
 export const SAFE_CHANNELS = [
   // 🏠 应用基础API（只读）
-  'app:get-version',          // 获取应用版本
-  'app:get-platform',         // 获取系统平台
-  'app:get-locale',          // 获取系统语言
-  'app:quit',                // 退出应用（需确认）
+  'app:get-version', // 获取应用版本
+  'app:get-platform', // 获取系统平台
+  'app:get-locale', // 获取系统语言
+  'app:quit', // 退出应用（需确认）
 
   // 🖥️ 系统信息API（只读）
-  'sys:ping',                // 心跳检测
-  'sys:get-memory-usage',    // 内存使用情况
-  'sys:get-cpu-usage',       // CPU使用情况
-  'sys:show-message-box',    // 安全消息框
+  'sys:ping', // 心跳检测
+  'sys:get-memory-usage', // 内存使用情况
+  'sys:get-cpu-usage', // CPU使用情况
+  'sys:show-message-box', // 安全消息框
 
   // 🎮 游戏数据API（受控访问）
-  'game:save-data',          // 保存游戏数据
-  'game:load-data',          // 加载游戏数据
-  'game:export-data',        // 导出数据
-  'game:get-stats',          // 获取统计信息
+  'game:save-data', // 保存游戏数据
+  'game:load-data', // 加载游戏数据
+  'game:export-data', // 导出数据
+  'game:get-stats', // 获取统计信息
 
   // ⚙️ 用户设置API（受控访问）
-  'settings:get',            // 获取设置
-  'settings:set',            // 更新设置
-  'settings:reset',          // 重置设置
+  'settings:get', // 获取设置
+  'settings:set', // 更新设置
+  'settings:reset', // 重置设置
 
   // 📝 日志API（受控访问）
-  'log:write-entry',         // 写入日志
-  'log:get-logs',            // 读取日志
+  'log:write-entry', // 写入日志
+  'log:get-logs', // 读取日志
 
   // 🛡️ 安全事件API
   'security:report-violation', // 报告安全事件
-  'security:get-status',     // 获取安全状态
+  'security:get-status', // 获取安全状态
 
   // 🔧 开发工具API（仅开发环境）
-  'dev:reload',              // 重新加载（开发环境）
-  'dev:toggle-devtools',     // 切换开发工具（开发环境）
+  'dev:reload', // 重新加载（开发环境）
+  'dev:toggle-devtools', // 切换开发工具（开发环境）
 ] as const;
 
-type SafeChannel = typeof SAFE_CHANNELS[number];
+type SafeChannel = (typeof SAFE_CHANNELS)[number];
 
 /* 通道命名规范验证器 */
 export class ChannelNamingValidator {
   private static readonly NAMING_PATTERN = /^[a-z-]+:[a-z-]+$/;
-  private static readonly FORBIDDEN_PREFIXES = ['system', 'internal', '__', 'node'];
-  
+  private static readonly FORBIDDEN_PREFIXES = [
+    'system',
+    'internal',
+    '__',
+    'node',
+  ];
+
   /* 验证通道命名是否符合规范 */
   static validateChannelName(channel: string): boolean {
     // 1. 基础格式检查：domain:action
@@ -796,7 +818,7 @@ export class ChannelNamingValidator {
         log: SAFE_CHANNELS.filter(c => c.startsWith('log:')).length,
         security: SAFE_CHANNELS.filter(c => c.startsWith('security:')).length,
         dev: SAFE_CHANNELS.filter(c => c.startsWith('dev:')).length,
-      }
+      },
     };
   }
 }
@@ -815,13 +837,14 @@ import { z } from 'zod';
 
 /* IPC参数验证器集合 */
 export class IPCValidators {
-  
   // 🏠 应用信息验证器
   static readonly AppValidators = {
-    'app:quit': z.object({
-      saveBeforeQuit: z.boolean().optional().default(true),
-      force: z.boolean().optional().default(false)
-    }).optional()
+    'app:quit': z
+      .object({
+        saveBeforeQuit: z.boolean().optional().default(true),
+        force: z.boolean().optional().default(false),
+      })
+      .optional(),
   };
 
   // 🎮 游戏数据验证器
@@ -833,42 +856,46 @@ export class IPCValidators {
         level: z.number().int().min(1).max(100),
         experience: z.number().int().min(0),
         guilds: z.array(z.string().uuid()).max(10),
-        settings: z.record(z.unknown()).optional()
+        settings: z.record(z.unknown()).optional(),
       }),
       metadata: z.object({
         version: z.string(),
         timestamp: z.number(),
-        checksum: z.string().optional()
-      })
+        checksum: z.string().optional(),
+      }),
     }),
 
-    'game:load-data': z.object({
-      saveId: z.string().uuid().optional(),
-      includeMetadata: z.boolean().optional().default(false)
-    }).optional(),
+    'game:load-data': z
+      .object({
+        saveId: z.string().uuid().optional(),
+        includeMetadata: z.boolean().optional().default(false),
+      })
+      .optional(),
 
     'game:export-data': z.object({
       format: z.enum(['json', 'csv', 'xml']),
       includeHistory: z.boolean().optional().default(false),
-      dateRange: z.object({
-        start: z.number(),
-        end: z.number()
-      }).optional()
-    })
+      dateRange: z
+        .object({
+          start: z.number(),
+          end: z.number(),
+        })
+        .optional(),
+    }),
   };
 
   // ⚙️ 设置验证器
   static readonly SettingsValidators = {
     'settings:get': z.object({
       key: z.string().min(1).max(100),
-      defaultValue: z.unknown().optional()
+      defaultValue: z.unknown().optional(),
     }),
 
     'settings:set': z.object({
       key: z.string().min(1).max(100),
       value: z.unknown(),
-      sync: z.boolean().optional().default(true)
-    })
+      sync: z.boolean().optional().default(true),
+    }),
   };
 
   // 📝 日志验证器
@@ -877,14 +904,16 @@ export class IPCValidators {
       level: z.enum(['info', 'warn', 'error', 'debug']),
       message: z.string().min(1).max(1000),
       timestamp: z.number(),
-      metadata: z.record(z.unknown()).optional()
+      metadata: z.record(z.unknown()).optional(),
     }),
 
-    'log:get-logs': z.object({
-      level: z.enum(['info', 'warn', 'error', 'debug']).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(100),
-      since: z.number().optional()
-    }).optional()
+    'log:get-logs': z
+      .object({
+        level: z.enum(['info', 'warn', 'error', 'debug']).optional(),
+        limit: z.number().int().min(1).max(1000).optional().default(100),
+        since: z.number().optional(),
+      })
+      .optional(),
   };
 
   /* 获取通道对应的验证器 */
@@ -894,7 +923,7 @@ export class IPCValidators {
       ...this.AppValidators,
       ...this.GameValidators,
       ...this.SettingsValidators,
-      ...this.LogValidators
+      ...this.LogValidators,
     };
 
     return allValidators[channel];
@@ -903,7 +932,7 @@ export class IPCValidators {
   /* 验证IPC参数 */
   static validateArgs(channel: SafeChannel, args: unknown[]): unknown[] {
     const validator = this.getValidator(channel);
-    
+
     if (!validator) {
       // 无验证器的通道，进行基础清理
       return this.sanitizeBasicArgs(args);
@@ -911,7 +940,7 @@ export class IPCValidators {
 
     // 大多数IPC调用接受单个对象参数
     const [firstArg, ...restArgs] = args;
-    
+
     try {
       const validatedArg = validator.parse(firstArg);
       return [validatedArg, ...restArgs];
@@ -932,12 +961,12 @@ export class IPCValidators {
         // 移除潜在危险字符，限制长度
         return arg.replace(/<[^>]*>/g, '').slice(0, 10000);
       }
-      
+
       if (typeof arg === 'object' && arg !== null) {
         // 递归清理对象
         return this.sanitizeObject(arg);
       }
-      
+
       return arg;
     });
   }
@@ -946,35 +975,37 @@ export class IPCValidators {
   private static sanitizeObject(obj: any): any {
     const cleaned: any = {};
     const MAX_DEPTH = 10;
-    
+
     const sanitizeRecursive = (source: any, depth: number): any => {
       if (depth > MAX_DEPTH) return '[深度限制]';
-      
+
       if (typeof source === 'string') {
         return source.replace(/<[^>]*>/g, '').slice(0, 1000);
       }
-      
+
       if (Array.isArray(source)) {
-        return source.slice(0, 100).map(item => sanitizeRecursive(item, depth + 1));
+        return source
+          .slice(0, 100)
+          .map(item => sanitizeRecursive(item, depth + 1));
       }
-      
+
       if (typeof source === 'object' && source !== null) {
         const result: any = {};
         let propCount = 0;
-        
+
         for (const [key, value] of Object.entries(source)) {
           if (propCount++ > 50) break; // 限制属性数量
           if (typeof key === 'string' && key.length < 100) {
             result[key] = sanitizeRecursive(value, depth + 1);
           }
         }
-        
+
         return result;
       }
-      
+
       return source;
     };
-    
+
     return sanitizeRecursive(obj, 0);
   }
 }
@@ -995,17 +1026,17 @@ export class ValidationError extends Error {
 export class IPCRateLimiter {
   private limitStates: Map<string, RateLimitState> = new Map();
   private readonly defaultConfig: RateLimitConfig = {
-    windowMs: 60000,      // 1分钟时间窗口
-    maxRequests: 100,     // 最大请求数
-    burstAllowance: 10,   // 突发允许量
-    blockDurationMs: 300000 // 5分钟阻断时间
+    windowMs: 60000, // 1分钟时间窗口
+    maxRequests: 100, // 最大请求数
+    burstAllowance: 10, // 突发允许量
+    blockDurationMs: 300000, // 5分钟阻断时间
   };
 
   /* 检查是否允许请求 */
   checkRateLimit(channel: SafeChannel, processId: number): boolean {
     const key = `${channel}:${processId}`;
     const now = Date.now();
-    
+
     let state = this.limitStates.get(key);
     if (!state) {
       state = this.createInitialState(now);
@@ -1027,7 +1058,7 @@ export class IPCRateLimiter {
       // 触发阻断
       state.blockedUntil = now + this.defaultConfig.blockDurationMs;
       state.violationCount++;
-      
+
       // 记录安全事件
       this.recordRateLimitViolation(channel, processId, state);
       return false;
@@ -1037,17 +1068,19 @@ export class IPCRateLimiter {
     state.requestCount++;
     state.lastRequestTime = now;
     this.limitStates.set(key, state);
-    
+
     return true;
   }
 
   /* 获取通道特定配置 */
   private getChannelConfig(channel: SafeChannel): RateLimitConfig {
-    const channelConfigs: Partial<Record<SafeChannel, Partial<RateLimitConfig>>> = {
-      'game:save-data': { maxRequests: 10 },  // 保存数据限制更严格
-      'sys:ping': { maxRequests: 200 },       // 心跳检测允许更频繁
+    const channelConfigs: Partial<
+      Record<SafeChannel, Partial<RateLimitConfig>>
+    > = {
+      'game:save-data': { maxRequests: 10 }, // 保存数据限制更严格
+      'sys:ping': { maxRequests: 200 }, // 心跳检测允许更频繁
       'log:write-entry': { maxRequests: 500 }, // 日志写入允许更多
-      'security:report-violation': { maxRequests: 50 } // 安全报告中等频率
+      'security:report-violation': { maxRequests: 50 }, // 安全报告中等频率
     };
 
     const channelOverride = channelConfigs[channel] || {};
@@ -1061,7 +1094,7 @@ export class IPCRateLimiter {
       requestCount: 0,
       lastRequestTime: now,
       violationCount: 0,
-      blockedUntil: null
+      blockedUntil: null,
     };
   }
 
@@ -1071,33 +1104,33 @@ export class IPCRateLimiter {
       ...state,
       windowStart: now,
       requestCount: 0,
-      blockedUntil: null
+      blockedUntil: null,
     };
   }
 
   /* 记录速率限制违规 */
   private recordRateLimitViolation(
-    channel: SafeChannel, 
-    processId: number, 
+    channel: SafeChannel,
+    processId: number,
     state: RateLimitState
   ): void {
     console.warn(`🚨 速率限制违规: 通道 ${channel}, 进程 ${processId}`);
-    
+
     // 发送到安全审计服务
     SecurityAuditService.logSecurityEvent('RATE_LIMIT_VIOLATION', {
       channel,
       processId,
       requestCount: state.requestCount,
       violationCount: state.violationCount,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   /* 清理过期状态 */
   cleanupExpiredStates(): void {
     const now = Date.now();
-    const expireThreshold = now - (this.defaultConfig.windowMs * 2);
-    
+    const expireThreshold = now - this.defaultConfig.windowMs * 2;
+
     for (const [key, state] of this.limitStates.entries()) {
       if (state.lastRequestTime < expireThreshold) {
         this.limitStates.delete(key);
@@ -1155,11 +1188,11 @@ export class SecurityAuditService {
       eventType,
       severity: this.calculateSeverity(eventType),
       details: this.sanitizeDetails(details),
-      processInfo: this.captureProcessInfo()
+      processInfo: this.captureProcessInfo(),
     };
 
     instance.auditLog.push(entry);
-    
+
     // 高危事件立即处理
     if (entry.severity === 'CRITICAL') {
       this.handleCriticalEvent(entry);
@@ -1172,13 +1205,17 @@ export class SecurityAuditService {
   }
 
   /* 获取安全报告 */
-  static generateSecurityReport(timeRange?: { start: number; end: number }): SecurityReport {
+  static generateSecurityReport(timeRange?: {
+    start: number;
+    end: number;
+  }): SecurityReport {
     const instance = this.getInstance();
     let entries = instance.auditLog;
 
     if (timeRange) {
-      entries = entries.filter(entry => 
-        entry.timestamp >= timeRange.start && entry.timestamp <= timeRange.end
+      entries = entries.filter(
+        entry =>
+          entry.timestamp >= timeRange.start && entry.timestamp <= timeRange.end
       );
     }
 
@@ -1187,24 +1224,26 @@ export class SecurityAuditService {
       generatedAt: Date.now(),
       timeRange: timeRange || {
         start: entries[0]?.timestamp || Date.now(),
-        end: entries[entries.length - 1]?.timestamp || Date.now()
+        end: entries[entries.length - 1]?.timestamp || Date.now(),
       },
       summary: this.generateSummary(entries),
       entries: entries.slice(-1000), // 最近1000条记录
-      recommendations: this.generateRecommendations(entries)
+      recommendations: this.generateRecommendations(entries),
     };
   }
 
   /* 计算事件严重性 */
-  private static calculateSeverity(eventType: SecurityEventType): SecuritySeverity {
+  private static calculateSeverity(
+    eventType: SecurityEventType
+  ): SecuritySeverity {
     const severityMap: Record<SecurityEventType, SecuritySeverity> = {
-      'IPC_CHANNEL_BLOCKED': 'HIGH',
-      'RATE_LIMIT_VIOLATION': 'MEDIUM',
-      'PARAMETER_VALIDATION_FAILED': 'MEDIUM',
-      'UNAUTHORIZED_ACCESS_ATTEMPT': 'CRITICAL',
-      'SUSPICIOUS_ACTIVITY': 'HIGH',
-      'SECURITY_CONFIGURATION_CHANGED': 'HIGH',
-      'AUDIT_LOG_TAMPERING': 'CRITICAL'
+      IPC_CHANNEL_BLOCKED: 'HIGH',
+      RATE_LIMIT_VIOLATION: 'MEDIUM',
+      PARAMETER_VALIDATION_FAILED: 'MEDIUM',
+      UNAUTHORIZED_ACCESS_ATTEMPT: 'CRITICAL',
+      SUSPICIOUS_ACTIVITY: 'HIGH',
+      SECURITY_CONFIGURATION_CHANGED: 'HIGH',
+      AUDIT_LOG_TAMPERING: 'CRITICAL',
     };
 
     return severityMap[eventType] || 'LOW';
@@ -1213,10 +1252,10 @@ export class SecurityAuditService {
   /* 处理关键安全事件 */
   private static handleCriticalEvent(entry: SecurityAuditEntry): void {
     console.error(`🚨 关键安全事件: ${entry.eventType}`, entry.details);
-    
+
     // 发送告警通知
     this.sendSecurityAlert(entry);
-    
+
     // 根据事件类型采取行动
     switch (entry.eventType) {
       case 'UNAUTHORIZED_ACCESS_ATTEMPT':
@@ -1236,33 +1275,44 @@ export class SecurityAuditService {
   }
 
   /* 生成安全摘要 */
-  private static generateSummary(entries: SecurityAuditEntry[]): SecuritySummary {
-    const eventCounts = entries.reduce((acc, entry) => {
-      acc[entry.eventType] = (acc[entry.eventType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  private static generateSummary(
+    entries: SecurityAuditEntry[]
+  ): SecuritySummary {
+    const eventCounts = entries.reduce(
+      (acc, entry) => {
+        acc[entry.eventType] = (acc[entry.eventType] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const severityCounts = entries.reduce((acc, entry) => {
-      acc[entry.severity] = (acc[entry.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const severityCounts = entries.reduce(
+      (acc, entry) => {
+        acc[entry.severity] = (acc[entry.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       totalEvents: entries.length,
       eventTypeCounts: eventCounts,
       severityCounts: severityCounts,
       criticalEvents: entries.filter(e => e.severity === 'CRITICAL').length,
-      timeSpan: entries.length > 0 ? {
-        start: Math.min(...entries.map(e => e.timestamp)),
-        end: Math.max(...entries.map(e => e.timestamp))
-      } : null
+      timeSpan:
+        entries.length > 0
+          ? {
+              start: Math.min(...entries.map(e => e.timestamp)),
+              end: Math.max(...entries.map(e => e.timestamp)),
+            }
+          : null,
     };
   }
 }
 
 // 类型定义
-type SecurityEventType = 
-  | 'IPC_CHANNEL_BLOCKED' 
+type SecurityEventType =
+  | 'IPC_CHANNEL_BLOCKED'
   | 'RATE_LIMIT_VIOLATION'
   | 'PARAMETER_VALIDATION_FAILED'
   | 'UNAUTHORIZED_ACCESS_ATTEMPT'
@@ -1304,7 +1354,7 @@ interface SecuritySummary {
 ```typescript
 // src/shared/ipc/contracts.ts - IPC契约固化标准
 export namespace IPCContracts {
-  export const CONTRACT_VERSION = "1.0.0";
+  export const CONTRACT_VERSION = '1.0.0';
 
   /* 标准化IPC消息格式 */
   export interface StandardIPCMessage<T = any> {
@@ -1416,93 +1466,95 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 const config: Configuration = {
-  appId: "com.guildmanager.app",
-  productName: "Guild Manager",
-  
+  appId: 'com.guildmanager.app',
+  productName: 'Guild Manager',
+
   // 🔒 基础安全配置
   directories: {
-    output: "dist/electron",
-    buildResources: "build/resources"
+    output: 'dist/electron',
+    buildResources: 'build/resources',
   },
-  
+
   // 📁 文件过滤（安全）
   files: [
-    "dist-electron/**/*",
-    "dist/**/*",
-    "node_modules/**/*",
-    "!node_modules/.cache",
-    "!node_modules/**/*.map",
-    "!node_modules/**/*.d.ts",
-    "!**/*.{ts,tsx,jsx}",
-    "!**/{.git,node_modules,src,test,tests,docs,coverage}/**/*",
-    "!**/{tsconfig.json,webpack.config.js,.eslintrc.*,.gitignore}",
-    "!**/*.{log,md}"
+    'dist-electron/**/*',
+    'dist/**/*',
+    'node_modules/**/*',
+    '!node_modules/.cache',
+    '!node_modules/**/*.map',
+    '!node_modules/**/*.d.ts',
+    '!**/*.{ts,tsx,jsx}',
+    '!**/{.git,node_modules,src,test,tests,docs,coverage}/**/*',
+    '!**/{tsconfig.json,webpack.config.js,.eslintrc.*,.gitignore}',
+    '!**/*.{log,md}',
   ],
 
   // 🛡️ 安全资源嵌入
   extraResources: [
     {
-      from: "resources/security/certs/",
-      to: "security/certs/",
-      filter: ["**/*.pem", "**/*.crt"]
-    }
+      from: 'resources/security/certs/',
+      to: 'security/certs/',
+      filter: ['**/*.pem', '**/*.crt'],
+    },
   ],
 
   // 🖥️ macOS安全配置
   mac: {
-    category: "public.app-category.games",
+    category: 'public.app-category.games',
     target: [
-      { target: "dmg", arch: "x64" },
-      { target: "dmg", arch: "arm64" },
-      { target: "zip", arch: "universal" }
+      { target: 'dmg', arch: 'x64' },
+      { target: 'dmg', arch: 'arm64' },
+      { target: 'zip', arch: 'universal' },
     ],
-    
+
     // 🔐 代码签名配置
-    identity: process.env.CSC_IDENTITY_NAME || "Developer ID Application: Guild Manager Inc (XXXXXXXXX)",
-    
+    identity:
+      process.env.CSC_IDENTITY_NAME ||
+      'Developer ID Application: Guild Manager Inc (XXXXXXXXX)',
+
     // 🛡️ 硬化运行时配置
     hardenedRuntime: true,
     gatekeeperAssess: false,
-    
+
     // 📋 权限配置文件
-    entitlements: "build/entitlements.mac.plist",
-    entitlementsInherit: "build/entitlements.mac.inherit.plist",
-    
+    entitlements: 'build/entitlements.mac.plist',
+    entitlementsInherit: 'build/entitlements.mac.inherit.plist',
+
     // 🚫 安全限制
-    bundleVersion: process.env.BUILD_NUMBER || "1",
-    bundleShortVersion: process.env.PACKAGE_VERSION || "1.0.0",
-    
+    bundleVersion: process.env.BUILD_NUMBER || '1',
+    bundleShortVersion: process.env.PACKAGE_VERSION || '1.0.0',
+
     // ⚙️ 扩展属性（安全）
     extendInfo: {
-      NSCameraUsageDescription: "此应用不使用摄像头",
-      NSMicrophoneUsageDescription: "此应用不使用麦克风",
-      NSLocationUsageDescription: "此应用不使用位置服务",
-      LSApplicationCategoryType: "public.app-category.games",
+      NSCameraUsageDescription: '此应用不使用摄像头',
+      NSMicrophoneUsageDescription: '此应用不使用麦克风',
+      NSLocationUsageDescription: '此应用不使用位置服务',
+      LSApplicationCategoryType: 'public.app-category.games',
       CFBundleDocumentTypes: [], // 不关联任何文件类型
-      CFBundleURLTypes: [] // 不注册URL协议
-    }
+      CFBundleURLTypes: [], // 不注册URL协议
+    },
   },
 
   // 🪟 Windows安全配置
   win: {
     target: [
-      { target: "nsis", arch: "x64" },
-      { target: "portable", arch: "x64" }
+      { target: 'nsis', arch: 'x64' },
+      { target: 'portable', arch: 'x64' },
     ],
-    
+
     // 🔐 代码签名配置
     certificateFile: process.env.CSC_CERTIFICATE_FILE,
     certificatePassword: process.env.CSC_CERTIFICATE_PASSWORD,
-    signingHashAlgorithms: ["sha256"],
-    rfc3161TimeStampServer: "http://timestamp.digicert.com",
-    
+    signingHashAlgorithms: ['sha256'],
+    rfc3161TimeStampServer: 'http://timestamp.digicert.com',
+
     // 📋 应用清单（安全）
-    requestedExecutionLevel: "asInvoker", // 不请求管理员权限
-    applicationManifest: "build/app.manifest",
-    
+    requestedExecutionLevel: 'asInvoker', // 不请求管理员权限
+    applicationManifest: 'build/app.manifest',
+
     // 🛡️ 安全图标和资源
-    icon: "build/icons/icon.ico",
-    verifyUpdateCodeSignature: true // 验证更新包签名
+    icon: 'build/icons/icon.ico',
+    verifyUpdateCodeSignature: true, // 验证更新包签名
   },
 
   // 📦 NSIS安装包配置（Windows）
@@ -1510,55 +1562,55 @@ const config: Configuration = {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
     allowElevation: false, // 禁止提升权限
-    
+
     // 🔒 安全安装选项
-    createDesktopShortcut: "always",
+    createDesktopShortcut: 'always',
     createStartMenuShortcut: true,
-    shortcutName: "Guild Manager",
-    
+    shortcutName: 'Guild Manager',
+
     // 🛡️ 安全检查脚本
-    include: "build/installer-security.nsh",
-    
+    include: 'build/installer-security.nsh',
+
     // ⚠️ 安全警告和许可
-    license: "LICENSE",
-    warningsAsErrors: true
+    license: 'LICENSE',
+    warningsAsErrors: true,
   },
 
   // 🐧 Linux配置
   linux: {
     target: [
-      { target: "AppImage", arch: "x64" },
-      { target: "deb", arch: "x64" }
+      { target: 'AppImage', arch: 'x64' },
+      { target: 'deb', arch: 'x64' },
     ],
-    category: "Game",
-    
+    category: 'Game',
+
     // 📋 桌面条目（安全）
     desktop: {
-      Name: "Guild Manager",
-      Comment: "Guild Management Game",
-      Categories: "Game;Simulation",
-      StartupWMClass: "guild-manager",
+      Name: 'Guild Manager',
+      Comment: 'Guild Management Game',
+      Categories: 'Game;Simulation',
+      StartupWMClass: 'guild-manager',
       // 安全：不请求额外权限
-      MimeType: undefined
-    }
+      MimeType: undefined,
+    },
   },
 
   // 🔄 自动更新配置
   publish: {
-    provider: "github",
-    owner: "guild-manager",
-    repo: "guild-manager-app",
+    provider: 'github',
+    owner: 'guild-manager',
+    repo: 'guild-manager-app',
     private: true,
     token: process.env.GITHUB_TOKEN,
-    
+
     // 🔒 更新安全配置
     publishAutoUpdate: true,
-    releaseType: "release" // 只发布正式版本
+    releaseType: 'release', // 只发布正式版本
   },
 
   // 📊 构建后处理（安全验证）
-  afterSign: "scripts/security/post-sign-verify.js",
-  afterAllArtifactBuild: "scripts/security/post-build-verify.js"
+  afterSign: 'scripts/security/post-sign-verify.js',
+  afterAllArtifactBuild: 'scripts/security/post-build-verify.js',
 };
 
 export default config;
@@ -1653,45 +1705,45 @@ xcrun notarytool store-credentials "AC_PASSWORD" \
 # 上传进行公证
 for dmg in $DMG_PATH; do
   echo "  ⬆️ 上传公证: $dmg"
-  
+
   # 提交公证请求
   SUBMISSION_ID=$(xcrun notarytool submit "$dmg" \
     --keychain-profile "AC_PASSWORD" \
     --wait --timeout 1800 \
     --output-format json | jq -r '.id')
-  
+
   if [[ "$SUBMISSION_ID" == "null" ]] || [[ -z "$SUBMISSION_ID" ]]; then
     echo "❌ 公证提交失败"
     exit 1
   fi
-  
+
   echo "  📋 公证ID: $SUBMISSION_ID"
-  
+
   # 检查公证状态
   STATUS=$(xcrun notarytool info "$SUBMISSION_ID" \
     --keychain-profile "AC_PASSWORD" \
     --output-format json | jq -r '.status')
-  
+
   echo "  📊 公证状态: $STATUS"
-  
+
   if [[ "$STATUS" == "Accepted" ]]; then
     echo "  ✅ 公证成功，装订票据..."
     xcrun stapler staple "$dmg"
-    
+
     # 验证装订
     echo "  🔍 验证装订票据..."
     xcrun stapler validate "$dmg"
     spctl --assess --type open --context context:primary-signature "$dmg"
-    
+
     echo "  🎉 DMG公证和装订完成: $dmg"
   else
     echo "  ❌ 公证失败: $STATUS"
-    
+
     # 获取详细日志
     xcrun notarytool log "$SUBMISSION_ID" \
       --keychain-profile "AC_PASSWORD" \
       > "notarization-log-$(basename "$dmg").txt"
-    
+
     echo "  📝 公证日志已保存到: notarization-log-$(basename "$dmg").txt"
     exit 1
   fi
@@ -1718,19 +1770,19 @@ echo "🎉 macOS代码签名和公证流程完成!"
   <false/>
   <key>com.apple.security.cs.disable-library-validation</key>
   <false/>
-  
+
   <!-- 📁 文件系统权限（限制） -->
   <key>com.apple.security.files.user-selected.read-write</key>
   <true/>
   <key>com.apple.security.files.downloads.read-write</key>
   <true/>
-  
+
   <!-- 🌐 网络权限（仅出站） -->
   <key>com.apple.security.network.client</key>
   <true/>
   <key>com.apple.security.network.server</key>
   <false/>
-  
+
   <!-- 🚫 禁用的权限（安全） -->
   <key>com.apple.security.device.camera</key>
   <false/>
@@ -1744,7 +1796,7 @@ echo "🎉 macOS代码签名和公证流程完成!"
   <false/>
   <key>com.apple.security.personal-information.photos-library</key>
   <false/>
-  
+
   <!-- ⚡ Electron特定权限 -->
   <key>com.apple.security.cs.disable-executable-page-protection</key>
   <false/>
@@ -1762,10 +1814,10 @@ echo "🎉 macOS代码签名和公证流程完成!"
 param(
     [Parameter(Mandatory=$true)]
     [string]$CertificateFile,
-    
+
     [Parameter(Mandatory=$true)]
     [string]$CertificatePassword,
-    
+
     [Parameter(Mandatory=$false)]
     [string]$TimestampServer = "http://timestamp.digicert.com"
 )
@@ -1792,10 +1844,10 @@ $FailedFiles = @()
 
 foreach ($Pattern in $FilesToSign) {
     $Files = Get-ChildItem -Path $Pattern -ErrorAction SilentlyContinue
-    
+
     foreach ($File in $Files) {
         Write-Host "🔐 签名文件: $($File.FullName)" -ForegroundColor Yellow
-        
+
         try {
             # 🖊️ 执行代码签名
             & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe" sign `
@@ -1806,17 +1858,17 @@ foreach ($Pattern in $FilesToSign) {
                 /fd sha256 `
                 /as `
                 $File.FullName
-            
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "✅ 签名成功: $($File.Name)" -ForegroundColor Green
                 $SignedFiles += $File.FullName
-                
+
                 # 🔍 验证签名
                 & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe" verify `
                     /pa `
                     /all `
                     $File.FullName
-                
+
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "✅ 签名验证通过: $($File.Name)" -ForegroundColor Green
                 } else {
@@ -1864,7 +1916,7 @@ Write-Host "`n🎉 Windows代码签名流程完成!" -ForegroundColor Green
     processorArchitecture="*"
     name="GuildManager"
     type="win32"/>
-  
+
   <!-- 🔒 安全设置：不请求管理员权限 -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
@@ -1883,10 +1935,10 @@ Write-Host "`n🎉 Windows代码签名流程完成!" -ForegroundColor Green
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/> <!-- Windows 10 -->
     </application>
   </compatibility>
-  
+
   <!-- 🎯 应用信息 -->
   <description>Guild Manager - 安全的公会管理游戏</description>
-  
+
   <!-- 🛡️ DPI感知配置 -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
@@ -1913,15 +1965,15 @@ export class SecureUpdaterService {
   private updateWindow: BrowserWindow | null = null;
   private readonly publicKey: string;
   private readonly allowedHosts: string[];
-  
+
   private constructor() {
     this.publicKey = this.loadPublicKey();
     this.allowedHosts = [
       'github.com',
       'api.github.com',
-      'github-releases.githubusercontent.com'
+      'github-releases.githubusercontent.com',
     ];
-    
+
     this.setupAutoUpdater();
   }
 
@@ -1935,7 +1987,10 @@ export class SecureUpdaterService {
   /* 加载公钥用于签名验证 */
   private loadPublicKey(): string {
     try {
-      const publicKeyPath = resolve(__dirname, '../resources/security/certs/update-public-key.pem');
+      const publicKeyPath = resolve(
+        __dirname,
+        '../resources/security/certs/update-public-key.pem'
+      );
       return readFileSync(publicKeyPath, 'utf8');
     } catch (error) {
       console.error('❌ 无法加载更新公钥:', error);
@@ -1949,13 +2004,14 @@ export class SecureUpdaterService {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.allowPrerelease = false;
-    
+
     // 🛡️ 更新渠道配置（仅正式版本）
-    autoUpdater.channel = process.env.NODE_ENV === 'development' ? 'beta' : 'latest';
-    
+    autoUpdater.channel =
+      process.env.NODE_ENV === 'development' ? 'beta' : 'latest';
+
     // 📊 事件监听
     this.setupUpdateEventListeners();
-    
+
     // 🔍 签名验证配置
     this.setupSignatureVerification();
   }
@@ -1969,30 +2025,30 @@ export class SecureUpdaterService {
     });
 
     // ✅ 发现更新事件
-    autoUpdater.on('update-available', (info) => {
+    autoUpdater.on('update-available', info => {
       console.log('📦 发现新版本:', info.version);
       this.handleUpdateAvailable(info);
     });
 
     // ❌ 无更新事件
-    autoUpdater.on('update-not-available', (info) => {
+    autoUpdater.on('update-not-available', info => {
       console.log('✅ 已是最新版本:', info.version);
       this.notifyRenderer('update-not-available', info);
     });
 
     // 📥 下载进度事件
-    autoUpdater.on('download-progress', (progress) => {
+    autoUpdater.on('download-progress', progress => {
       this.notifyRenderer('update-download-progress', progress);
     });
 
     // ⬇️ 下载完成事件
-    autoUpdater.on('update-downloaded', (info) => {
+    autoUpdater.on('update-downloaded', info => {
       console.log('✅ 更新下载完成:', info.version);
       this.handleUpdateDownloaded(info);
     });
 
     // 💥 错误处理
-    autoUpdater.on('error', (error) => {
+    autoUpdater.on('error', error => {
       console.error('❌ 自动更新错误:', error);
       this.handleUpdateError(error);
     });
@@ -2002,14 +2058,24 @@ export class SecureUpdaterService {
   private setupSignatureVerification(): void {
     // 重写默认的更新文件验证
     const originalCheckSignature = (autoUpdater as any).checkSignature;
-    (autoUpdater as any).checkSignature = async (filePath: string, signature: string) => {
+    (autoUpdater as any).checkSignature = async (
+      filePath: string,
+      signature: string
+    ) => {
       try {
         // 1. 执行默认签名验证
-        const defaultResult = await originalCheckSignature.call(autoUpdater, filePath, signature);
-        
+        const defaultResult = await originalCheckSignature.call(
+          autoUpdater,
+          filePath,
+          signature
+        );
+
         // 2. 额外的自定义验证
-        const customVerified = await this.verifyUpdateSignature(filePath, signature);
-        
+        const customVerified = await this.verifyUpdateSignature(
+          filePath,
+          signature
+        );
+
         return defaultResult && customVerified;
       } catch (error) {
         console.error('❌ 签名验证失败:', error);
@@ -2019,23 +2085,26 @@ export class SecureUpdaterService {
   }
 
   /* 自定义更新签名验证 */
-  private async verifyUpdateSignature(filePath: string, signature: string): Promise<boolean> {
+  private async verifyUpdateSignature(
+    filePath: string,
+    signature: string
+  ): Promise<boolean> {
     try {
       // 计算文件哈希
       const fileBuffer = readFileSync(filePath);
       const fileHash = createHash('sha256').update(fileBuffer).digest();
-      
+
       // 验证签名
       const verifier = createVerify('RSA-SHA256');
       verifier.update(fileHash);
-      
+
       const isValid = verifier.verify(this.publicKey, signature, 'base64');
-      
+
       if (!isValid) {
         console.error('❌ 更新文件签名验证失败');
         return false;
       }
-      
+
       console.log('✅ 更新文件签名验证通过');
       return true;
     } catch (error) {
@@ -2060,7 +2129,7 @@ export class SecureUpdaterService {
       detail: `当前版本: ${app.getVersion()}\n新版本: ${info.version}\n\n是否立即下载更新？`,
       buttons: ['立即下载', '稍后提醒', '跳过此版本'],
       defaultId: 0,
-      cancelId: 1
+      cancelId: 1,
     });
 
     switch (result.response) {
@@ -2107,7 +2176,7 @@ export class SecureUpdaterService {
       detail: '应用将重启以完成更新安装',
       buttons: ['立即重启安装', '下次启动时安装'],
       defaultId: 0,
-      cancelId: 1
+      cancelId: 1,
     });
 
     if (result.response === 0) {
@@ -2122,16 +2191,16 @@ export class SecureUpdaterService {
   /* 处理更新错误 */
   private handleUpdateError(error: Error): void {
     console.error('❌ 自动更新错误:', error);
-    
+
     // 显示错误对话框
     dialog.showMessageBox({
       type: 'error',
       title: '更新失败',
       message: '自动更新遇到问题',
       detail: `错误信息: ${error.message}\n\n请稍后重试或手动下载最新版本`,
-      buttons: ['确定']
+      buttons: ['确定'],
     });
-    
+
     // 记录错误日志
     this.logUpdateError(error);
   }
@@ -2161,9 +2230,12 @@ export class SecureUpdaterService {
   /* 安排更新提醒 */
   private scheduleUpdateReminder(): void {
     // 24小时后再次提醒
-    setTimeout(() => {
-      this.checkForUpdates();
-    }, 24 * 60 * 60 * 1000);
+    setTimeout(
+      () => {
+        this.checkForUpdates();
+      },
+      24 * 60 * 60 * 1000
+    );
   }
 
   /* 跳过版本 */
@@ -2188,9 +2260,9 @@ export class SecureUpdaterService {
       error: error.message,
       stack: error.stack,
       version: app.getVersion(),
-      platform: process.platform
+      platform: process.platform,
     };
-    
+
     console.error('📝 更新错误日志:', errorLog);
     // TODO: 写入到日志文件
   }
@@ -2253,7 +2325,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -2368,16 +2440,25 @@ class BuildSecurityVerifier {
         /Function\(/g,
         /__dirname/g,
         /__filename/g,
-        /process\.env\.(?!NODE_ENV|PUBLIC_)/g
+        /process\.env\.(?!NODE_ENV|PUBLIC_)/g,
       ],
       // 必须存在的安全标识
       requiredSecurityMarkers: [
         'Content-Security-Policy',
         'X-Frame-Options',
-        'X-Content-Type-Options'
+        'X-Content-Type-Options',
       ],
       // 允许的文件扩展名
-      allowedExtensions: ['.js', '.css', '.html', '.json', '.png', '.jpg', '.svg', '.woff2']
+      allowedExtensions: [
+        '.js',
+        '.css',
+        '.html',
+        '.json',
+        '.png',
+        '.jpg',
+        '.svg',
+        '.woff2',
+      ],
     };
   }
 
@@ -2386,14 +2467,14 @@ class BuildSecurityVerifier {
    */
   async verify() {
     console.log('🔍 开始构建安全验证...');
-    
+
     const checks = [
       () => this.checkDistExists(),
       () => this.scanForForbiddenContent(),
       () => this.verifyFileIntegrity(),
       () => this.checkSecurityHeaders(),
       () => this.validateFileTypes(),
-      () => this.checkBundleSize()
+      () => this.checkBundleSize(),
     ];
 
     let passed = 0;
@@ -2411,11 +2492,11 @@ class BuildSecurityVerifier {
     }
 
     console.log(`\n📊 验证结果: ${passed} 通过, ${failed} 失败`);
-    
+
     if (failed > 0) {
       process.exit(1);
     }
-    
+
     console.log('🎉 构建安全验证完成!');
   }
 
@@ -2434,12 +2515,12 @@ class BuildSecurityVerifier {
    */
   scanForForbiddenContent() {
     console.log('🚫 扫描禁止内容...');
-    
+
     const jsFiles = this.getFilesByExtension('.js');
-    
+
     for (const file of jsFiles) {
       const content = fs.readFileSync(file, 'utf8');
-      
+
       for (const pattern of this.securityRules.forbiddenPatterns) {
         if (pattern.test(content)) {
           throw new Error(`文件 ${file} 包含禁止的内容: ${pattern.source}`);
@@ -2453,17 +2534,20 @@ class BuildSecurityVerifier {
    */
   verifyFileIntegrity() {
     console.log('🔐 验证文件完整性...');
-    
+
     const manifestPath = path.join(this.distPath, 'integrity-manifest.json');
     if (fs.existsSync(manifestPath)) {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-      
+
       for (const [filePath, expectedHash] of Object.entries(manifest)) {
         const fullPath = path.join(this.distPath, filePath);
         if (fs.existsSync(fullPath)) {
           const content = fs.readFileSync(fullPath);
-          const actualHash = crypto.createHash('sha256').update(content).digest('hex');
-          
+          const actualHash = crypto
+            .createHash('sha256')
+            .update(content)
+            .digest('hex');
+
           if (actualHash !== expectedHash) {
             throw new Error(`文件 ${filePath} 完整性验证失败`);
           }
@@ -2477,12 +2561,12 @@ class BuildSecurityVerifier {
    */
   checkSecurityHeaders() {
     console.log('🛡️  检查安全头配置...');
-    
+
     const htmlFiles = this.getFilesByExtension('.html');
-    
+
     for (const file of htmlFiles) {
       const content = fs.readFileSync(file, 'utf8');
-      
+
       for (const marker of this.securityRules.requiredSecurityMarkers) {
         if (!content.includes(marker)) {
           throw new Error(`文件 ${file} 缺少安全标识: ${marker}`);
@@ -2496,9 +2580,9 @@ class BuildSecurityVerifier {
    */
   validateFileTypes() {
     console.log('📄 验证文件类型...');
-    
+
     const allFiles = this.getAllFiles(this.distPath);
-    
+
     for (const file of allFiles) {
       const ext = path.extname(file).toLowerCase();
       if (ext && !this.securityRules.allowedExtensions.includes(ext)) {
@@ -2512,14 +2596,16 @@ class BuildSecurityVerifier {
    */
   checkBundleSize() {
     console.log('📦 检查包体积...');
-    
+
     const maxBundleSize = 50 * 1024 * 1024; // 50MB
     const bundleSize = this.getDirectorySize(this.distPath);
-    
+
     if (bundleSize > maxBundleSize) {
-      throw new Error(`包体积超过限制: ${(bundleSize / 1024 / 1024).toFixed(2)}MB > 50MB`);
+      throw new Error(
+        `包体积超过限制: ${(bundleSize / 1024 / 1024).toFixed(2)}MB > 50MB`
+      );
     }
-    
+
     console.log(`📊 包体积: ${(bundleSize / 1024 / 1024).toFixed(2)}MB`);
   }
 
@@ -2527,8 +2613,8 @@ class BuildSecurityVerifier {
    * 获取指定扩展名的文件
    */
   getFilesByExtension(ext) {
-    return this.getAllFiles(this.distPath).filter(file => 
-      path.extname(file).toLowerCase() === ext
+    return this.getAllFiles(this.distPath).filter(
+      file => path.extname(file).toLowerCase() === ext
     );
   }
 
@@ -2537,13 +2623,13 @@ class BuildSecurityVerifier {
    */
   getAllFiles(dir) {
     const files = [];
-    
+
     function traverse(currentDir) {
       const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(currentDir, entry.name);
-        
+
         if (entry.isDirectory()) {
           traverse(fullPath);
         } else {
@@ -2551,7 +2637,7 @@ class BuildSecurityVerifier {
         }
       }
     }
-    
+
     traverse(dir);
     return files;
   }
@@ -2561,12 +2647,12 @@ class BuildSecurityVerifier {
    */
   getDirectorySize(dir) {
     let size = 0;
-    
+
     const files = this.getAllFiles(dir);
     for (const file of files) {
       size += fs.statSync(file).size;
     }
-    
+
     return size;
   }
 }
@@ -2591,6 +2677,7 @@ module.exports = BuildSecurityVerifier;
 # 发布安全检查清单
 
 ## 🔍 代码安全审计
+
 - [ ] 依赖漏洞扫描通过 (npm audit)
 - [ ] 源码安全扫描通过 (ESLint + Semgrep)
 - [ ] 许可证合规检查通过
@@ -2598,6 +2685,7 @@ module.exports = BuildSecurityVerifier;
 - [ ] 硬编码密钥/令牌检查通过
 
 ## 🏗️ 构建完整性验证
+
 - [ ] 构建产物完整性验证通过
 - [ ] 禁止内容扫描通过
 - [ ] 文件类型白名单验证通过
@@ -2605,7 +2693,9 @@ module.exports = BuildSecurityVerifier;
 - [ ] 安全头配置验证通过
 
 ## 🔏 数字签名验证
+
 ### macOS
+
 - [ ] 开发者ID应用证书有效
 - [ ] 代码签名验证通过
 - [ ] 强化运行时配置正确
@@ -2613,12 +2703,14 @@ module.exports = BuildSecurityVerifier;
 - [ ] DMG签名验证通过
 
 ### Windows
+
 - [ ] 代码签名证书有效
 - [ ] EXE文件签名验证通过
 - [ ] MSI安装包签名验证通过
 - [ ] 时间戳服务配置正确
 
 ## 🚀 发布安全配置
+
 - [ ] 更新服务器配置安全
 - [ ] 更新包签名验证启用
 - [ ] 回滚机制配置正确
@@ -2626,6 +2718,7 @@ module.exports = BuildSecurityVerifier;
 - [ ] 监控和告警配置完成
 
 ## 📋 合规性检查
+
 - [ ] 开源许可证声明完整
 - [ ] 第三方组件清单更新
 - [ ] 安全漏洞响应流程建立
@@ -2651,22 +2744,22 @@ import { findLatestBuild, parseElectronApp } from 'electron-playwright-helpers';
 export default defineConfig({
   // 🎯 测试目录
   testDir: './tests/e2e/security',
-  
+
   // ⚡ 超时配置
   timeout: 30 * 1000, // 30秒
   expect: { timeout: 5 * 1000 }, // 断言超时5秒
-  
+
   // 🔄 重试配置
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  
+
   // 📊 报告配置
   reporter: [
     ['html', { outputFolder: 'test-results/html' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['json', { outputFile: 'test-results/results.json' }]
+    ['json', { outputFile: 'test-results/results.json' }],
   ],
-  
+
   // 🎥 失败时记录
   use: {
     screenshot: 'only-on-failure',
@@ -2687,10 +2780,10 @@ export default defineConfig({
         // 环境变量
         env: {
           NODE_ENV: 'test',
-          ELECTRON_IS_DEV: '0'
-        }
-      }
-    }
+          ELECTRON_IS_DEV: '0',
+        },
+      },
+    },
   ],
 
   // 🏗️ 全局设置
@@ -2727,21 +2820,23 @@ export class ElectronSecurityTestHelper {
       env: {
         NODE_ENV: 'test',
         ELECTRON_IS_DEV: '0',
-        ...options?.env
+        ...options?.env,
       },
-      timeout: options?.timeout || 15000
+      timeout: options?.timeout || 15000,
     };
 
     console.log('🚀 启动Electron应用进行安全测试...');
-    
+
     this.app = await electron.launch({
       args: defaultOptions.args,
       env: defaultOptions.env,
-      timeout: defaultOptions.timeout
+      timeout: defaultOptions.timeout,
     });
 
     // 等待主窗口加载
-    this.mainWindow = await this.app.firstWindow({ timeout: defaultOptions.timeout });
+    this.mainWindow = await this.app.firstWindow({
+      timeout: defaultOptions.timeout,
+    });
     await this.mainWindow.waitForLoadState('domcontentloaded');
 
     console.log('✅ Electron应用启动成功');
@@ -2757,20 +2852,26 @@ export class ElectronSecurityTestHelper {
     }
 
     // 获取窗口的webPreferences配置
-    const webPreferences = await this.app.evaluate(async ({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) return null;
-      
-      const mainWindow = windows[0];
-      return {
-        contextIsolation: mainWindow.webContents.isContextIsolated(),
-        nodeIntegration: mainWindow.webContents.getWebPreferences().nodeIntegration,
-        sandbox: mainWindow.webContents.getWebPreferences().sandbox,
-        webSecurity: mainWindow.webContents.getWebPreferences().webSecurity,
-        allowRunningInsecureContent: mainWindow.webContents.getWebPreferences().allowRunningInsecureContent,
-        experimentalFeatures: mainWindow.webContents.getWebPreferences().experimentalFeatures
-      };
-    });
+    const webPreferences = await this.app.evaluate(
+      async ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        if (windows.length === 0) return null;
+
+        const mainWindow = windows[0];
+        return {
+          contextIsolation: mainWindow.webContents.isContextIsolated(),
+          nodeIntegration:
+            mainWindow.webContents.getWebPreferences().nodeIntegration,
+          sandbox: mainWindow.webContents.getWebPreferences().sandbox,
+          webSecurity: mainWindow.webContents.getWebPreferences().webSecurity,
+          allowRunningInsecureContent:
+            mainWindow.webContents.getWebPreferences()
+              .allowRunningInsecureContent,
+          experimentalFeatures:
+            mainWindow.webContents.getWebPreferences().experimentalFeatures,
+        };
+      }
+    );
 
     // 验证关键安全配置
     expect(webPreferences).toBeTruthy();
@@ -2800,7 +2901,8 @@ export class ElectronSecurityTestHelper {
         hasBuffer: typeof (window as any).Buffer !== 'undefined',
         hasGlobal: typeof (window as any).global !== 'undefined',
         hasModule: typeof (window as any).module !== 'undefined',
-        hasElectron: typeof (window as any).require?.('electron') !== 'undefined'
+        hasElectron:
+          typeof (window as any).require?.('electron') !== 'undefined',
       };
     });
 
@@ -2824,29 +2926,33 @@ export class ElectronSecurityTestHelper {
     }
 
     const cspInfo = await this.mainWindow.evaluate(() => {
-      const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+      const cspMeta = document.querySelector(
+        'meta[http-equiv="Content-Security-Policy"]'
+      );
       const cspContent = cspMeta?.getAttribute('content');
-      
+
       return {
         hasCSP: !!cspMeta,
         content: cspContent,
         // 检查关键CSP指令
-        policies: cspContent ? {
-          hasDefaultSrc: cspContent.includes('default-src'),
-          hasScriptSrc: cspContent.includes('script-src'),
-          hasObjectSrc: cspContent.includes('object-src'),
-          hasBaseUri: cspContent.includes('base-uri'),
-          hasFormAction: cspContent.includes('form-action'),
-          restrictedObjectSrc: cspContent.includes("object-src 'none'"),
-          restrictedBaseUri: cspContent.includes("base-uri 'self'")
-        } : null
+        policies: cspContent
+          ? {
+              hasDefaultSrc: cspContent.includes('default-src'),
+              hasScriptSrc: cspContent.includes('script-src'),
+              hasObjectSrc: cspContent.includes('object-src'),
+              hasBaseUri: cspContent.includes('base-uri'),
+              hasFormAction: cspContent.includes('form-action'),
+              restrictedObjectSrc: cspContent.includes("object-src 'none'"),
+              restrictedBaseUri: cspContent.includes("base-uri 'self'"),
+            }
+          : null,
       };
     });
 
     // 验证CSP存在且配置正确
     expect(cspInfo.hasCSP).toBe(true);
     expect(cspInfo.content).toBeTruthy();
-    
+
     if (cspInfo.policies) {
       expect(cspInfo.policies.hasDefaultSrc).toBe(true);
       expect(cspInfo.policies.hasScriptSrc).toBe(true);
@@ -2867,7 +2973,7 @@ export class ElectronSecurityTestHelper {
 
     const preloadExposure = await this.mainWindow.evaluate(() => {
       const electronAPI = (window as any).electronAPI;
-      
+
       return {
         hasElectronAPI: !!electronAPI,
         exposedMethods: electronAPI ? Object.keys(electronAPI) : [],
@@ -2880,7 +2986,7 @@ export class ElectronSecurityTestHelper {
           electronAPI?.readFile ||
           electronAPI?.writeFile ||
           electronAPI?.unlink
-        )
+        ),
       };
     });
 
@@ -2943,55 +3049,66 @@ test.describe('BrowserWindow安全配置验收', () => {
 
   test('contextIsolation应该启用', async () => {
     await securityHelper.launchSecureApp();
-    
-    const contextIsolation = await securityHelper['app']!.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      return windows[0]?.webContents.isContextIsolated();
-    });
+
+    const contextIsolation = await securityHelper['app']!.evaluate(
+      ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        return windows[0]?.webContents.isContextIsolated();
+      }
+    );
 
     expect(contextIsolation).toBe(true);
   });
 
   test('nodeIntegration应该禁用', async () => {
     await securityHelper.launchSecureApp();
-    
-    const nodeIntegration = await securityHelper['app']!.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      return windows[0]?.webContents.getWebPreferences().nodeIntegration;
-    });
+
+    const nodeIntegration = await securityHelper['app']!.evaluate(
+      ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        return windows[0]?.webContents.getWebPreferences().nodeIntegration;
+      }
+    );
 
     expect(nodeIntegration).toBe(false);
   });
 
   test('sandbox模式应该启用', async () => {
     await securityHelper.launchSecureApp();
-    
-    const sandboxEnabled = await securityHelper['app']!.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      return windows[0]?.webContents.getWebPreferences().sandbox;
-    });
+
+    const sandboxEnabled = await securityHelper['app']!.evaluate(
+      ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        return windows[0]?.webContents.getWebPreferences().sandbox;
+      }
+    );
 
     expect(sandboxEnabled).toBe(true);
   });
 
   test('webSecurity应该启用', async () => {
     await securityHelper.launchSecureApp();
-    
-    const webSecurity = await securityHelper['app']!.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      return windows[0]?.webContents.getWebPreferences().webSecurity;
-    });
+
+    const webSecurity = await securityHelper['app']!.evaluate(
+      ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        return windows[0]?.webContents.getWebPreferences().webSecurity;
+      }
+    );
 
     expect(webSecurity).toBe(true);
   });
 
   test('不安全内容运行应该被禁用', async () => {
     await securityHelper.launchSecureApp();
-    
-    const allowInsecureContent = await securityHelper['app']!.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-      return windows[0]?.webContents.getWebPreferences().allowRunningInsecureContent;
-    });
+
+    const allowInsecureContent = await securityHelper['app']!.evaluate(
+      ({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+        return windows[0]?.webContents.getWebPreferences()
+          .allowRunningInsecureContent;
+      }
+    );
 
     expect(allowInsecureContent).toBe(false);
   });
@@ -3023,7 +3140,7 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('require函数不应该存在于渲染进程', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const hasRequire = await window.evaluate(() => {
       return typeof (window as any).require !== 'undefined';
     });
@@ -3033,7 +3150,7 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('process对象不应该存在于渲染进程', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const hasProcess = await window.evaluate(() => {
       return typeof (window as any).process !== 'undefined';
     });
@@ -3043,7 +3160,7 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('Buffer构造函数不应该存在于渲染进程', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const hasBuffer = await window.evaluate(() => {
       return typeof (window as any).Buffer !== 'undefined';
     });
@@ -3053,7 +3170,7 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('global对象不应该存在于渲染进程', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const hasGlobal = await window.evaluate(() => {
       return typeof (window as any).global !== 'undefined';
     });
@@ -3063,7 +3180,7 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('无法通过require获取electron模块', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const canAccessElectron = await window.evaluate(() => {
       try {
         if (typeof (window as any).require === 'function') {
@@ -3081,13 +3198,13 @@ test.describe('渲染进程安全隔离验收', () => {
 
   test('无法执行危险的JavaScript代码', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const results = await window.evaluate(() => {
       const tests = {
         eval: false,
         Function: false,
         setTimeout_string: false,
-        setInterval_string: false
+        setInterval_string: false,
       };
 
       // 测试eval
@@ -3155,7 +3272,7 @@ test.describe('IPC安全通信验收', () => {
 
   test('只能调用白名单中的IPC方法', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const ipcResults = await window.evaluate(async () => {
       const electronAPI = (window as any).electronAPI;
       if (!electronAPI) return { hasAPI: false };
@@ -3164,7 +3281,7 @@ test.describe('IPC安全通信验收', () => {
         hasAPI: true,
         allowedMethods: [] as string[],
         blockedMethods: [] as string[],
-        testResults: {} as Record<string, boolean>
+        testResults: {} as Record<string, boolean>,
       };
 
       // 获取暴露的方法列表
@@ -3177,7 +3294,7 @@ test.describe('IPC安全通信验收', () => {
         'getUserData',
         'openExternalLink',
         'showSaveDialog',
-        'showOpenDialog'
+        'showOpenDialog',
       ];
 
       for (const method of allowedTests) {
@@ -3202,7 +3319,7 @@ test.describe('IPC安全通信验收', () => {
         'writeFileSync',
         'unlinkSync',
         'shell',
-        'remote'
+        'remote',
       ];
 
       for (const method of dangerousMethods) {
@@ -3217,21 +3334,22 @@ test.describe('IPC安全通信验收', () => {
     // 验证IPC API存在
     expect(ipcResults.hasAPI).toBe(true);
     expect(ipcResults.allowedMethods.length).toBeGreaterThan(0);
-    
+
     // 验证没有危险方法暴露
     expect(ipcResults.blockedMethods).toHaveLength(0);
   });
 
   test('IPC通信应该包含参数验证', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const validationResults = await window.evaluate(async () => {
       const electronAPI = (window as any).electronAPI;
-      if (!electronAPI?.testParameterValidation) return { hasValidation: false };
+      if (!electronAPI?.testParameterValidation)
+        return { hasValidation: false };
 
       const results = {
         hasValidation: true,
-        tests: {} as Record<string, boolean>
+        tests: {} as Record<string, boolean>,
       };
 
       // 测试无效参数被拒绝
@@ -3268,7 +3386,7 @@ test.describe('IPC安全通信验收', () => {
 
   test('IPC通信应该有速率限制', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const rateLimitResults = await window.evaluate(async () => {
       const electronAPI = (window as any).electronAPI;
       if (!electronAPI?.getAppVersion) return { hasRateLimit: false };
@@ -3277,14 +3395,15 @@ test.describe('IPC安全通信验收', () => {
         hasRateLimit: false,
         requestCount: 0,
         successCount: 0,
-        errorCount: 0
+        errorCount: 0,
       };
 
       // 快速发送大量请求测试速率限制
       const promises = [];
       for (let i = 0; i < 100; i++) {
         promises.push(
-          electronAPI.getAppVersion()
+          electronAPI
+            .getAppVersion()
             .then(() => {
               results.successCount++;
             })
@@ -3298,7 +3417,7 @@ test.describe('IPC安全通信验收', () => {
       }
 
       await Promise.allSettled(promises);
-      
+
       // 如果有请求被拒绝，说明存在速率限制
       results.hasRateLimit = results.errorCount > 0;
 
@@ -3339,14 +3458,14 @@ test.describe('内容安全策略（CSP）验收', () => {
 
   test('应该阻止内联脚本执行', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const inlineScriptBlocked = await window.evaluate(() => {
       try {
         // 尝试创建并执行内联脚本
         const script = document.createElement('script');
         script.textContent = 'window.inlineScriptExecuted = true;';
         document.head.appendChild(script);
-        
+
         // 等待一小段时间让脚本执行
         return new Promise(resolve => {
           setTimeout(() => {
@@ -3363,7 +3482,7 @@ test.describe('内容安全策略（CSP）验收', () => {
 
   test('应该阻止eval()函数执行', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const evalBlocked = await window.evaluate(() => {
       try {
         eval('window.evalExecuted = true;');
@@ -3378,27 +3497,27 @@ test.describe('内容安全策略（CSP）验收', () => {
 
   test('应该阻止不安全的外部资源加载', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const unsafeResourceBlocked = await window.evaluate(() => {
       return new Promise(resolve => {
         const img = document.createElement('img');
         let loadTimeout: NodeJS.Timeout;
-        
+
         img.onload = () => {
           clearTimeout(loadTimeout);
           resolve(false); // 加载成功说明没被阻止
         };
-        
+
         img.onerror = () => {
           clearTimeout(loadTimeout);
           resolve(true); // 加载失败说明被阻止了
         };
-        
+
         // 设置超时
         loadTimeout = setTimeout(() => {
           resolve(true); // 超时也认为被阻止了
         }, 2000);
-        
+
         // 尝试加载一个不安全的外部图片
         img.src = 'http://example.com/unsafe-image.jpg';
         document.body.appendChild(img);
@@ -3410,26 +3529,26 @@ test.describe('内容安全策略（CSP）验收', () => {
 
   test('应该允许安全的本地资源加载', async () => {
     const { window } = await securityHelper.launchSecureApp();
-    
+
     const localResourceAllowed = await window.evaluate(() => {
       return new Promise(resolve => {
         const link = document.createElement('link');
         let loadTimeout: NodeJS.Timeout;
-        
+
         link.onload = () => {
           clearTimeout(loadTimeout);
           resolve(true); // 加载成功
         };
-        
+
         link.onerror = () => {
           clearTimeout(loadTimeout);
           resolve(false); // 加载失败
         };
-        
+
         loadTimeout = setTimeout(() => {
           resolve(false); // 超时认为失败
         }, 2000);
-        
+
         link.rel = 'stylesheet';
         link.href = 'data:text/css,body{margin:0}'; // 安全的data URI
         document.head.appendChild(link);
@@ -3462,18 +3581,18 @@ test.describe('更新机制安全验收', () => {
 
   test('更新检查应该使用HTTPS连接', async () => {
     const { app } = await securityHelper.launchSecureApp();
-    
-    const updateConfig = await app.evaluate(async (electronApp) => {
+
+    const updateConfig = await app.evaluate(async electronApp => {
       const { autoUpdater } = require('electron-updater');
-      
+
       // 获取更新配置信息
       const feedURL = autoUpdater.getFeedURL();
-      
+
       return {
         feedURL,
         isHttps: feedURL ? feedURL.startsWith('https://') : false,
         allowPrerelease: autoUpdater.allowPrerelease,
-        autoDownload: autoUpdater.autoDownload
+        autoDownload: autoUpdater.autoDownload,
       };
     });
 
@@ -3486,25 +3605,26 @@ test.describe('更新机制安全验收', () => {
 
   test('更新服务应该验证签名', async () => {
     const { app } = await securityHelper.launchSecureApp();
-    
-    const signatureValidation = await app.evaluate(async (electronApp) => {
+
+    const signatureValidation = await app.evaluate(async electronApp => {
       try {
         // 检查是否有签名验证逻辑
         const updaterModule = require('electron-updater');
         const { autoUpdater } = updaterModule;
-        
+
         // 检查是否配置了签名验证
-        const hasSignatureValidation = typeof autoUpdater.checkSignature === 'function';
-        
+        const hasSignatureValidation =
+          typeof autoUpdater.checkSignature === 'function';
+
         return {
           hasSignatureValidation,
-          updaterConfigured: !!autoUpdater
+          updaterConfigured: !!autoUpdater,
         };
       } catch (error) {
         return {
           hasSignatureValidation: false,
           updaterConfigured: false,
-          error: error.message
+          error: error.message,
         };
       }
     });
@@ -3518,13 +3638,13 @@ test.describe('更新机制安全验收', () => {
 
   test('不应该允许降级更新', async () => {
     const { app } = await securityHelper.launchSecureApp();
-    
-    const downgradeProtection = await app.evaluate(async (electronApp) => {
+
+    const downgradeProtection = await app.evaluate(async electronApp => {
       const { autoUpdater } = require('electron-updater');
-      
+
       return {
         allowDowngrade: autoUpdater.allowDowngrade,
-        currentVersion: electronApp.getVersion()
+        currentVersion: electronApp.getVersion(),
       };
     });
 
@@ -3556,7 +3676,7 @@ test.describe('构建产物安全验收', () => {
 
   test('构建产物不应包含敏感信息', async () => {
     const distPath = path.resolve('dist');
-    
+
     if (!fs.existsSync(distPath)) {
       test.skip('构建目录不存在，跳过测试');
       return;
@@ -3565,7 +3685,7 @@ test.describe('构建产物安全验收', () => {
     const scanResults = {
       sensitivePatterns: [] as string[],
       filesChecked: 0,
-      issuesFound: [] as Array<{ file: string; issue: string; line?: number }>
+      issuesFound: [] as Array<{ file: string; issue: string; line?: number }>,
     };
 
     // 敏感信息模式
@@ -3577,30 +3697,30 @@ test.describe('构建产物安全验收', () => {
       /console\.log\(/g,
       /debugger\s*;/g,
       /__dirname/g,
-      /__filename/g
+      /__filename/g,
     ];
 
     function scanDirectory(dir: string) {
       const files = fs.readdirSync(dir);
-      
+
       for (const file of files) {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           scanDirectory(filePath);
         } else if (file.match(/\.(js|html|css)$/)) {
           scanResults.filesChecked++;
           const content = fs.readFileSync(filePath, 'utf-8');
           const lines = content.split('\n');
-          
+
           lines.forEach((line, index) => {
             sensitivePatterns.forEach(pattern => {
               if (pattern.test(line)) {
                 scanResults.issuesFound.push({
                   file: path.relative(process.cwd(), filePath),
                   issue: `发现敏感模式: ${pattern.source}`,
-                  line: index + 1
+                  line: index + 1,
                 });
               }
             });
@@ -3617,48 +3737,48 @@ test.describe('构建产物安全验收', () => {
 
   test('main.js应该被正确混淆/压缩', async () => {
     const mainJsPath = path.resolve('dist/main.js');
-    
+
     if (!fs.existsSync(mainJsPath)) {
       test.skip('main.js文件不存在，跳过测试');
       return;
     }
 
     const mainJsContent = fs.readFileSync(mainJsPath, 'utf-8');
-    
+
     // 检查是否被压缩（没有过多的空白和注释）
-    const linesWithContent = mainJsContent.split('\n').filter(line => 
-      line.trim().length > 0 && !line.trim().startsWith('//')
-    );
-    
+    const linesWithContent = mainJsContent
+      .split('\n')
+      .filter(line => line.trim().length > 0 && !line.trim().startsWith('//'));
+
     const avgLineLength = mainJsContent.length / linesWithContent.length;
-    
+
     // 压缩后的代码行长度通常较长
     expect(avgLineLength).toBeGreaterThan(50);
-    
+
     // 不应该包含开发时的调试信息
     expect(mainJsContent).not.toContain('console.log');
     expect(mainJsContent).not.toContain('debugger');
-    
+
     // 不应该包含源码路径信息
     expect(mainJsContent).not.toContain(process.cwd());
   });
 
   test('打包后的应用应该正常启动', async () => {
     await securityHelper.launchSecureApp();
-    
+
     const { app, window } = await securityHelper.launchSecureApp();
-    
+
     // 验证应用基本功能
     expect(await window.title()).toBeTruthy();
     expect(await app.evaluate(electronApp => electronApp.isReady())).toBe(true);
-    
+
     // 验证窗口状态
     const windowState = await window.evaluate(() => ({
       readyState: document.readyState,
       hasBody: !!document.body,
-      hasHead: !!document.head
+      hasHead: !!document.head,
     }));
-    
+
     expect(windowState.readyState).toBe('complete');
     expect(windowState.hasBody).toBe(true);
     expect(windowState.hasHead).toBe(true);
@@ -3666,23 +3786,24 @@ test.describe('构建产物安全验收', () => {
 
   test('应用图标和资源文件应该存在', async () => {
     const { app } = await securityHelper.launchSecureApp();
-    
+
     const appInfo = await app.evaluate(electronApp => ({
       name: electronApp.getName(),
       version: electronApp.getVersion(),
-      path: electronApp.getAppPath()
+      path: electronApp.getAppPath(),
     }));
-    
+
     expect(appInfo.name).toBeTruthy();
     expect(appInfo.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(appInfo.path).toBeTruthy();
-    
+
     // 检查关键资源文件
     const resourcesPath = path.join(appInfo.path, '../');
-    const iconExists = fs.existsSync(path.join(resourcesPath, 'icon.png')) ||
-                      fs.existsSync(path.join(resourcesPath, 'icon.ico')) ||
-                      fs.existsSync(path.join(resourcesPath, 'icon.icns'));
-    
+    const iconExists =
+      fs.existsSync(path.join(resourcesPath, 'icon.png')) ||
+      fs.existsSync(path.join(resourcesPath, 'icon.ico')) ||
+      fs.existsSync(path.join(resourcesPath, 'icon.icns'));
+
     expect(iconExists).toBe(true);
   });
 });
@@ -3708,42 +3829,42 @@ test.describe('综合安全冒烟测试', () => {
 
   test('完整的安全基线验证', async () => {
     console.log('🧪 开始执行完整的安全基线验证...');
-    
+
     // 启动应用
     await securityHelper.launchSecureApp();
-    
+
     // 执行所有核心安全检查
     await test.step('验证BrowserWindow安全配置', async () => {
       await securityHelper.verifyWindowSecurityConfig();
     });
-    
+
     await test.step('验证渲染进程安全隔离', async () => {
       await securityHelper.verifyRendererSecurityIsolation();
     });
-    
+
     await test.step('验证CSP安全策略', async () => {
       await securityHelper.verifyCSPConfiguration();
     });
-    
+
     await test.step('验证Preload脚本安全性', async () => {
       await securityHelper.verifyPreloadSecurity();
     });
-    
+
     console.log('✅ 所有安全基线验证通过！');
   });
 
   test('应用在安全配置下正常工作', async () => {
     const { app, window } = await securityHelper.launchSecureApp();
-    
+
     // 验证应用基本功能
     expect(await app.evaluate(electronApp => electronApp.isReady())).toBe(true);
     expect(await window.isVisible()).toBe(true);
-    
+
     // 验证可以正常加载内容
     await window.waitForSelector('body', { timeout: 5000 });
     const bodyExists = await window.locator('body').count();
     expect(bodyExists).toBe(1);
-    
+
     // 验证JavaScript正常工作（在安全限制下）
     const jsWorks = await window.evaluate(() => {
       try {
@@ -3753,7 +3874,7 @@ test.describe('综合安全冒烟测试', () => {
       }
     });
     expect(jsWorks).toBe(true);
-    
+
     console.log('✅ 应用在安全配置下正常工作');
   });
 });
@@ -3832,7 +3953,7 @@ echo "✅ Electron安全验收测试完成！"
       "status": "passed"
     },
     {
-      "name": "渲染进程安全隔离", 
+      "name": "渲染进程安全隔离",
       "tests": [],
       "status": "passed"
     },
@@ -3923,12 +4044,7 @@ electronegativity -i ./ -o report.json -c ./electronegativity.config.json
     "FILE_PROTOCOL_JS_CHECK",
     "WEBVIEW_TAG_JS_CHECK"
   ],
-  "exclude": [
-    "node_modules/**",
-    "dist/**",
-    "build/**",
-    "test/**"
-  ],
+  "exclude": ["node_modules/**", "dist/**", "build/**", "test/**"],
   "customRules": "./security/rules/"
 }
 ```
@@ -3943,74 +4059,86 @@ import { ElectronSecurityRule } from '@doyensec/electronegativity';
  * 自定义安全规则：检查危险的IPC通道
  */
 export const DANGEROUS_IPC_CHANNELS_RULE: ElectronSecurityRule = {
-  id: "DANGEROUS_IPC_CHANNELS_CHECK",
-  scope: "JavaScript",
-  category: "IPC Security",
-  title: "检查危险的IPC通道名称",
-  description: "检测可能被滥用的IPC通道名称模式",
-  severity: "HIGH",
-  confidence: "FIRM",
-  match: function(astNode: any, fileName: string): boolean {
+  id: 'DANGEROUS_IPC_CHANNELS_CHECK',
+  scope: 'JavaScript',
+  category: 'IPC Security',
+  title: '检查危险的IPC通道名称',
+  description: '检测可能被滥用的IPC通道名称模式',
+  severity: 'HIGH',
+  confidence: 'FIRM',
+  match: function (astNode: any, fileName: string): boolean {
     // 检查ipcMain.handle或ipcRenderer.invoke调用
     if (astNode.type === 'CallExpression') {
       const { callee, arguments: args } = astNode;
-      
-      if (callee.type === 'MemberExpression' &&
-          (callee.property.name === 'handle' || callee.property.name === 'invoke') &&
-          args.length > 0 &&
-          args[0].type === 'Literal') {
-        
+
+      if (
+        callee.type === 'MemberExpression' &&
+        (callee.property.name === 'handle' ||
+          callee.property.name === 'invoke') &&
+        args.length > 0 &&
+        args[0].type === 'Literal'
+      ) {
         const channelName = args[0].value;
         const dangerousPatterns = [
           /^(exec|eval|shell|cmd|run)$/i,
           /^(file|read|write|delete)$/i,
           /^(process|spawn|fork)$/i,
-          /^(admin|root|sudo)$/i
+          /^(admin|root|sudo)$/i,
         ];
-        
+
         return dangerousPatterns.some(pattern => pattern.test(channelName));
       }
     }
     return false;
-  }
+  },
 };
 
 /**
  * 自定义安全规则：检查不安全的预加载脚本
  */
 export const UNSAFE_PRELOAD_EXPOSURE_RULE: ElectronSecurityRule = {
-  id: "UNSAFE_PRELOAD_EXPOSURE_CHECK",
-  scope: "JavaScript",
-  category: "Context Isolation",
-  title: "检查不安全的预加载脚本API暴露",
-  description: "检测预加载脚本中暴露的不安全API",
-  severity: "CRITICAL",
-  confidence: "FIRM",
-  match: function(astNode: any, fileName: string): boolean {
+  id: 'UNSAFE_PRELOAD_EXPOSURE_CHECK',
+  scope: 'JavaScript',
+  category: 'Context Isolation',
+  title: '检查不安全的预加载脚本API暴露',
+  description: '检测预加载脚本中暴露的不安全API',
+  severity: 'CRITICAL',
+  confidence: 'FIRM',
+  match: function (astNode: any, fileName: string): boolean {
     if (fileName.includes('preload') && astNode.type === 'CallExpression') {
       const { callee, arguments: args } = astNode;
-      
-      if (callee.type === 'MemberExpression' &&
-          callee.object.name === 'contextBridge' &&
-          callee.property.name === 'exposeInMainWorld' &&
-          args.length >= 2) {
-        
+
+      if (
+        callee.type === 'MemberExpression' &&
+        callee.object.name === 'contextBridge' &&
+        callee.property.name === 'exposeInMainWorld' &&
+        args.length >= 2
+      ) {
         const apiObject = args[1];
         if (apiObject.type === 'ObjectExpression') {
           const properties = apiObject.properties || [];
           const dangerousAPIs = [
-            'require', 'eval', 'exec', 'spawn', 'readFileSync', 
-            'writeFileSync', 'unlinkSync', 'shell', 'process'
+            'require',
+            'eval',
+            'exec',
+            'spawn',
+            'readFileSync',
+            'writeFileSync',
+            'unlinkSync',
+            'shell',
+            'process',
           ];
-          
-          return properties.some((prop: any) => 
-            prop.key && dangerousAPIs.includes(prop.key.name || prop.key.value)
+
+          return properties.some(
+            (prop: any) =>
+              prop.key &&
+              dangerousAPIs.includes(prop.key.name || prop.key.value)
           );
         }
       }
     }
     return false;
-  }
+  },
 };
 ```
 
@@ -4039,7 +4167,7 @@ module.exports = {
     'security/detect-possible-timing-attacks': 'error',
     'security/detect-pseudoRandomBytes': 'error',
     'security/detect-unsafe-regex': 'error',
-    
+
     // 自定义Electron安全规则
     'no-eval': 'error',
     'no-implied-eval': 'error',
@@ -4069,9 +4197,9 @@ name: 🔒 Security Audit Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # 每日自动安全扫描
     - cron: '0 2 * * *'
@@ -4080,24 +4208,24 @@ jobs:
   dependency-security:
     name: 📦 依赖安全扫描
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run npm audit
         run: |
           npm audit --audit-level=moderate --json > npm-audit-results.json || true
-          
+
       - name: Run Snyk security scan
         uses: snyk/actions/node@master
         env:
@@ -4105,7 +4233,7 @@ jobs:
         with:
           args: --severity-threshold=medium --json > snyk-results.json
         continue-on-error: true
-        
+
       - name: Run OSV Scanner
         uses: google/osv-scanner-action@v1
         with:
@@ -4114,11 +4242,11 @@ jobs:
             --format=json
             ./
         continue-on-error: true
-        
+
       - name: Process security results
         run: |
           node scripts/process-security-results.js
-          
+
       - name: Upload security reports
         uses: actions/upload-artifact@v4
         with:
@@ -4132,27 +4260,27 @@ jobs:
   static-security-analysis:
     name: 🔍 静态安全分析
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          
+
       - name: Install Electronegativity
         run: npm install -g @doyensec/electronegativity
-        
+
       - name: Run Electronegativity scan
         run: |
           electronegativity -i ./ -o electronegativity-report.json -f json
-          
+
       - name: Run ESLint security scan
         run: |
           npx eslint src/ --ext .ts,.js --format json --output-file eslint-security-report.json || true
-          
+
       - name: Run Semgrep security scan
         uses: returntocorp/semgrep-action@v1
         with:
@@ -4160,9 +4288,9 @@ jobs:
             p/security-audit
             p/javascript
             p/typescript
-          generateSarif: "1"
+          generateSarif: '1'
         continue-on-error: true
-        
+
       - name: Upload static analysis reports
         uses: actions/upload-artifact@v4
         with:
@@ -4175,34 +4303,34 @@ jobs:
   electron-security-baseline:
     name: ⚡ Electron安全基线验证
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build application
         run: npm run build
-        
+
       - name: Run Electron security baseline check
         run: |
           npm run security:baseline
-          
+
       - name: Install Playwright
         run: npx playwright install electron
-        
+
       - name: Run Electron security smoke tests
         run: |
           npm run test:electron:security
-          
+
       - name: Upload baseline reports
         uses: actions/upload-artifact@v4
         with:
@@ -4214,19 +4342,24 @@ jobs:
   security-aggregation:
     name: 📊 安全报告聚合
     runs-on: ubuntu-latest
-    needs: [dependency-security, static-security-analysis, electron-security-baseline]
-    
+    needs:
+      [
+        dependency-security,
+        static-security-analysis,
+        electron-security-baseline,
+      ]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Download all security reports
         uses: actions/download-artifact@v4
-        
+
       - name: Generate consolidated security report
         run: |
           node scripts/generate-security-dashboard.js
-          
+
       - name: Comment PR with security summary
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -4234,35 +4367,35 @@ jobs:
           script: |
             const fs = require('fs');
             const summary = JSON.parse(fs.readFileSync('security-dashboard.json', 'utf8'));
-            
+
             const comment = `## 🔒 Security Audit Summary
-            
+
             ### 📦 Dependency Security
             - **High**: ${summary.dependencies.high} vulnerabilities
             - **Medium**: ${summary.dependencies.medium} vulnerabilities
             - **Low**: ${summary.dependencies.low} vulnerabilities
-            
+
             ### 🔍 Static Analysis
             - **Critical**: ${summary.static.critical} issues
             - **High**: ${summary.static.high} issues
             - **Medium**: ${summary.static.medium} issues
-            
+
             ### ⚡ Electron Security
             - **Baseline Score**: ${summary.electron.baselineScore}/100
             - **Security Tests**: ${summary.electron.testsPass ? '✅ PASS' : '❌ FAIL'}
-            
+
             ${summary.electron.baselineScore < 80 || summary.dependencies.high > 0 || summary.static.critical > 0 ? 
             '❌ **Security audit failed** - Please address the issues above before merging.' : 
             '✅ **Security audit passed** - No critical issues found.'}
             `;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
-      
+
       - name: Fail if critical security issues found
         run: |
           node scripts/check-security-thresholds.js
@@ -4290,8 +4423,8 @@ class SecurityResultsProcessor {
         medium_severity: 0,
         low_severity: 0,
         critical_severity: 0,
-        affected_packages: []
-      }
+        affected_packages: [],
+      },
     };
   }
 
@@ -4300,14 +4433,16 @@ class SecurityResultsProcessor {
    */
   processNpmAudit() {
     try {
-      const auditData = JSON.parse(fs.readFileSync('npm-audit-results.json', 'utf8'));
+      const auditData = JSON.parse(
+        fs.readFileSync('npm-audit-results.json', 'utf8')
+      );
       this.results.npm_audit = auditData;
-      
+
       if (auditData.vulnerabilities) {
         Object.values(auditData.vulnerabilities).forEach(vuln => {
           this.results.summary.total_vulnerabilities += vuln.via.length || 1;
-          
-          switch(vuln.severity) {
+
+          switch (vuln.severity) {
             case 'critical':
               this.results.summary.critical_severity++;
               break;
@@ -4321,16 +4456,18 @@ class SecurityResultsProcessor {
               this.results.summary.low_severity++;
               break;
           }
-          
+
           this.results.summary.affected_packages.push({
             name: vuln.name,
             severity: vuln.severity,
-            range: vuln.range
+            range: vuln.range,
           });
         });
       }
-      
-      console.log(`✅ 处理npm audit结果: ${this.results.summary.total_vulnerabilities}个漏洞`);
+
+      console.log(
+        `✅ 处理npm audit结果: ${this.results.summary.total_vulnerabilities}个漏洞`
+      );
     } catch (error) {
       console.warn('⚠️ npm audit结果处理失败:', error.message);
     }
@@ -4342,7 +4479,9 @@ class SecurityResultsProcessor {
   processSnykResults() {
     try {
       if (fs.existsSync('snyk-results.json')) {
-        const snykData = JSON.parse(fs.readFileSync('snyk-results.json', 'utf8'));
+        const snykData = JSON.parse(
+          fs.readFileSync('snyk-results.json', 'utf8')
+        );
         this.results.snyk = snykData;
         console.log('✅ 处理Snyk扫描结果');
       }
@@ -4375,12 +4514,12 @@ class SecurityResultsProcessor {
       scan_results: this.results,
       risk_assessment: this.assessRisk(),
       recommendations: this.generateRecommendations(),
-      compliance_status: this.checkCompliance()
+      compliance_status: this.checkCompliance(),
     };
 
     fs.writeFileSync('security-summary.json', JSON.stringify(summary, null, 2));
     console.log('📊 安全摘要报告已生成: security-summary.json');
-    
+
     return summary;
   }
 
@@ -4388,15 +4527,16 @@ class SecurityResultsProcessor {
    * 风险评估
    */
   assessRisk() {
-    const { critical_severity, high_severity, medium_severity } = this.results.summary;
-    
+    const { critical_severity, high_severity, medium_severity } =
+      this.results.summary;
+
     let riskLevel = 'LOW';
     let riskScore = 0;
-    
+
     riskScore += critical_severity * 10;
     riskScore += high_severity * 5;
     riskScore += medium_severity * 2;
-    
+
     if (critical_severity > 0) {
       riskLevel = 'CRITICAL';
     } else if (high_severity > 2) {
@@ -4404,18 +4544,19 @@ class SecurityResultsProcessor {
     } else if (high_severity > 0 || medium_severity > 5) {
       riskLevel = 'MEDIUM';
     }
-    
+
     return {
       level: riskLevel,
       score: riskScore,
       critical_issues: critical_severity,
       high_issues: high_severity,
       medium_issues: medium_severity,
-      recommendation: riskLevel === 'CRITICAL' ? 
-        '立即修复所有严重漏洞' : 
-        riskLevel === 'HIGH' ? 
-        '在下个版本前修复高危漏洞' : 
-        '按计划修复中低危漏洞'
+      recommendation:
+        riskLevel === 'CRITICAL'
+          ? '立即修复所有严重漏洞'
+          : riskLevel === 'HIGH'
+            ? '在下个版本前修复高危漏洞'
+            : '按计划修复中低危漏洞',
     };
   }
 
@@ -4424,33 +4565,33 @@ class SecurityResultsProcessor {
    */
   generateRecommendations() {
     const recommendations = [];
-    
+
     if (this.results.summary.critical_severity > 0) {
       recommendations.push({
         priority: 'CRITICAL',
         action: '立即更新受影响的依赖包到安全版本',
         packages: this.results.summary.affected_packages
           .filter(pkg => pkg.severity === 'critical')
-          .map(pkg => pkg.name)
+          .map(pkg => pkg.name),
       });
     }
-    
+
     if (this.results.summary.high_severity > 0) {
       recommendations.push({
         priority: 'HIGH',
         action: '计划在本周内更新高危险依赖',
         packages: this.results.summary.affected_packages
           .filter(pkg => pkg.severity === 'high')
-          .map(pkg => pkg.name)
+          .map(pkg => pkg.name),
       });
     }
-    
+
     recommendations.push({
       priority: 'ONGOING',
       action: '启用自动依赖更新和定期安全扫描',
-      details: '配置Dependabot或Renovate进行自动更新'
+      details: '配置Dependabot或Renovate进行自动更新',
     });
-    
+
     return recommendations;
   }
 
@@ -4459,10 +4600,12 @@ class SecurityResultsProcessor {
    */
   checkCompliance() {
     return {
-      security_baseline: this.results.summary.critical_severity === 0 && this.results.summary.high_severity <= 2,
+      security_baseline:
+        this.results.summary.critical_severity === 0 &&
+        this.results.summary.high_severity <= 2,
       dependency_policy: this.results.summary.critical_severity === 0,
       audit_requirements: true, // 已执行安全审计
-      documentation_complete: fs.existsSync('SECURITY.md')
+      documentation_complete: fs.existsSync('SECURITY.md'),
     };
   }
 
@@ -4471,13 +4614,13 @@ class SecurityResultsProcessor {
    */
   processAll() {
     console.log('🔒 开始处理安全扫描结果...');
-    
+
     this.processNpmAudit();
     this.processSnykResults();
     this.processOSVResults();
-    
+
     const summary = this.generateSummary();
-    
+
     console.log('\n📋 安全扫描摘要:');
     console.log(`总漏洞数: ${this.results.summary.total_vulnerabilities}`);
     console.log(`严重: ${this.results.summary.critical_severity}`);
@@ -4485,7 +4628,7 @@ class SecurityResultsProcessor {
     console.log(`中危: ${this.results.summary.medium_severity}`);
     console.log(`低危: ${this.results.summary.low_severity}`);
     console.log(`风险等级: ${summary.risk_assessment.level}`);
-    
+
     return summary;
   }
 }
@@ -4524,30 +4667,30 @@ audit-level=high
 # .github/dependabot.yml
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
+      - 'security-team'
     assignees:
-      - "tech-lead"
+      - 'tech-lead'
     commit-message:
-      prefix: "security"
-      include: "scope"
+      prefix: 'security'
+      include: 'scope'
     # 只允许安全更新
     allow:
-      - dependency-type: "direct"
-        update-type: "security"
-      - dependency-type: "indirect"
-        update-type: "security"
+      - dependency-type: 'direct'
+        update-type: 'security'
+      - dependency-type: 'indirect'
+        update-type: 'security'
     # 忽略主要版本更新（需手动评估）
     ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
 ```
 
 #### 6.3.3 License Compliance检查
@@ -4577,7 +4720,7 @@ export class LicenseComplianceChecker {
     'BSD-3-Clause',
     'ISC',
     'CC0-1.0',
-    'Unlicense'
+    'Unlicense',
   ];
 
   private readonly RESTRICTED_LICENSES = [
@@ -4586,7 +4729,7 @@ export class LicenseComplianceChecker {
     'AGPL-1.0',
     'AGPL-3.0',
     'LGPL-2.1',
-    'LGPL-3.0'
+    'LGPL-3.0',
   ];
 
   /**
@@ -4594,28 +4737,31 @@ export class LicenseComplianceChecker {
    */
   async checkLicenseCompliance(): Promise<void> {
     return new Promise((resolve, reject) => {
-      licenseChecker.init({
-        start: process.cwd(),
-        production: true,
-        onlyAllow: this.APPROVED_LICENSES.join(';'),
-        excludePrivatePackages: true
-      }, (err, packages) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      licenseChecker.init(
+        {
+          start: process.cwd(),
+          production: true,
+          onlyAllow: this.APPROVED_LICENSES.join(';'),
+          excludePrivatePackages: true,
+        },
+        (err, packages) => {
+          if (err) {
+            reject(err);
+            return;
+          }
 
-        const results = this.analyzeLicenses(packages);
-        this.generateComplianceReport(results);
-        
-        if (results.violations.length > 0) {
-          console.error('❌ 许可证合规检查失败');
-          process.exit(1);
-        } else {
-          console.log('✅ 许可证合规检查通过');
-          resolve();
+          const results = this.analyzeLicenses(packages);
+          this.generateComplianceReport(results);
+
+          if (results.violations.length > 0) {
+            console.error('❌ 许可证合规检查失败');
+            process.exit(1);
+          } else {
+            console.log('✅ 许可证合规检查通过');
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -4633,7 +4779,7 @@ export class LicenseComplianceChecker {
         license: string;
         severity: 'HIGH' | 'MEDIUM' | 'LOW';
         reason: string;
-      }>
+      }>,
     };
 
     for (const [packageName, info] of Object.entries(packages)) {
@@ -4648,7 +4794,7 @@ export class LicenseComplianceChecker {
           package: packageName,
           license,
           severity: 'HIGH',
-          reason: '使用了受限制的开源许可证'
+          reason: '使用了受限制的开源许可证',
         });
       } else if (!license || license === 'UNKNOWN') {
         results.unknown++;
@@ -4656,14 +4802,14 @@ export class LicenseComplianceChecker {
           package: packageName,
           license: license || 'UNKNOWN',
           severity: 'MEDIUM',
-          reason: '许可证信息不明确'
+          reason: '许可证信息不明确',
         });
       } else {
         results.violations.push({
           package: packageName,
           license,
           severity: 'LOW',
-          reason: '需要手动审查的许可证'
+          reason: '需要手动审查的许可证',
         });
       }
     }
@@ -4682,11 +4828,11 @@ export class LicenseComplianceChecker {
         approved_licenses: results.approved,
         restricted_licenses: results.restricted,
         unknown_licenses: results.unknown,
-        compliance_rate: ((results.approved / results.total) * 100).toFixed(2)
+        compliance_rate: ((results.approved / results.total) * 100).toFixed(2),
       },
       violations: results.violations,
       approved_licenses: this.APPROVED_LICENSES,
-      restricted_licenses: this.RESTRICTED_LICENSES
+      restricted_licenses: this.RESTRICTED_LICENSES,
     };
 
     // 确保报告目录存在
@@ -4696,14 +4842,16 @@ export class LicenseComplianceChecker {
     // 保存报告
     const reportPath = path.join(reportsDir, 'license-compliance.json');
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-    
+
     console.log(`📋 许可证合规报告已生成: ${reportPath}`);
     console.log(`合规率: ${report.summary.compliance_rate}%`);
-    
+
     if (results.violations.length > 0) {
       console.log('\n⚠️ 许可证违规详情:');
       results.violations.forEach(violation => {
-        console.log(`  ${violation.severity}: ${violation.package} (${violation.license}) - ${violation.reason}`);
+        console.log(
+          `  ${violation.severity}: ${violation.package} (${violation.license}) - ${violation.reason}`
+        );
       });
     }
   }
@@ -4733,22 +4881,22 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
  */
 export const PRODUCTION_FUSES_CONFIG: FuseV1Options = {
   version: FuseVersion.V1,
-  
+
   // 🔒 禁用Node.js集成（严格模式）
   resetAdHocDarwinCASignature: false, // 保持签名完整性
-  enableCookieEncryption: true,       // 启用Cookie加密
+  enableCookieEncryption: true, // 启用Cookie加密
   enableNodeOptionsEnvironmentVariable: false, // 禁用NODE_OPTIONS环境变量
-  enableNodeCliInspectArguments: false,        // 禁用Node调试参数
+  enableNodeCliInspectArguments: false, // 禁用Node调试参数
   enableEmbeddedAsarIntegrityValidation: true, // 启用ASAR完整性验证
-  onlyLoadAppFromAsar: true,                   // 只从ASAR加载应用
-  
+  onlyLoadAppFromAsar: true, // 只从ASAR加载应用
+
   // 🛡️ 渲染进程安全强化
   loadBrowserProcessSpecificV8Snapshot: false, // 禁用浏览器特定V8快照
-  enablePrintPrototypeOverwrite: false,        // 禁用原型覆盖
-  
+  enablePrintPrototypeOverwrite: false, // 禁用原型覆盖
+
   // 🔧 开发工具和调试限制
-  runAsNode: false,                    // 禁用runAsNode模式
-  enableRunAsNode: false,              // 确保无法启用runAsNode
+  runAsNode: false, // 禁用runAsNode模式
+  enableRunAsNode: false, // 确保无法启用runAsNode
 };
 
 /**
@@ -4756,17 +4904,17 @@ export const PRODUCTION_FUSES_CONFIG: FuseV1Options = {
  */
 export const DEVELOPMENT_FUSES_CONFIG: FuseV1Options = {
   version: FuseVersion.V1,
-  
+
   resetAdHocDarwinCASignature: false,
   enableCookieEncryption: true,
-  enableNodeOptionsEnvironmentVariable: true,  // 开发环境允许NODE_OPTIONS
-  enableNodeCliInspectArguments: true,         // 开发环境允许调试
+  enableNodeOptionsEnvironmentVariable: true, // 开发环境允许NODE_OPTIONS
+  enableNodeCliInspectArguments: true, // 开发环境允许调试
   enableEmbeddedAsarIntegrityValidation: false, // 开发环境可能没有ASAR
-  onlyLoadAppFromAsar: false,                  // 开发环境从源码加载
-  
+  onlyLoadAppFromAsar: false, // 开发环境从源码加载
+
   loadBrowserProcessSpecificV8Snapshot: false,
-  enablePrintPrototypeOverwrite: true,         // 开发环境允许原型修改
-  
+  enablePrintPrototypeOverwrite: true, // 开发环境允许原型修改
+
   runAsNode: false,
   enableRunAsNode: false,
 };
@@ -4778,14 +4926,17 @@ export class FusesConfigurator {
   /**
    * 根据环境应用相应的Fuses配置
    */
-  static getFusesConfig(environment: 'production' | 'development' = 'production'): FuseV1Options {
-    const config = environment === 'production' ? 
-      PRODUCTION_FUSES_CONFIG : 
-      DEVELOPMENT_FUSES_CONFIG;
-    
+  static getFusesConfig(
+    environment: 'production' | 'development' = 'production'
+  ): FuseV1Options {
+    const config =
+      environment === 'production'
+        ? PRODUCTION_FUSES_CONFIG
+        : DEVELOPMENT_FUSES_CONFIG;
+
     console.log(`🔧 应用${environment}环境Fuses配置`);
     console.log('Fuses配置详情:', JSON.stringify(config, null, 2));
-    
+
     return config;
   }
 
@@ -4794,21 +4945,31 @@ export class FusesConfigurator {
    */
   static validateFusesConfig(config: FuseV1Options): boolean {
     const criticalChecks = [
-      { key: 'enableNodeOptionsEnvironmentVariable', expected: false, critical: true },
+      {
+        key: 'enableNodeOptionsEnvironmentVariable',
+        expected: false,
+        critical: true,
+      },
       { key: 'enableNodeCliInspectArguments', expected: false, critical: true },
-      { key: 'enableEmbeddedAsarIntegrityValidation', expected: true, critical: true },
+      {
+        key: 'enableEmbeddedAsarIntegrityValidation',
+        expected: true,
+        critical: true,
+      },
       { key: 'onlyLoadAppFromAsar', expected: true, critical: false },
       { key: 'runAsNode', expected: false, critical: true },
     ];
 
     let isValid = true;
-    
+
     criticalChecks.forEach(check => {
       const actualValue = config[check.key];
       if (actualValue !== check.expected) {
         const level = check.critical ? '❌ CRITICAL' : '⚠️  WARNING';
-        console.log(`${level}: Fuses配置 '${check.key}' 应为 ${check.expected}, 实际为 ${actualValue}`);
-        
+        console.log(
+          `${level}: Fuses配置 '${check.key}' 应为 ${check.expected}, 实际为 ${actualValue}`
+        );
+
         if (check.critical) {
           isValid = false;
         }
@@ -4838,7 +4999,7 @@ import { FusesConfigurator } from './scripts/configure-fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: {
-      unpack: "*.{node,dll}"
+      unpack: '*.{node,dll}',
     },
     // macOS签名配置
     osxSign: {
@@ -4846,19 +5007,19 @@ const config: ForgeConfig = {
       hardenedRuntime: true,
       entitlements: 'entitlements.mac.plist',
       'entitlements-inherit': 'entitlements.mac.plist',
-      'signature-flags': 'library'
+      'signature-flags': 'library',
     },
     // macOS公证配置
     osxNotarize: {
       appleId: process.env.APPLE_ID!,
       appleIdPassword: process.env.APPLE_ID_PASSWORD!,
-      teamId: process.env.APPLE_TEAM_ID!
+      teamId: process.env.APPLE_TEAM_ID!,
     },
     // Windows代码签名
     win32metadata: {
       CompanyName: process.env.COMPANY_NAME,
-      ProductName: process.env.PRODUCT_NAME
-    }
+      ProductName: process.env.PRODUCT_NAME,
+    },
   },
   rebuildConfig: {},
   makers: [
@@ -4869,8 +5030,8 @@ const config: ForgeConfig = {
     new MakerDMG({
       // DMG配置
       background: './assets/dmg-background.png',
-      format: 'ULFO'
-    })
+      format: 'ULFO',
+    }),
   ],
   plugins: [
     new WebpackPlugin({
@@ -4883,44 +5044,50 @@ const config: ForgeConfig = {
             js: './src/renderer.ts',
             name: 'main_window',
             preload: {
-              js: './src/preload.ts'
-            }
-          }
-        ]
-      }
+              js: './src/preload.ts',
+            },
+          },
+        ],
+      },
     }),
     // Fuses插件配置
     new FusesPlugin({
       ...FusesConfigurator.getFusesConfig(
         process.env.NODE_ENV === 'production' ? 'production' : 'development'
-      )
-    })
+      ),
+    }),
   ],
   hooks: {
     // 构建前验证Fuses配置
     generateAssets: async (forgeConfig, platform, arch) => {
       console.log('🔍 验证Electron Fuses配置...');
-      
+
       const fusesConfig = FusesConfigurator.getFusesConfig(
         process.env.NODE_ENV === 'production' ? 'production' : 'development'
       );
-      
+
       const isValid = FusesConfigurator.validateFusesConfig(fusesConfig);
       if (!isValid) {
         throw new Error('❌ Fuses配置验证失败，存在关键安全问题');
       }
-      
+
       console.log('✅ Fuses配置验证通过');
     },
-    
+
     // 打包后验证
-    postPackage: async (forgeConfig, buildPath, electronVersion, platform, arch) => {
+    postPackage: async (
+      forgeConfig,
+      buildPath,
+      electronVersion,
+      platform,
+      arch
+    ) => {
       console.log('🔒 验证打包后的安全配置...');
-      
+
       // TODO: 添加打包后的安全验证逻辑
       // 例如验证Fuses是否正确应用、签名是否完整等
-    }
-  }
+    },
+  },
 };
 
 export default config;
@@ -4936,6 +5103,7 @@ export default config;
 ## 🏗️ 开发阶段 (Development Phase)
 
 ### 代码编写
+
 - [ ] **BrowserWindow配置安全**
   - [ ] `contextIsolation: true` 已启用
   - [ ] `nodeIntegration: false` 已禁用
@@ -4965,6 +5133,7 @@ export default config;
   - [ ] 添加适当的报告机制
 
 ### 代码审查
+
 - [ ] **静态安全分析**
   - [ ] 运行Electronegativity扫描
   - [ ] 执行ESLint安全规则检查
@@ -4980,6 +5149,7 @@ export default config;
 ## 🚀 构建阶段 (Build Phase)
 
 ### 构建配置
+
 - [ ] **生产环境配置**
   - [ ] Fuses配置已正确应用
   - [ ] 开发工具访问已禁用
@@ -5002,6 +5172,7 @@ export default config;
 ## 🧪 测试阶段 (Testing Phase)
 
 ### 安全测试
+
 - [ ] **自动化安全测试**
   - [ ] Playwright安全测试套件运行通过
   - [ ] 安全基线验证通过
@@ -5017,6 +5188,7 @@ export default config;
 ## 📦 发布阶段 (Release Phase)
 
 ### 发布前检查
+
 - [ ] **最终安全审计**
   - [ ] 所有安全扫描通过
   - [ ] 关键漏洞已修复
@@ -5030,6 +5202,7 @@ export default config;
   - [ ] 回滚机制配置就绪
 
 ### 发布后监控
+
 - [ ] **运行时监控**
   - [ ] 安全告警机制激活
   - [ ] 异常行为监控启用
@@ -5039,6 +5212,7 @@ export default config;
 ## 🔄 持续维护 (Maintenance Phase)
 
 ### 定期安全维护
+
 - [ ] **依赖更新**
   - [ ] 定期安全补丁应用
   - [ ] 依赖版本安全审查
@@ -5063,7 +5237,7 @@ import { EventEmitter } from 'events';
  */
 export class SecurityGovernanceWorkflow extends EventEmitter {
   private checkpoints: Map<string, SecurityCheckpoint> = new Map();
-  
+
   constructor() {
     super();
     this.initializeCheckpoints();
@@ -5081,10 +5255,10 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
         'static_analysis',
         'dependency_audit',
         'code_review',
-        'security_configuration'
+        'security_configuration',
       ],
       blocking: true,
-      automated: true
+      automated: true,
     });
 
     // 构建阶段检查点
@@ -5095,10 +5269,10 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
         'fuses_validation',
         'code_signing',
         'build_security',
-        'artifact_scanning'
+        'artifact_scanning',
       ],
       blocking: true,
-      automated: true
+      automated: true,
     });
 
     // 测试阶段检查点
@@ -5109,10 +5283,10 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
         'security_baseline_tests',
         'penetration_testing',
         'integration_security',
-        'runtime_verification'
+        'runtime_verification',
       ],
       blocking: true,
-      automated: false
+      automated: false,
     });
 
     // 发布阶段检查点
@@ -5123,10 +5297,10 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
         'final_security_audit',
         'compliance_verification',
         'release_approval',
-        'monitoring_setup'
+        'monitoring_setup',
       ],
       blocking: true,
-      automated: false
+      automated: false,
     });
   }
 
@@ -5143,7 +5317,7 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
     }
 
     console.log(`🔒 开始执行安全检查点: ${checkpoint.name}`);
-    
+
     const results: CheckResult[] = [];
     let overallPass = true;
 
@@ -5151,32 +5325,31 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
       try {
         const result = await this.executeSecurityCheck(checkId, context);
         results.push(result);
-        
+
         if (!result.passed && checkpoint.blocking) {
           overallPass = false;
         }
-        
+
         this.emit('check_completed', {
           checkpoint: checkpointId,
           check: checkId,
-          result
+          result,
         });
-        
       } catch (error) {
         const errorResult: CheckResult = {
           check_id: checkId,
           passed: false,
           error: error.message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
-        
+
         results.push(errorResult);
         overallPass = false;
-        
+
         this.emit('check_error', {
           checkpoint: checkpointId,
           check: checkId,
-          error
+          error,
         });
       }
     }
@@ -5187,11 +5360,11 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
       passed: overallPass,
       results,
       timestamp: new Date().toISOString(),
-      context
+      context,
     };
 
     this.emit('checkpoint_completed', checkpointResult);
-    
+
     if (!overallPass && checkpoint.blocking) {
       console.error(`❌ 安全检查点失败: ${checkpoint.name}`);
       throw new SecurityCheckpointFailureError(checkpointResult);
@@ -5210,20 +5383,20 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
     context: SecurityContext
   ): Promise<CheckResult> {
     const startTime = Date.now();
-    
+
     switch (checkId) {
       case 'static_analysis':
         return await this.runStaticAnalysis(context);
-      
+
       case 'dependency_audit':
         return await this.runDependencyAudit(context);
-      
+
       case 'fuses_validation':
         return await this.validateFuses(context);
-      
+
       case 'security_baseline_tests':
         return await this.runSecurityBaselineTests(context);
-      
+
       default:
         throw new Error(`未知的安全检查: ${checkId}`);
     }
@@ -5232,26 +5405,30 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
   /**
    * 运行静态分析
    */
-  private async runStaticAnalysis(context: SecurityContext): Promise<CheckResult> {
+  private async runStaticAnalysis(
+    context: SecurityContext
+  ): Promise<CheckResult> {
     // 实现静态分析逻辑
     return {
       check_id: 'static_analysis',
       passed: true,
       details: '静态安全分析通过',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * 运行依赖审计
    */
-  private async runDependencyAudit(context: SecurityContext): Promise<CheckResult> {
+  private async runDependencyAudit(
+    context: SecurityContext
+  ): Promise<CheckResult> {
     // 实现依赖审计逻辑
     return {
       check_id: 'dependency_audit',
       passed: true,
       details: '依赖安全审计通过',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -5264,20 +5441,22 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
       check_id: 'fuses_validation',
       passed: true,
       details: 'Electron Fuses配置验证通过',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * 运行安全基线测试
    */
-  private async runSecurityBaselineTests(context: SecurityContext): Promise<CheckResult> {
+  private async runSecurityBaselineTests(
+    context: SecurityContext
+  ): Promise<CheckResult> {
     // 实现安全基线测试逻辑
     return {
       check_id: 'security_baseline_tests',
       passed: true,
       details: '安全基线测试通过',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -5293,9 +5472,10 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
         total_checkpoints: results.length,
         passed_checkpoints: results.filter(r => r.passed).length,
         failed_checkpoints: results.filter(r => !r.passed).length,
-        compliance_rate: (results.filter(r => r.passed).length / results.length) * 100
+        compliance_rate:
+          (results.filter(r => r.passed).length / results.length) * 100,
       },
-      recommendations: this.generateRecommendations(results)
+      recommendations: this.generateRecommendations(results),
     };
 
     return report;
@@ -5306,11 +5486,11 @@ export class SecurityGovernanceWorkflow extends EventEmitter {
    */
   private generateRecommendations(results: CheckpointResult[]): string[] {
     const recommendations: string[] = [];
-    
+
     results.forEach(result => {
       if (!result.passed) {
         recommendations.push(`修复 ${result.phase} 阶段的安全问题`);
-        
+
         result.results.forEach(checkResult => {
           if (!checkResult.passed) {
             recommendations.push(`处理 ${checkResult.check_id} 检查失败项`);
@@ -5416,27 +5596,27 @@ export class SecurityMonitoringService {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       environment: process.env.NODE_ENV || 'development',
-      
+
       // 安全事件采样
       sampleRate: 1.0,
       tracesSampleRate: 0.1,
-      
+
       // 安全相关标签
       initialScope: {
         tags: {
           component: 'electron-security',
-          version: app.getVersion()
-        }
+          version: app.getVersion(),
+        },
       },
-      
+
       // 过滤敏感信息
       beforeSend: this.filterSensitiveData,
-      
+
       // 集成配置
       integrations: [
         new Sentry.Integrations.MainThreadProfiling(),
-        new Sentry.Integrations.ChildProcess()
-      ]
+        new Sentry.Integrations.ChildProcess(),
+      ],
     });
   }
 
@@ -5445,69 +5625,74 @@ export class SecurityMonitoringService {
    */
   private setupSecurityEventListeners(): void {
     // 监听证书错误
-    app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
-      event.preventDefault();
-      
-      this.reportSecurityEvent({
-        type: 'CERTIFICATE_ERROR',
-        severity: 'HIGH',
-        message: `证书错误: ${error}`,
-        metadata: {
-          url,
-          certificate_subject: certificate.subject,
-          certificate_issuer: certificate.issuer
-        }
-      });
-      
-      // 在生产环境中拒绝无效证书
-      callback(process.env.NODE_ENV !== 'production');
-    });
+    app.on(
+      'certificate-error',
+      (event, webContents, url, error, certificate, callback) => {
+        event.preventDefault();
+
+        this.reportSecurityEvent({
+          type: 'CERTIFICATE_ERROR',
+          severity: 'HIGH',
+          message: `证书错误: ${error}`,
+          metadata: {
+            url,
+            certificate_subject: certificate.subject,
+            certificate_issuer: certificate.issuer,
+          },
+        });
+
+        // 在生产环境中拒绝无效证书
+        callback(process.env.NODE_ENV !== 'production');
+      }
+    );
 
     // 监听权限请求
     app.on('web-contents-created', (event, contents) => {
-      contents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-        // 记录所有权限请求
-        this.reportSecurityEvent({
-          type: 'PERMISSION_REQUEST',
-          severity: 'MEDIUM',
-          message: `权限请求: ${permission}`,
-          metadata: {
-            url: webContents.getURL(),
-            permission,
-            user_agent: webContents.getUserAgent()
-          }
-        });
-        
-        // 默认拒绝所有权限请求
-        callback(false);
-      });
+      contents.session.setPermissionRequestHandler(
+        (webContents, permission, callback) => {
+          // 记录所有权限请求
+          this.reportSecurityEvent({
+            type: 'PERMISSION_REQUEST',
+            severity: 'MEDIUM',
+            message: `权限请求: ${permission}`,
+            metadata: {
+              url: webContents.getURL(),
+              permission,
+              user_agent: webContents.getUserAgent(),
+            },
+          });
+
+          // 默认拒绝所有权限请求
+          callback(false);
+        }
+      );
 
       // 监听导航事件
       contents.on('will-navigate', (event, navigationUrl) => {
         const currentUrl = contents.getURL();
-        
+
         this.reportSecurityEvent({
           type: 'NAVIGATION_ATTEMPT',
           severity: 'LOW',
           message: `页面导航尝试`,
           metadata: {
             from_url: currentUrl,
-            to_url: navigationUrl
-          }
+            to_url: navigationUrl,
+          },
         });
 
         // 检查导航是否安全
         if (!this.isNavigationSafe(navigationUrl)) {
           event.preventDefault();
-          
+
           this.reportSecurityEvent({
             type: 'UNSAFE_NAVIGATION_BLOCKED',
             severity: 'HIGH',
             message: `阻止不安全导航: ${navigationUrl}`,
             metadata: {
               blocked_url: navigationUrl,
-              current_url: currentUrl
-            }
+              current_url: currentUrl,
+            },
           });
         }
       });
@@ -5524,7 +5709,7 @@ export class SecurityMonitoringService {
       id: this.generateAlertId(),
       timestamp: new Date().toISOString(),
       app_version: app.getVersion(),
-      platform: process.platform
+      platform: process.platform,
     };
 
     // 存储到本地缓存
@@ -5535,7 +5720,7 @@ export class SecurityMonitoringService {
       category: 'security',
       message: alert.message,
       level: this.mapSeverityToSentryLevel(alert.severity),
-      data: alert.metadata
+      data: alert.metadata,
     });
 
     // 根据严重程度决定处理方式
@@ -5563,10 +5748,10 @@ export class SecurityMonitoringService {
   private handleCriticalAlert(alert: EnrichedSecurityAlert): void {
     // 立即发送到Sentry作为错误
     Sentry.captureException(new SecurityError(alert.message, alert));
-    
+
     // 记录到本地安全日志
     this.writeSecurityLog(alert);
-    
+
     // 可能的自动响应（如关闭应用）
     if (alert.type === 'CRITICAL_SECURITY_BREACH') {
       console.error('🚨 检测到严重安全威胁，应用即将关闭');
@@ -5580,7 +5765,7 @@ export class SecurityMonitoringService {
   private handleHighSeverityAlert(alert: EnrichedSecurityAlert): void {
     Sentry.captureMessage(alert.message, 'error');
     this.writeSecurityLog(alert);
-    
+
     // 可能的用户通知
     this.notifyUser(alert);
   }
@@ -5607,11 +5792,15 @@ export class SecurityMonitoringService {
   private filterSensitiveData = (event: Sentry.Event): Sentry.Event | null => {
     // 移除敏感信息
     const sensitiveKeys = ['password', 'token', 'key', 'secret', 'credential'];
-    
+
     function removeKeys(obj: any): void {
       if (obj && typeof obj === 'object') {
         for (const key in obj) {
-          if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+          if (
+            sensitiveKeys.some(sensitive =>
+              key.toLowerCase().includes(sensitive)
+            )
+          ) {
             obj[key] = '[REDACTED]';
           } else if (typeof obj[key] === 'object') {
             removeKeys(obj[key]);
@@ -5622,7 +5811,7 @@ export class SecurityMonitoringService {
 
     removeKeys(event.extra);
     removeKeys(event.contexts);
-    
+
     return event;
   };
 
@@ -5632,19 +5821,19 @@ export class SecurityMonitoringService {
   private isNavigationSafe(url: string): boolean {
     try {
       const parsedUrl = new URL(url);
-      
+
       // 允许的协议白名单
       const allowedProtocols = ['https:', 'file:'];
       if (!allowedProtocols.includes(parsedUrl.protocol)) {
         return false;
       }
-      
+
       // 阻止的主机黑名单（示例）
       const blockedHosts = ['malicious.com', 'phishing.site'];
       if (blockedHosts.includes(parsedUrl.hostname)) {
         return false;
       }
-      
+
       return true;
     } catch {
       return false;
@@ -5662,7 +5851,7 @@ export class SecurityMonitoringService {
       message: alert.message,
       metadata: alert.metadata,
       app_version: alert.app_version,
-      platform: alert.platform
+      platform: alert.platform,
     };
 
     // 这里可以集成到日志系统
@@ -5683,13 +5872,20 @@ export class SecurityMonitoringService {
   /**
    * 映射严重程度到Sentry级别
    */
-  private mapSeverityToSentryLevel(severity: SecuritySeverity): Sentry.SeverityLevel {
+  private mapSeverityToSentryLevel(
+    severity: SecuritySeverity
+  ): Sentry.SeverityLevel {
     switch (severity) {
-      case 'CRITICAL': return 'fatal';
-      case 'HIGH': return 'error';
-      case 'MEDIUM': return 'warning';
-      case 'LOW': return 'info';
-      default: return 'info';
+      case 'CRITICAL':
+        return 'fatal';
+      case 'HIGH':
+        return 'error';
+      case 'MEDIUM':
+        return 'warning';
+      case 'LOW':
+        return 'info';
+      default:
+        return 'info';
     }
   }
 
@@ -5705,7 +5901,7 @@ export class SecurityMonitoringService {
    */
   public getSecurityStats(): SecurityStats {
     const now = Date.now();
-    const last24Hours = now - (24 * 60 * 60 * 1000);
+    const last24Hours = now - 24 * 60 * 60 * 1000;
     const recentAlerts = this.securityAlerts.filter(
       alert => new Date(alert.timestamp).getTime() > last24Hours
     );
@@ -5717,20 +5913,25 @@ export class SecurityMonitoringService {
         critical: recentAlerts.filter(a => a.severity === 'CRITICAL').length,
         high: recentAlerts.filter(a => a.severity === 'HIGH').length,
         medium: recentAlerts.filter(a => a.severity === 'MEDIUM').length,
-        low: recentAlerts.filter(a => a.severity === 'LOW').length
+        low: recentAlerts.filter(a => a.severity === 'LOW').length,
       },
-      most_common_types: this.getMostCommonAlertTypes(recentAlerts)
+      most_common_types: this.getMostCommonAlertTypes(recentAlerts),
     };
   }
 
   /**
    * 获取最常见的警报类型
    */
-  private getMostCommonAlertTypes(alerts: EnrichedSecurityAlert[]): Array<{type: string, count: number}> {
-    const typeCounts = alerts.reduce((acc, alert) => {
-      acc[alert.type] = (acc[alert.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  private getMostCommonAlertTypes(
+    alerts: EnrichedSecurityAlert[]
+  ): Array<{ type: string; count: number }> {
+    const typeCounts = alerts.reduce(
+      (acc, alert) => {
+        acc[alert.type] = (acc[alert.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return Object.entries(typeCounts)
       .map(([type, count]) => ({ type, count }))
@@ -5765,11 +5966,14 @@ interface SecurityStats {
     medium: number;
     low: number;
   };
-  most_common_types: Array<{type: string, count: number}>;
+  most_common_types: Array<{ type: string; count: number }>;
 }
 
 class SecurityError extends Error {
-  constructor(message: string, public alert: EnrichedSecurityAlert) {
+  constructor(
+    message: string,
+    public alert: EnrichedSecurityAlert
+  ) {
     super(message);
     this.name = 'SecurityError';
   }
@@ -5779,6 +5983,7 @@ class SecurityError extends Error {
 通过这套完整的治理与工具体系，建立了从开发到运营的全生命周期Electron安全管理框架，确保安全基线的持续执行和改进。
 
 ## 七、实施清单（核对）
+
 - [ ] `contextIsolation: true`
 - [ ] `nodeIntegration: false`
 - [ ] `sandbox: true`

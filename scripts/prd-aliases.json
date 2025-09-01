@@ -1,0 +1,8 @@
+{
+  "canonical": "PRD-Guild-Manager",
+  "aliases": ["PRD-GM-GUILD-MANAGER", "PRD-GUILD-MANAGER", "prd-guild-manager"],
+  "patterns": [
+    "(?i)^PRD-GUILD-MANAGER(?:[_-]chunk[_-]?)(\\d+)$",
+    "(?i)^PRD-GM-GUILD-MANAGER(?:[_-]chunk[_-]?)(\\d+)$"
+  ]
+}

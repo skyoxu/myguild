@@ -9,7 +9,7 @@
  * - 可配置的验证级别
  */
 
-import type { BaseEvent } from '@/shared/contracts/events';
+import type { BaseEvent } from '../contracts/events';
 
 // ============================================================================
 // 配置与类型定义

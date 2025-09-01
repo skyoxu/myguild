@@ -9,6 +9,7 @@ zen工具不是通过`/zen`命令使用的！它需要通过**MCP（Model Contex
 ### 方法一：使用 claude_config.json（推荐）
 
 1. **复制配置文件到Claude配置目录**
+
 ```bash
 # Windows
 copy claude_config.json %USERPROFILE%\.claude\settings.json
@@ -18,6 +19,7 @@ cp claude_config.json ~/.claude/settings.json
 ```
 
 2. **启动zen服务器**
+
 ```bash
 npm run zen:start
 # 或
@@ -72,7 +74,7 @@ Claude：I'll analyze your code structure using the analyze tool...
 ## 🛠️ 可用的zen工具
 
 - **planner** - "Use planner to break down this complex task"
-- **analyze** - "Use analyze to examine the codebase structure"  
+- **analyze** - "Use analyze to examine the codebase structure"
 - **codereview** - "Use codereview to audit this code"
 - **debug** - "Use debug to help find the root cause"
 - **chat** - "Use chat to brainstorm ideas with AI"
@@ -80,21 +82,25 @@ Claude：I'll analyze your code structure using the analyze tool...
 ## 🔧 故障排除
 
 ### 问题1：工具不可用
+
 - 确保zen服务器正在运行：`npm run zen:check`
 - 重启Claude Code
 - 检查配置文件路径
 
 ### 问题2：连接失败
+
 - 检查虚拟环境路径是否正确
 - 确保API密钥已配置（检查zen-mcp-server/.env）
 
 ### 问题3：权限错误
+
 - 确保Claude有权限访问项目目录
 - 检查python环境是否可执行
 
 ## 🎉 成功标志
 
 当配置正确时，你会看到：
+
 - Claude自动识别并调用zen工具
 - 工具返回详细的分析结果
 - 支持多轮对话和上下文保持

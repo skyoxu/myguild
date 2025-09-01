@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 console.log('🔧 预加载脚本开始执行', {
   contextIsolated: process.contextIsolated,
   nodeEnv: process.env.NODE_ENV,
-  versions: process.versions
+  versions: process.versions,
 });
 
 // 预加载API：暴露白名单API到渲染进程
@@ -19,29 +19,29 @@ if (process.contextIsolated) {
       isElectron: true,
       electronVersion: process.versions.electron,
     });
-    
+
     // 为了测试验证，额外暴露一个自定义API标识
     contextBridge.exposeInMainWorld('__CUSTOM_API__', {
       preloadExposed: true,
       exposedAt: new Date().toISOString(),
     });
-    
+
     console.log('✅ API暴露成功:', {
       electronAPI: 'exposed',
-      customAPI: 'exposed'
+      customAPI: 'exposed',
     });
   } catch (error) {
     console.error('❌ API暴露失败:', error);
   }
 } else {
-  // @ts-ignore (define in dts)  
+  // @ts-ignore (define in dts)
   window.electronAPI = {
     platform: process.platform,
     version: process.versions.electron,
     isElectron: true,
     electronVersion: process.versions.electron,
   };
-  
+
   // @ts-ignore
   window.__CUSTOM_API__ = {
     preloadExposed: true,

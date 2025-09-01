@@ -5,7 +5,11 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { ElectronApplication, Page, _electron as electron } from '@playwright/test';
+import {
+  ElectronApplication,
+  Page,
+  _electron as electron,
+} from '@playwright/test';
 
 test.describe('Electron安全基线验证', () => {
   let electronApp: ElectronApplication;

@@ -258,10 +258,15 @@ export class ReleaseHealthGate {
       );
 
       // 检查违规项
-      const violations: ReleaseHealthResult['violations'] = [];
+      const violationList: Array<{
+        readonly metric: string;
+        readonly actual: number;
+        readonly threshold: number;
+        readonly severity: 'warning' | 'blocking';
+      }> = [];
 
       if (metrics.crashFreeUsers < crashFreeUsersThreshold) {
-        violations.push({
+        violationList.push({
           metric: 'crash_free_users',
           actual: metrics.crashFreeUsers,
           threshold: crashFreeUsersThreshold,
@@ -270,13 +275,15 @@ export class ReleaseHealthGate {
       }
 
       if (metrics.crashFreeSessions < crashFreeSessionsThreshold) {
-        violations.push({
+        violationList.push({
           metric: 'crash_free_sessions',
           actual: metrics.crashFreeSessions,
           threshold: crashFreeSessionsThreshold,
           severity: 'blocking',
         });
       }
+
+      const violations = violationList as ReleaseHealthResult['violations'];
 
       return {
         passed: violations.length === 0,
@@ -663,5 +670,5 @@ export const DEFAULT_OBSERVATION_WINDOWS = {
 // ============================================================================
 
 export type Environment = 'production' | 'staging' | 'development';
-export type SamplingConfig = typeof DEFAULT_SAMPLING_CONFIG;
+// SamplingConfig interface已在上面定义，不需要重复类型导出
 export type ObservationWindows = typeof DEFAULT_OBSERVATION_WINDOWS;

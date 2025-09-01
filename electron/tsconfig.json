@@ -15,11 +15,6 @@
     "sourceMap": false,
     "verbatimModuleSyntax": false
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "../dist-electron"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "../dist-electron"]
 }

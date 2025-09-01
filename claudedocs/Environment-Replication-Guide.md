@@ -13,7 +13,7 @@
 ```json
 {
   "react": "19.0.0",
-  "electron": "37.2.4", 
+  "electron": "37.2.4",
   "vite": "7.0.4",
   "typescript": "5.7.2",
   "@tailwindcss/cli": "4.0.0-beta.7",
@@ -61,10 +61,11 @@ npm install @sentry/electron@5.5.0
 ### 关键配置文件模板
 
 #### `vite.config.ts`
+
 ```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import electron from 'vite-plugin-electron'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import electron from 'vite-plugin-electron';
 
 export default defineConfig({
   plugins: [
@@ -72,38 +73,40 @@ export default defineConfig({
     electron([
       {
         entry: 'electron/main.ts',
-        onstart: (args) => {
+        onstart: args => {
           if (process.env.VSCODE_DEBUG) {
-            console.log('[startup] Electron App')
+            console.log('[startup] Electron App');
           } else {
-            args.startup(['--inspect=5858'])
+            args.startup(['--inspect=5858']);
           }
         },
         vite: {
           build: {
             sourcemap: true,
-            outDir: 'dist-electron'
-          }
-        }
+            outDir: 'dist-electron',
+          },
+        },
       },
       {
         entry: 'electron/preload.ts',
-        onstart: (args) => args.reload(),
+        onstart: args => args.reload(),
         vite: {
           build: {
             sourcemap: 'inline',
-            outDir: 'dist-electron'
-          }
-        }
-      }
-    ])
+            outDir: 'dist-electron',
+          },
+        },
+      },
+    ]),
   ],
-  server: process.env.VSCODE_DEBUG ? {
-    host: '127.0.0.1',
-    port: 3000
-  } : undefined,
-  clearScreen: false
-})
+  server: process.env.VSCODE_DEBUG
+    ? {
+        host: '127.0.0.1',
+        port: 3000,
+      }
+    : undefined,
+  clearScreen: false,
+});
 ```
 
 ---
@@ -113,14 +116,15 @@ export default defineConfig({
 ### Electron 安全基线配置
 
 #### 安全三要素（强制执行）
+
 ```typescript
 // electron/main.ts 中的安全配置
 const SECURITY_PREFERENCES = {
-  sandbox: true,              // 启用沙盒模式
-  contextIsolation: true,     // 启用上下文隔离
-  nodeIntegration: false,     // 禁用 Node.js 集成
-  webSecurity: true          // 启用 Web 安全
-}
+  sandbox: true, // 启用沙盒模式
+  contextIsolation: true, // 启用上下文隔离
+  nodeIntegration: false, // 禁用 Node.js 集成
+  webSecurity: true, // 启用 Web 安全
+};
 
 const mainWindow = new BrowserWindow({
   width: 900,
@@ -129,96 +133,113 @@ const mainWindow = new BrowserWindow({
   autoHideMenuBar: true,
   webPreferences: {
     preload: join(__dirname, 'preload.js'),
-    ...SECURITY_PREFERENCES
-  }
-})
+    ...SECURITY_PREFERENCES,
+  },
+});
 ```
 
 #### CSP (Content Security Policy) 严格策略
+
 ```typescript
 // 在主进程中设置 CSP 响应头
-mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-  callback({
-    responseHeaders: {
-      ...details.responseHeaders,
-      'Content-Security-Policy': [
-        "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-      ]
-    }
-  })
-})
+mainWindow.webContents.session.webRequest.onHeadersReceived(
+  (details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+        ],
+      },
+    });
+  }
+);
 ```
 
 #### 预加载脚本白名单 API 模式
+
 ```typescript
 // electron/preload.ts
-import { contextBridge } from 'electron'
+import { contextBridge } from 'electron';
 
 if (process.contextIsolated) {
   contextBridge.exposeInMainWorld('electronAPI', {
     platform: process.platform,
     version: process.versions.electron,
     isElectron: true,
-    electronVersion: process.versions.electron
-  })
-  
+    electronVersion: process.versions.electron,
+  });
+
   contextBridge.exposeInMainWorld('__CUSTOM_API__', {
     preloadExposed: true,
-    exposedAt: new Date().toISOString()
-  })
+    exposedAt: new Date().toISOString(),
+  });
 }
 ```
 
 ### 安全验证检查脚本
 
 #### `scripts/scan_electron_safety.mjs`
+
 ```javascript
 #!/usr/bin/env node
 
 // 安全基线扫描脚本
-const fs = require('fs').promises
-const path = require('path')
+const fs = require('fs').promises;
+const path = require('path');
 
 async function scanElectronSafety() {
-  const mainPath = path.join(process.cwd(), 'dist-electron/main.js')
-  const preloadPath = path.join(process.cwd(), 'dist-electron/preload.js')
-  
+  const mainPath = path.join(process.cwd(), 'dist-electron/main.js');
+  const preloadPath = path.join(process.cwd(), 'dist-electron/preload.js');
+
   try {
-    const mainContent = await fs.readFile(mainPath, 'utf-8')
-    const preloadContent = await fs.readFile(preloadPath, 'utf-8')
-    
+    const mainContent = await fs.readFile(mainPath, 'utf-8');
+    const preloadContent = await fs.readFile(preloadPath, 'utf-8');
+
     // 检查关键安全配置
     const securityChecks = [
       { name: 'Sandbox Mode', pattern: /sandbox:\s*true/, required: true },
-      { name: 'Context Isolation', pattern: /contextIsolation:\s*true/, required: true },
-      { name: 'Node Integration Disabled', pattern: /nodeIntegration:\s*false/, required: true },
-      { name: 'Web Security Enabled', pattern: /webSecurity:\s*true/, required: true }
-    ]
-    
-    let passed = 0
-    const total = securityChecks.length
-    
+      {
+        name: 'Context Isolation',
+        pattern: /contextIsolation:\s*true/,
+        required: true,
+      },
+      {
+        name: 'Node Integration Disabled',
+        pattern: /nodeIntegration:\s*false/,
+        required: true,
+      },
+      {
+        name: 'Web Security Enabled',
+        pattern: /webSecurity:\s*true/,
+        required: true,
+      },
+    ];
+
+    let passed = 0;
+    const total = securityChecks.length;
+
     for (const check of securityChecks) {
       if (check.pattern.test(mainContent)) {
-        console.log(`✅ ${check.name}: PASS`)
-        passed++
+        console.log(`✅ ${check.name}: PASS`);
+        passed++;
       } else {
-        console.log(`❌ ${check.name}: FAIL`)
+        console.log(`❌ ${check.name}: FAIL`);
       }
     }
-    
-    console.log(`\n安全基线检查: ${passed}/${total} 通过`)
-    
+
+    console.log(`\n安全基线检查: ${passed}/${total} 通过`);
+
     if (passed < total) {
-      process.exit(1)
+      process.exit(1);
     }
   } catch (error) {
-    console.error('安全检查失败:', error.message)
-    process.exit(1)
+    console.error('安全检查失败:', error.message);
+    process.exit(1);
   }
 }
 
-scanElectronSafety()
+scanElectronSafety();
 ```
 
 ---
@@ -228,8 +249,9 @@ scanElectronSafety()
 ### Playwright E2E 测试配置
 
 #### `playwright.config.ts` 完整配置
+
 ```typescript
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -237,85 +259,89 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [
-    ['html'],
-    ['json', { outputFile: 'test-results/results.json' }]
-  ],
+  reporter: [['html'], ['json', { outputFile: 'test-results/results.json' }]],
   use: {
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure'
+    screenshot: 'only-on-failure',
   },
-  
+
   projects: [
     {
       name: 'electron-smoke',
       testMatch: '**/smoke.electron.spec.ts',
       use: {
-        ...devices['Desktop Chrome']
-      }
+        ...devices['Desktop Chrome'],
+      },
     },
     {
-      name: 'security-audit', 
-      testMatch: '**/security/**/*.spec.ts'
+      name: 'security-audit',
+      testMatch: '**/security/**/*.spec.ts',
     },
     {
       name: 'performance-baseline',
-      testMatch: '**/performance/**/*.spec.ts'
-    }
-  ]
-})
+      testMatch: '**/performance/**/*.spec.ts',
+    },
+  ],
+});
 ```
 
 ### 关键测试用例模板
 
 #### 安全基线验证测试
+
 ```typescript
 // tests/e2e/smoke.electron.spec.ts (核心片段)
-import { _electron as electron, ElectronApplication, Page } from '@playwright/test'
-import { test, expect } from '@playwright/test'
+import {
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test('安全基线：Node.js 全局变量隔离', async () => {
   const app = await electron.launch({
     args: ['./dist-electron/main.js'],
-    env: { NODE_ENV: 'test', SECURITY_TEST_MODE: 'true' }
-  })
-  
-  const page = await app.firstWindow()
-  
+    env: { NODE_ENV: 'test', SECURITY_TEST_MODE: 'true' },
+  });
+
+  const page = await app.firstWindow();
+
   const nodeGlobals = await page.evaluate(() => ({
     hasRequire: typeof (window as any).require !== 'undefined',
     hasProcess: typeof (window as any).process !== 'undefined',
     hasBuffer: typeof (window as any).Buffer !== 'undefined',
-    hasGlobal: typeof (window as any).global !== 'undefined'
-  }))
-  
-  expect(nodeGlobals.hasRequire, 'require() 不应暴露到渲染进程').toBe(false)
-  expect(nodeGlobals.hasProcess, 'process 不应暴露到渲染进程').toBe(false)
-  expect(nodeGlobals.hasBuffer, 'Buffer 不应暴露到渲染进程').toBe(false)
-  expect(nodeGlobals.hasGlobal, 'global 不应暴露到渲染进程').toBe(false)
-  
-  await app.close()
-})
+    hasGlobal: typeof (window as any).global !== 'undefined',
+  }));
+
+  expect(nodeGlobals.hasRequire, 'require() 不应暴露到渲染进程').toBe(false);
+  expect(nodeGlobals.hasProcess, 'process 不应暴露到渲染进程').toBe(false);
+  expect(nodeGlobals.hasBuffer, 'Buffer 不应暴露到渲染进程').toBe(false);
+  expect(nodeGlobals.hasGlobal, 'global 不应暴露到渲染进程').toBe(false);
+
+  await app.close();
+});
 
 test('安全基线：CSP 策略验证', async () => {
   const app = await electron.launch({
     args: ['./dist-electron/main.js'],
-    env: { NODE_ENV: 'test' }
-  })
-  
-  const page = await app.firstWindow()
-  
-  const cspMeta = await page.locator('meta[http-equiv="Content-Security-Policy"]')
-  await expect(cspMeta).toBeAttached()
-  
-  const cspContent = await cspMeta.getAttribute('content')
-  expect(cspContent).toContain("default-src 'none'")
-  expect(cspContent).toContain("script-src 'self'")
-  expect(cspContent).not.toContain("'unsafe-inline'")
-  expect(cspContent).not.toContain("'unsafe-eval'")
-  
-  await app.close()
-})
+    env: { NODE_ENV: 'test' },
+  });
+
+  const page = await app.firstWindow();
+
+  const cspMeta = await page.locator(
+    'meta[http-equiv="Content-Security-Policy"]'
+  );
+  await expect(cspMeta).toBeAttached();
+
+  const cspContent = await cspMeta.getAttribute('content');
+  expect(cspContent).toContain("default-src 'none'");
+  expect(cspContent).toContain("script-src 'self'");
+  expect(cspContent).not.toContain("'unsafe-inline'");
+  expect(cspContent).not.toContain("'unsafe-eval'");
+
+  await app.close();
+});
 ```
 
 ### 测试执行脚本
@@ -326,7 +352,7 @@ test('安全基线：CSP 策略验证', async () => {
   "test:unit": "vitest run --coverage",
   "test:e2e": "playwright test",
   "test:e2e:ui": "playwright test --ui",
-  "test:security": "playwright test --project=security-audit", 
+  "test:security": "playwright test --project=security-audit",
   "test:performance": "playwright test --project=performance-baseline"
 }
 ```
@@ -338,6 +364,7 @@ test('安全基线：CSP 策略验证', async () => {
 ### MCP (Model Context Protocol) 服务器配置
 
 #### `.mcp.json` 配置
+
 ```json
 {
   "mcpServers": {
@@ -349,7 +376,7 @@ test('安全基线：CSP 策略验证', async () => {
       }
     },
     "sequential-thinking": {
-      "command": "npx", 
+      "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "env": {
         "ANTHROPIC_API_KEY": "your-anthropic-key"
@@ -366,7 +393,11 @@ test('安全基线：CSP 策略验证', async () => {
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\buildgame\\vitegame"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\buildgame\\vitegame"
+      ]
     },
     "brave-search": {
       "command": "npx",
@@ -382,11 +413,12 @@ test('安全基线：CSP 策略验证', async () => {
 ### Claude Code CLI 集成配置
 
 #### `.claude/settings.json`
+
 ```json
 {
   "allowedTools": [
     "Edit",
-    "MultiEdit", 
+    "MultiEdit",
     "Read",
     "Write",
     "Bash(npm *)",
@@ -403,6 +435,7 @@ test('安全基线：CSP 策略验证', async () => {
 ### BMAD 游戏开发代理系统
 
 #### 可用 Slash 命令
+
 ```bash
 /game-designer     # 游戏设计师代理（Phaser专用）
 /game-developer    # 游戏开发者代理（支持Phaser和Unity）
@@ -412,6 +445,7 @@ test('安全基线：CSP 策略验证', async () => {
 ```
 
 #### BMAD 内部命令模式
+
 ```bash
 # 代理激活后使用：
 *help              # 显示可用命令列表
@@ -428,6 +462,7 @@ test('安全基线：CSP 策略验证', async () => {
 ### 环境变量配置
 
 #### `.env.template`
+
 ```bash
 # Sentry 监控配置
 SENTRY_DSN=your-sentry-dsn
@@ -449,71 +484,74 @@ VSCODE_DEBUG=false
 ### Sentry Release Health 配置
 
 #### `src/main.tsx` - 渲染进程监控
+
 ```typescript
-import * as Sentry from '@sentry/electron/renderer'
+import * as Sentry from '@sentry/electron/renderer';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
-  integrations: [
-    Sentry.browserTracingIntegration()
-  ],
+  integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 1.0,
   autoSessionTracking: true, // 关键配置：自动会话跟踪
-  release: process.env.npm_package_version
-})
+  release: process.env.npm_package_version,
+});
 ```
 
-#### `electron/main.ts` - 主进程监控  
+#### `electron/main.ts` - 主进程监控
+
 ```typescript
-import * as Sentry from '@sentry/electron/main'
+import * as Sentry from '@sentry/electron/main';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
-  release: process.env.npm_package_version
-})
+  release: process.env.npm_package_version,
+});
 ```
 
 ### 质量门禁脚本
 
 #### `scripts/quality_gates.mjs`
+
 ```javascript
 #!/usr/bin/env node
 
-const fs = require('fs').promises
-const { execSync } = require('child_process')
+const fs = require('fs').promises;
+const { execSync } = require('child_process');
 
 async function runQualityGates() {
-  console.log('🚀 运行质量门禁检查...')
-  
+  console.log('🚀 运行质量门禁检查...');
+
   try {
     // 1. TypeScript 类型检查
-    console.log('📝 TypeScript 检查...')
-    execSync('npx tsc --noEmit', { stdio: 'inherit' })
-    
+    console.log('📝 TypeScript 检查...');
+    execSync('npx tsc --noEmit', { stdio: 'inherit' });
+
     // 2. ESLint 代码规范
-    console.log('🔍 ESLint 检查...')  
-    execSync('npx eslint . --ext .ts,.tsx', { stdio: 'inherit' })
-    
+    console.log('🔍 ESLint 检查...');
+    execSync('npx eslint . --ext .ts,.tsx', { stdio: 'inherit' });
+
     // 3. 单元测试覆盖率
-    console.log('🧪 单元测试覆盖率...')
-    execSync('npx vitest run --coverage', { stdio: 'inherit' })
-    
+    console.log('🧪 单元测试覆盖率...');
+    execSync('npx vitest run --coverage', { stdio: 'inherit' });
+
     // 4. E2E 安全测试
-    console.log('🔒 E2E 安全测试...')
-    execSync('npx playwright test --project=security-audit', { stdio: 'inherit' })
-    
+    console.log('🔒 E2E 安全测试...');
+    execSync('npx playwright test --project=security-audit', {
+      stdio: 'inherit',
+    });
+
     // 5. Electron 安全基线
-    console.log('⚡ Electron 安全基线...')
-    execSync('node scripts/scan_electron_safety.mjs', { stdio: 'inherit' })
-    
-    console.log('✅ 所有质量门禁检查通过!')
+    console.log('⚡ Electron 安全基线...');
+    execSync('node scripts/scan_electron_safety.mjs', { stdio: 'inherit' });
+
+    console.log('✅ 所有质量门禁检查通过!');
   } catch (error) {
-    console.error('❌ 质量门禁检查失败:', error.message)
-    process.exit(1)
+    console.error('❌ 质量门禁检查失败:', error.message);
+    process.exit(1);
   }
 }
 
-runQualityGates()
+runQualityGates();
 ```
 
 ---
@@ -523,6 +561,7 @@ runQualityGates()
 ### 一键环境复制脚本
 
 #### `setup-project-environment.ps1` (Windows PowerShell)
+
 ```powershell
 param(
     [string]$ProjectName = "new-electron-game",
@@ -544,7 +583,7 @@ npm init -y
 
 $dependencies = @(
     "react@19.0.0",
-    "react-dom@19.0.0", 
+    "react-dom@19.0.0",
     "electron@37.2.4",
     "vite@7.0.4",
     "typescript@5.7.2",
@@ -645,7 +684,7 @@ Write-Host "🔧 配置 MCP 服务器..." -ForegroundColor Yellow
       }
     },
     "filesystem": {
-      "command": "npx", 
+      "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
     }
   }
@@ -670,6 +709,7 @@ Write-Host "3. 运行 npm run test:e2e 验证测试框架"
 ### 验证检查清单
 
 #### 环境复刻验证步骤
+
 ```bash
 # 1. 依赖版本验证
 npm list react electron vite typescript
@@ -677,7 +717,7 @@ npm list react electron vite typescript
 # 2. 构建验证
 npm run build
 
-# 3. 安全基线验证  
+# 3. 安全基线验证
 npm run guard:electron
 
 # 4. 测试框架验证
@@ -697,6 +737,7 @@ npm run guard:ci
 ### 关键配置缺失
 
 #### 问题 1: Sentry 渲染进程配置不完整
+
 **症状**: Release Health 指标收集不全
 **解决方案**: 确保渲染进程中包含 `autoSessionTracking: true`
 
@@ -705,11 +746,12 @@ npm run guard:ci
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   autoSessionTracking: true, // 关键配置
-  integrations: [Sentry.browserTracingIntegration()]
-})
+  integrations: [Sentry.browserTracingIntegration()],
+});
 ```
 
 #### 问题 2: Playwright 在 Windows 上的驱动问题
+
 **症状**: E2E 测试启动失败
 **解决方案**: 使用 `--with-deps` 参数，或手动安装系统依赖
 
@@ -723,6 +765,7 @@ npx playwright install electron
 ```
 
 #### 问题 3: Vite 7.0 与某些插件不兼容
+
 **症状**: 构建错误或热更新失败  
 **解决方案**: 使用经过验证的插件版本组合
 
@@ -753,7 +796,7 @@ npx playwright install electron
 ```bash
 # 完整验证流水线
 npm install                           # 依赖安装验证
-npm run build                        # 构建验证  
+npm run build                        # 构建验证
 npm run guard:ci                     # 完整质量门禁
 claude --version                     # Claude CLI 验证
 bmad status                          # BMAD 工具链验证

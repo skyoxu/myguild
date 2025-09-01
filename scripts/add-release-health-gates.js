@@ -20,20 +20,23 @@ class ReleaseHealthGateAdder {
 
   async addGatestoAllChunks() {
     console.log('🚀 为所有PRD分片文件添加Release Health门禁配置...\n');
-    
+
     try {
-      const files = fs.readdirSync(this.prdChunksDir)
-        .filter(file => file.startsWith('PRD-Guild-Manager_chunk_') && file.endsWith('.md'))
+      const files = fs
+        .readdirSync(this.prdChunksDir)
+        .filter(
+          file =>
+            file.startsWith('PRD-Guild-Manager_chunk_') && file.endsWith('.md')
+        )
         .sort();
-        
+
       console.log(`📂 发现 ${files.length} 个 PRD 分片文件`);
-      
+
       for (const file of files) {
         await this.addGateToFile(file);
       }
-      
+
       this.printSummary();
-      
     } catch (error) {
       console.error('❌ 处理文件失败:', error.message);
       process.exit(1);
@@ -43,33 +46,34 @@ class ReleaseHealthGateAdder {
   async addGateToFile(filename) {
     const filePath = path.join(this.prdChunksDir, filename);
     console.log(`🔧 处理文件: ${filename}`);
-    
+
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
-      
+
       // 检查是否已有 Sentry_Release_Health_Gate
       if (content.includes('Sentry_Release_Health_Gate')) {
         console.log('   ⚪ 已存在Release Health门禁，跳过');
         return;
       }
-      
+
       // 检查是否有 CRASH_FREE_99.5 SLO
       if (!content.includes('CRASH_FREE_99.5')) {
         console.log('   ⚪ 未找到CRASH_FREE_99.5 SLO，跳过');
         return;
       }
-      
+
       // 查找合适的插入位置
-      const gatesEndRegex = /(\s+windowHours: \d+\s*\n)(\s*Contract_Definitions:)/;
+      const gatesEndRegex =
+        /(\s+windowHours: \d+\s*\n)(\s*Contract_Definitions:)/;
       const match = content.match(gatesEndRegex);
-      
+
       if (!match) {
         console.log('   ⚠️  未找到合适的插入位置');
         return;
       }
-      
+
       const [, lastGate, contractsSection] = match;
-      
+
       // 构建Release Health门禁配置
       const releaseHealthGate = `  Sentry_Release_Health_Gate:
     enabled: true
@@ -87,16 +91,15 @@ class ReleaseHealthGateAdder {
         minAdoptionPercent: 25
         durationHours: 24
 `;
-      
+
       const newContent = content.replace(
         gatesEndRegex,
         `${lastGate}\t${releaseHealthGate}\t${contractsSection}`
       );
-      
+
       fs.writeFileSync(filePath, newContent, 'utf-8');
       this.processed.push(filename);
       console.log('   ✅ 添加Release Health门禁完成');
-      
     } catch (error) {
       const errorMsg = `处理 ${filename} 时出错: ${error.message}`;
       this.errors.push(errorMsg);
@@ -108,20 +111,20 @@ class ReleaseHealthGateAdder {
     console.log('\n' + '='.repeat(60));
     console.log('📊 Release Health门禁添加结果摘要');
     console.log('='.repeat(60));
-    
+
     console.log(`✅ 成功处理文件: ${this.processed.length} 个`);
     console.log(`❌ 处理失败文件: ${this.errors.length} 个`);
-    
+
     if (this.processed.length > 0) {
       console.log('\n✅ 处理成功的文件:');
       this.processed.forEach(file => console.log(`  - ${file}`));
     }
-    
+
     if (this.errors.length > 0) {
       console.log('\n❌ 错误详情:');
       this.errors.forEach(error => console.log(`  - ${error}`));
     }
-    
+
     console.log('\n🎉 Release Health门禁配置完成!');
   }
 }

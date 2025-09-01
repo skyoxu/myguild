@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+release/
+build/
 *.local
 
 # Editor directories and files
@@ -34,3 +36,5 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+serena/
+zen-mcp-server/

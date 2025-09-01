@@ -3,14 +3,14 @@ name: Configuration Management
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'docs/architecture/**'
       - 'src/**'
       - 'package.json'
       - '.github/workflows/config-management.yml'
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   # 构建时配置（从 package.json 获取）
@@ -21,157 +21,157 @@ jobs:
   config-validation:
     name: 配置验证与文档处理
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-      
-    - name: 设置 Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        
-    - name: 安装依赖
-      run: npm ci
-      
-    - name: 配置分层验证
-      env:
-        # CI Secrets（敏感配置）
-        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        # 构建签名（仅生产环境）
-        CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      run: |
-        echo "🔧 初始化配置分层管理..."
-        npm run config:layers:validate
-        
-    - name: 生成配置报告
-      run: |
-        echo "📊 生成配置管理报告..."
-        npm run config:layers:report > config-report.json
-        
-    - name: Base 文档占位符处理（开发环境）
-      if: github.ref != 'refs/heads/main'
-      run: |
-        echo "🔄 开发环境：验证占位符但不替换..."
-        npm run config:substitute:validate
-        
-    - name: Base 文档占位符替换（生产环境）
-      if: github.ref == 'refs/heads/main'
-      env:
-        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      run: |
-        echo "🔄 生产环境：执行占位符替换..."
-        npm run config:substitute:docs
-        
-    - name: 配置完整性检查
-      run: |
-        echo "✅ 验证配置完整性..."
-        node -e "
-        const fs = require('fs');
-        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
-        
-        // 验证必需字段
-        const required = ['name', 'version'];
-        const missing = required.filter(field => !pkg[field]);
-        
-        if (missing.length > 0) {
-          console.error('❌ package.json 缺少必需字段:', missing);
-          process.exit(1);
-        }
-        
-        console.log('✅ package.json 配置验证通过');
-        console.log('📦 应用名称:', pkg.name);
-        console.log('🏷️ 版本:', pkg.version);
-        console.log('🏢 产品名称:', pkg.productName || '未设置');
-        "
-        
-    - name: 上传配置报告
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: config-management-report
-        path: |
-          logs/
-          config-report.json
-        retention-days: 30
-        
-    - name: Base 文档清洁性检查
-      run: |
-        echo "🧹 检查 Base 文档清洁性..."
-        npm run guard:base
-        
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 配置分层验证
+        env:
+          # CI Secrets（敏感配置）
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          # 构建签名（仅生产环境）
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "🔧 初始化配置分层管理..."
+          npm run config:layers:validate
+
+      - name: 生成配置报告
+        run: |
+          echo "📊 生成配置管理报告..."
+          npm run config:layers:report > config-report.json
+
+      - name: Base 文档占位符处理（开发环境）
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "🔄 开发环境：验证占位符但不替换..."
+          npm run config:substitute:validate
+
+      - name: Base 文档占位符替换（生产环境）
+        if: github.ref == 'refs/heads/main'
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          echo "🔄 生产环境：执行占位符替换..."
+          npm run config:substitute:docs
+
+      - name: 配置完整性检查
+        run: |
+          echo "✅ 验证配置完整性..."
+          node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+
+          // 验证必需字段
+          const required = ['name', 'version'];
+          const missing = required.filter(field => !pkg[field]);
+
+          if (missing.length > 0) {
+            console.error('❌ package.json 缺少必需字段:', missing);
+            process.exit(1);
+          }
+
+          console.log('✅ package.json 配置验证通过');
+          console.log('📦 应用名称:', pkg.name);
+          console.log('🏷️ 版本:', pkg.version);
+          console.log('🏢 产品名称:', pkg.productName || '未设置');
+          "
+
+      - name: 上传配置报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: config-management-report
+          path: |
+            logs/
+            config-report.json
+          retention-days: 30
+
+      - name: Base 文档清洁性检查
+        run: |
+          echo "🧹 检查 Base 文档清洁性..."
+          npm run guard:base
+
   documentation-build:
     name: 文档构建与发布准备
     needs: config-validation
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-      
-    - name: 设置 Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        
-    - name: 安装依赖
-      run: npm ci
-      
-    - name: 处理文档占位符
-      env:
-        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        NODE_ENV: production
-        RELEASE_PREFIX: prod
-      run: |
-        echo "📚 生产环境文档处理..."
-        
-        # 1. 执行配置分层初始化
-        npm run config:layers:init
-        
-        # 2. 导出配置到多种格式
-        npm run config:layers:export -- --format json --output dist/config
-        npm run config:layers:export -- --format typescript --output src/generated/config
-        npm run config:layers:export -- --format env --output .env.production
-        
-        # 3. 处理文档占位符替换
-        npm run config:substitute:docs
-        
-        # 4. 验证替换结果
-        echo "✅ 验证文档处理结果..."
-        find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while read file; do
-          echo "⚠️ $file 仍包含未处理占位符:"
-          grep -n "\${" "$file" || true
-        done
-        
-    - name: 构建产物检查
-      run: |
-        echo "🔍 检查构建产物..."
-        ls -la dist/ || echo "dist/ 目录不存在"
-        ls -la src/generated/ || echo "src/generated/ 目录不存在"
-        
-        # 检查生成的配置文件
-        if [ -f "src/generated/config.ts" ]; then
-          echo "📄 生成的 TypeScript 配置:"
-          head -20 src/generated/config.ts
-        fi
-        
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: processed-documentation
-        path: |
-          docs/architecture/
-          dist/config*
-          src/generated/config*
-          .env.production
-        retention-days: 7
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 处理文档占位符
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          NODE_ENV: production
+          RELEASE_PREFIX: prod
+        run: |
+          echo "📚 生产环境文档处理..."
+
+          # 1. 执行配置分层初始化
+          npm run config:layers:init
+
+          # 2. 导出配置到多种格式
+          npm run config:layers:export -- --format json --output dist/config
+          npm run config:layers:export -- --format typescript --output src/generated/config
+          npm run config:layers:export -- --format env --output .env.production
+
+          # 3. 处理文档占位符替换
+          npm run config:substitute:docs
+
+          # 4. 验证替换结果
+          echo "✅ 验证文档处理结果..."
+          find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while read file; do
+            echo "⚠️ $file 仍包含未处理占位符:"
+            grep -n "\${" "$file" || true
+          done
+
+      - name: 构建产物检查
+        run: |
+          echo "🔍 检查构建产物..."
+          ls -la dist/ || echo "dist/ 目录不存在"
+          ls -la src/generated/ || echo "src/generated/ 目录不存在"
+
+          # 检查生成的配置文件
+          if [ -f "src/generated/config.ts" ]; then
+            echo "📄 生成的 TypeScript 配置:"
+            head -20 src/generated/config.ts
+          fi
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-documentation
+          path: |
+            docs/architecture/
+            dist/config*
+            src/generated/config*
+            .env.production
+          retention-days: 7

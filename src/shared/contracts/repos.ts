@@ -337,7 +337,7 @@ export interface AuditQuery {
 /**
  * 类型守卫函数
  */
-export function isEntity(_value: unknown): value is Entity {
+export function isEntity(value: unknown): value is Entity {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -348,7 +348,7 @@ export function isEntity(_value: unknown): value is Entity {
   );
 }
 
-export function isAggregateRoot(_value: unknown): value is AggregateRoot {
+export function isAggregateRoot(value: unknown): value is AggregateRoot {
   return (
     isEntity(value) &&
     'aggregateVersion' in value &&

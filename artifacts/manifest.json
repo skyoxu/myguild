@@ -1,0 +1,41 @@
+{
+  "0.0.9": {
+    "path": "app-0.0.9.exe",
+    "sha512": "sha512-GZjlmuYtdOL/Qr6wuKRW7ZUOzWXo3vxdJYL4tAdF4KvYNRYM9LbZoK5sC+mhYi2E7QCQozRFr2vqPw6RmN9g==",
+    "size": 45123456,
+    "releaseDate": "2025-08-15T08:00:00.000Z",
+    "files": [
+      {
+        "url": "app-0.0.9.exe",
+        "sha512": "sha512-GZjlmuYtdOL/Qr6wuKRW7ZUOzWXo3vxdJYL4tAdF4KvYNRYM9LbZoK5sC+mhYi2E7QCQozRFr2vqPw6RmN9g==",
+        "size": 45123456
+      }
+    ]
+  },
+  "0.1.0": {
+    "path": "app-0.1.0.exe",
+    "sha512": "sha512-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567ABC890DEF123GHI456JKL789MNO012PQR==",
+    "size": 52428800,
+    "releaseDate": "2025-08-29T10:00:00.000Z",
+    "files": [
+      {
+        "url": "app-0.1.0.exe",
+        "sha512": "sha512-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567ABC890DEF123GHI456JKL789MNO012PQR==",
+        "size": 52428800
+      }
+    ]
+  },
+  "0.1.1": {
+    "path": "app-0.1.1.exe",
+    "sha512": "sha512-XYZ789abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567ABC890DEF123GHI456JKL789MNO==",
+    "size": 53248000,
+    "releaseDate": "2025-08-30T12:00:00.000Z",
+    "files": [
+      {
+        "url": "app-0.1.1.exe",
+        "sha512": "sha512-XYZ789abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567ABC890DEF123GHI456JKL789MNO==",
+        "size": 53248000
+      }
+    ]
+  }
+}
