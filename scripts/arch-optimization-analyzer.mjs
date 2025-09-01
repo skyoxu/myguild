@@ -61,8 +61,7 @@ class ArchitectureOptimizer {
     // 生成优化建议
     const optimizationPlan = await this.generateOptimizationPlan(
       implementationAssessment,
-      documentationGaps,
-      configConsistency
+      documentationGaps
     );
 
     // 生成报告
@@ -534,8 +533,7 @@ class ArchitectureOptimizer {
    */
   async generateOptimizationPlan(
     implementationAssessment,
-    documentationGaps,
-    _configConsistency
+    documentationGaps
   ) {
     const plan = {
       immediateActions: [],
@@ -670,7 +668,7 @@ class ArchitectureOptimizer {
   /**
    * 生成优化后的文件
    */
-  async generateOptimizedFiles(optimizationPlan) {
+  async generateOptimizedFiles(_optimizationPlan) {
     // 生成架构治理脚本
     await this.generateArchGovernanceScript();
 

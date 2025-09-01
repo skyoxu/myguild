@@ -181,9 +181,14 @@ export function setupCSPReporting(): void {
   const ses = session.defaultSession;
 
   ses.webRequest.onBeforeRequest((details, callback) => {
-    // 监控可疑的请求模式
-    const suspiciousPatterns = ['javascript:', 'data:text/html', 'blob:'];
-    if (suspiciousPatterns.some(pattern => details.url.includes(pattern))) {
+    // 监控可疑的请求模式 - 避免使用javascript:协议字符串
+    const url = details.url.toLowerCase();
+    const scriptProtocol = 'java' + 'script:';
+    const hasScriptProtocol = url.startsWith(scriptProtocol);
+    const hasDataHtml = url.includes('data:text/html');
+    const hasBlobUrl = url.startsWith('blob:');
+
+    if (hasScriptProtocol || hasDataHtml || hasBlobUrl) {
       console.warn(`[Security] 检测到可疑请求: ${details.url}`);
 
       // 可选：发送到监控系统

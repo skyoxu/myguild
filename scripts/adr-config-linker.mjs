@@ -414,7 +414,7 @@ function isStrictInheritance(sourceValue, targetValue, configName) {
 /**
  * 生成影响分析报告
  */
-function generateImpactAnalysis(adr, graph, _adrList) {
+function generateImpactAnalysis(adr, graph) {
   const directDependents = Array.from(graph.get(adr.id) || []);
   const allAffected = new Set();
 
@@ -485,7 +485,7 @@ async function autoFixConfigIssues(issues, adrList) {
           const pattern = getConfigPattern(issue.config);
 
           if (pattern) {
-            content = content.replace(pattern, (match, ...groups) => {
+            content = content.replace(pattern, (match) => {
               return match.replace(issue.targetValue, issue.sourceValue);
             });
 
@@ -579,7 +579,7 @@ async function main() {
     console.log(`✅ 成功解析 ${adrList.length} 个ADR文件\n`);
 
     // 构建依赖关系图
-    const { graph, reverseGraph } = buildDependencyGraph(adrList);
+    const { graph } = buildDependencyGraph(adrList);
 
     // 检测循环依赖
     const cycles = detectCycles(graph);
@@ -634,7 +634,7 @@ async function main() {
     // 生成影响分析报告
     console.log('📊 生成影响分析报告...');
     const impactAnalysis = adrList.map(adr =>
-      generateImpactAnalysis(adr, graph, adrList)
+      generateImpactAnalysis(adr, graph)
     );
 
     // 显示高风险ADR
