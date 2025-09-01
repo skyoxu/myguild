@@ -217,7 +217,11 @@
       "Bash(where gh)",
       "Bash(cat:*)",
       "Bash(echo \"Exit code: $?\")",
-      "Bash(electronegativity:*)"
+      "Bash(electronegativity:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" --version)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" run list --branch feature/security-fixes-and-ci-test --limit 5)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web)"
     ],
     "deny": [],
     "additionalDirectories": [
