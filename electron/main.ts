@@ -21,7 +21,10 @@ function createWindow(): void {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      ...SECURITY_PREFERENCES,
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true,
     },
   });
 
@@ -60,10 +63,10 @@ function createWindow(): void {
   if (process.env.SECURITY_TEST_MODE === 'true') {
     // 限制暴露的信息，仅包含测试必需的数据
     (global as any).__SECURITY_PREFS__ = {
-      nodeIntegration: SECURITY_PREFERENCES.nodeIntegration,
-      contextIsolation: SECURITY_PREFERENCES.contextIsolation,
-      sandbox: SECURITY_PREFERENCES.sandbox,
-      webSecurity: SECURITY_PREFERENCES.webSecurity,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
       testMode: true,
       windowId: `window-${Math.random().toString(36).substr(2, 9)}`, // 匿名化ID
     };
@@ -83,6 +86,11 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
   });
+
+  // 测试模式：立即显示窗口以减少启动时间
+  if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
+    mainWindow.show();
+  }
 
   // 应用统一安全策略（包含权限控制、导航限制、窗口打开处理）
   securityPolicyManager.applySecurityPolicies(mainWindow);
