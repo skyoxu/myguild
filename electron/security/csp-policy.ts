@@ -1,6 +1,6 @@
 /**
  * CSP统一策略管理器
- * 
+ *
  * 功能：
  * - 统一管理开发/生产环境的CSP策略
  * - 支持nonce机制增强安全性
@@ -46,7 +46,7 @@ export class CSPManager {
     'script-src',
     'object-src',
     'frame-ancestors',
-    'base-uri'
+    'base-uri',
   ];
 
   /**
@@ -54,30 +54,31 @@ export class CSPManager {
    */
   static generateCSP(config: CSPConfig): string {
     const policy = { ...this.BASE_POLICY };
-    
+
     // 开发环境配置
     if (config.environment === 'development') {
       policy['script-src'] = [
         "'self'",
         "'unsafe-inline'", // 开发时需要，生产环境通过nonce替代
         'localhost:*',
-        '127.0.0.1:*'
+        '127.0.0.1:*',
       ];
       policy['connect-src'] = [
         "'self'",
         'localhost:*',
         '127.0.0.1:*',
-        'ws:', 'wss:', // Vite HMR
+        'ws:',
+        'wss:', // Vite HMR
       ];
     }
-    
+
     // Nonce支持（生产环境推荐）
     if (config.nonce) {
       policy['script-src'] = policy['script-src']
         .filter(src => src !== "'unsafe-inline'")
         .concat([`'nonce-${config.nonce}'`]);
     }
-    
+
     // Sentry集成
     if (config.sentryDsn) {
       const sentryDomain = new URL(config.sentryDsn).origin;
@@ -94,7 +95,7 @@ export class CSPManager {
     return this.generateCSP({
       environment: 'development',
       nonce,
-      sentryDsn: process.env.SENTRY_DSN
+      sentryDsn: process.env.SENTRY_DSN,
     });
   }
 
@@ -104,7 +105,7 @@ export class CSPManager {
   static generateProductionCSP(): string {
     return this.generateCSP({
       environment: 'production',
-      sentryDsn: process.env.SENTRY_DSN
+      sentryDsn: process.env.SENTRY_DSN,
     });
   }
 
@@ -115,11 +116,18 @@ export class CSPManager {
     return {
       environment: 'test',
       expectedDirectives: [
-        'default-src', 'script-src', 'style-src', 
-        'img-src', 'connect-src', 'font-src',
-        'object-src', 'frame-ancestors', 'base-uri', 'form-action'
+        'default-src',
+        'script-src',
+        'style-src',
+        'img-src',
+        'connect-src',
+        'font-src',
+        'object-src',
+        'frame-ancestors',
+        'base-uri',
+        'form-action',
       ],
-      testMode: true
+      testMode: true,
     };
   }
 
@@ -136,16 +144,16 @@ export class CSPManager {
     );
 
     const risks: string[] = [];
-    
+
     // 检查危险值
     if (csp.includes("'unsafe-inline'") && !csp.includes('nonce-')) {
       risks.push("使用'unsafe-inline'但未配置nonce，存在XSS风险");
     }
-    
+
     if (csp.includes("'unsafe-eval'")) {
       risks.push("使用'unsafe-eval'存在代码注入风险");
     }
-    
+
     if (csp.includes('*') && !csp.includes('data:')) {
       risks.push("使用通配符'*'可能过于宽松");
     }
@@ -153,14 +161,17 @@ export class CSPManager {
     return {
       isValid: missingDirectives.length === 0,
       missingDirectives,
-      risks
+      risks,
     };
   }
 
   /**
    * 检查两个CSP策略的兼容性
    */
-  static checkPolicyCompatibility(policy1: string, policy2: string): {
+  static checkPolicyCompatibility(
+    policy1: string,
+    policy2: string
+  ): {
     compatible: boolean;
     conflicts: string[];
     suggestions: string[];
@@ -175,22 +186,26 @@ export class CSPManager {
     for (const directive of this.REQUIRED_DIRECTIVES) {
       const values1 = directives1[directive] || [];
       const values2 = directives2[directive] || [];
-      
-      if (values1.length !== values2.length || 
-          !values1.every(val => values2.includes(val))) {
-        conflicts.push(`${directive}指令不一致: [${values1.join(', ')}] vs [${values2.join(', ')}]`);
+
+      if (
+        values1.length !== values2.length ||
+        !values1.every(val => values2.includes(val))
+      ) {
+        conflicts.push(
+          `${directive}指令不一致: [${values1.join(', ')}] vs [${values2.join(', ')}]`
+        );
       }
     }
 
     if (conflicts.length > 0) {
-      suggestions.push("建议使用CSPManager.generateCSP()统一生成策略");
-      suggestions.push("检查环境变量配置是否一致");
+      suggestions.push('建议使用CSPManager.generateCSP()统一生成策略');
+      suggestions.push('检查环境变量配置是否一致');
     }
 
     return {
       compatible: conflicts.length === 0,
       conflicts,
-      suggestions
+      suggestions,
     };
   }
 
@@ -216,7 +231,7 @@ export class CSPManager {
         "base-uri 'none'",
         "form-action 'self'",
       ],
-      nonceGeneration: true
+      nonceGeneration: true,
     };
   }
 
@@ -234,7 +249,7 @@ export class CSPManager {
    */
   private static parsePolicy(csp: string): Record<string, string[]> {
     const directives: Record<string, string[]> = {};
-    
+
     csp.split(';').forEach(directive => {
       const trimmed = directive.trim();
       if (trimmed) {
@@ -242,7 +257,7 @@ export class CSPManager {
         directives[key] = values;
       }
     });
-    
+
     return directives;
   }
 }

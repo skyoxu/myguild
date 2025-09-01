@@ -87,11 +87,11 @@ class SecurityPolicyManager {
       timestamp: new Date().toISOString(),
       type,
       action,
-      details
+      details,
     };
-    
+
     this.auditLog.push(event);
-    
+
     // 保持日志大小，只保留最近1000条记录
     if (this.auditLog.length > 1000) {
       this.auditLog = this.auditLog.slice(-1000);
@@ -113,20 +113,21 @@ class SecurityPolicyManager {
     securityScore: number;
   } {
     const totalEvents = this.auditLog.length;
-    const allowedEvents = this.auditLog.filter(e => e.action === 'allow').length;
+    const allowedEvents = this.auditLog.filter(
+      e => e.action === 'allow'
+    ).length;
     const deniedEvents = this.auditLog.filter(e => e.action === 'deny').length;
-    
+
     // 计算安全分数（拒绝的恶意请求越多，分数越高）
-    const securityScore = totalEvents > 0 
-      ? Math.round((deniedEvents / totalEvents) * 100)
-      : 100;
+    const securityScore =
+      totalEvents > 0 ? Math.round((deniedEvents / totalEvents) * 100) : 100;
 
     return {
       totalEvents,
       allowedEvents,
       deniedEvents,
       recentEvents: this.auditLog.slice(-50), // 最近50条记录
-      securityScore
+      securityScore,
     };
   }
 
@@ -358,7 +359,7 @@ class SecurityPolicyManager {
       timestamp: new Date().toISOString(),
       environment: this.isProduction ? 'production' : 'development',
       config: this.getConfig(),
-      auditSummary: this.getSecurityAuditReport()
+      auditSummary: this.getSecurityAuditReport(),
     };
   }
 

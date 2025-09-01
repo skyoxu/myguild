@@ -14,7 +14,7 @@ if (process.contextIsolated) {
     if (!isSandboxed) {
       console.warn('⚠️ Sandbox is not enabled - security may be compromised');
     }
-    
+
     // 统一使用 electronAPI 命名，与测试保持一致
     contextBridge.exposeInMainWorld('electronAPI', {
       // 基础系统信息

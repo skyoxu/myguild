@@ -68,7 +68,7 @@ class SecurityAutoFix {
       // 修复index.html中的CSP
       const indexFile = join(ROOT_DIR, 'index.html');
       if (existsSync(indexFile)) {
-        let content = readFileSync(indexFile, 'utf8');
+        const content = readFileSync(indexFile, 'utf8');
         
         // 安全的CSP策略
         const secureCSP = `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://sentry.io https://*.sentry.io; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none';`;
@@ -263,7 +263,7 @@ if (!process.contextIsolated) {
           'unsafe-eval'
         ];
 
-        let modified = false;
+        const modified = false;
         const allDeps = { 
           ...packageData.dependencies, 
           ...packageData.devDependencies 

@@ -212,7 +212,8 @@
       "Bash(git checkout:*)",
       "Bash(npm audit:*)",
       "Bash(gh run list:*)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "Bash(git submodule:*)"
     ],
     "deny": [],
     "additionalDirectories": [
