@@ -1,0 +1,94 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20.x'
+  COVERAGE_THRESHOLD: 90
+
+jobs:
+  # ==================== 核心构建测试 ====================
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 安装依赖
+        run: npm ci
+
+      - name: 🔍 ESLint 检查
+        run: npm run lint
+
+      - name: 🏗️ TypeScript 编译检查
+        run: npx tsc --noEmit
+
+      - name: 🧪 运行单元测试
+        run: npm run test:unit
+        env:
+          NODE_ENV: test
+
+      - name: 🏗️ 构建应用
+        run: npm run build
+
+      - name: 🔍 验证构建产物
+        run: |
+          ls -la dist/
+          # 验证关键文件存在
+          test -f dist/index.html
+          test -d dist/assets/
+
+  # ==================== Electron安全测试 ====================
+  electron-security:
+    name: Electron Security Tests
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 安装依赖
+        run: npm ci
+
+      - name: 🖥️ 安装系统依赖 (Electron)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: 🛡️ 运行安全冒烟测试
+        run: xvfb-run -a npm run test:e2e:security
+        env:
+          CI: true
+
+      - name: 📋 上传安全测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-security-report
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
