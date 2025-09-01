@@ -729,40 +729,4 @@ export const IMPACT_SCALE: Record<
   },
 };
 
-// =============================================================================
-// 导出所有公共类型
-// =============================================================================
-
-export type {
-  // 主要实体类型
-  RiskEntry,
-  TechnicalDebtRecord,
-
-  // 评估和矩阵类型
-  RiskAssessmentResult,
-  ProbabilityImpactMatrix,
-  TraceabilityMatrix,
-
-  // 服务接口
-  RiskRegistry,
-  TechnicalDebtRepository,
-  TraceabilityAnalyzer,
-  IRiskManagementService,
-
-  // 请求响应类型
-  CreateRiskRequest,
-  UpdateRiskRequest,
-  CreateTDRRequest,
-  UpdateTDRRequest,
-  RiskFilter,
-  TDRFilter,
-
-  // 报告和分析类型
-  ValidationReport,
-  ImpactAnalysisReport,
-  RiskReport,
-  RiskMetrics,
-
-  // 配置类型
-  RiskManagementConfig,
-};
+// 注意：所有类型已在上面定义时直接export，无需重复导出

@@ -4,6 +4,7 @@
  */
 
 import type { CloudEvent } from '../contracts/cloudevents-core';
+import type { GuildManagerEventType } from '../contracts/guild-manager-chunk-001';
 
 interface CloudEventValidationError {
   field: string;
@@ -21,17 +22,17 @@ export class CloudEventValidator {
 
   private static readonly VALID_SPEC_VERSION = '1.0';
 
-  private static readonly GUILD_MANAGER_EVENT_TYPES: GuildManagerEvent[] = [
-    'gm.guild.turn.started',
-    'gm.guild.turn.phase_changed',
-    'gm.guild.turn.completed',
-    'gm.member.state_changed',
-    'gm.member.relationship_updated',
-    'gm.decision.created',
-    'gm.decision.resolved',
-    'gm.event.triggered',
-    'gm.ai.action_executed',
-    'gm.workpanel.data_updated',
+  private static readonly GUILD_MANAGER_EVENT_TYPES: GuildManagerEventType[] = [
+    'io.vitegame.gm.guild.turn.started',
+    'io.vitegame.gm.guild.turn.phase_changed',
+    'io.vitegame.gm.guild.turn.completed',
+    'io.vitegame.gm.member.state_changed',
+    'io.vitegame.gm.member.relationship_updated',
+    'io.vitegame.gm.decision.created',
+    'io.vitegame.gm.decision.resolved',
+    'io.vitegame.gm.event.triggered',
+    'io.vitegame.gm.ai.action_executed',
+    'io.vitegame.gm.workpanel.data_updated',
   ];
 
   /**
@@ -85,7 +86,7 @@ export class CloudEventValidator {
     if (
       cloudEvent.type &&
       !this.GUILD_MANAGER_EVENT_TYPES.includes(
-        cloudEvent.type as GuildManagerEvent
+        cloudEvent.type as GuildManagerEventType
       )
     ) {
       errors.push({
@@ -147,7 +148,7 @@ export class CloudEventValidator {
    * 创建标准CloudEvent
    */
   static createEvent(
-    type: GuildManagerEvent,
+    type: GuildManagerEventType,
     source: string,
     data?: unknown,
     options?: {

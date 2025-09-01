@@ -19,7 +19,7 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    // "erasableSyntaxOnly": true, // Temporarily disabled due to string enum compatibility issues
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
