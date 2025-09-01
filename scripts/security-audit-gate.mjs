@@ -40,6 +40,7 @@ class SecurityAuditProcessor {
         ['audit', '--json', `--audit-level=${auditLevel}`],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
+          shell: true, // Windows兼容性修复
         }
       );
 
@@ -367,6 +368,7 @@ class SecurityAuditGate {
     return new Promise((resolve, reject) => {
       const child = spawn('npm', ['audit', 'fix'], {
         stdio: 'inherit',
+        shell: true, // Windows兼容性修复
       });
 
       child.on('close', code => {
