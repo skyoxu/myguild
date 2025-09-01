@@ -7,14 +7,14 @@
  */
 
 // 加载环境变量
+import fs from 'fs';
+import path from 'path';
+
 try {
-  require('dotenv/config');
+  await import('dotenv/config');
 } catch (error) {
   // dotenv 可能未安装，继续执行
 }
-
-const fs = require('fs');
-const path = require('path');
 
 // 验证结果
 class VerificationResult {
@@ -668,8 +668,8 @@ async function main() {
 }
 
 // 如果直接运行
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-module.exports = { ObservabilityVerifier, VerificationResult };
+export { ObservabilityVerifier, VerificationResult };
