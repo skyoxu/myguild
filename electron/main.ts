@@ -6,15 +6,15 @@ import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
 
 // 安全配置常量（用于测试验证）
-const SECURITY_PREFERENCES = {
+const _SECURITY_PREFERENCES = {
   sandbox: true,
   contextIsolation: true,
   nodeIntegration: false,
   webSecurity: true,
 } as const;
 
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+function createSecureBrowserWindow(): BrowserWindow {
+  return new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -27,37 +27,42 @@ function createWindow(): void {
       webSecurity: true,
     },
   });
+}
 
-  // E2E测试模式：网络隔离配置
-  if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
-    // 禁用自动更新检查
-    app.setAppUserModelId('com.electron.test');
-
-    // 设置离线模式网络策略
-    mainWindow.webContents.session.setPermissionRequestHandler(() => false);
-
-    // 阻止不必要的网络请求
-    mainWindow.webContents.session.webRequest.onBeforeRequest(
-      (details, callback) => {
-        const url = details.url;
-
-        // 允许本地资源和测试必需的连接
-        if (
-          url.startsWith('file://') ||
-          url.startsWith('chrome-devtools://') ||
-          url.startsWith('data:') ||
-          url.includes('localhost') ||
-          url.includes('127.0.0.1')
-        ) {
-          callback({ cancel: false });
-        } else {
-          // 阻止外部网络请求
-          console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
-          callback({ cancel: true });
-        }
-      }
-    );
+function configureTestMode(window: BrowserWindow): void {
+  if (!(process.env.NODE_ENV === 'test' || process.env.CI === 'true')) {
+    return;
   }
+  // 禁用自动更新检查
+  app.setAppUserModelId('com.electron.test');
+
+  // 设置离线模式网络策略
+  window.webContents.session.setPermissionRequestHandler(() => false);
+
+  // 阻止不必要的网络请求
+  window.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+    const url = details.url;
+
+    // 允许本地资源和测试必需的连接
+    if (
+      url.startsWith('file://') ||
+      url.startsWith('chrome-devtools://') ||
+      url.startsWith('data:') ||
+      url.includes('localhost') ||
+      url.includes('127.0.0.1')
+    ) {
+      callback({ cancel: false });
+    } else {
+      // 阻止外部网络请求
+      console.log(`🚫 E2E测试模式：阻止网络请求 ${url}`);
+      callback({ cancel: true });
+    }
+  });
+}
+
+function createWindow(): void {
+  // 创建浏览器窗口
+  const mainWindow = createSecureBrowserWindow();
 
   // 在测试模式下暴露安全配置供验证（最小化信息泄露）
   if (process.env.SECURITY_TEST_MODE === 'true') {
@@ -99,10 +104,10 @@ function createWindow(): void {
   if (is.dev) {
     // 开发环境：动态注入CSP以支持热更新和开发工具
     mainWindow.webContents.session.webRequest.onHeadersReceived(
-      (details, callback) => {
+      async (details, callback) => {
         // 为每次导航生成唯一nonce
-        const crypto = require('crypto');
-        const nonce = crypto.randomBytes(16).toString('base64');
+        const { randomBytes } = await import('crypto');
+        const nonce = randomBytes(16).toString('base64');
 
         // 使用统一CSP管理器生成开发环境策略
         const cspPolicy = CSPManager.generateDevelopmentCSP(nonce);
@@ -119,6 +124,8 @@ function createWindow(): void {
     );
   }
   // 生产环境：依赖index.html中的meta标签提供CSP（更高性能）
+
+  configureTestMode(mainWindow);
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);

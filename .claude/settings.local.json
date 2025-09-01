@@ -213,7 +213,11 @@
       "Bash(npm audit:*)",
       "Bash(gh run list:*)",
       "Bash(gh pr list:*)",
-      "Bash(git submodule:*)"
+      "Bash(git submodule:*)",
+      "Bash(where gh)",
+      "Bash(cat:*)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(electronegativity:*)"
     ],
     "deny": [],
     "additionalDirectories": [
