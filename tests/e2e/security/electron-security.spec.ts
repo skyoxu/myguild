@@ -168,9 +168,9 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
         if (noDangerousGlobals) {
           console.log('[Test] ✅ 沙箱模式严格隔离验证通过 - 没有危险全局变量暴露');
           return; // 测试通过
-        } else {
-          throw new Error(`沙箱隔离不完整，仍有危险全局变量: ${JSON.stringify(apiCheck.debugInfo)}`);
         }
+        throw new Error(`沙箱隔离不完整，仍有危险全局变量: ${JSON.stringify(apiCheck.debugInfo)}`);
+        
       }
 
       // 如果有API暴露，则验证其安全性
