@@ -51,7 +51,7 @@ test.describe('Electron安全基线验证', () => {
     expect(isolationEnabled).toBe(true);
   });
 
-  test.skipIf(true, 'sandbox模式验证', async () => {
+  test.skip('sandbox模式验证', async () => {
     // TODO: 实现 sandbox模式验证 测试
     // test.skip moved to test level to avoid flaky pattern
   });

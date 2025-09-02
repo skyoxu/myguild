@@ -27,8 +27,8 @@ test.beforeAll(async () => {
 
   // 启动 Electron 应用
   electronApp = await electron.launch({
-    args: ['./electron/main.js'],
-    timeout: 30000,
+    args: ['./dist-electron/main.js'],
+    timeout: 60000,
     env: {
       NODE_ENV: 'test',
       SECURITY_TEST_MODE: 'true', // 启用安全测试模式
