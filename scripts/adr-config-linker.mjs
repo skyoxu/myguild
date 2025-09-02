@@ -485,7 +485,7 @@ async function autoFixConfigIssues(issues, adrList) {
           const pattern = getConfigPattern(issue.config);
 
           if (pattern) {
-            content = content.replace(pattern, (match) => {
+            content = content.replace(pattern, match => {
               return match.replace(issue.targetValue, issue.sourceValue);
             });
 

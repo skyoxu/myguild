@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 综合安全验证脚本
- * 
+ *
  * 验证所有已实施的高优先级安全修复：
  * 1. CSP统一管理模块
  * 2. 权限管理器增强
@@ -25,47 +25,47 @@ class ComprehensiveSecurityValidator {
   }
 
   log(message, level = 'info') {
-    const prefix = {
-      'info': '✅',
-      'warn': '⚠️',
-      'error': '❌',
-      'security': '🔒',
-      'test': '🧪'
-    }[level] || 'ℹ️';
-    
+    const prefix =
+      {
+        info: '✅',
+        warn: '⚠️',
+        error: '❌',
+        security: '🔒',
+        test: '🧪',
+      }[level] || 'ℹ️';
+
     console.log(`${prefix} ${message}`);
   }
 
   async runValidationScript(scriptPath, testName) {
     this.log(`执行${testName}验证...`, 'test');
-    
+
     try {
       const result = execSync(`node "${scriptPath}"`, {
         cwd: ROOT_DIR,
         encoding: 'utf8',
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
-      
+
       this.results.push({
         test: testName,
         status: 'pass',
         score: 100,
-        output: result
+        output: result,
       });
-      
+
       this.overallScore += 100;
       this.log(`${testName}验证通过`, 'info');
       return true;
-      
     } catch (error) {
       this.results.push({
         test: testName,
         status: 'fail',
         score: 0,
         error: error.message,
-        output: error.stdout || error.stderr
+        output: error.stdout || error.stderr,
       });
-      
+
       this.log(`${testName}验证失败`, 'error');
       return false;
     } finally {
@@ -76,14 +76,14 @@ class ComprehensiveSecurityValidator {
   // 验证文件结构完整性
   validateFileStructure() {
     this.log('验证安全文件结构...', 'security');
-    
+
     const requiredFiles = [
       'electron/security/csp-policy.ts',
       'electron/security/permissions.ts',
       'electron/preload.ts',
       'electron/preload.d.ts',
       'scripts/validate-csp-consistency.mjs',
-      'scripts/validate-preload-security.mjs'
+      'scripts/validate-preload-security.mjs',
     ];
 
     let structureScore = 0;
@@ -99,13 +99,15 @@ class ComprehensiveSecurityValidator {
       }
     });
 
-    const structurePercentage = Math.round((structureScore / maxStructureScore) * 100);
-    
+    const structurePercentage = Math.round(
+      (structureScore / maxStructureScore) * 100
+    );
+
     this.results.push({
       test: '文件结构完整性',
       status: structureScore === maxStructureScore ? 'pass' : 'partial',
       score: structurePercentage,
-      details: `${structureScore}/${maxStructureScore} 文件存在`
+      details: `${structureScore}/${maxStructureScore} 文件存在`,
     });
 
     this.overallScore += structurePercentage;
@@ -117,7 +119,7 @@ class ComprehensiveSecurityValidator {
   // 验证配置文件安全性
   validateConfigurationSecurity() {
     this.log('验证配置文件安全性...', 'security');
-    
+
     let configScore = 0;
     const maxConfigScore = 3;
 
@@ -125,15 +127,15 @@ class ComprehensiveSecurityValidator {
     const mainPath = join(ROOT_DIR, 'electron', 'main.ts');
     if (existsSync(mainPath)) {
       const mainContent = readFileSync(mainPath, 'utf8');
-      
+
       // 检查安全基线设置
       const securitySettings = [
         'nodeIntegration: false',
-        'contextIsolation: true', 
-        'sandbox: true'
+        'contextIsolation: true',
+        'sandbox: true',
       ];
 
-      const foundSettings = securitySettings.filter(setting => 
+      const foundSettings = securitySettings.filter(setting =>
         mainContent.includes(setting)
       );
 
@@ -148,9 +150,11 @@ class ComprehensiveSecurityValidator {
     // 检查 CSPManager 集成
     if (existsSync(mainPath)) {
       const mainContent = readFileSync(mainPath, 'utf8');
-      
-      if (mainContent.includes('import { CSPManager }') && 
-          mainContent.includes('CSPManager.generateDevelopmentCSP')) {
+
+      if (
+        mainContent.includes('import { CSPManager }') &&
+        mainContent.includes('CSPManager.generateDevelopmentCSP')
+      ) {
         configScore++;
         this.log('  ✓ CSPManager集成正确');
       } else {
@@ -162,10 +166,12 @@ class ComprehensiveSecurityValidator {
     const indexPath = join(ROOT_DIR, 'index.html');
     if (existsSync(indexPath)) {
       const indexContent = readFileSync(indexPath, 'utf8');
-      
-      if (indexContent.includes("default-src 'none'") && 
-          indexContent.includes("object-src 'none'") &&
-          indexContent.includes("frame-ancestors 'none'")) {
+
+      if (
+        indexContent.includes("default-src 'none'") &&
+        indexContent.includes("object-src 'none'") &&
+        indexContent.includes("frame-ancestors 'none'")
+      ) {
         configScore++;
         this.log('  ✓ index.html CSP配置安全');
       } else {
@@ -174,12 +180,12 @@ class ComprehensiveSecurityValidator {
     }
 
     const configPercentage = Math.round((configScore / maxConfigScore) * 100);
-    
+
     this.results.push({
       test: '配置文件安全性',
       status: configScore === maxConfigScore ? 'pass' : 'partial',
       score: configPercentage,
-      details: `${configScore}/${maxConfigScore} 配置检查通过`
+      details: `${configScore}/${maxConfigScore} 配置检查通过`,
     });
 
     this.overallScore += configPercentage;
@@ -191,7 +197,7 @@ class ComprehensiveSecurityValidator {
   // 检查代码质量和最佳实践
   validateCodeQuality() {
     this.log('验证代码质量...', 'test');
-    
+
     let qualityScore = 0;
     const maxQualityScore = 4;
 
@@ -199,9 +205,11 @@ class ComprehensiveSecurityValidator {
     const cspPath = join(ROOT_DIR, 'electron', 'security', 'csp-policy.ts');
     if (existsSync(cspPath)) {
       const cspContent = readFileSync(cspPath, 'utf8');
-      
-      if (cspContent.includes('validateCSP') && 
-          cspContent.includes('generateTestingConfig')) {
+
+      if (
+        cspContent.includes('validateCSP') &&
+        cspContent.includes('generateTestingConfig')
+      ) {
         qualityScore++;
         this.log('  ✓ CSPManager功能完整');
       }
@@ -211,10 +219,12 @@ class ComprehensiveSecurityValidator {
     const permPath = join(ROOT_DIR, 'electron', 'security', 'permissions.ts');
     if (existsSync(permPath)) {
       const permContent = readFileSync(permPath, 'utf8');
-      
-      if (permContent.includes('auditLog') && 
-          permContent.includes('logSecurityEvent') &&
-          permContent.includes('getSecurityAuditReport')) {
+
+      if (
+        permContent.includes('auditLog') &&
+        permContent.includes('logSecurityEvent') &&
+        permContent.includes('getSecurityAuditReport')
+      ) {
         qualityScore++;
         this.log('  ✓ 权限管理器审计功能完整');
       }
@@ -224,9 +234,11 @@ class ComprehensiveSecurityValidator {
     const preloadPath = join(ROOT_DIR, 'electron', 'preload.ts');
     if (existsSync(preloadPath)) {
       const preloadContent = readFileSync(preloadPath, 'utf8');
-      
-      if (preloadContent.includes('Context isolation must be enabled') && 
-          !preloadContent.includes('window.electronAPI')) {
+
+      if (
+        preloadContent.includes('Context isolation must be enabled') &&
+        !preloadContent.includes('window.electronAPI')
+      ) {
         qualityScore++;
         this.log('  ✓ 预加载脚本安全检查完整');
       }
@@ -239,13 +251,15 @@ class ComprehensiveSecurityValidator {
       this.log('  ✓ TypeScript类型定义存在');
     }
 
-    const qualityPercentage = Math.round((qualityScore / maxQualityScore) * 100);
-    
+    const qualityPercentage = Math.round(
+      (qualityScore / maxQualityScore) * 100
+    );
+
     this.results.push({
       test: '代码质量',
       status: qualityScore >= maxQualityScore * 0.75 ? 'pass' : 'partial',
       score: qualityPercentage,
-      details: `${qualityScore}/${maxQualityScore} 质量检查通过`
+      details: `${qualityScore}/${maxQualityScore} 质量检查通过`,
     });
 
     this.overallScore += qualityPercentage;
@@ -256,8 +270,11 @@ class ComprehensiveSecurityValidator {
 
   // 生成安全报告
   generateSecurityReport() {
-    const finalScore = this.maxScore > 0 ? Math.round((this.overallScore / this.maxScore) * 100) : 0;
-    
+    const finalScore =
+      this.maxScore > 0
+        ? Math.round((this.overallScore / this.maxScore) * 100)
+        : 0;
+
     const report = {
       timestamp: new Date().toISOString(),
       overallScore: finalScore,
@@ -267,7 +284,7 @@ class ComprehensiveSecurityValidator {
       failedTests: this.results.filter(r => r.status === 'fail').length,
       partialTests: this.results.filter(r => r.status === 'partial').length,
       details: this.results,
-      recommendations: this.generateRecommendations()
+      recommendations: this.generateRecommendations(),
     };
 
     return report;
@@ -283,7 +300,7 @@ class ComprehensiveSecurityValidator {
 
   generateRecommendations() {
     const recommendations = [];
-    
+
     this.results.forEach(result => {
       if (result.status === 'fail') {
         recommendations.push(`修复${result.test}中发现的问题`);
@@ -314,8 +331,14 @@ class ComprehensiveSecurityValidator {
     this.validateCodeQuality();
 
     // 4. 运行专项验证脚本
-    await this.runValidationScript('scripts/validate-csp-consistency.mjs', 'CSP策略一致性');
-    await this.runValidationScript('scripts/validate-preload-security.mjs', '预加载脚本安全性');
+    await this.runValidationScript(
+      'scripts/validate-csp-consistency.mjs',
+      'CSP策略一致性'
+    );
+    await this.runValidationScript(
+      'scripts/validate-preload-security.mjs',
+      '预加载脚本安全性'
+    );
 
     // 5. 生成安全报告
     const report = this.generateSecurityReport();
@@ -328,7 +351,7 @@ class ComprehensiveSecurityValidator {
     if (report.failedTests > 0) {
       this.log(`失败测试: ${report.failedTests}`, 'error');
     }
-    
+
     if (report.partialTests > 0) {
       this.log(`部分通过: ${report.partialTests}`, 'warn');
     }
@@ -342,9 +365,12 @@ class ComprehensiveSecurityValidator {
     // 判断是否通过安全门禁
     const passThreshold = 85; // 85分以上通过
     const isPassed = report.overallScore >= passThreshold;
-    
-    this.log(`\n${isPassed ? '✅ 安全门禁通过' : '❌ 安全门禁未通过'}`, isPassed ? 'info' : 'error');
-    
+
+    this.log(
+      `\n${isPassed ? '✅ 安全门禁通过' : '❌ 安全门禁未通过'}`,
+      isPassed ? 'info' : 'error'
+    );
+
     if (!isPassed) {
       this.log(`需要达到${passThreshold}分以上才能通过安全门禁`, 'warn');
     }

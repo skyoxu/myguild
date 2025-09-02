@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-09-02T03:18:42.047Z",
+  "environment": "default",
+  "file": "index.html",
+  "summary": {
+    "passed": false,
+    "violations": 1,
+    "warnings": 0
+  }
+}

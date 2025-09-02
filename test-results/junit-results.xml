@@ -1,16 +1,16 @@
-<testsuites id="" name="" tests="30" failures="1" skipped="11" errors="0" time="48.162729999999996">
-<testsuite name="smoke\electron-launch-demo.spec.ts" timestamp="2025-08-31T12:13:42.568Z" hostname="electron-smoke-tests" tests="8" failures="0" skipped="0" time="35.474" errors="0">
-<testcase name="Electron应用基础功能 › 应用启动和窗口创建" classname="smoke\electron-launch-demo.spec.ts" time="5.215">
+<testsuites id="" name="" tests="233" failures="31" skipped="176" errors="0" time="133.841771">
+<testsuite name="smoke\electron-launch-demo.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-smoke-tests" tests="8" failures="0" skipped="0" time="35.884" errors="0">
+<testcase name="Electron应用基础功能 › 应用启动和窗口创建" classname="smoke\electron-launch-demo.spec.ts" time="4.61">
 <system-out>
 <![CDATA[🚀 开始启动 Electron 应用...
-✅ Electron 应用启动成功，耗时: 1338ms
+✅ Electron 应用启动成功，耗时: 850ms
 🪟 等待主窗口创建...
-✅ 主窗口创建成功，耗时: 1550ms，重试次数: 0
+✅ 主窗口创建成功，耗时: 1533ms，重试次数: 0
 viewportSize() 返回 undefined，跳过尺寸验证
 ]]>
 </system-out>
 </testcase>
-<testcase name="Electron应用基础功能 › 安全基线验证 - 上下文隔离" classname="smoke\electron-launch-demo.spec.ts" time="4.338">
+<testcase name="Electron应用基础功能 › 安全基线验证 - 上下文隔离" classname="smoke\electron-launch-demo.spec.ts" time="4.469">
 <system-out>
 <![CDATA[🔒 开始安全基线验证测试...
 🪟 等待主窗口创建(安全测试)...
@@ -18,29 +18,29 @@ viewportSize() 返回 undefined，跳过尺寸验证
 ]]>
 </system-out>
 </testcase>
-<testcase name="Electron应用基础功能 › CSP策略生效验证" classname="smoke\electron-launch-demo.spec.ts" time="4.319">
+<testcase name="Electron应用基础功能 › CSP策略生效验证" classname="smoke\electron-launch-demo.spec.ts" time="4.46">
 <system-out>
 <![CDATA[🛡️ 开始CSP策略验证测试...
 🪟 等待主窗口创建(CSP测试)...
 ]]>
 </system-out>
 </testcase>
-<testcase name="Electron应用基础功能 › 主进程和渲染进程分离" classname="smoke\electron-launch-demo.spec.ts" time="4.252">
+<testcase name="Electron应用基础功能 › 主进程和渲染进程分离" classname="smoke\electron-launch-demo.spec.ts" time="4.425">
 <system-out>
 <![CDATA[⚙️ 开始进程分离验证测试...
 🪟 等待主窗口创建(进程分离测试)...
 ]]>
 </system-out>
 </testcase>
-<testcase name="性能和响应性验证 › 应用启动时间测试" classname="smoke\electron-launch-demo.spec.ts" time="4.272">
+<testcase name="性能和响应性验证 › 应用启动时间测试" classname="smoke\electron-launch-demo.spec.ts" time="4.467">
 <system-out>
 <![CDATA[⏱️ 开始启动时间性能测试...
 🪟 等待主窗口创建(性能测试)...
-应用启动时间: 2630ms
+应用启动时间: 2690ms
 ]]>
 </system-out>
 </testcase>
-<testcase name="性能和响应性验证 › 窗口响应性测试" classname="smoke\electron-launch-demo.spec.ts" time="4.309">
+<testcase name="性能和响应性验证 › 窗口响应性测试" classname="smoke\electron-launch-demo.spec.ts" time="4.534">
 <system-out>
 <![CDATA[🎯 开始窗口响应性测试...
 🪟 等待主窗口创建(响应性测试)...
@@ -48,65 +48,38 @@ viewportSize() 返回 undefined，跳过尺寸验证
 ]]>
 </system-out>
 </testcase>
-<testcase name="错误处理和稳定性 › 应用意外退出恢复" classname="smoke\electron-launch-demo.spec.ts" time="4.524">
+<testcase name="错误处理和稳定性 › 应用意外退出恢复" classname="smoke\electron-launch-demo.spec.ts" time="4.557">
 <system-out>
 <![CDATA[🔄 开始应用稳定性测试...
 🪟 等待主窗口创建(稳定性测试)...
 ]]>
 </system-out>
 </testcase>
-<testcase name="错误处理和稳定性 › 内存泄漏基础检查" classname="smoke\electron-launch-demo.spec.ts" time="4.245">
+<testcase name="错误处理和稳定性 › 内存泄漏基础检查" classname="smoke\electron-launch-demo.spec.ts" time="4.362">
 <system-out>
 <![CDATA[🧠 开始内存泄漏检查测试...
 🪟 等待主窗口创建(内存测试)...
-内存使用情况: { used: [33m12700000[39m, total: [33m14300000[39m, limit: [33m3760000000[39m }
+内存使用情况: { used: [33m12700000[39m, total: [33m18200000[39m, limit: [33m3760000000[39m }
 ]]>
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="smoke.electron.spec.ts" timestamp="2025-08-31T12:13:42.568Z" hostname="electron-smoke-tests" tests="11" failures="1" skipped="0" time="4.815" errors="0">
-<testcase name="07章 Electron 基线验证 › 应用启动并显示主窗口" classname="smoke.electron.spec.ts" time="1.32">
+<testsuite name="smoke.electron.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-smoke-tests" tests="11" failures="0" skipped="0" time="3.59" errors="0">
+<testcase name="07章 Electron 基线验证 › 应用启动并显示主窗口" classname="smoke.electron.spec.ts" time="1.448">
 <system-out>
 <![CDATA[✅ 应用启动正常，标题: "Vite + React + TS"
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 安全基线：Node.js 全局变量隔离" classname="smoke.electron.spec.ts" time="0.012">
+<testcase name="07章 Electron 基线验证 › 安全基线：Node.js 全局变量隔离" classname="smoke.electron.spec.ts" time="0.011">
 </testcase>
 <testcase name="07章 Electron 基线验证 › 安全基线：CSP 策略验证" classname="smoke.electron.spec.ts" time="0.012">
-<failure message="smoke.electron.spec.ts:84:3 安全基线：CSP 策略验证" type="FAILURE">
-<![CDATA[  [electron-smoke-tests] › smoke.electron.spec.ts:84:3 › 07章 Electron 基线验证 › 安全基线：CSP 策略验证 ─────────
-
-    Error: expect(received).toContain(expected) // indexOf
-
-    Expected substring: "default-src 'none'"
-    Received string:    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-
-      94 |
-      95 |     // 验证严格的CSP指令（更安全的 'none' 默认策略）
-    > 96 |     expect(cspContent).toContain("default-src 'none'"); // 更严格的策略
-         |                        ^
-      97 |     expect(cspContent).toContain("script-src 'self'");
-      98 |     expect(cspContent).toContain("style-src 'self'");
-      99 |
-        at C:\buildgame\vitegame\tests\e2e\smoke.electron.spec.ts:96:24
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\test-results\artifacts\smoke.electron-07章-Electron-基线验证-安全基线：CSP-策略验证-electron-smoke-tests\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\test-results\artifacts\smoke.electron-07章-Electron-基线验证-安全基线：CSP-策略验证-electron-smoke-tests\error-context.md
-]]>
-</failure>
 <system-out>
-<![CDATA[
-[[ATTACHMENT|artifacts\smoke.electron-07章-Electron-基线验证-安全基线：CSP-策略验证-electron-smoke-tests\test-failed-1.png]]
-
-[[ATTACHMENT|artifacts\smoke.electron-07章-Electron-基线验证-安全基线：CSP-策略验证-electron-smoke-tests\error-context.md]]
+<![CDATA[✅ Electron CSP策略验证通过: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 预加载脚本：白名单 API 验证" classname="smoke.electron.spec.ts" time="1.316">
+<testcase name="07章 Electron 基线验证 › 预加载脚本：白名单 API 验证" classname="smoke.electron.spec.ts" time="0.006">
 <system-out>
 <![CDATA[🔍 暴露的 API 键: []
 🔍 全部window键(前20个): [
@@ -133,7 +106,7 @@ viewportSize() 返回 undefined，跳过尺寸验证
 ]]>
 </system-err>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 窗口属性：安全配置验证" classname="smoke.electron.spec.ts" time="0.015">
+<testcase name="07章 Electron 基线验证 › 窗口属性：安全配置验证" classname="smoke.electron.spec.ts" time="0.012">
 <system-out>
 <![CDATA[✅ 安全三开关硬断言验证通过 - 主进程侧确认
 📋 安全配置详情: {
@@ -145,27 +118,27 @@ viewportSize() 返回 undefined，跳过尺寸验证
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 基本交互：应用响应性测试" classname="smoke.electron.spec.ts" time="0.102">
+<testcase name="07章 Electron 基线验证 › 基本交互：应用响应性测试" classname="smoke.electron.spec.ts" time="0.063">
 <system-out>
-<![CDATA[✅ 交互响应时间: 100ms
+<![CDATA[✅ 交互响应时间: 62ms
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 内存使用：基线检查" classname="smoke.electron.spec.ts" time="0.006">
+<testcase name="07章 Electron 基线验证 › 内存使用：基线检查" classname="smoke.electron.spec.ts" time="0.009">
 <system-out>
 <![CDATA[📊 JS 堆内存使用: 12.11 MB
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 Electron 基线验证 › 错误处理：未捕获异常检测" classname="smoke.electron.spec.ts" time="2.012">
+<testcase name="07章 Electron 基线验证 › 错误处理：未捕获异常检测" classname="smoke.electron.spec.ts" time="2.015">
 </testcase>
-<testcase name="07章 Electron 基线验证 › 应用关闭：清理验证" classname="smoke.electron.spec.ts" time="0.005">
+<testcase name="07章 Electron 基线验证 › 应用关闭：清理验证" classname="smoke.electron.spec.ts" time="0.004">
 <system-out>
 <![CDATA[✅ 应用状态检查通过: { isReady: [33mtrue[39m, isPackaged: [33mfalse[39m, windowCount: [33m1[39m }
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 构建产物验证 › 构建产物：文件完整性检查" classname="smoke.electron.spec.ts" time="0.01">
+<testcase name="07章 构建产物验证 › 构建产物：文件完整性检查" classname="smoke.electron.spec.ts" time="0.006">
 <system-out>
 <![CDATA[📁 构建产物验证: {
   appName: [32m'Electron'[39m,
@@ -177,22 +150,662 @@ viewportSize() 返回 undefined，跳过尺寸验证
   platform: [32m'win32'[39m,
   arch: [32m'x64'[39m,
   nodeEnv: [32m'test'[39m,
-  checkedAt: [32m'2025-08-31T12:14:30.234Z'[39m
+  checkedAt: [32m'2025-09-02T08:40:08.070Z'[39m
 }
 ]]>
 </system-out>
 </testcase>
-<testcase name="07章 构建产物验证 › 版本信息：应用元数据验证" classname="smoke.electron.spec.ts" time="0.005">
+<testcase name="07章 构建产物验证 › 版本信息：应用元数据验证" classname="smoke.electron.spec.ts" time="0.004">
 <system-out>
 <![CDATA[📦 应用信息: { version: [32m'37.2.4'[39m, name: [32m'Electron'[39m, ready: [33mtrue[39m }
 ]]>
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="smoke.electron.spec.ts" timestamp="2025-08-31T12:13:42.568Z" hostname="electron-full-e2e" tests="11" failures="0" skipped="11" time="0" errors="0">
-<testcase name="07章 Electron 基线验证 › 应用启动并显示主窗口" classname="smoke.electron.spec.ts" time="0">
+<testsuite name="framerate-stability.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="6" failures="1" skipped="5" time="0" errors="0">
+<testcase name="帧率稳定性数据收集 › 基线帧率 - 静态场景" classname="framerate-stability.e2e.spec.ts" time="0">
+<failure message="framerate-stability.e2e.spec.ts:106:3 基线帧率 - 静态场景" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › framerate-stability.e2e.spec.ts:106:3 › 帧率稳定性数据收集 › 基线帧率 - 静态场景 ────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 动画场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
 <skipped>
 </skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 交互场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 压力测试场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 汇总并输出帧率报告" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性回归测试 › 与历史基线对比" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="guild-manager\guild-manager.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="12" failures="1" skipped="11" time="0" errors="0">
+<testcase name="Guild Manager - Core Functionality › should load guild manager interface" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<failure message="guild-manager.e2e.spec.ts:54:3 should load guild manager interface" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › guild-manager\guild-manager.e2e.spec.ts:54:3 › Guild Manager - Core Functionality › should load guild manager interface 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should display guild resources correctly" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should navigate between guild management sections" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should handle member recruitment flow" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should validate performance SLO requirements - P95采样" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should handle CloudEvents integration" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Core Functionality › should maintain state across navigation" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Advanced Features › should handle raid composition management" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Advanced Features › should handle diplomatic interactions" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Advanced Features › should validate accessibility requirements" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Error Handling › should handle network errors gracefully" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Error Handling › should recover from temporary failures" classname="guild-manager\guild-manager.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="guild-manager\performance.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="8" failures="1" skipped="7" time="0" errors="0">
+<testcase name="Guild Manager - Performance SLO Validation › should meet UI interaction P95 ≤ 100ms SLO" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<failure message="performance.e2e.spec.ts:75:3 should meet UI interaction P95 ≤ 100ms SLO" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › guild-manager\performance.e2e.spec.ts:75:3 › Guild Manager - Performance SLO Validation › should meet UI interaction P95 ≤ 100ms SLO 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Guild Manager - Performance SLO Validation › should meet event processing P95 ≤ 50ms SLO" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Performance SLO Validation › should handle large member list rendering efficiently" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Performance SLO Validation › should maintain memory usage within acceptable limits" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Performance SLO Validation › should handle concurrent operations efficiently" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Performance SLO Validation › should handle animation frame budget efficiently" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Resource Usage Monitoring › should monitor CPU usage during intensive operations" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Resource Usage Monitoring › should validate SQLite performance characteristics" classname="guild-manager\performance.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="guild-manager\security.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="22" failures="1" skipped="21" time="0" errors="0">
+<testcase name="Guild Manager - Electron Security Baseline › should verify webPreferences configuration at main process level" classname="guild-manager\security.e2e.spec.ts" time="0">
+<failure message="security.e2e.spec.ts:38:3 should verify webPreferences configuration at main process level" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › guild-manager\security.e2e.spec.ts:38:3 › Guild Manager - Electron Security Baseline › should verify webPreferences configuration at main process level 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should expose comprehensive security configuration for testing" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should verify security policy environment-specific configuration" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should verify BrowserWindow webPreferences are properly configured" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should enforce nodeIntegration=false" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should enforce contextIsolation=true" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should enforce sandbox=true" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should enforce strict Content Security Policy" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should intercept and control window.open() behavior" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should prevent malicious window.open() attacks" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should intercept and control permission requests" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should handle geolocation permission requests securely" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should block unauthorized notification requests" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should prevent unauthorized media access" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should validate permission request origin checks" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should validate secure IPC communication" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should prevent XSS attacks" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should validate secure data handling" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Electron Security Baseline › should validate secure storage mechanisms" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Security Compliance › should comply with OWASP security guidelines" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Security Compliance › should handle security headers correctly" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Guild Manager - Security Compliance › should prevent information disclosure" classname="guild-manager\security.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="perf.smoke.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="9" failures="1" skipped="8" time="0" errors="0">
+<testcase name="性能冒烟测试套件 › 应用冷启动性能验证 - P95采样" classname="perf.smoke.spec.ts" time="0">
+<failure message="perf.smoke.spec.ts:41:3 应用冷启动性能验证 - P95采样" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › perf.smoke.spec.ts:41:3 › 性能冒烟测试套件 › 应用冷启动性能验证 - P95采样 ─────────────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="性能冒烟测试套件 › 页面加载性能验证" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 交互响应性能验证 - P95采样" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 帧率性能验证" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 内存使用性能验证" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 场景切换性能验证" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 资源加载性能验证" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能冒烟测试套件 › 并发操作性能验证 - P95采样" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能回归检测 › 基线性能快照对比" classname="perf.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="quality\react19-actions.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="3" failures="1" skipped="2" time="0" errors="0">
+<testcase name="React 19 Actions 表单路径验证 › 关键表单应使用React 19 Actions而非传统useState" classname="quality\react19-actions.spec.ts" time="0">
+<failure message="react19-actions.spec.ts:31:3 关键表单应使用React 19 Actions而非传统useState" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › quality\react19-actions.spec.ts:31:3 › React 19 Actions 表单路径验证 › 关键表单应使用React 19 Actions而非传统useState 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="React 19 Actions 表单路径验证 › 验证Actions相关的状态管理" classname="quality\react19-actions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="React 19 Actions 静态分析集成 › ESLint规则应该能检测到Actions使用" classname="quality\react19-actions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="scene-transition.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="4" failures="1" skipped="3" time="0" errors="0">
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.load" classname="scene-transition.e2e.spec.ts" time="0">
+<failure message="scene-transition.e2e.spec.ts:270:5 场景转换性能 - game.scene.load" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › scene-transition.e2e.spec.ts:270:5 › 场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.load 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.menu" classname="scene-transition.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - phaser.scene.create" classname="scene-transition.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 综合场景转换性能报告" classname="scene-transition.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\electron-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="9" failures="1" skipped="8" time="0" errors="0">
+<testcase name="Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › 主窗口安全配置合规检查" classname="security\electron-security.spec.ts" time="0">
+<failure message="electron-security.spec.ts:47:5 主窗口安全配置合规检查" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\electron-security.spec.ts:47:5 › Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › 主窗口安全配置合规检查 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › preload API白名单验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 2. 导航与弹窗拦截验证 › 外部导航应被拦截" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 2. 导航与弹窗拦截验证 › 新窗口打开控制验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 3. CSP策略合规验证 › 内联脚本应被CSP阻止" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 3. CSP策略合规验证 › 外部资源CSP策略验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 4. 运行时安全监控 › 应用基本功能正常" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 4. 运行时安全监控 › 性能影响评估" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 5. 安全综合评分 › 安全配置综合评分应为100%" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\enhanced-csp-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="9" failures="1" skipped="8" time="0" errors="0">
+<testcase name="CSP策略安全验证 › CSP应该阻止内联脚本执行" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<failure message="enhanced-csp-security.spec.ts:31:3 CSP应该阻止内联脚本执行" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\enhanced\enhanced-csp-security.spec.ts:31:3 › CSP策略安全验证 › CSP应该阻止内联脚本执行 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP应该阻止不安全的外部资源" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP违规报告功能" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略完整性检查" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP动态策略验证 - 环境特定检查" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP实时策略更新验证" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP违规事件监听器验证" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略指令覆盖完整性" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略动态环境适配" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\enhanced-electron-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="4" failures="1" skipped="3" time="0" errors="0">
+<testcase name="Electron安全基线验证 › 渲染进程应该无法访问Node.js API" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0">
+<failure message="enhanced-electron-security.spec.ts:31:3 渲染进程应该无法访问Node.js API" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\enhanced\enhanced-electron-security.spec.ts:31:3 › Electron安全基线验证 › 渲染进程应该无法访问Node.js API 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Electron安全基线验证 › 上下文隔离应该启用" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 › sandbox模式验证" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 › 应该只暴露白名单API" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\security-redlines.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="13" failures="1" skipped="12" time="0" errors="0">
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 地理位置权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<failure message="security-redlines.spec.ts:48:5 地理位置权限应被默认拒绝" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\enhanced\security-redlines.spec.ts:48:5 › 🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 地理位置权限应被默认拒绝 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 摄像头权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 麦克风权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 通知权限应被控制" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › window.location.href外部导航应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › window.open外部导航应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › 表单外部提交应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › 所有window.open调用都应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › 弹窗事件监听验证" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › iframe弹窗尝试应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 安全拦截功能不影响正常应用功能" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 红线拦截性能影响评估" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 红线配置完整性检查" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\redlines-simple.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="4" failures="1" skipped="3" time="0" errors="0">
+<testcase name="🚫 RED LINE 1: 外部导航被拦截" classname="security\redlines-simple.spec.ts" time="0">
+<failure message="redlines-simple.spec.ts:43:1 🚫 RED LINE 1: 外部导航被拦截" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\redlines-simple.spec.ts:43:1 › 🚫 RED LINE 1: 外部导航被拦截 ─────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="🚫 RED LINE 2: 新窗口打开被拦截" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 RED LINE 3: 敏感权限被拒绝" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 三条红线综合稳定性" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\security-redlines.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="10" failures="1" skipped="9" time="0" errors="0">
+<testcase name="🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - window.location.href" classname="security\security-redlines.spec.ts" time="0">
+<failure message="security-redlines.spec.ts:54:3 外部导航应被拦截 - window.location.href" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security\security-redlines.spec.ts:54:3 › 🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - window.location.href 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - 链接点击" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 2: 窗口打开拦截（默认拒绝） › window.open() 应被拦截" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 2: 窗口打开拦截（默认拒绝） › target=&quot;_blank&quot; 链接应被拦截" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 摄像头权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 麦克风权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 地理位置权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 通知权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 综合红线验证 › 三条红线用例稳定性测试" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 综合红线验证 › 安全配置持久性验证" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security-smoke.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="1" failures="1" skipped="0" time="0" errors="0">
+<testcase name="安全护栏生效（CSP &amp; 禁用 Node）" classname="security-smoke.spec.ts" time="0">
+<failure message="security-smoke.spec.ts:3:1 安全护栏生效（CSP &amp; 禁用 Node）" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security-smoke.spec.ts:3:1 › 安全护栏生效（CSP & 禁用 Node） ─────────────────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="security.smoke.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="13" failures="1" skipped="12" time="0" errors="0">
+<testcase name="Electron安全基线验证套件 › 应用成功启动且主窗口可见" classname="security.smoke.spec.ts" time="0">
+<failure message="security.smoke.spec.ts:112:3 应用成功启动且主窗口可见" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › security.smoke.spec.ts:112:3 › Electron安全基线验证套件 › 应用成功启动且主窗口可见 ─────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Electron安全基线验证套件 › Context Bridge API正确暴露且类型安全" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › IPC白名单机制工作正常" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › CSP策略正确设置且包含必需指令" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › CSP有效阻止内联脚本执行" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › CSP阻止不安全的资源加载" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › Node.js API在渲染进程中完全不可访问" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 外部导航被正确阻止" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 新窗口和弹窗创建被阻止" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 安全违规报告功能正常工作" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 安全状态查询功能正常" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 应用整体安全配置符合基线要求" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证套件 › 安全配置不影响应用基本性能" classname="security.smoke.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="smoke\electron-launch-demo.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="8" failures="1" skipped="7" time="0" errors="0">
+<testcase name="Electron应用基础功能 › 应用启动和窗口创建" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<failure message="electron-launch-demo.spec.ts:20:3 应用启动和窗口创建" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › smoke\electron-launch-demo.spec.ts:20:3 › Electron应用基础功能 › 应用启动和窗口创建 ───────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="Electron应用基础功能 › 安全基线验证 - 上下文隔离" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron应用基础功能 › CSP策略生效验证" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron应用基础功能 › 主进程和渲染进程分离" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能和响应性验证 › 应用启动时间测试" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="性能和响应性验证 › 窗口响应性测试" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="错误处理和稳定性 › 应用意外退出恢复" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="错误处理和稳定性 › 内存泄漏基础检查" classname="smoke\electron-launch-demo.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="smoke.electron.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="11" failures="1" skipped="10" time="0" errors="0">
+<testcase name="07章 Electron 基线验证 › 应用启动并显示主窗口" classname="smoke.electron.spec.ts" time="0">
+<failure message="smoke.electron.spec.ts:42:3 应用启动并显示主窗口" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › smoke.electron.spec.ts:42:3 › 07章 Electron 基线验证 › 应用启动并显示主窗口 ───────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
 </testcase>
 <testcase name="07章 Electron 基线验证 › 安全基线：Node.js 全局变量隔离" classname="smoke.electron.spec.ts" time="0">
 <skipped>
@@ -231,6 +844,541 @@ viewportSize() 返回 undefined，跳过尺寸验证
 </skipped>
 </testcase>
 <testcase name="07章 构建产物验证 › 版本信息：应用元数据验证" classname="smoke.electron.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="vertical-slice-minimal.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="3" failures="1" skipped="2" time="0" errors="0">
+<testcase name="竖切测试 - 最小版本 › 基础应用启动和UI导航" classname="vertical-slice-minimal.spec.ts" time="0">
+<failure message="vertical-slice-minimal.spec.ts:13:3 基础应用启动和UI导航" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › vertical-slice-minimal.spec.ts:13:3 › 竖切测试 - 最小版本 › 基础应用启动和UI导航 ────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="竖切测试 - 最小版本 › 基础存储和数据功能验证" classname="vertical-slice-minimal.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="竖切测试 - 最小版本 › 性能和内存基础检查" classname="vertical-slice-minimal.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="vertical-slice.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-full-e2e" tests="5" failures="1" skipped="4" time="0" errors="0">
+<testcase name="游戏竖切端到端测试 › 完整竖切流程 - 从启动到数据持久化" classname="vertical-slice.spec.ts" time="0">
+<failure message="vertical-slice.spec.ts:46:3 完整竖切流程 - 从启动到数据持久化" type="FAILURE">
+<![CDATA[  [electron-full-e2e] › vertical-slice.spec.ts:46:3 › 游戏竖切端到端测试 › 完整竖切流程 - 从启动到数据持久化 ───────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="游戏竖切端到端测试 › 竖切测试重置和重新运行" classname="vertical-slice.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="游戏竖切端到端测试 › 竖切测试错误处理" classname="vertical-slice.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="竖切性能和稳定性测试 › 竖切测试性能基准验证" classname="vertical-slice.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="竖切性能和稳定性测试 › 竖切内存使用监控" classname="vertical-slice.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\electron-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="9" failures="1" skipped="8" time="0" errors="0">
+<testcase name="Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › 主窗口安全配置合规检查" classname="security\electron-security.spec.ts" time="0">
+<failure message="electron-security.spec.ts:47:5 主窗口安全配置合规检查" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\electron-security.spec.ts:47:5 › Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › 主窗口安全配置合规检查 
+
+    TimeoutError: electron.launch: Timeout 30000ms exceeded.
+    Call log:
+      - <launching> "C:\buildgame\vitegame\node_modules\electron\dist\electron.exe" "-r" "C:\buildgame\vitegame\node_modules\playwright-core\lib\server\electron\loader.js" "--inspect=0" "--remote-debugging-port=0" "./electron/main.js"
+      - <launched> pid=29552
+      - [pid=29552][out]
+      - [pid=29552][err] Debugger listening on ws://127.0.0.1:11472/543a7b94-5e59-473d-9bea-d6580156d6d1
+      - [pid=29552][err] For help, see: https://nodejs.org/en/docs/inspector
+      - <ws connecting> ws://127.0.0.1:11472/543a7b94-5e59-473d-9bea-d6580156d6d1
+      - <ws connected> ws://127.0.0.1:11472/543a7b94-5e59-473d-9bea-d6580156d6d1
+      - [pid=29552][err] Debugger attached.
+
+
+      29 |
+      30 |   // 启动Electron应用
+    > 31 |   electronApp = await electron.launch({
+         |                 ^
+      32 |     args: ['./electron/main.js'],
+      33 |     timeout: 30000,
+      34 |   });
+        at C:\buildgame\vitegame\tests\e2e\security\electron-security.spec.ts:31:17
+]]>
+</failure>
+<system-out>
+<![CDATA[[Test] 启动Electron应用进行安全测试...
+
+=== Electron安全基线测试总结 ===
+✅ BrowserWindow安全配置验证
+✅ 导航与弹窗拦截验证
+✅ CSP策略合规验证
+✅ 运行时安全监控
+✅ 安全综合评分100%
+
+🛡️ ADR-0002 Electron安全基线验证完成！
+]]>
+</system-out>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 1. BrowserWindow安全配置验证 › preload API白名单验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 2. 导航与弹窗拦截验证 › 外部导航应被拦截" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 2. 导航与弹窗拦截验证 › 新窗口打开控制验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 3. CSP策略合规验证 › 内联脚本应被CSP阻止" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 3. CSP策略合规验证 › 外部资源CSP策略验证" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 4. 运行时安全监控 › 应用基本功能正常" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 4. 运行时安全监控 › 性能影响评估" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 - ADR-0002 › 5. 安全综合评分 › 安全配置综合评分应为100%" classname="security\electron-security.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\enhanced-csp-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="9" failures="3" skipped="0" time="4.755" errors="0">
+<testcase name="CSP策略安全验证 › CSP应该阻止内联脚本执行" classname="security\enhanced\enhanced-csp-security.spec.ts" time="1.07">
+</testcase>
+<testcase name="CSP策略安全验证 › CSP应该阻止不安全的外部资源" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.011">
+</testcase>
+<testcase name="CSP策略安全验证 › CSP违规报告功能" classname="security\enhanced\enhanced-csp-security.spec.ts" time="1.016">
+<failure message="enhanced-csp-security.spec.ts:66:3 CSP违规报告功能" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\enhanced-csp-security.spec.ts:66:3 › CSP策略安全验证 › CSP违规报告功能 
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+      108 |
+      109 |     // 验证至少捕获到一个 CSP 违规
+    > 110 |     expect(cspViolations.length).toBeGreaterThan(0);
+          |                                  ^
+      111 |     expect(
+      112 |       cspViolations.some(v => v.violatedDirective.includes('script-src'))
+      113 |     ).toBe(true);
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-csp-security.spec.ts:110:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\artifacts\security-enhanced-enhanced-csp-security-CSP策略安全验证-CSP违规报告功能-electron-security-audit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\artifacts\security-enhanced-enhanced-csp-security-CSP策略安全验证-CSP违规报告功能-electron-security-audit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-csp-security-CSP策略安全验证-CSP违规报告功能-electron-security-audit\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-csp-security-CSP策略安全验证-CSP违规报告功能-electron-security-audit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略完整性检查" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.918">
+<system-out>
+<![CDATA[Current CSP Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';
+]]>
+</system-out>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP动态策略验证 - 环境特定检查" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.21">
+</testcase>
+<testcase name="CSP策略安全验证 › CSP实时策略更新验证" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.129">
+</testcase>
+<testcase name="CSP策略安全验证 › CSP违规事件监听器验证" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.527">
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略指令覆盖完整性" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.009">
+<failure message="enhanced-csp-security.spec.ts:274:3 CSP策略指令覆盖完整性" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\enhanced-csp-security.spec.ts:274:3 › CSP策略安全验证 › CSP策略指令覆盖完整性 
+
+    Error: expect(received).toHaveProperty(path)
+
+    Expected path: "script-src"
+    Received path: []
+
+    Received value: {"default-src": "'unsafe-inline' *"}
+
+      304 |
+      305 |     requiredDirectives.forEach(directive => {
+    > 306 |       expect(directives).toHaveProperty(directive);
+          |                          ^
+      307 |       expect(directives[directive]).toBeTruthy();
+      308 |     });
+      309 |
+        at forEach (C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-csp-security.spec.ts:306:26)
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-csp-security.spec.ts:305:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\artifacts\security-enhanced-enhanced-03306-rity-CSP策略安全验证-CSP策略指令覆盖完整性-electron-security-audit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\artifacts\security-enhanced-enhanced-03306-rity-CSP策略安全验证-CSP策略指令覆盖完整性-electron-security-audit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-03306-rity-CSP策略安全验证-CSP策略指令覆盖完整性-electron-security-audit\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-03306-rity-CSP策略安全验证-CSP策略指令覆盖完整性-electron-security-audit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="CSP策略安全验证 › CSP策略动态环境适配" classname="security\enhanced\enhanced-csp-security.spec.ts" time="0.865">
+<failure message="enhanced-csp-security.spec.ts:317:3 CSP策略动态环境适配" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\enhanced-csp-security.spec.ts:317:3 › CSP策略安全验证 › CSP策略动态环境适配 
+
+    Error: expect(received).not.toMatch(expected)
+
+    Expected pattern: not /[^-\w]\\*[^-\w]/
+    Received string:      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+
+      344 |       if (pattern === '*') {
+      345 |         // 检查是否有单独的 * 通配符（某些特定指令可能需要 https: 等）
+    > 346 |         expect(cspContent).not.toMatch(/[^-\w]\\*[^-\w]/);
+          |                                ^
+      347 |       } else {
+      348 |         expect(cspContent).not.toContain(pattern);
+      349 |       }
+        at forEach (C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-csp-security.spec.ts:346:32)
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-csp-security.spec.ts:343:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\artifacts\security-enhanced-enhanced-28562-urity-CSP策略安全验证-CSP策略动态环境适配-electron-security-audit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\artifacts\security-enhanced-enhanced-28562-urity-CSP策略安全验证-CSP策略动态环境适配-electron-security-audit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[验证开发环境 CSP 策略
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-28562-urity-CSP策略安全验证-CSP策略动态环境适配-electron-security-audit\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-28562-urity-CSP策略安全验证-CSP策略动态环境适配-electron-security-audit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\enhanced-electron-security.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="4" failures="2" skipped="1" time="2.108" errors="0">
+<testcase name="Electron安全基线验证 › 渲染进程应该无法访问Node.js API" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0.882">
+</testcase>
+<testcase name="Electron安全基线验证 › 上下文隔离应该启用" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0.186">
+<failure message="enhanced-electron-security.spec.ts:43:3 上下文隔离应该启用" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\enhanced-electron-security.spec.ts:43:3 › Electron安全基线验证 › 上下文隔离应该启用 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      49 |     });
+      50 |
+    > 51 |     expect(isolationEnabled).toBe(true);
+         |                              ^
+      52 |   });
+      53 |
+      54 |   test('sandbox模式验证', async () => {
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-electron-security.spec.ts:51:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\artifacts\security-enhanced-enhanced-1f99e-ty-Electron安全基线验证-上下文隔离应该启用-electron-security-audit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\artifacts\security-enhanced-enhanced-1f99e-ty-Electron安全基线验证-上下文隔离应该启用-electron-security-audit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-1f99e-ty-Electron安全基线验证-上下文隔离应该启用-electron-security-audit\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-1f99e-ty-Electron安全基线验证-上下文隔离应该启用-electron-security-audit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Electron安全基线验证 › sandbox模式验证" classname="security\enhanced\enhanced-electron-security.spec.ts" time="0.004">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Electron安全基线验证 › 应该只暴露白名单API" classname="security\enhanced\enhanced-electron-security.spec.ts" time="1.036">
+<failure message="enhanced-electron-security.spec.ts:59:3 应该只暴露白名单API" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\enhanced-electron-security.spec.ts:59:3 › Electron安全基线验证 › 应该只暴露白名单API 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      88 |     });
+      89 |
+    > 90 |     expect(apiValidation.valid).toBe(true);
+         |                                 ^
+      91 |     expect(apiValidation.unexpected).toEqual([]);
+      92 |   });
+      93 | });
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\enhanced-electron-security.spec.ts:90:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\artifacts\security-enhanced-enhanced-0719d--Electron安全基线验证-应该只暴露白名单API-electron-security-audit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\artifacts\security-enhanced-enhanced-0719d--Electron安全基线验证-应该只暴露白名单API-electron-security-audit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-0719d--Electron安全基线验证-应该只暴露白名单API-electron-security-audit\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\security-enhanced-enhanced-0719d--Electron安全基线验证-应该只暴露白名单API-electron-security-audit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="security\enhanced\security-redlines.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="13" failures="1" skipped="12" time="0" errors="0">
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 地理位置权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<failure message="security-redlines.spec.ts:48:5 地理位置权限应被默认拒绝" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\enhanced\security-redlines.spec.ts:48:5 › 🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 地理位置权限应被默认拒绝 
+
+    TimeoutError: electron.launch: Timeout 30000ms exceeded.
+    Call log:
+      - <launching> "C:\buildgame\vitegame\node_modules\electron\dist\electron.exe" "-r" "C:\buildgame\vitegame\node_modules\playwright-core\lib\server\electron\loader.js" "--inspect=0" "--remote-debugging-port=0" "./electron/main.js"
+      - <launched> pid=3312
+      - [pid=3312][out]
+      - [pid=3312][err] Debugger listening on ws://127.0.0.1:3071/4d573b61-d2c7-4356-ab79-bf6eee001f89
+      - [pid=3312][err] For help, see: https://nodejs.org/en/docs/inspector
+      - <ws connecting> ws://127.0.0.1:3071/4d573b61-d2c7-4356-ab79-bf6eee001f89
+      - <ws connected> ws://127.0.0.1:3071/4d573b61-d2c7-4356-ab79-bf6eee001f89
+      - [pid=3312][err] Debugger attached.
+
+
+      21 |   console.log('[RedLine] 启动Electron应用进行红线安全测试...');
+      22 |
+    > 23 |   electronApp = await electron.launch({
+         |                 ^
+      24 |     args: ['./electron/main.js'],
+      25 |     timeout: 30000,
+      26 |     recordVideo: process.env.CI
+        at C:\buildgame\vitegame\tests\e2e\security\enhanced\security-redlines.spec.ts:23:17
+]]>
+</failure>
+<system-out>
+<![CDATA[[RedLine] 启动Electron应用进行红线安全测试...
+
+🔴 === 安全红线测试完成 ===
+✅ 权限请求拦截验证完成
+✅ 外部导航拦截验证完成
+✅ 窗口打开拦截验证完成
+🛡️ 三大安全红线全部通过！
+]]>
+</system-out>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 摄像头权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 麦克风权限应被默认拒绝" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线1: 权限请求拦截 (默认拒绝) › 通知权限应被控制" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › window.location.href外部导航应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › window.open外部导航应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线2: 外部导航拦截 (强制阻断) › 表单外部提交应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › 所有window.open调用都应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › 弹窗事件监听验证" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线3: 新窗口打开拦截 (零容忍) › iframe弹窗尝试应被阻止" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 安全拦截功能不影响正常应用功能" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 红线拦截性能影响评估" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🔴 Electron安全红线测试 - ADR-0002核心拦截 › 红线综合验证 › 红线配置完整性检查" classname="security\enhanced\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\redlines-simple.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="4" failures="1" skipped="3" time="0" errors="0">
+<testcase name="🚫 RED LINE 1: 外部导航被拦截" classname="security\redlines-simple.spec.ts" time="0">
+<failure message="redlines-simple.spec.ts:43:1 🚫 RED LINE 1: 外部导航被拦截" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\redlines-simple.spec.ts:43:1 › 🚫 RED LINE 1: 外部导航被拦截 ───────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="🚫 RED LINE 2: 新窗口打开被拦截" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 RED LINE 3: 敏感权限被拒绝" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 三条红线综合稳定性" classname="security\redlines-simple.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security\security-redlines.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="10" failures="1" skipped="9" time="0" errors="0">
+<testcase name="🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - window.location.href" classname="security\security-redlines.spec.ts" time="0">
+<failure message="security-redlines.spec.ts:54:3 外部导航应被拦截 - window.location.href" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security\security-redlines.spec.ts:54:3 › 🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - window.location.href 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="🚫 红线用例 1: 导航拦截（默认拒绝） › 外部导航应被拦截 - 链接点击" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 2: 窗口打开拦截（默认拒绝） › window.open() 应被拦截" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 2: 窗口打开拦截（默认拒绝） › target=&quot;_blank&quot; 链接应被拦截" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 摄像头权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 麦克风权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 地理位置权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🚫 红线用例 3: 权限请求拒绝（默认拒绝） › 通知权限应被拒绝" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 综合红线验证 › 三条红线用例稳定性测试" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="🛡️ 综合红线验证 › 安全配置持久性验证" classname="security\security-redlines.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="security-smoke.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="electron-security-audit" tests="1" failures="1" skipped="0" time="0" errors="0">
+<testcase name="安全护栏生效（CSP &amp; 禁用 Node）" classname="security-smoke.spec.ts" time="0">
+<failure message="security-smoke.spec.ts:3:1 安全护栏生效（CSP &amp; 禁用 Node）" type="FAILURE">
+<![CDATA[  [electron-security-audit] › security-smoke.spec.ts:3:1 › 安全护栏生效（CSP & 禁用 Node） ───────────────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="framerate-stability.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="framerate-stability" tests="6" failures="1" skipped="5" time="0" errors="0">
+<testcase name="帧率稳定性数据收集 › 基线帧率 - 静态场景" classname="framerate-stability.e2e.spec.ts" time="0">
+<failure message="framerate-stability.e2e.spec.ts:106:3 基线帧率 - 静态场景" type="FAILURE">
+<![CDATA[  [framerate-stability] › framerate-stability.e2e.spec.ts:106:3 › 帧率稳定性数据收集 › 基线帧率 - 静态场景 ──────────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 动画场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 交互场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 压力测试场景帧率" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性数据收集 › 汇总并输出帧率报告" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="帧率稳定性回归测试 › 与历史基线对比" classname="framerate-stability.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="scene-transition.e2e.spec.ts" timestamp="2025-09-02T08:39:25.020Z" hostname="scene-transition" tests="4" failures="1" skipped="3" time="0" errors="0">
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.load" classname="scene-transition.e2e.spec.ts" time="0">
+<failure message="scene-transition.e2e.spec.ts:270:5 场景转换性能 - game.scene.load" type="FAILURE">
+<![CDATA[  [scene-transition] › scene-transition.e2e.spec.ts:270:5 › 场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.load 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - game.scene.menu" classname="scene-transition.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 场景转换性能 - phaser.scene.create" classname="scene-transition.e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="场景转换性能测试 - P1-A User Timing API › 综合场景转换性能报告" classname="scene-transition.e2e.spec.ts" time="0">
 <skipped>
 </skipped>
 </testcase>

@@ -133,7 +133,8 @@ test.skipIf(!isSQLite3Available())(
 
 test.skipIf(!isSQLite3Available())(
   'backup handles concurrent access gracefully',
-  async () => { // 改为async函数以支持await Promise.all
+  async () => {
+    // 改为async函数以支持await Promise.all
     // 模拟并发访问场景
     const promises = [];
 

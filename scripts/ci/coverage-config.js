@@ -105,8 +105,8 @@ function shouldSkipCoverageGate() {
  * 根据项目状态推荐覆盖率模式
  */
 function recommendCoverageMode() {
-  const fs = require('fs');
-  const path = require('path');
+  import fs from 'fs';
+  import path from 'path';
 
   const projectRoot = path.join(__dirname, '..', '..');
   const testFiles = [];

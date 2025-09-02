@@ -25,7 +25,6 @@
   },
   "include": ["src"],
   "exclude": [
-    "src/shared/observability/**/*.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts"
   ]

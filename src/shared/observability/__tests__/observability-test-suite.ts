@@ -341,8 +341,12 @@ export class ObservabilityTestSuite {
     console.log('🛡️ 运行韧性管理器测试...');
 
     await this.runTest('断路器状态测试', async () => {
-      const circuitBreaker = {
-        state: 'closed' as const,
+      const circuitBreaker: {
+        state: 'closed' | 'open' | 'half_open';
+        failureCount: number;
+        successCount: number;
+      } = {
+        state: 'closed',
         failureCount: 0,
         successCount: 0,
       };

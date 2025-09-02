@@ -26,7 +26,10 @@ const requiredEnvVars = ['SENTRY_DSN', 'APP_VERSION'];
 let envCheckPassed = true;
 
 for (const envVar of requiredEnvVars) {
-  if (envContent.includes(`${envVar}=`) && !envContent.includes(`${envVar}=placeholder`)) {
+  if (
+    envContent.includes(`${envVar}=`) &&
+    !envContent.includes(`${envVar}=placeholder`)
+  ) {
     console.log(`  ✅ ${envVar} 已配置`);
   } else {
     console.log(`  ❌ ${envVar} 未正确配置或仍为占位符`);
@@ -36,7 +39,10 @@ for (const envVar of requiredEnvVars) {
 
 // 2. 检查主进程Sentry配置
 console.log('\n2️⃣ 检查主进程Sentry配置');
-const sentryMainPath = join(projectRoot, 'src/shared/observability/sentry-main.ts');
+const sentryMainPath = join(
+  projectRoot,
+  'src/shared/observability/sentry-main.ts'
+);
 if (!existsSync(sentryMainPath)) {
   console.error('❌ sentry-main.ts文件不存在');
   process.exit(1);
@@ -61,7 +67,10 @@ for (const check of mainProcessChecks) {
 
 // 3. 检查渲染进程Sentry配置
 console.log('\n3️⃣ 检查渲染进程Sentry配置');
-const sentryRendererPath = join(projectRoot, 'src/shared/observability/sentry-renderer.ts');
+const sentryRendererPath = join(
+  projectRoot,
+  'src/shared/observability/sentry-renderer.ts'
+);
 if (!existsSync(sentryRendererPath)) {
   console.error('❌ sentry-renderer.ts文件不存在');
   process.exit(1);
@@ -95,7 +104,10 @@ if (!existsSync(preloadPath)) {
 const preloadContent = readFileSync(preloadPath, 'utf-8');
 let preloadCheckPassed = true;
 
-if (preloadContent.includes('__APP_VERSION__') && preloadContent.includes('process.env.APP_VERSION')) {
+if (
+  preloadContent.includes('__APP_VERSION__') &&
+  preloadContent.includes('process.env.APP_VERSION')
+) {
   console.log('  ✅ APP_VERSION版本信息已暴露到渲染进程');
 } else {
   console.log('  ❌ APP_VERSION版本信息未正确暴露');
@@ -120,7 +132,11 @@ if (packageJson.version) {
 
 // 总结
 console.log('\n📊 验证结果总结:');
-const allChecksPassed = envCheckPassed && mainCheckPassed && rendererCheckPassed && preloadCheckPassed;
+const allChecksPassed =
+  envCheckPassed &&
+  mainCheckPassed &&
+  rendererCheckPassed &&
+  preloadCheckPassed;
 
 if (allChecksPassed) {
   console.log('✅ 所有Release Health配置检查通过');

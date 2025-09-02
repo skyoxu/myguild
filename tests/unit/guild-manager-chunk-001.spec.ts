@@ -8,10 +8,6 @@ import type {
   Guild,
   GuildMember,
   GameTurn,
-  TurnPhase,
-  MemberState,
-  GuildStatus,
-  UrgencyLevel,
   CriticalDecision,
   ResourceState,
   PersonalityTraits,
@@ -22,6 +18,13 @@ import type {
   MemberStateChange,
   DecisionParameters,
   AIActionParameters,
+} from '../../src/shared/contracts/guild-manager-chunk-001';
+import {
+  TurnPhase,
+  MemberRole,
+  MemberState,
+  GuildStatus,
+  UrgencyLevel,
 } from '../../src/shared/contracts/guild-manager-chunk-001';
 import { CloudEventValidator } from '../../src/shared/validation/CloudEventValidator';
 import { InMemoryRepository } from '../../src/shared/adapters/memory/InMemoryRepository';

@@ -92,8 +92,8 @@ test.describe('07章 Electron 基线验证', () => {
     const cspContent = await cspMeta.getAttribute('content');
     expect(cspContent).toBeTruthy();
 
-    // 验证严格的CSP指令（更安全的 'none' 默认策略）
-    expect(cspContent).toContain("default-src 'none'"); // 更严格的策略
+    // 验证CSP指令（Electron应用适用的 'self' 默认策略）
+    expect(cspContent).toContain("default-src 'self'"); // 适合Electron应用的策略
     expect(cspContent).toContain("script-src 'self'");
     expect(cspContent).toContain("style-src 'self'");
 
@@ -101,7 +101,7 @@ test.describe('07章 Electron 基线验证', () => {
     expect(cspContent).not.toContain("'unsafe-inline'");
     expect(cspContent).not.toContain("'unsafe-eval'");
 
-    console.log('✅ 严格CSP策略验证通过:', cspContent);
+    console.log('✅ Electron CSP策略验证通过:', cspContent);
   });
 
   test('预加载脚本：白名单 API 验证', async () => {

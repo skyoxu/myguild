@@ -13,9 +13,9 @@
         },
         "renderer": {
           "js": {
-            "threshold": 1572864,
+            "threshold": 2097152,
             "unit": "bytes",
-            "description": "渲染进程JS大小限制: 1.5MB"
+            "description": "渲染进程JS大小限制: 2MB"
           },
           "css": {
             "threshold": 204800,

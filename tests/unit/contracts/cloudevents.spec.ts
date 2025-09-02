@@ -115,9 +115,10 @@ describe('CloudEvents 1.0 Core Implementation - ADR-0004', () => {
       ];
 
       testCases.forEach((testEvent, index) => {
-        expect(() => assertCe(testEvent))
-          .toThrow(`CloudEvent missing required field`)
-          .withMessage(`Test case ${index} should fail validation`);
+        expect(
+          () => assertCe(testEvent),
+          `Test case ${index} should fail validation`
+        ).toThrow(`CloudEvent missing required field`);
       });
     });
 

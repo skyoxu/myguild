@@ -134,7 +134,10 @@ export class MockGame {
   destroy = vi.fn();
 
   constructor(config?: any) {
-    // 模拟构造函数
+    // 模拟构造函数 - 立即触发postBoot回调
+    setTimeout(() => {
+      config?.callbacks?.postBoot?.();
+    }, 10);
   }
 }
 

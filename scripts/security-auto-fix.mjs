@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * 安全问题自动修复脚本
- * 
+ *
  * 功能:
  * 1. 自动修复常见安全配置问题
  * 2. 更新不安全的依赖
  * 3. 应用安全最佳实践
  * 4. 生成修复报告
- * 
+ *
  * 使用: node scripts/security-auto-fix.mjs [--dry-run] [--category=all|csp|electron|deps]
  */
 
@@ -29,13 +29,14 @@ class SecurityAutoFix {
   }
 
   log(message, level = 'info') {
-    const prefix = {
-      'info': '✅',
-      'warn': '⚠️', 
-      'error': '❌',
-      'fix': '🔧'
-    }[level] || 'ℹ️';
-    
+    const prefix =
+      {
+        info: '✅',
+        warn: '⚠️',
+        error: '❌',
+        fix: '🔧',
+      }[level] || 'ℹ️';
+
     console.log(`${prefix} ${message}`);
   }
 
@@ -44,7 +45,7 @@ class SecurityAutoFix {
       description,
       file,
       changes,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     this.log(description, 'fix');
   }
@@ -53,7 +54,7 @@ class SecurityAutoFix {
     this.errors.push({
       error: error.message,
       context,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     this.log(`修复失败: ${error.message}`, 'error');
   }
@@ -69,43 +70,44 @@ class SecurityAutoFix {
       const indexFile = join(ROOT_DIR, 'index.html');
       if (existsSync(indexFile)) {
         const content = readFileSync(indexFile, 'utf8');
-        
+
         // 安全的CSP策略
         const secureCSP = `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://sentry.io https://*.sentry.io; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none';`;
-        
+
         // 查找并替换CSP
-        const cspRegex = /(<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*content=["'])([^"']+)(["'][^>]*>)/i;
+        const cspRegex =
+          /(<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*content=["'])([^"']+)(["'][^>]*>)/i;
         const match = content.match(cspRegex);
-        
+
         if (match) {
           const currentCSP = match[2];
-          
+
           // 检查是否包含不安全的指令
           const unsafePatterns = [
             "'unsafe-inline'",
             "'unsafe-eval'",
-            "data: ",
-            "* ",
-            "http:"
+            'data: ',
+            '* ',
+            'http:',
           ];
-          
+
           let needsFix = false;
           unsafePatterns.forEach(pattern => {
             if (currentCSP.includes(pattern)) {
               needsFix = true;
             }
           });
-          
+
           if (needsFix || !currentCSP.includes("default-src 'none'")) {
             const newContent = content.replace(cspRegex, `$1${secureCSP}$3`);
-            
+
             if (!this.dryRun) {
               writeFileSync(indexFile, newContent, 'utf8');
             }
-            
+
             this.recordFix('修复index.html中的CSP策略', indexFile, {
               old: currentCSP,
-              new: secureCSP
+              new: secureCSP,
             });
           }
         } else {
@@ -113,12 +115,15 @@ class SecurityAutoFix {
           const headMatch = content.match(/(<head[^>]*>)/i);
           if (headMatch) {
             const cspMeta = `\n    <meta http-equiv="Content-Security-Policy" content="${secureCSP}" />`;
-            const newContent = content.replace(/(<head[^>]*>)/i, `$1${cspMeta}`);
-            
+            const newContent = content.replace(
+              /(<head[^>]*>)/i,
+              `$1${cspMeta}`
+            );
+
             if (!this.dryRun) {
               writeFileSync(indexFile, newContent, 'utf8');
             }
-            
+
             this.recordFix('添加CSP meta标签到index.html', indexFile);
           }
         }
@@ -128,21 +133,23 @@ class SecurityAutoFix {
       const mainFile = join(ROOT_DIR, 'electron/main.ts');
       if (existsSync(mainFile)) {
         let content = readFileSync(mainFile, 'utf8');
-        
+
         // 检查是否有不安全的CSP配置
-        if (content.includes("'unsafe-inline'") || content.includes("'unsafe-eval'")) {
+        if (
+          content.includes("'unsafe-inline'") ||
+          content.includes("'unsafe-eval'")
+        ) {
           // 替换不安全的CSP配置
           content = content.replace(/'unsafe-inline'/g, "'self'");
           content = content.replace(/'unsafe-eval'/g, "'self'");
-          
+
           if (!this.dryRun) {
             writeFileSync(mainFile, content, 'utf8');
           }
-          
+
           this.recordFix('移除main.ts中的不安全CSP指令', mainFile);
         }
       }
-
     } catch (error) {
       this.recordError(error, 'CSP修复');
     }
@@ -162,10 +169,16 @@ class SecurityAutoFix {
 
         // 修复危险的安全配置
         const dangerousConfigs = [
-          { pattern: /nodeIntegration:\s*true/g, fix: 'nodeIntegration: false' },
-          { pattern: /contextIsolation:\s*false/g, fix: 'contextIsolation: true' },
+          {
+            pattern: /nodeIntegration:\s*true/g,
+            fix: 'nodeIntegration: false',
+          },
+          {
+            pattern: /contextIsolation:\s*false/g,
+            fix: 'contextIsolation: true',
+          },
           { pattern: /sandbox:\s*false/g, fix: 'sandbox: true' },
-          { pattern: /webSecurity:\s*false/g, fix: 'webSecurity: true' }
+          { pattern: /webSecurity:\s*false/g, fix: 'webSecurity: true' },
         ];
 
         dangerousConfigs.forEach(config => {
@@ -202,7 +215,10 @@ if (!process.contextIsolated) {
         }
 
         // 移除不安全的全局变量暴露
-        if (content.includes('window.require') || content.includes('window.process')) {
+        if (
+          content.includes('window.require') ||
+          content.includes('window.process')
+        ) {
           content = content.replace(/window\.require\s*=.*$/gm, '');
           content = content.replace(/window\.process\s*=.*$/gm, '');
           modified = true;
@@ -213,7 +229,6 @@ if (!process.contextIsolated) {
           writeFileSync(preloadFile, content, 'utf8');
         }
       }
-
     } catch (error) {
       this.recordError(error, 'Electron安全修复');
     }
@@ -229,19 +244,19 @@ if (!process.contextIsolated) {
       // 运行npm audit fix
       if (!this.dryRun) {
         try {
-          execSync('npm audit fix', { 
-            cwd: ROOT_DIR, 
+          execSync('npm audit fix', {
+            cwd: ROOT_DIR,
             stdio: 'inherit',
-            timeout: 120000 // 2分钟超时
+            timeout: 120000, // 2分钟超时
           });
           this.recordFix('执行npm audit fix修复依赖漏洞');
         } catch (auditError) {
           // audit fix失败时尝试force fix
           try {
-            execSync('npm audit fix --force', { 
-              cwd: ROOT_DIR, 
+            execSync('npm audit fix --force', {
+              cwd: ROOT_DIR,
               stdio: 'inherit',
-              timeout: 120000
+              timeout: 120000,
             });
             this.recordFix('执行npm audit fix --force修复依赖漏洞');
           } catch (forceError) {
@@ -254,30 +269,32 @@ if (!process.contextIsolated) {
       const packageFile = join(ROOT_DIR, 'package.json');
       if (existsSync(packageFile)) {
         const packageData = JSON.parse(readFileSync(packageFile, 'utf8'));
-        
+
         // 检查已知的危险包
         const dangerousPackages = [
           'eval',
           'serialize-javascript',
           'node-serialize',
-          'unsafe-eval'
+          'unsafe-eval',
         ];
 
         const modified = false;
-        const allDeps = { 
-          ...packageData.dependencies, 
-          ...packageData.devDependencies 
+        const allDeps = {
+          ...packageData.dependencies,
+          ...packageData.devDependencies,
         };
 
         dangerousPackages.forEach(pkg => {
           if (allDeps[pkg]) {
             this.log(`发现潜在危险依赖: ${pkg}`, 'warn');
             // 这里不自动删除，而是记录警告
-            this.recordFix(`检测到潜在危险依赖: ${pkg}，请手动审查`, packageFile);
+            this.recordFix(
+              `检测到潜在危险依赖: ${pkg}，请手动审查`,
+              packageFile
+            );
           }
         });
       }
-
     } catch (error) {
       this.recordError(error, '依赖安全修复');
     }
@@ -299,15 +316,21 @@ if (!process.contextIsolated) {
         const unsafeArgs = [
           '--disable-web-security',
           '--no-sandbox',
-          '--disable-features=VizDisplayCompositor'
+          '--disable-features=VizDisplayCompositor',
         ];
 
         unsafeArgs.forEach(arg => {
-          const regex = new RegExp(`['"]${arg.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}['"],?\\s*`, 'g');
+          const regex = new RegExp(
+            `['"]${arg.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}['"],?\\s*`,
+            'g'
+          );
           if (regex.test(content)) {
             content = content.replace(regex, '');
             modified = true;
-            this.recordFix(`移除测试配置中的不安全参数: ${arg}`, playwrightConfig);
+            this.recordFix(
+              `移除测试配置中的不安全参数: ${arg}`,
+              playwrightConfig
+            );
           }
         });
 
@@ -315,7 +338,10 @@ if (!process.contextIsolated) {
         if (!content.includes('SECURITY_TEST_MODE')) {
           const envSection = content.match(/env:\s*{([^}]*)}/);
           if (envSection) {
-            const newEnv = envSection[0].replace(/}$/, `  SECURITY_TEST_MODE: 'true',\n        }`);
+            const newEnv = envSection[0].replace(
+              /}$/,
+              `  SECURITY_TEST_MODE: 'true',\n        }`
+            );
             content = content.replace(envSection[0], newEnv);
             modified = true;
             this.recordFix('添加安全测试模式环境变量', playwrightConfig);
@@ -326,7 +352,6 @@ if (!process.contextIsolated) {
           writeFileSync(playwrightConfig, content, 'utf8');
         }
       }
-
     } catch (error) {
       this.recordError(error, '测试安全修复');
     }
@@ -338,22 +363,22 @@ if (!process.contextIsolated) {
       timestamp: new Date().toISOString(),
       mode: this.dryRun ? 'DRY_RUN' : 'APPLIED',
       category: this.category,
-      
+
       summary: {
         total_fixes: this.fixes.length,
         total_errors: this.errors.length,
-        status: this.errors.length === 0 ? 'SUCCESS' : 'PARTIAL'
+        status: this.errors.length === 0 ? 'SUCCESS' : 'PARTIAL',
       },
-      
+
       fixes: this.fixes,
       errors: this.errors,
-      
+
       recommendations: [
         '运行完整的安全门禁检查验证修复效果',
         '手动审查所有配置文件更改',
         '运行测试套件确保功能正常',
-        '检查应用是否正常启动和运行'
-      ]
+        '检查应用是否正常启动和运行',
+      ],
     };
 
     return report;
@@ -361,14 +386,17 @@ if (!process.contextIsolated) {
 
   // 主执行函数
   async run() {
-    this.log(`开始自动安全修复... (模式: ${this.dryRun ? 'DRY_RUN' : 'APPLY'})`, 'info');
+    this.log(
+      `开始自动安全修复... (模式: ${this.dryRun ? 'DRY_RUN' : 'APPLY'})`,
+      'info'
+    );
     this.log(`修复类别: ${this.category}`, 'info');
 
     const fixFunctions = [
       ['CSP配置', () => this.fixCSPIssues()],
       ['Electron安全', () => this.fixElectronSecurity()],
       ['依赖安全', () => this.fixDependencyIssues()],
-      ['测试安全', () => this.fixTestSecurity()]
+      ['测试安全', () => this.fixTestSecurity()],
     ];
 
     for (const [category, fixFn] of fixFunctions) {
@@ -381,7 +409,7 @@ if (!process.contextIsolated) {
     }
 
     const report = this.generateReport();
-    
+
     this.log(`\n=== 修复完成 ===`);
     this.log(`修复项目: ${report.summary.total_fixes}`);
     this.log(`错误数量: ${report.summary.total_errors}`);
@@ -407,7 +435,7 @@ async function main() {
   const args = process.argv.slice(2);
   const options = {
     dryRun: !args.includes('--apply') && !args.includes('--force'),
-    category: 'all'
+    category: 'all',
   };
 
   args.forEach(arg => {
@@ -418,7 +446,7 @@ async function main() {
 
   const fixer = new SecurityAutoFix(options);
   const report = await fixer.run();
-  
+
   process.exit(report.summary.status === 'SUCCESS' ? 0 : 1);
 }
 

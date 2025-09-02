@@ -1,7 +1,17 @@
 name: 📊 Staged Release with Health Gates
 
 # 渐进发布工作流：5%/25%/50%/100% 阶梯发布 + Sentry健康门禁
-# 基于 ADR-0008 渐进发布策略和 ADR-0003 可观测性规范
+# 基于完整ADR体系：
+# - ADR-0001 (技术栈选型): Electron + React生态
+# - ADR-0002 (Electron安全): 安全基线与CSP策略  
+# - ADR-0003 (可观测性): Sentry健康门禁集成
+# - ADR-0004 (事件总线): CloudEvents契约验证
+# - ADR-0005 (质量门禁): CI/CD流水线质量检查
+# - ADR-0006 (数据存储): SQLite本地存储策略
+# - ADR-0007 (端口适配器): 架构边界与接口设计
+# - ADR-0008 (部署发布): 渐进发布策略与回滚机制
+# - ADR-0009 (跨平台): Windows/macOS/Linux支持
+# - ADR-0010 (国际化): i18n框架与本地化
 
 on:
   workflow_dispatch:

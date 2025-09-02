@@ -51,9 +51,9 @@ test.describe('Electron安全基线验证', () => {
     expect(isolationEnabled).toBe(true);
   });
 
-  test('sandbox模式验证', async () => {
+  test.skipIf(true, 'sandbox模式验证', async () => {
     // TODO: 实现 sandbox模式验证 测试
-    test.skip('测试用例需要实现');
+    // test.skip moved to test level to avoid flaky pattern
   });
 
   test('应该只暴露白名单API', async () => {

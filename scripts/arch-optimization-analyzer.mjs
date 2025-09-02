@@ -531,10 +531,7 @@ class ArchitectureOptimizer {
   /**
    * 生成优化计划
    */
-  async generateOptimizationPlan(
-    implementationAssessment,
-    documentationGaps
-  ) {
+  async generateOptimizationPlan(implementationAssessment, documentationGaps) {
     const plan = {
       immediateActions: [],
       mediumTermGoals: [],

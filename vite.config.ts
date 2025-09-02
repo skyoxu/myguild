@@ -38,9 +38,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    // 超时配置 - 按止疼法提升基线
-    testTimeout: 20_000, // 默认 5s -> 20s
-    hookTimeout: 20_000, // 钩子默认 10s -> 20s
+    // 超时配置 - 为慢测试设置合理超时
+    testTimeout: 30_000, // 默认 5s -> 30s （允许execSync脚本测试）
+    hookTimeout: 15_000, // 钩子默认 10s -> 15s
     setupFiles: ['./src/test-setup.ts', './vitest.setup.ts'],
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

@@ -500,7 +500,3 @@ export class CloudEventUtils {
     }
   }
 }
-
-// 默认导出 - 修复 verbatimModuleSyntax 错误
-const CloudEventClass = CloudEvent;
-export default CloudEventClass;

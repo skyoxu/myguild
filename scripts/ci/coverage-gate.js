@@ -5,12 +5,12 @@
  * 确保代码覆盖率达到设定的阈值
  */
 
-const fs = require('fs');
-const path = require('path');
-const {
+import fs from 'fs';
+import path from 'path';
+import {
   getCoverageConfig,
   shouldSkipCoverageGate,
-} = require('./coverage-config');
+} from './coverage-config.js';
 
 // 动态获取配置阈值
 const COVERAGE_THRESHOLDS = getCoverageConfig();

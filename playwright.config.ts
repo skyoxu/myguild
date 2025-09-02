@@ -152,6 +152,65 @@ export default defineConfig({
       },
       timeout: 45000,
     },
+
+    {
+      name: 'framerate-stability',
+      testMatch: ['**/framerate-stability.e2e.spec.ts'],
+      dependencies: ['electron-smoke-tests'], // 依赖基础冒烟测试
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: undefined,
+          args: [
+            '--disable-web-security',
+            '--disable-extensions',
+            '--disable-default-apps',
+            '--enable-gpu-rasterization', // 启用GPU加速确保最佳帧率
+            '--enable-zero-copy',
+            '--disable-background-timer-throttling', // 禁用后台节流
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--offline', // E2E网络隔离
+          ],
+          env: {
+            NODE_ENV: 'test',
+            CI: 'true',
+            FRAMERATE_TEST_MODE: 'true', // 专门标记
+            ELECTRON_RUN_AS_NODE: '0',
+          },
+        },
+      },
+      timeout: 120000, // 帧率测试需要更长时间 (2分钟)
+    },
+
+    {
+      name: 'scene-transition',
+      testMatch: ['**/scene-transition.e2e.spec.ts'],
+      dependencies: ['electron-smoke-tests'], // 依赖基础冒烟测试
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: undefined,
+          args: [
+            '--disable-web-security',
+            '--disable-extensions',
+            '--disable-default-apps',
+            '--enable-precise-memory-info', // 启用精确内存信息用于User Timing API
+            '--disable-background-timer-throttling', // 确保计时器精度
+            '--enable-high-resolution-time', // 启用高精度时间戳
+            '--offline', // E2E网络隔离
+          ],
+          env: {
+            NODE_ENV: 'test',
+            CI: 'true',
+            SCENE_TRANSITION_TEST_MODE: 'true', // 专门标记
+            USER_TIMING_API_ENABLED: 'true',
+            ELECTRON_RUN_AS_NODE: '0',
+          },
+        },
+      },
+      timeout: 90000, // 场景转换测试时间 (1.5分钟)
+    },
   ],
 
   /* 输出目录 */

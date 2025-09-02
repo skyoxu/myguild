@@ -225,7 +225,8 @@
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" run list --branch feature/security-fixes-and-ci-test --limit 5)",
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web)",
       "Bash(git branch:*)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=closed --limit=5)"
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=closed --limit=5)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "additionalDirectories": [

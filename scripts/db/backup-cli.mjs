@@ -101,7 +101,12 @@ function log(level, message, meta = {}) {
  */
 function checkSQLiteAvailability() {
   try {
-    const sqlite3Path = path.join(process.cwd(), 'tools', 'sqlite', 'sqlite3.exe');
+    const sqlite3Path = path.join(
+      process.cwd(),
+      'tools',
+      'sqlite',
+      'sqlite3.exe'
+    );
     execSync(`"${sqlite3Path}" --version`, { stdio: 'pipe', encoding: 'utf8' });
     return true;
   } catch (error) {
@@ -187,9 +192,12 @@ function getDatabaseInfo(dbPath) {
 
     // 获取WAL模式信息
     const walQuery = 'PRAGMA journal_mode;';
-    const journalMode = execSync(`"${getSQLitePath()}" "${dbPath}" "${walQuery}"`, {
-      encoding: 'utf8',
-    }).trim();
+    const journalMode = execSync(
+      `"${getSQLitePath()}" "${dbPath}" "${walQuery}"`,
+      {
+        encoding: 'utf8',
+      }
+    ).trim();
 
     // 获取页面计数
     const pageCountQuery = 'PRAGMA page_count;';
@@ -234,9 +242,12 @@ async function performCheckpoint(dbPath) {
     const startTime = performance.now();
 
     const checkpointQuery = 'PRAGMA wal_checkpoint(TRUNCATE);';
-    const result = execSync(`"${getSQLitePath()}" "${dbPath}" "${checkpointQuery}"`, {
-      encoding: 'utf8',
-    }).trim();
+    const result = execSync(
+      `"${getSQLitePath()}" "${dbPath}" "${checkpointQuery}"`,
+      {
+        encoding: 'utf8',
+      }
+    ).trim();
 
     const duration = performance.now() - startTime;
     log('info', 'WAL checkpoint completed', {
@@ -492,14 +503,20 @@ async function verifyBackup(backupPath, originalPath, deep = true) {
         const tableCountQuery =
           "SELECT COUNT(*) FROM sqlite_master WHERE type='table';";
         const backupTableCount = parseInt(
-          execSync(`"${getSQLitePath()}" "${backupPath}" "${tableCountQuery}"`, {
-            encoding: 'utf8',
-          }).trim()
+          execSync(
+            `"${getSQLitePath()}" "${backupPath}" "${tableCountQuery}"`,
+            {
+              encoding: 'utf8',
+            }
+          ).trim()
         );
         const originalTableCount = parseInt(
-          execSync(`"${getSQLitePath()}" "${originalPath}" "${tableCountQuery}"`, {
-            encoding: 'utf8',
-          }).trim()
+          execSync(
+            `"${getSQLitePath()}" "${originalPath}" "${tableCountQuery}"`,
+            {
+              encoding: 'utf8',
+            }
+          ).trim()
         );
 
         const tableCountPassed = backupTableCount === originalTableCount;

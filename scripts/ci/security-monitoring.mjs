@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * 持续安全监控脚本 - 用于监控生产环境安全状态
- * 
+ *
  * 功能:
  * 1. 实时监控应用安全事件
  * 2. 检测异常行为模式
  * 3. 自动生成安全报告
  * 4. 集成Sentry安全监控
- * 
+ *
  * 使用: node scripts/ci/security-monitoring.mjs [--config=path] [--output=path]
  */
 
@@ -26,32 +26,34 @@ const MONITORING_CONFIG = {
   SECURITY_EVENTS: [
     'permission_request_denied',
     'navigation_blocked',
-    'csp_violation', 
+    'csp_violation',
     'external_request_blocked',
     'context_isolation_breach',
-    'preload_api_access_attempt'
+    'preload_api_access_attempt',
   ],
-  
+
   // 异常行为阈值
   THRESHOLDS: {
     permission_denials_per_hour: 10,
     navigation_blocks_per_hour: 20,
     csp_violations_per_hour: 5,
-    failed_api_calls_per_minute: 5
+    failed_api_calls_per_minute: 5,
   },
-  
+
   // 报告配置
   REPORT: {
     interval_minutes: 60,
     retention_days: 30,
-    alert_webhooks: []
-  }
+    alert_webhooks: [],
+  },
 };
 
 class SecurityMonitor {
   constructor(options = {}) {
-    this.configPath = options.config || join(ROOT_DIR, 'security-monitoring.config.json');
-    this.outputPath = options.output || join(ROOT_DIR, 'logs/security-monitoring.log');
+    this.configPath =
+      options.config || join(ROOT_DIR, 'security-monitoring.config.json');
+    this.outputPath =
+      options.output || join(ROOT_DIR, 'logs/security-monitoring.log');
     this.config = this.loadConfig();
     this.events = [];
     this.alerts = [];
@@ -75,14 +77,14 @@ class SecurityMonitor {
       timestamp,
       level,
       message,
-      event
+      event,
     };
 
     console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
-    
+
     // 记录到文件
     this.writeLogEntry(logEntry);
-    
+
     // 如果是安全事件，记录到事件列表
     if (event && this.config.SECURITY_EVENTS.includes(event.type)) {
       this.events.push({ ...event, timestamp });
@@ -107,7 +109,7 @@ class SecurityMonitor {
       processes: await this.checkProcessIntegrity(),
       permissions: await this.checkPermissionRequests(),
       navigation: await this.checkNavigationBlocks(),
-      csp: await this.checkCSPViolations()
+      csp: await this.checkCSPViolations(),
     };
 
     return checks;
@@ -116,13 +118,15 @@ class SecurityMonitor {
   async checkProcessIntegrity() {
     try {
       // 检查是否有异常的Electron进程
-      const result = execSync('tasklist | findstr electron', { encoding: 'utf8' });
+      const result = execSync('tasklist | findstr electron', {
+        encoding: 'utf8',
+      });
       const processes = result.split('\n').filter(line => line.trim());
-      
+
       const processInfo = {
         count: processes.length,
         suspicious: false,
-        details: processes
+        details: processes,
       };
 
       // 检测异常进程数量
@@ -130,7 +134,7 @@ class SecurityMonitor {
         processInfo.suspicious = true;
         this.log('检测到异常数量的Electron进程', 'warn', {
           type: 'process_anomaly',
-          count: processes.length
+          count: processes.length,
         });
       }
 
@@ -150,13 +154,13 @@ class SecurityMonitor {
         type: 'excessive_permission_denials',
         count: recentEvents.length,
         threshold,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     return {
       recent_denials: recentEvents.length,
-      threshold_exceeded: recentEvents.length > threshold
+      threshold_exceeded: recentEvents.length > threshold,
     };
   }
 
@@ -166,16 +170,16 @@ class SecurityMonitor {
 
     if (recentEvents.length > threshold) {
       this.alerts.push({
-        type: 'excessive_navigation_blocks', 
+        type: 'excessive_navigation_blocks',
         count: recentEvents.length,
         threshold,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     return {
       recent_blocks: recentEvents.length,
-      threshold_exceeded: recentEvents.length > threshold
+      threshold_exceeded: recentEvents.length > threshold,
     };
   }
 
@@ -188,21 +192,20 @@ class SecurityMonitor {
         type: 'excessive_csp_violations',
         count: recentEvents.length,
         threshold,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     return {
       recent_violations: recentEvents.length,
-      threshold_exceeded: recentEvents.length > threshold
+      threshold_exceeded: recentEvents.length > threshold,
     };
   }
 
   getRecentEvents(eventType, minutesBack) {
     const cutoff = new Date(Date.now() - minutesBack * 60 * 1000);
-    return this.events.filter(event => 
-      event.type === eventType && 
-      new Date(event.timestamp) > cutoff
+    return this.events.filter(
+      event => event.type === eventType && new Date(event.timestamp) > cutoff
     );
   }
 
@@ -211,7 +214,7 @@ class SecurityMonitor {
     const checks = {
       blocked_requests: await this.checkBlockedRequests(),
       tls_connections: await this.checkTLSConnections(),
-      certificate_status: await this.checkCertificates()
+      certificate_status: await this.checkCertificates(),
     };
 
     return checks;
@@ -219,7 +222,7 @@ class SecurityMonitor {
 
   async checkBlockedRequests() {
     const recentBlocks = this.getRecentEvents('external_request_blocked', 60);
-    
+
     // 分析被阻止请求的模式
     const patterns = {};
     recentBlocks.forEach(event => {
@@ -232,7 +235,7 @@ class SecurityMonitor {
       patterns,
       suspicious_domains: Object.entries(patterns)
         .filter(([_, count]) => count > 10)
-        .map(([domain, count]) => ({ domain, count }))
+        .map(([domain, count]) => ({ domain, count })),
     };
   }
 
@@ -241,7 +244,7 @@ class SecurityMonitor {
     return {
       active_connections: 0,
       certificate_errors: 0,
-      deprecated_protocols: 0
+      deprecated_protocols: 0,
     };
   }
 
@@ -250,7 +253,7 @@ class SecurityMonitor {
     return {
       app_certificate_valid: true,
       certificate_expiry: null,
-      certificate_chain_valid: true
+      certificate_chain_valid: true,
     };
   }
 
@@ -260,18 +263,20 @@ class SecurityMonitor {
       timestamp: new Date().toISOString(),
       monitoring_period: '1 hour',
       security_status: this.alerts.length === 0 ? 'SECURE' : 'ALERT',
-      
+
       summary: {
         total_events: this.events.length,
         total_alerts: this.alerts.length,
-        event_types: this.getEventTypeSummary()
+        event_types: this.getEventTypeSummary(),
       },
-      
+
       alerts: this.alerts,
-      
+
       recommendations: this.generateRecommendations(),
-      
-      next_check: new Date(Date.now() + this.config.REPORT.interval_minutes * 60 * 1000).toISOString()
+
+      next_check: new Date(
+        Date.now() + this.config.REPORT.interval_minutes * 60 * 1000
+      ).toISOString(),
     };
 
     return report;
@@ -291,15 +296,15 @@ class SecurityMonitor {
     if (this.alerts.length > 0) {
       recommendations.push('检查应用日志，分析异常行为原因');
       recommendations.push('确认安全策略配置正确');
-      
+
       if (this.alerts.some(a => a.type.includes('permission'))) {
         recommendations.push('审查权限请求处理逻辑');
       }
-      
+
       if (this.alerts.some(a => a.type.includes('navigation'))) {
         recommendations.push('检查导航控制策略是否过于严格');
       }
-      
+
       if (this.alerts.some(a => a.type.includes('csp'))) {
         recommendations.push('审查CSP策略配置，可能存在策略冲突');
       }
@@ -335,11 +340,15 @@ class SecurityMonitor {
 
   // 清理过期数据
   cleanupOldData() {
-    const cutoff = new Date(Date.now() - this.config.REPORT.retention_days * 24 * 60 * 60 * 1000);
-    
+    const cutoff = new Date(
+      Date.now() - this.config.REPORT.retention_days * 24 * 60 * 60 * 1000
+    );
+
     const initialEventCount = this.events.length;
-    this.events = this.events.filter(event => new Date(event.timestamp) > cutoff);
-    
+    this.events = this.events.filter(
+      event => new Date(event.timestamp) > cutoff
+    );
+
     const cleaned = initialEventCount - this.events.length;
     if (cleaned > 0) {
       this.log(`清理了 ${cleaned} 个过期事件`, 'info');
@@ -359,13 +368,13 @@ class SecurityMonitor {
       this.log('Electron安全检查完成', 'info', {
         type: 'security_check',
         category: 'electron',
-        results: electronSecurity
+        results: electronSecurity,
       });
 
       this.log('网络安全检查完成', 'info', {
-        type: 'security_check', 
+        type: 'security_check',
         category: 'network',
-        results: networkSecurity
+        results: networkSecurity,
       });
 
       // 生成并发送报告
@@ -378,7 +387,6 @@ class SecurityMonitor {
       this.cleanupOldData();
 
       return report;
-      
     } catch (error) {
       this.log(`监控周期异常: ${error.message}`, 'error');
       throw error;
@@ -390,10 +398,10 @@ class SecurityMonitor {
     this.log('启动持续安全监控...', 'info');
 
     const intervalMs = this.config.REPORT.interval_minutes * 60 * 1000;
-    
+
     // 立即执行一次
     await this.runMonitoringCycle();
-    
+
     // 设置定期执行
     setInterval(async () => {
       try {
@@ -403,7 +411,10 @@ class SecurityMonitor {
       }
     }, intervalMs);
 
-    this.log(`持续监控已启动，间隔: ${this.config.REPORT.interval_minutes} 分钟`, 'info');
+    this.log(
+      `持续监控已启动，间隔: ${this.config.REPORT.interval_minutes} 分钟`,
+      'info'
+    );
   }
 }
 

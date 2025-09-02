@@ -1,0 +1,98 @@
+{
+  "timestamp": "2025-09-02T02:57:49.024Z",
+  "version": "unknown",
+  "environment": "development",
+  "buildResult": null,
+  "analysis": {
+    "files": [
+      {
+        "name": "assets\\index-Ceidsprl.js",
+        "path": "dist\\assets\\index-Ceidsprl.js",
+        "size": 1920807,
+        "sizeMB": 1.832,
+        "type": "main-js"
+      },
+      {
+        "name": "bundle-analysis.html",
+        "path": "dist\\bundle-analysis.html",
+        "size": 244615,
+        "sizeMB": 0.233,
+        "type": "asset"
+      },
+      {
+        "name": "assets\\index-J-MNrzfb.css",
+        "path": "dist\\assets\\index-J-MNrzfb.css",
+        "size": 14279,
+        "sizeMB": 0.014,
+        "type": "main-other"
+      },
+      {
+        "name": "index.html",
+        "path": "dist\\index.html",
+        "size": 751,
+        "sizeMB": 0.001,
+        "type": "main-other"
+      },
+      {
+        "name": "latest.yml",
+        "path": "dist\\latest.yml",
+        "size": 388,
+        "sizeMB": 0,
+        "type": "asset"
+      },
+      {
+        "name": "manifest.json",
+        "path": "dist\\manifest.json",
+        "size": 377,
+        "sizeMB": 0,
+        "type": "asset"
+      }
+    ],
+    "summary": {
+      "totalSize": 2181217,
+      "mainBundleSize": 1920807,
+      "vendorBundleSize": 0,
+      "cssSize": 0,
+      "assetsSize": 245380,
+      "totalSizeMB": 2.08,
+      "mainBundleSizeMB": 1.832,
+      "vendorBundleSizeMB": 0,
+      "cssSizeMB": 0,
+      "assetsSizeMB": 0.234
+    }
+  },
+  "gates": {
+    "timestamp": "2025-09-02T02:57:49.023Z",
+    "passed": false,
+    "failures": [
+      "Main bundle size 1.832MB exceeds limit 1.5MB"
+    ],
+    "warnings": [],
+    "checks": [
+      {
+        "name": "main_bundle_size",
+        "actual": 1.832,
+        "threshold": 1.5,
+        "passed": false
+      },
+      {
+        "name": "vendor_bundle_size",
+        "actual": 0,
+        "threshold": 3,
+        "passed": true
+      },
+      {
+        "name": "total_bundle_size",
+        "actual": 2.08,
+        "threshold": 5,
+        "passed": true
+      }
+    ]
+  },
+  "config": {
+    "mainBundleMaxMB": 1.5,
+    "vendorBundleMaxMB": 3,
+    "totalBundleMaxMB": 5,
+    "bundleIncreaseMaxPct": 10
+  }
+}

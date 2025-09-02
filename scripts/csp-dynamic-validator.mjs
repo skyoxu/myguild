@@ -72,10 +72,86 @@ class CSPDynamicValidator {
    * 从 HTML 文件提取 CSP 策略
    */
   extractCSPFromHTML(htmlContent) {
-    // 分行查找 CSP meta 标签，避免复杂正则表达式
+    // 使用调试验证成功的逻辑：直接定位CSP标签并提取
+    const cspPosition = htmlContent.indexOf('Content-Security-Policy');
+    if (cspPosition === -1) {
+      console.log('❌ 未找到Content-Security-Policy标签');
+      return null;
+    }
+
+    // 找到包含CSP的meta标签的完整范围
+    const cspStart = htmlContent.indexOf(
+      '<meta',
+      Math.max(0, cspPosition - 100)
+    );
+    const cspEnd = htmlContent.indexOf('/>', cspStart) + 2;
+
+    if (cspStart === -1 || cspEnd === -1 || cspStart > cspPosition) {
+      console.log('❌ 无法定位CSP meta标签');
+      return null;
+    }
+
+    const cspTag = htmlContent.substring(cspStart, cspEnd);
+
+    // 验证这确实是CSP标签
+    if (!cspTag.includes('Content-Security-Policy')) {
+      console.log('❌ 提取的meta标签不是CSP标签');
+      return null;
+    }
+
+    // 使用和调试脚本中相同的正则表达式提取content
+    const contentMatch = cspTag.match(/content="([^"]*)"/s);
+    if (!contentMatch || !contentMatch[1]) {
+      console.log('❌ 未能从CSP meta标签提取content属性');
+      console.log('Debug CSP标签:', cspTag.substring(0, 100));
+      return null;
+    }
+
+    // 清理并标准化CSP策略字符串
+    const cspPolicy = contentMatch[1]
+      .replace(/\s+/g, ' ') // 将多个空白符替换为单个空格
+      .replace(/\s*;\s*/g, '; ') // 标准化分号周围的空格
+      .trim();
+
+    console.log('🎯 提取的完整 CSP 策略:', cspPolicy);
+    return cspPolicy;
+
+    // 备用方案：分行查找 CSP meta 标签
     const lines = htmlContent.split('\n');
+    let inMetaTag = false;
+    let metaContent = '';
 
     for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // 检测CSP meta标签开始
+      if (
+        trimmedLine.includes('http-equiv') &&
+        trimmedLine.includes('Content-Security-Policy')
+      ) {
+        inMetaTag = true;
+        metaContent += trimmedLine + ' ';
+        continue;
+      }
+
+      // 如果在meta标签内
+      if (inMetaTag) {
+        metaContent += trimmedLine + ' ';
+
+        // 检测meta标签结束
+        if (trimmedLine.includes('/>') || trimmedLine.includes('</meta>')) {
+          // 提取content属性
+          const contentMatch = metaContent.match(/content=["']([^"']+)["']/i);
+          if (contentMatch && contentMatch[1]) {
+            console.log('🎯 提取的完整 CSP 策略 (多行解析):', contentMatch[1]);
+            return contentMatch[1];
+          }
+          inMetaTag = false;
+          metaContent = '';
+        }
+      }
+
+      // 单行匹配作为最后备用
       if (
         line.includes('Content-Security-Policy') &&
         line.includes('content=')

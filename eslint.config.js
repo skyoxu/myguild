@@ -107,6 +107,19 @@ export default tseslint.config([
       'react/jsx-boolean-value': ['warn', 'never'],
       'react-hooks/exhaustive-deps': 'warn',
 
+      // React 19 Actions规则 - 防止纸面升级
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "ImportDeclaration[source.value='react'] ImportSpecifier[imported.name='useActionState']",
+          message: 'React 19 Actions已启用，关键表单必须使用useActionState，请确保表单走Action路径而非直接状态管理'
+        },
+        {
+          selector: "CallExpression[callee.name='useState'] ~ CallExpression[callee.property.name='onSubmit']",
+          message: 'React 19项目中，表单提交应优先使用useActionState而非useState+onSubmit组合，避免纸面升级'
+        }
+      ],
+
       // 安全相关规则（临时放宽便于快速通过CI）
       'no-eval': 'warn',
       'no-implied-eval': 'error',
@@ -153,7 +166,7 @@ export default tseslint.config([
       'prettier/prettier': 'off',
     },
   },
-  // E2E测试特定规则 - 防止架构反模式
+  // E2E测试特定规则 - 防止架构反模式和flaky测试
   {
     files: ['**/tests/e2e/**/*.{ts,tsx,js,jsx}', '**/e2e/**/*.{ts,tsx,js,jsx}'],
     rules: {
@@ -170,7 +183,7 @@ export default tseslint.config([
           ],
         },
       ],
-      // 禁止在Electron E2E测试中使用 app:// 导航反模式
+      // 禁止在Electron E2E测试中使用 app:// 导航反模式和flaky测试模式
       'no-restricted-syntax': [
         'error',
         {
@@ -178,6 +191,38 @@ export default tseslint.config([
             "CallExpression[callee.property.name='goto'] > Literal[value=/^app:/]",
           message:
             "Electron E2E测试中禁止使用 page.goto('app://...') 导航反模式，应在beforeAll中启动应用并使用waitForSelector等待元素就绪",
+        },
+        // 禁止E2E测试中的无条件skip（反flaky规则）
+        {
+          selector:
+            "CallExpression[callee.property.name='skip'][arguments.length>0]:has(Literal)",
+          message:
+            "E2E测试中禁止使用 test.skip() 或 it.skip()，这会导致测试不稳定。如需条件跳过请使用 test.skipIf(condition)",
+        },
+        {
+          selector:
+            "CallExpression[callee.name='test'][callee.property.name='skip']",
+          message:
+            "E2E测试中禁止使用 test.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试",
+        },
+        {
+          selector:
+            "CallExpression[callee.name='it'][callee.property.name='skip']",
+          message:
+            "E2E测试中禁止使用 it.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试",
+        },
+        {
+          selector:
+            "CallExpression[callee.name='describe'][callee.property.name='skip']",
+          message:
+            "E2E测试中禁止使用 describe.skip()，这会导致整个测试套件被跳过。请逐个修复测试或使用条件跳过",
+        },
+        // 禁止内联skip（最常见的flaky模式）
+        {
+          selector:
+            "CallExpression[callee.type='Identifier'][callee.name=/^(test|it)$/] > ArrowFunctionExpression > BlockStatement > ExpressionStatement > CallExpression[callee.property.name='skip']",
+          message:
+            "E2E测试中禁止在测试函数内部调用 test.skip()，这是常见的flaky反模式。请在测试外部使用条件跳过",
         },
       ],
       // E2E测试中允许namespace（临时）

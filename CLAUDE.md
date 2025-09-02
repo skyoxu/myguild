@@ -348,16 +348,16 @@ docs/
 
 ## 13 默认 ADR 映射（可扩展）
 
-- **ADR-0001-tech-stack**：
-- **ADR-0002-electron-security**：
-- **ADR-0003-observability-release-health**：
-- **ADR-0004-event-bus-and-contracts**：
-- **ADR-0005-quality-gates**：
-- **ADR-0006-data-storage**：
-- **ADR-0007-ports-adapters**：
-- **ADR-0008-deployment-release**：
-- **ADR-0009-cross-platform**：
-- **ADR-0010-internationalization**：
+- **ADR-0001-tech-stack**：技术栈选型 (React 19, Electron, Phaser 3, TypeScript, Vite)
+- **ADR-0002-electron-security**：Electron安全基线 (CSP, nodeIntegration=false, contextIsolation=true)
+- **ADR-0003-observability-release-health**：可观测性和发布健康 (Sentry, 崩溃率阈值, 结构化日志)
+- **ADR-0004-event-bus-and-contracts**：事件总线和契约 (CloudEvents, 类型定义, 端口适配)
+- **ADR-0005-quality-gates**：质量门禁 (覆盖率, ESLint, 性能阈值, Bundle大小)
+- **ADR-0006-data-storage**：数据存储 (SQLite, 数据模型, 备份策略)
+- **ADR-0007-ports-adapters**：端口适配器 (架构模式, 依赖注入, 接口设计)
+- **ADR-0008-deployment-release**：部署发布 (CI/CD, 分阶段发布, 回滚策略)
+- **ADR-0009-cross-platform**：跨平台 (Windows/macOS/Linux 支持, 原生集成)
+- **ADR-0010-internationalization**：国际化 (多语言支持, 本地化流程, 文本资源管理)
 
 > 任何章节/Story 若改变上述口径，**必须**新增或 Supersede 对应 ADR。
 

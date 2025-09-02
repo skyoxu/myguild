@@ -2,14 +2,14 @@
 
 /**
  * SQLite 数据库完整性校验脚本
- * 
+ *
  * 功能：
  * - PRAGMA integrity_check 完整性验证
- * - PRAGMA quick_check 快速检查  
+ * - PRAGMA quick_check 快速检查
  * - 表结构一致性验证
  * - 索引完整性检查
  * - 数据库文件损坏检测
- * 
+ *
  * Usage:
  *   node scripts/db/integrity-check.mjs
  *   node scripts/db/integrity-check.mjs --db-path ./data/app.db
@@ -30,7 +30,9 @@ const DEFAULT_DB_PATH = path.join(process.cwd(), 'data', 'app.db');
 
 // 解析命令行参数
 const args = process.argv.slice(2);
-const DB_PATH = args.find(arg => arg.startsWith('--db-path='))?.split('=')[1] || DEFAULT_DB_PATH;
+const DB_PATH =
+  args.find(arg => arg.startsWith('--db-path='))?.split('=')[1] ||
+  DEFAULT_DB_PATH;
 const QUICK_MODE = args.includes('--quick');
 const VERBOSE = args.includes('--verbose');
 
@@ -67,7 +69,7 @@ async function performIntegrityCheck() {
 
     // 创建数据库连接
     const { default: Database } = sqlite3;
-    db = new Database.Database(DB_PATH, Database.OPEN_READONLY, (err) => {
+    db = new Database.Database(DB_PATH, Database.OPEN_READONLY, err => {
       if (err) {
         console.error(`❌ 无法打开数据库: ${err.message}`);
         return false;
@@ -106,17 +108,22 @@ async function performIntegrityCheck() {
       if (integrityResult && Object.values(integrityResult)[0] === 'ok') {
         console.log('  ✅ 完整性检查通过');
       } else {
-        console.error(`  ❌ 完整性检查失败: ${JSON.stringify(integrityResult)}`);
+        console.error(
+          `  ❌ 完整性检查失败: ${JSON.stringify(integrityResult)}`
+        );
         return false;
       }
 
       // 5. 表结构一致性
       console.log('5️⃣ 表结构一致性检查');
       const tables = await new Promise((resolve, reject) => {
-        db.all('SELECT name FROM sqlite_master WHERE type="table"', (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        });
+        db.all(
+          'SELECT name FROM sqlite_master WHERE type="table"',
+          (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+          }
+        );
       });
 
       if (tables && tables.length > 0) {
@@ -131,10 +138,13 @@ async function performIntegrityCheck() {
       // 6. 索引完整性
       console.log('6️⃣ 索引完整性检查');
       const indexes = await new Promise((resolve, reject) => {
-        db.all('SELECT name FROM sqlite_master WHERE type="index"', (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        });
+        db.all(
+          'SELECT name FROM sqlite_master WHERE type="index"',
+          (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+          }
+        );
       });
 
       if (indexes && indexes.length > 0) {
@@ -148,14 +158,13 @@ async function performIntegrityCheck() {
     }
 
     // 关闭数据库连接
-    db.close((err) => {
+    db.close(err => {
       if (err) {
         console.error(`⚠️  关闭数据库连接时出错: ${err.message}`);
       }
     });
 
     return true;
-
   } catch (error) {
     console.error(`❌ 完整性检查异常: ${error.message}`);
     if (db) {
@@ -170,7 +179,7 @@ async function performIntegrityCheck() {
  */
 function performFileSystemCheck() {
   console.log('2️⃣ 文件系统完整性检查');
-  
+
   try {
     // 检查文件是否可读
     fs.accessSync(DB_PATH, fs.constants.R_OK);
@@ -179,7 +188,7 @@ function performFileSystemCheck() {
     // 检查文件头是否是SQLite格式
     const buffer = fs.readFileSync(DB_PATH, { start: 0, end: 16 });
     const sqliteHeader = 'SQLite format 3\0';
-    
+
     if (buffer.toString().startsWith('SQLite format 3')) {
       console.log('  ✅ SQLite 文件头格式正确');
     } else {
@@ -189,7 +198,8 @@ function performFileSystemCheck() {
 
     // 检查文件大小合理性
     const stats = fs.statSync(DB_PATH);
-    if (stats.size >= 1024) { // 至少1KB
+    if (stats.size >= 1024) {
+      // 至少1KB
       console.log('  ✅ 文件大小合理');
     } else {
       console.log('  ⚠️  文件可能损坏或为空');
@@ -197,7 +207,6 @@ function performFileSystemCheck() {
 
     console.log('📋 基础文件系统检查完成');
     return true;
-
   } catch (error) {
     console.error(`❌ 文件系统检查失败: ${error.message}`);
     return false;
@@ -207,7 +216,7 @@ function performFileSystemCheck() {
 // 主执行逻辑
 try {
   const success = await performIntegrityCheck();
-  
+
   if (success) {
     console.log('');
     console.log('✅ SQLite 数据库完整性校验通过');

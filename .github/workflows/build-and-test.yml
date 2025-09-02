@@ -53,6 +53,11 @@ jobs:
           test -f dist/index.html
           test -d dist/assets/
 
+      - name: ⚡ 性能基准测试 (User Timing)
+        run: npm run guard:performance
+        env:
+          NODE_ENV: test
+
   # ==================== Electron安全测试 ====================
   electron-security:
     name: Electron Security Tests

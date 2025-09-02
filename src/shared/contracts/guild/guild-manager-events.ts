@@ -3,7 +3,7 @@
  * 基于 CloudEvents v1.0 规范
  */
 
-import { CloudEvent } from '../events/CloudEvent';
+import type { CloudEvent } from '../events/CloudEvent';
 
 // CloudEvent 扩展接口
 export interface GuildManagerCloudEvent<T = any> extends CloudEvent<T> {

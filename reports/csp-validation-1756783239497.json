@@ -1,0 +1,66 @@
+{
+  "timestamp": "2025-09-02T03:20:39.498Z",
+  "environment": "default",
+  "file": "index.html",
+  "policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://sentry.io https://*.sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; child-src 'none'; worker-src 'self';",
+  "parsed": {
+    "default-src": [
+      "'self'"
+    ],
+    "script-src": [
+      "'self'"
+    ],
+    "style-src": [
+      "'self'",
+      "'unsafe-inline'"
+    ],
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      "https:"
+    ],
+    "font-src": [
+      "'self'",
+      "data:"
+    ],
+    "connect-src": [
+      "'self'",
+      "https://sentry.io",
+      "https://*.sentry.io"
+    ],
+    "object-src": [
+      "'none'"
+    ],
+    "base-uri": [
+      "'self'"
+    ],
+    "form-action": [
+      "'self'"
+    ],
+    "frame-ancestors": [
+      "'none'"
+    ],
+    "child-src": [
+      "'none'"
+    ],
+    "worker-src": [
+      "'self'"
+    ]
+  },
+  "violations": [
+    {
+      "type": "unsafe_directive",
+      "directive": "style-src",
+      "value": "'unsafe-inline'",
+      "severity": "critical",
+      "message": "检测到不安全的 CSP 值: style-src 'unsafe-inline'"
+    }
+  ],
+  "warnings": [],
+  "summary": {
+    "passed": false,
+    "violations": 1,
+    "warnings": 0
+  }
+}

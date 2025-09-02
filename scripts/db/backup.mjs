@@ -405,7 +405,7 @@ function verifyBackupIntegrity(backupPath) {
 
     // 如果是压缩文件，先解压缩到临时位置
     if (backupPath.endsWith('.gz')) {
-      const { createGunzip } = require('node:zlib');
+      const { createGunzip } = await import('node:zlib');
 
       tempFile = `${backupPath}.tmp`;
       const gunzip = createGunzip();
@@ -413,7 +413,8 @@ function verifyBackupIntegrity(backupPath) {
       const output = createWriteStream(tempFile);
 
       // 同步解压缩
-      require('node:child_process').execSync(
+      const { execSync } = await import('node:child_process');
+      execSync(
         `gunzip -c "${backupPath}" > "${tempFile}"`,
         { timeout: 60000 }
       );
