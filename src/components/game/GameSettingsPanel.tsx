@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
 
-interface GameSettings {
+export interface GameSettings {
   // 图形设置
   graphics: {
     quality: 'low' | 'medium' | 'high';
@@ -101,7 +101,7 @@ interface GameSettingsPanelProps {
   className?: string;
   isVisible: boolean;
   onClose: () => void;
-  onSettingsChange?: (settings: GameSettings) => void;
+  onSettingsChange?: (settings: Partial<GameSettings>) => void;
 }
 
 export function GameSettingsPanel({

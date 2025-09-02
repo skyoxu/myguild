@@ -668,7 +668,7 @@ async function main() {
 }
 
 // 如果直接运行
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   main();
 }
 

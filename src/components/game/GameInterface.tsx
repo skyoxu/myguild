@@ -12,6 +12,7 @@ import { GameControlPanel } from './GameControlPanel';
 import { GameNotifications } from './GameNotifications';
 import { GameSaveManager } from './GameSaveManager';
 import { GameSettingsPanel } from './GameSettingsPanel';
+import type { GameSettings } from './GameSettingsPanel';
 import type { GameState } from '../../ports/game-engine.port';
 import type { DomainEvent } from '../../shared/contracts/events';
 
@@ -41,13 +42,19 @@ export function GameInterface({
   const [showNotifications, setShowNotifications] = useState(true);
 
   // 设置状态
-  const [gameSettings, setGameSettings] = useState({
+  const [gameSettings, setGameSettings] = useState<Partial<GameSettings>>({
     ui: {
+      theme: 'dark' as const,
+      language: 'zh-CN',
       showAdvancedStats: false,
       notificationPosition: 'top-right' as const,
     },
     gameplay: {
+      difficulty: 'medium' as const,
+      autoSave: true,
+      autoSaveInterval: 300,
       showNotifications: true,
+      showTutorials: true,
     },
   });
 
@@ -240,9 +247,9 @@ export function GameInterface({
         )}
 
         {/* 游戏通知系统 */}
-        {showNotifications && gameSettings.gameplay.showNotifications && (
+        {showNotifications && gameSettings.gameplay?.showNotifications && (
           <GameNotifications
-            position={gameSettings.ui.notificationPosition}
+            position={gameSettings.ui?.notificationPosition === 'top-left' || gameSettings.ui?.notificationPosition === 'bottom-left' ? 'top-center' : gameSettings.ui?.notificationPosition as 'top-center' | 'top-right' | 'bottom-center' | 'bottom-right'}
             maxNotifications={5}
           />
         )}
@@ -382,8 +389,8 @@ export function GameInterface({
         <GameSettingsPanel
           isVisible={showSettings}
           onClose={() => setShowSettings(false)}
-          onSettingsChange={settings => {
-            setGameSettings(prevSettings => ({
+          onSettingsChange={(settings: Partial<GameSettings>) => {
+            setGameSettings((prevSettings: Partial<GameSettings>) => ({
               ...prevSettings,
               ...settings,
               ui: { ...prevSettings.ui, ...settings.ui },

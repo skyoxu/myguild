@@ -227,7 +227,15 @@
       "Bash(git branch:*)",
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=closed --limit=5)",
       "Bash(echo:*)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web --hostname github.com)"
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web --hostname github.com)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --with-token)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr create --title \"feat: 完成高优先级质量修复与安全基线优化\" --body \"高优先级修复完成\" --head feature/quality-fixes-and-security-baseline --base main)",
+      "Bash(git remote get-url:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" --help)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status --show-token)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --git-protocol ssh --hostname github.com)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" run list --branch feature/quality-fixes-and-security-baseline --limit 5)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=open --limit=5)"
     ],
     "deny": [],
     "additionalDirectories": [
