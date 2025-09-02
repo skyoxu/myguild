@@ -9,9 +9,12 @@ import type { GameDomainEvent } from './GameEvents';
 export type SystemEvent =
   | { type: `${string}.system.${string}`; data?: any }
   | { type: `${string}.ui.${string}`; data?: any }
-  | { type: 'guild.ui.notification.shown'; data: { message: string; type: 'info' | 'success' | 'warning' | 'error' } };
+  | {
+      type: 'guild.ui.notification.shown';
+      data: { message: string; type: 'info' | 'success' | 'warning' | 'error' };
+    };
 
-// 应用事件类型 
+// 应用事件类型
 export type AppEvent =
   | { type: 'guild.create'; name: string }
   | { type: 'guild.rename'; id: string; name: string }

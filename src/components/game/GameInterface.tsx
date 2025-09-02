@@ -249,7 +249,16 @@ export function GameInterface({
         {/* 游戏通知系统 */}
         {showNotifications && gameSettings.gameplay?.showNotifications && (
           <GameNotifications
-            position={gameSettings.ui?.notificationPosition === 'top-left' || gameSettings.ui?.notificationPosition === 'bottom-left' ? 'top-center' : gameSettings.ui?.notificationPosition as 'top-center' | 'top-right' | 'bottom-center' | 'bottom-right'}
+            position={
+              gameSettings.ui?.notificationPosition === 'top-left' ||
+              gameSettings.ui?.notificationPosition === 'bottom-left'
+                ? 'top-center'
+                : (gameSettings.ui?.notificationPosition as
+                    | 'top-center'
+                    | 'top-right'
+                    | 'bottom-center'
+                    | 'bottom-right')
+            }
             maxNotifications={5}
           />
         )}
