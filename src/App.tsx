@@ -62,7 +62,10 @@ function App() {
   }, []);
 
   return (
-    <div className="app-container p-8 min-h-screen bg-game-ui-background" data-testid="app-root">
+    <div
+      className="app-container p-8 min-h-screen bg-game-ui-background"
+      data-testid="app-root"
+    >
       <header className="text-center mb-8">
         <h1 className="text-game-title font-bold text-game-primary mb-4">
           Phaser 3 + React 19 + TypeScript
