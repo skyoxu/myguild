@@ -182,9 +182,16 @@ export class GameMetricsManager {
         timestamp: Date.now().toString(),
       };
 
-      // 立即发送指标（按您要求的distribution格式）
-      Sentry.metrics.distribution(metricDef.name, value, {
-        tags: finalTags,
+      // 发送指标作为自定义事件（metrics API已移除）
+      Sentry.addBreadcrumb({
+        message: `Metric: ${metricDef.name}`,
+        level: 'info',
+        data: {
+          value,
+          unit: metricDef.unit,
+          ...finalTags,
+        },
+        category: 'metrics',
       });
 
       console.log(

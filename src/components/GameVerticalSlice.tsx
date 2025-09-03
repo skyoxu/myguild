@@ -69,7 +69,12 @@ export function GameVerticalSlice({
     (event: DomainEvent) => {
       console.log('🎮 Vertical Slice Event:', event);
 
-      const gameEvent = event as GameDomainEvent;
+      // 只处理游戏域事件
+      if (!event.type.startsWith('game.')) {
+        return;
+      }
+
+      const gameEvent = event as unknown as GameDomainEvent;
 
       // 记录所有事件用于调试和验证
       setSliceState(prev => ({
@@ -241,21 +246,24 @@ export function GameVerticalSlice({
       webVitals.startTiming('game_engine_init');
 
       const gameConfig: GameConfig = {
-        width: 800,
-        height: 600,
-        enablePhysics: true,
-        debugMode: false,
-        targetFPS: 60,
+        maxLevel: 50,
+        initialHealth: 100,
+        scoreMultiplier: 1.0,
+        autoSave: true,
+        difficulty: 'medium',
       };
 
       // 创建游戏引擎适配器
       gameEngineRef.current = new GameEngineAdapter();
 
+      // 设置游戏容器
+      gameEngineRef.current.setContainer(canvasRef.current);
+
       // 注册事件监听
-      gameEngineRef.current.onEvent(handleGameEvent);
+      gameEngineRef.current.onGameEvent(handleGameEvent);
 
       // 初始化引擎
-      await gameEngineRef.current.initialize(gameConfig, canvasRef.current);
+      await gameEngineRef.current.initializeGame(gameConfig);
 
       // 直接启动TestScene
       await gameEngineRef.current.startGame();
@@ -293,7 +301,7 @@ export function GameVerticalSlice({
   const cleanupGameEngine = useCallback(() => {
     if (gameEngineRef.current) {
       try {
-        gameEngineRef.current.dispose();
+        gameEngineRef.current.destroy();
         gameEngineRef.current = null;
         console.log('✅ 游戏引擎已清理');
       } catch (error) {

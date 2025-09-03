@@ -15,6 +15,7 @@ import type {
   GameStatistics,
 } from '../ports/game-engine.port';
 import type { DomainEvent } from '../shared/contracts/events';
+import { EventUtils } from '../shared/contracts/events';
 import type { GameDomainEvent } from '../shared/contracts/events/GameEvents';
 import { globalEventBus } from '../hooks/useGameEvents';
 import { EventPriority } from '../shared/contracts/events/GameEvents';
@@ -144,15 +145,11 @@ export class GameEngineAdapter implements GameEnginePort {
       };
 
       // 发布初始化事件
-      this.publishEvent({
+      this.publishEvent(EventUtils.createEvent({
         type: 'game.engine.initialized',
-        source: 'game-engine-adapter',
-        data: { config, state: this.currentState },
-        timestamp: new Date(),
-        id: `init-${Date.now()}`,
-        specversion: '1.0',
-        datacontenttype: 'application/json',
-      });
+        source: '/vitegame/game-engine',
+        data: { config },
+      }));
 
       this.stateMachine.transition('running');
       return this.currentState;
@@ -186,19 +183,16 @@ export class GameEngineAdapter implements GameEnginePort {
       this.gameStartTime = Date.now();
 
       // 发布游戏开始事件
-      this.publishEvent({
-        type: 'game.session.started',
-        source: 'game-engine-adapter',
+      this.publishEvent(EventUtils.createEvent({
+        type: 'game.engine.started',
+        source: '/vitegame/game-engine',
         data: {
           saveId,
           state: this.currentState,
           timestamp: this.gameStartTime,
         },
-        timestamp: new Date(),
         id: `start-${Date.now()}`,
-        specversion: '1.0',
-        datacontenttype: 'application/json',
-      });
+      }));
 
       return this.currentState;
     } catch (error) {
@@ -215,15 +209,12 @@ export class GameEngineAdapter implements GameEnginePort {
     this.sceneManager.pauseGame();
     this.stateMachine.transition('paused');
 
-    this.publishEvent({
-      type: 'game.session.paused',
-      source: 'game-engine-adapter',
+    this.publishEvent(EventUtils.createEvent({
+      type: 'game.engine.paused',
+      source: '/vitegame/game-engine',
       data: { state: this.currentState },
-      timestamp: new Date(),
       id: `pause-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    }));
   }
 
   /**
@@ -235,8 +226,8 @@ export class GameEngineAdapter implements GameEnginePort {
     this.stateMachine.transition('running');
 
     this.publishEvent({
-      type: 'game.session.resumed',
-      source: 'game-engine-adapter',
+      type: 'game.engine.resumed',
+      source: '/vitegame/game-engine',
       data: { state: this.currentState },
       timestamp: new Date(),
       id: `resume-${Date.now()}`,

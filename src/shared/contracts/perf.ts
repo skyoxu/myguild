@@ -108,7 +108,7 @@ export interface CapacityModel {
  */
 export interface PerformanceMetric {
   /** 指标名称，遵循 ${DOMAIN}.perf.${metric} 格式 */
-  name: `${string}.perf.${string}`;
+  name: string;
   /** 指标数值 */
   value: number;
   /** 指标单位 */

@@ -9,9 +9,9 @@ import React, {
   useEffect,
   useState,
   useCallback,
-  ReactNode,
   useMemo,
 } from 'react';
+import type { ReactNode } from 'react';
 import type { GameState, GameConfig } from '../ports/game-engine.port';
 import type { SaveData } from '../game/state/GameStateManager';
 import { GameStateManager } from '../game/state/GameStateManager';
@@ -125,12 +125,9 @@ export function GameStateProvider({
   useEffect(() => {
     const handleStateManagerEvent = (event: DomainEvent) => {
       switch (event.type) {
-        case 'game.state.manager.updated':
-          if (event.data.state) {
-            setGameState({ ...event.data.state });
-          }
-          if (event.data.config) {
-            setGameConfig({ ...event.data.config });
+        case 'game.state.updated':
+          if (event.data && 'gameState' in event.data) {
+            setGameState({ ...event.data.gameState });
           }
           break;
 
@@ -196,8 +193,10 @@ export function GameStateProvider({
 
       // 通过EventBus通知其他组件
       gameEvents.publish({
-        type: 'react.save.completed',
-        data: { saveId, timestamp: new Date() },
+        type: 'game.save.created',
+        data: { saveId, gameState },
+        source: '/vitegame/game-engine',
+        timestamp: new Date(),
       });
 
       return saveId;
@@ -205,7 +204,9 @@ export function GameStateProvider({
       console.error('Failed to save game:', error);
       gameEvents.publish({
         type: 'game.error',
-        data: { error: (error as Error).message, context: 'context-save' },
+        data: { error: (error as Error).message, context: 'context-save', timestamp: new Date() },
+        source: '/vitegame/game-engine',
+        timestamp: new Date(),
       });
       return null;
     }
@@ -228,7 +229,9 @@ export function GameStateProvider({
         console.error('Failed to load game:', error);
         gameEvents.publish({
           type: 'game.error',
-          data: { error: (error as Error).message, context: 'context-load' },
+          data: { error: (error as Error).message, context: 'context-load', timestamp: new Date() },
+          source: '/vitegame/game-engine',
+          timestamp: new Date(),
         });
         return false;
       }

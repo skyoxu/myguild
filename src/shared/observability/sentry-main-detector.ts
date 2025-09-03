@@ -184,16 +184,10 @@ export class SentryMainDetector {
    */
   private async checkMainHubStatus(): Promise<'active' | 'inactive' | 'error'> {
     try {
-      const hub = Sentry.getCurrentHub();
+      const client = Sentry.getClient();
 
-      if (!hub) {
-        this.log('❌ 主进程Sentry Hub未找到');
-        return 'inactive';
-      }
-
-      const client = hub.getClient();
       if (!client) {
-        this.log('⚠️  主进程Sentry Hub存在但Client未连接');
+        this.log('❌ 主进程Sentry Client未找到');
         return 'inactive';
       }
 
@@ -566,5 +560,3 @@ export async function detailedMainSentryCheck(
   return await detector.detectMainProcessStatus();
 }
 
-// 类型导出
-export type { SentryMainDetectionResult, SentryMainDetectionOptions };

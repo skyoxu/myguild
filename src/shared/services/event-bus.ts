@@ -177,7 +177,7 @@ export class EventBus implements EventPublisher, EventSubscriber {
   /**
    * 取消订阅
    */
-  unsubscribe(eventType: string, handler: Function): void {
+  unsubscribe(eventType: string, handler: (...args: any[]) => void): void {
     this.emitter.off(eventType, handler);
     this.subscriptionCount = Math.max(0, this.subscriptionCount - 1);
 

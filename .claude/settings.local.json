@@ -235,7 +235,8 @@
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status --show-token)",
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --git-protocol ssh --hostname github.com)",
       "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" run list --branch feature/quality-fixes-and-security-baseline --limit 5)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=open --limit=5)"
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=open --limit=5)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list --state=open --head=feature/quality-fixes-and-security-baseline)"
     ],
     "deny": [],
     "additionalDirectories": [

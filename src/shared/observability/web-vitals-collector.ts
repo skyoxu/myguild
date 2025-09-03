@@ -520,7 +520,7 @@ class WebVitalsCollector {
             metric: regression.metric,
             severity: regression.severity,
           },
-          extra: regression,
+          extra: regression as any,
         });
       }
     });

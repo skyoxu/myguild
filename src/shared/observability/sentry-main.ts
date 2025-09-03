@@ -119,8 +119,7 @@ export function initSentryMain(): Promise<boolean> {
         sampleRate: config.sampleRate,
         tracesSampler: createDynamicTracesSampler(config.dynamicSampling),
 
-        // 🏥 Release Health配置
-        autoSessionTracking: config.autoSessionTracking,
+        // 🏥 Release Health配置（自动启用）
         enableTracing: config.enableTracing,
 
         // 🎮 游戏特定标签
@@ -151,11 +150,11 @@ export function initSentryMain(): Promise<boolean> {
 
         // 🔧 集成配置
         integrations: [
-          new Sentry.Integrations.Http({ breadcrumbs: true }),
-          new Sentry.Integrations.OnUncaughtException(),
-          new Sentry.Integrations.OnUnhandledRejection(),
-          new Sentry.Integrations.LinkedErrors(),
-          new Sentry.Integrations.Context(),
+          Sentry.httpIntegration({ breadcrumbs: true }),
+          Sentry.onUncaughtExceptionIntegration(),
+          Sentry.onUnhandledRejectionIntegration(),
+          Sentry.linkedErrorsIntegration(),
+          Sentry.contextLinesIntegration(),
         ],
 
         // 🚫 隐私保护 - OTel语义兼容的PII过滤
@@ -301,7 +300,7 @@ function validateSentryConfig(config: SentryEnvironmentConfig): boolean {
 function validateSentryInitialization(): boolean {
   try {
     // 检查Sentry客户端是否可用
-    const client = Sentry.getCurrentHub().getClient();
+    const client = Sentry.getClient();
     if (!client) {
       return false;
     }
@@ -538,9 +537,10 @@ export async function integrateObservabilityMetrics(): Promise<void> {
     console.log('🔗 集成可观测性指标到Sentry...');
 
     // 动态导入可观测性集成器
-    const { ObservabilityManager } = await import(
-      '../../scripts/observability-integration.mjs'
-    );
+    // TODO: 实现 ObservabilityManager 或移除此功能
+    // const { ObservabilityManager } = await import(
+    //   '../../scripts/observability-integration.mjs'
+    // );
 
     const observabilityConfig = {
       dbPath: process.env.DB_PATH || 'data/app.db',
@@ -580,13 +580,17 @@ export function sendBusinessMetric(
   tags: Record<string, string> = {}
 ): void {
   try {
-    // 使用您要求的distribution格式
-    Sentry.metrics.distribution(metricName, value, {
-      tags: {
+    // 发送指标作为面包屑（metrics API已移除）
+    Sentry.addBreadcrumb({
+      message: `Metric: ${metricName}`,
+      level: 'info',
+      data: {
+        value,
         component: 'main-process',
         environment: determineEnvironment(),
         ...tags,
       },
+      category: 'metrics',
     });
 
     console.log(`📊 主进程指标已发送: ${metricName}=${value}${unit}`, tags);
@@ -717,15 +721,4 @@ export function sendDatabaseAlert(
   }
 }
 
-// 🔄 导出辅助函数
-export {
-  determineEnvironment,
-  validateSentryConfig,
-  integrateObservabilityMetrics,
-  sendBusinessMetric,
-  sendDatabaseAlert,
-  reportLevelLoadTimeMain,
-  reportBattleRoundTimeMain,
-  reportSystemMetrics,
-  startSystemMetricsCollection,
-};
+// 所有函数已在上方直接导出，无需重复导出

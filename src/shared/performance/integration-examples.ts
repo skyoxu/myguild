@@ -3,6 +3,7 @@
  * 展示如何在应用关键路径中集成性能测点
  */
 
+import React from 'react';
 import { userTiming, mark, measure, measureFunction } from './UserTiming.js';
 
 /**
@@ -49,12 +50,12 @@ export class PhaserPerformanceIntegration {
    * 测量场景创建时间
    */
   static instrumentScene(scene: Phaser.Scene) {
-    const originalCreate = scene.create.bind(scene);
-    const originalPreload = scene.preload.bind(scene);
+    const originalCreate = (scene as any).create?.bind(scene);
+    const originalPreload = (scene as any).preload?.bind(scene);
 
-    scene.preload = function () {
+    (scene as any).preload = function () {
       mark('phaser.scene.preload.start');
-      originalPreload();
+      originalPreload?.();
       mark('phaser.scene.preload.end');
       measure(
         'phaser.scene.preload',
@@ -63,9 +64,9 @@ export class PhaserPerformanceIntegration {
       );
     };
 
-    scene.create = function () {
+    (scene as any).create = function () {
       mark('phaser.scene.create.start');
-      originalCreate();
+      originalCreate?.();
       mark('phaser.scene.create.end');
       measure(
         'phaser.scene.create',
@@ -91,10 +92,11 @@ export class ElectronIPCPerformance {
    * 测量IPC调用时间
    */
   static async measureIPCCall<T>(channel: string, args: any[]): Promise<T> {
-    return await measureFunction(`electron.ipc.call.${channel}`, async () => {
+    const result = await measureFunction(`electron.ipc.call.${channel}`, async () => {
       // @ts-ignore - window.electronAPI通过preload脚本注入
       return await window.electronAPI.invoke(channel, ...args);
     });
+    return result as T;
   }
 
   /**

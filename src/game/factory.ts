@@ -47,7 +47,7 @@ export async function createGameEngine(
 
     // 设置错误处理
     gameEngine.onGameEvent((event: DomainEvent) => {
-      if (event.type === 'game.error' && onError) {
+      if (event.type === 'game.error' && onError && event.data && typeof event.data === 'object' && 'error' in event.data) {
         onError(new Error((event.data as { error: string }).error));
       }
     });
