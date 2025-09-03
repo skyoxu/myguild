@@ -116,7 +116,8 @@ export function initSentryRenderer(): Promise<boolean> {
 
         // 🚫 隐私保护
         beforeSend(event, hint) {
-          return filterRendererPII(event, hint);
+          const filteredEvent = filterRendererPII(event, hint);
+          return filteredEvent as any;
         },
 
         beforeBreadcrumb(breadcrumb) {
@@ -198,10 +199,10 @@ function filterRendererPII(
   // 过滤用户输入敏感信息
   if (event.request?.data) {
     const data = event.request.data;
-    if (typeof data === 'object') {
-      delete data.password;
-      delete data.token;
-      delete data.apiKey;
+    if (typeof data === 'object' && data !== null) {
+      delete (data as any).password;
+      delete (data as any).token;
+      delete (data as any).apiKey;
     }
   }
 

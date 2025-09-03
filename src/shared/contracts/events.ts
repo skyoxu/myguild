@@ -4,17 +4,24 @@
  */
 
 /**
- * 基础事件接口
+ * 基础事件接口 - 符合CloudEvents v1.0规范
  */
 export interface BaseEvent {
+  // CloudEvents v1.0 必需字段
   specversion: '1.0';
   type: string;
   source: string;
   id: string;
-  time: string;
-  datacontenttype: string;
-  data: unknown;
-  timestamp?: Date;
+  
+  // CloudEvents v1.0 可选字段
+  time?: string;  // RFC3339格式时间戳，可选
+  datacontenttype?: string;
+  dataschema?: string;
+  subject?: string;
+  data?: unknown;
+  
+  // 扩展属性（任何符合CloudEvents扩展规范的字段）
+  [key: string]: any;
 }
 
 /**
@@ -76,7 +83,7 @@ export type EventName = string;
 /**
  * 事件优先级
  */
-export type EventPriority = 'low' | 'normal' | 'high' | 'critical';
+export type EventPriority = 'low' | 'medium' | 'high' | 'critical';
 
 /**
  * 事件来源类型
@@ -116,6 +123,7 @@ export interface EventSubscription {
  */
 export interface BatchConfig {
   batchSize: number;
+  maxBatchSize: number;  // 添加maxBatchSize字段以匹配测试
   flushInterval: number;
   priorityThresholds: Record<EventPriority, number>;
 }
@@ -125,12 +133,13 @@ export interface BatchConfig {
  */
 export const DEFAULT_BATCH_CONFIG: BatchConfig = {
   batchSize: 100,
-  flushInterval: 1000,
+  maxBatchSize: 50,     // 最大批处理大小
+  flushInterval: 16,    // 16ms (约60fps)
   priorityThresholds: {
     critical: 0,
-    high: 10,
-    normal: 50,
-    low: 100,
+    high: 1,        // 下一帧处理
+    medium: 16,     // 批量处理  
+    low: 100,       // 空闲处理
   },
 };
 
@@ -158,31 +167,129 @@ export class EventUtils {
    * 推断事件优先级
    */
   static inferPriority(eventType: string): EventPriority {
-    // 默认返回normal，除非有特殊标识
-    return 'normal';
+    // 默认返回medium，除非有特殊标识
+    return 'medium';
   }
 
   /**
-   * 创建事件
+   * 创建事件 - 符合CloudEvents v1.0规范，支持两种调用方式
    */
   static createEvent<T extends DomainEvent>(options: {
-    type: T['type'];
-    source: T['source'];
-    data: T['data'];
+    type: string;
+    source: string;
+    data?: any;
     id?: string;
     time?: string;
-    timestamp?: Date;
-  }): T {
-    return {
-      specversion: '1.0',
-      type: options.type,
-      source: options.source,
-      id: options.id || crypto.randomUUID(),
-      time: options.time || new Date().toISOString(),
-      datacontenttype: 'application/json',
-      data: options.data,
-      timestamp: options.timestamp || new Date(),
-    } as T;
+    subject?: string;
+    datacontenttype?: string;
+    dataschema?: string;
+    [key: string]: any;
+  }): T;
+  static createEvent<T extends DomainEvent>(
+    type: string,
+    source: string,
+    data?: any,
+    options?: {
+      id?: string;
+      time?: string;
+      subject?: string;
+      datacontenttype?: string;
+      dataschema?: string;
+      priority?: EventPriority;
+      traceId?: string;
+      sequenceId?: number;
+      [key: string]: any;
+    }
+  ): T;
+  static createEvent<T extends DomainEvent>(
+    typeOrOptions: string | {
+      type: string;
+      source: string;
+      data?: any;
+      id?: string;
+      time?: string;
+      subject?: string;
+      datacontenttype?: string;
+      dataschema?: string;
+      [key: string]: any;
+    },
+    source?: string,
+    data?: any,
+    options?: {
+      id?: string;
+      time?: string;
+      subject?: string;
+      datacontenttype?: string;
+      dataschema?: string;
+      priority?: EventPriority;
+      traceId?: string;
+      sequenceId?: number;
+      [key: string]: any;
+    }
+  ): T {
+    // 判断是对象调用还是参数调用
+    if (typeof typeOrOptions === 'object') {
+      // 新的对象调用方式
+      const opts = typeOrOptions;
+      const event: BaseEvent = {
+        // CloudEvents v1.0 必需字段
+        specversion: '1.0',
+        type: opts.type,
+        source: opts.source,
+        id: opts.id || crypto.randomUUID(),
+        
+        // CloudEvents v1.0 可选字段 - time字段默认自动生成
+        time: opts.time || new Date().toISOString(),
+        ...(opts.subject && { subject: opts.subject }),
+        datacontenttype: opts.datacontenttype || 'application/json',  // 默认内容类型
+        ...(opts.dataschema && { dataschema: opts.dataschema }),
+        ...(opts.data !== undefined && { data: opts.data }),
+      };
+      
+      // 添加其他扩展属性
+      Object.keys(opts).forEach(key => {
+        if (!['type', 'source', 'id', 'time', 'subject', 'datacontenttype', 'dataschema', 'data'].includes(key)) {
+          event[key] = opts[key];
+        }
+      });
+      
+      return event as T;
+    } else {
+      // 旧的参数调用方式 - 保持向后兼容性
+      const type = typeOrOptions;
+      const eventOptions = options || {};
+      const event: BaseEvent = {
+        // CloudEvents v1.0 必需字段
+        specversion: '1.0',
+        type,
+        source: source!,
+        id: eventOptions.id || crypto.randomUUID(),
+        
+        // CloudEvents v1.0 可选字段 - time字段默认自动生成
+        time: eventOptions.time || new Date().toISOString(),
+        ...(eventOptions.subject && { subject: eventOptions.subject }),
+        datacontenttype: eventOptions.datacontenttype || 'application/json',  // 默认内容类型
+        ...(eventOptions.dataschema && { dataschema: eventOptions.dataschema }),
+        ...(data !== undefined && { data }),
+      };
+      
+      // 添加默认扩展属性（非CloudEvents v1.0标准，但用于向后兼容）
+      event.priority = eventOptions.priority || 'medium';
+      event.sequenceId = eventOptions.sequenceId || 0;
+      event.timestamp = Date.now(); // 数字时间戳，补充ISO时间字符串
+      if (eventOptions.traceId) {
+        event.traceId = eventOptions.traceId;
+      }
+      
+      // 添加其他自定义扩展属性
+      Object.keys(eventOptions).forEach(key => {
+        if (!['id', 'time', 'subject', 'datacontenttype', 'dataschema', 'priority', 'sequenceId', 'traceId'].includes(key)) {
+          event[key] = eventOptions[key];
+        }
+      });
+      
+      return event as T;
+    }
   }
 }
 

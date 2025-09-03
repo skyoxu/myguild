@@ -580,7 +580,7 @@ export class EnterpriseAlertingSystem extends EventEmitter {
     return `incident-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   }
 
-  private async checkAggregation(alert: AlertEvent): boolean {
+  private async checkAggregation(alert: AlertEvent): Promise<boolean> {
     // 简化的聚合逻辑
     const key = this.config.aggregation.groupingKeys
       .map(k => alert.labels[k] || alert[k as keyof AlertEvent])

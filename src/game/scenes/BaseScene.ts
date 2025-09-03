@@ -48,7 +48,7 @@ export abstract class BaseScene extends Phaser.Scene {
    */
   destroy(): void {
     this.eventCallbacks.clear();
-    super.destroy();
+    // Note: Phaser.Scene doesn't have a destroy method, cleanup is handled by Phaser internally
   }
 
   /**

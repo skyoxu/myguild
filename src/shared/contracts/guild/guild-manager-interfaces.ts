@@ -139,6 +139,16 @@ export interface IFacilityBenefit {
   readonly description: string;
 }
 
+export enum BenefitType {
+  MEMBER_CAPACITY = 'MEMBER_CAPACITY',
+  RESOURCE_PRODUCTION = 'RESOURCE_PRODUCTION',
+  SKILL_BOOST = 'SKILL_BOOST',
+  EXPERIENCE_BONUS = 'EXPERIENCE_BONUS',
+  REPUTATION_BONUS = 'REPUTATION_BONUS',
+  COST_REDUCTION = 'COST_REDUCTION',
+  UNLOCK_FEATURE = 'UNLOCK_FEATURE',
+}
+
 // ============== 战斗和副本接口 ==============
 
 export interface IRaidConfiguration {
@@ -164,6 +174,15 @@ export interface IRoleRequirements {
   readonly maxHealers: number;
   readonly minDPS: number;
   readonly maxDPS: number;
+}
+
+export interface IRaidReward {
+  readonly id: string;
+  readonly type: 'ITEM' | 'RESOURCE' | 'EXPERIENCE' | 'REPUTATION';
+  readonly itemId?: string;
+  readonly amount: number;
+  readonly rarity?: ItemRarity;
+  readonly dropChance: number;
 }
 
 export interface IEncounter {
@@ -199,6 +218,14 @@ export interface IRaidComposition {
   validate(): IValidationResult;
   getTotalMemberCount(): number;
   getParticipantIds(): readonly string[];
+}
+
+export enum SlotPriority {
+  REQUIRED = 'REQUIRED',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+  OPTIONAL = 'OPTIONAL',
 }
 
 export interface IRaidMemberSlot {
@@ -246,6 +273,14 @@ export interface ITacticalCenter {
   readonly tacticsLibrary: ITacticsLibrary;
   readonly aiAutoAssignment: IAIAutoAssignmentSystem;
   readonly memberAvailabilityTracker: IMemberAvailabilityTracker;
+}
+
+export enum UnlockMethod {
+  RESEARCH = 'RESEARCH',
+  PURCHASE = 'PURCHASE',
+  REWARD = 'REWARD',
+  DISCOVERY = 'DISCOVERY',
+  TRADE = 'TRADE',
 }
 
 export interface ITacticsLibrary {
@@ -333,6 +368,26 @@ export interface IWorldGenerationSystem {
 
   generateCompetitors(): readonly INPCGuild[];
   initializeWorldState(competitors: readonly INPCGuild[]): IWorldState;
+}
+
+export enum GuildStrategy {
+  AGGRESSIVE_EXPANSION = 'AGGRESSIVE_EXPANSION',
+  DIPLOMATIC = 'DIPLOMATIC',
+  ECONOMIC_FOCUSED = 'ECONOMIC_FOCUSED',
+  MILITARY_DOMINANCE = 'MILITARY_DOMINANCE',
+  TECHNOLOGICAL_ADVANCEMENT = 'TECHNOLOGICAL_ADVANCEMENT',
+  BALANCED_GROWTH = 'BALANCED_GROWTH',
+}
+
+export enum AIPersonalityTrait {
+  AGGRESSIVE = 'AGGRESSIVE',
+  CAUTIOUS = 'CAUTIOUS',
+  COLLABORATIVE = 'COLLABORATIVE',
+  COMPETITIVE = 'COMPETITIVE',
+  INNOVATIVE = 'INNOVATIVE',
+  TRADITIONAL = 'TRADITIONAL',
+  DIPLOMATIC = 'DIPLOMATIC',
+  MILITARISTIC = 'MILITARISTIC',
 }
 
 export interface INPCGuildArchetype {
@@ -681,4 +736,590 @@ export enum GoalType {
   LEADERSHIP_ADVANCEMENT = 'LEADERSHIP_ADVANCEMENT',
   WEALTH_ACCUMULATION = 'WEALTH_ACCUMULATION',
   LEGENDARY_STATUS = 'LEGENDARY_STATUS',
+}
+
+// ============== 缺失的核心接口定义 ==============
+
+export interface IAbilityEffect {
+  readonly id: string;
+  readonly type: EffectType;
+  readonly magnitude: number;
+  readonly duration: number;
+  readonly target: EffectTarget;
+  readonly conditions?: readonly IEffectCondition[];
+}
+
+export interface ITriggerCondition {
+  readonly id: string;
+  readonly type: 'health' | 'time' | 'event' | 'combat_state';
+  readonly operator: 'eq' | 'lt' | 'gt' | 'lte' | 'gte';
+  readonly value: number | string;
+  readonly description: string;
+}
+
+export interface IPassiveBonus {
+  readonly id: string;
+  readonly type: 'stat' | 'skill' | 'resistance';
+  readonly target: string;
+  readonly modifier: number;
+  readonly description: string;
+}
+
+export interface ITendency {
+  readonly type: 'social' | 'combat' | 'leadership' | 'learning';
+  readonly strength: number; // 0-100
+  readonly manifestation: string;
+}
+
+export enum SocialPreference {
+  GROUP_ACTIVITIES = 'GROUP_ACTIVITIES',
+  ONE_ON_ONE = 'ONE_ON_ONE',
+  LEADERSHIP_ROLE = 'LEADERSHIP_ROLE',
+  SUPPORT_ROLE = 'SUPPORT_ROLE',
+  COMPETITIVE = 'COMPETITIVE',
+  COLLABORATIVE = 'COLLABORATIVE',
+}
+
+export enum ConflictResolutionStyle {
+  DIRECT_CONFRONTATION = 'DIRECT_CONFRONTATION',
+  DIPLOMATIC_NEGOTIATION = 'DIPLOMATIC_NEGOTIATION',
+  AVOIDANCE = 'AVOIDANCE',
+  SEEKING_MEDIATION = 'SEEKING_MEDIATION',
+  COMPROMISE = 'COMPROMISE',
+}
+
+export interface IEffectCondition {
+  readonly type: 'target_health' | 'caster_mana' | 'party_size' | 'time_of_day';
+  readonly operator: 'eq' | 'lt' | 'gt' | 'lte' | 'gte';
+  readonly value: number | string;
+}
+
+export enum EffectTarget {
+  SELF = 'SELF',
+  SINGLE_ALLY = 'SINGLE_ALLY',
+  ALL_ALLIES = 'ALL_ALLIES',
+  SINGLE_ENEMY = 'SINGLE_ENEMY',
+  ALL_ENEMIES = 'ALL_ENEMIES',
+  PARTY = 'PARTY',
+  RAID = 'RAID',
+}
+
+export interface ILeadershipSkill {
+  readonly id: string;
+  readonly name: string;
+  readonly level: number;
+  readonly maxLevel: number;
+  readonly effects: readonly IAbilityEffect[];
+  readonly description: string;
+  readonly unlockRequirement?: string;
+}
+
+export interface IContactEntry {
+  readonly intimacyData: IIntimacyData;
+  readonly availableActions: readonly IContactAction[];
+  readonly lastActionDate?: Date;
+  readonly actionCooldowns: ReadonlyMap<string, Date>;
+}
+
+export interface IIntimacyChange {
+  readonly onSuccess: number;
+  readonly onFailure: number;
+  readonly onCriticalSuccess?: number;
+}
+
+export interface IInteractionRecord {
+  readonly actionId: string;
+  readonly date: Date;
+  readonly result: 'SUCCESS' | 'FAILURE' | 'CRITICAL_SUCCESS' | 'CRITICAL_FAILURE';
+  readonly intimacyChange: number;
+  readonly description?: string;
+}
+
+export interface ICharacterInfo {
+  readonly name: string;
+  readonly guildId?: string;
+  readonly characterClass: string;
+  readonly specialization: string;
+  readonly reputation: number;
+  readonly avatar?: string;
+}
+
+export interface IMemberTemplate {
+  readonly name: string;
+  readonly characterClass: string;
+  readonly specialization: string;
+  readonly level: number;
+  readonly rarity: MemberRarity;
+  readonly personalityTraits: readonly PersonalityTrait[];
+  readonly baseStats: IBaseStats;
+}
+
+export interface IOfficerTemplate extends IMemberTemplate {
+  readonly officerRole: 'QUARTERMASTER' | 'RAID_LEADER' | 'DIPLOMAT' | 'TRAINER';
+  readonly leadershipSkills: readonly string[];
+  readonly specialAbilities: readonly string[];
+}
+
+export interface IOfficer extends IGuildMember {
+  readonly officerRole: 'QUARTERMASTER' | 'RAID_LEADER' | 'DIPLOMAT' | 'TRAINER';
+  readonly officerLevel: number;
+  readonly subordinates: readonly string[];
+  readonly responsibilities: readonly string[];
+  readonly decisionMakingAuthority: readonly string[];
+}
+
+export interface ILegendaryMemberInfo {
+  readonly memberId: string;
+  readonly name: string;
+  readonly legendaryType: LegendaryType;
+  readonly legendaryRank: number;
+  readonly specialAbilities: readonly string[];
+  readonly historicalAchievements: readonly string[];
+  readonly influenceLevel: number;
+}
+
+export interface IGuildHistoryRecord {
+  readonly id: string;
+  readonly eventType: 'FIRST_KILL' | 'RANKING' | 'DIPLOMATIC' | 'ECONOMIC';
+  readonly title: string;
+  readonly description: string;
+  readonly date: Date;
+  readonly significance: 'MINOR' | 'MAJOR' | 'LEGENDARY';
+  readonly impactOnReputation: number;
+}
+
+export interface IGuildLeagueSchedule {
+  readonly seasonId: string;
+  readonly matches: readonly ILeagueMatch[];
+  readonly currentRanking: number;
+  readonly seasonRecord: {
+    readonly wins: number;
+    readonly losses: number;
+    readonly draws: number;
+  };
+}
+
+export interface ILeagueMatch {
+  readonly matchId: string;
+  readonly opponent: string;
+  readonly scheduledDate: Date;
+  readonly matchType: 'RAID_CHALLENGE' | 'PVP_BATTLE' | 'ECONOMIC_COMPETITION';
+  readonly status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  readonly result?: 'WIN' | 'LOSS' | 'DRAW';
+}
+
+export interface IAttitudeTrigger {
+  readonly triggerId: string;
+  readonly eventType: string;
+  readonly attitudeChange: number;
+  readonly conditions: readonly string[];
+  readonly description: string;
+}
+
+export interface INegotiationFlow {
+  readonly negotiationId: string;
+  readonly phases: readonly INegotiationPhase[];
+  readonly currentPhase: number;
+  readonly participantIds: readonly string[];
+  readonly stakes: INegotiationStakes;
+  readonly outcome?: INegotiationOutcome;
+}
+
+export interface INegotiationPhase {
+  readonly phaseId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly availableActions: readonly string[];
+  readonly successConditions: readonly string[];
+  readonly failureConsequences: readonly string[];
+}
+
+export interface INegotiationStakes {
+  readonly offeredResources: IResourceCost;
+  readonly demandedResources: IResourceCost;
+  readonly additionalTerms: readonly string[];
+  readonly dealBreakers: readonly string[];
+}
+
+export interface INegotiationOutcome {
+  readonly success: boolean;
+  readonly finalTerms: readonly string[];
+  readonly resourceExchange: IResourceCost;
+  readonly relationshipImpact: number;
+  readonly completedAt: Date;
+}
+
+export interface ITalentLeaderboard {
+  readonly rankings: readonly ITalentRanking[];
+  readonly categories: readonly string[];
+  readonly lastUpdated: Date;
+  readonly seasonId: string;
+}
+
+export interface ITalentRanking {
+  readonly memberId: string;
+  readonly memberName: string;
+  readonly category: string;
+  readonly score: number;
+  readonly rank: number;
+  readonly guild?: string;
+  readonly achievements: readonly string[];
+}
+
+export interface ILegendarySearchSystem {
+  readonly availableLegendaries: readonly ILegendaryCandidate[];
+  readonly searchCriteria: ILegendarySearchCriteria;
+  readonly discoveryEvents: readonly ILegendaryDiscoveryEvent[];
+}
+
+export interface ILegendaryCandidate extends IMemberCandidate {
+  readonly legendaryType: LegendaryType;
+  readonly legendaryRank: number;
+  readonly uniqueAbilities: readonly string[];
+  readonly discoveryConditions: readonly string[];
+  readonly recruitmentComplexity: 'SIMPLE' | 'MODERATE' | 'COMPLEX' | 'LEGENDARY';
+}
+
+export interface ILegendarySearchCriteria {
+  readonly legendaryTypes: readonly LegendaryType[];
+  readonly minRank: number;
+  readonly requiredAbilities: readonly string[];
+  readonly excludedMembers: readonly string[];
+  readonly budgetLimit: IResourceCost;
+}
+
+export interface ILegendaryDiscoveryEvent {
+  readonly eventId: string;
+  readonly eventType: 'RUMOR' | 'SIGHTING' | 'DIRECT_CONTACT' | 'THIRD_PARTY';
+  readonly legendaryMemberId: string;
+  readonly reliabilityScore: number; // 0-1
+  readonly discoveredAt: Date;
+  readonly discoverySource: string;
+  readonly followUpRequired: boolean;
+}
+
+export interface ILegendaryRecruitmentEventPool {
+  readonly activeEvents: readonly ILegendaryRecruitmentEvent[];
+  readonly eventProbabilities: ReadonlyMap<LegendaryType, number>;
+  readonly seasonalModifiers: readonly ISeasonalModifier[];
+}
+
+export interface ILegendaryRecruitmentEvent {
+  readonly eventId: string;
+  readonly eventName: string;
+  readonly description: string;
+  readonly targetLegendary: ILegendaryCandidate;
+  readonly requirements: readonly string[];
+  readonly successRate: number;
+  readonly duration: number; // hours
+  readonly rewards: readonly string[];
+  readonly penalties: readonly string[];
+}
+
+export interface ISeasonalModifier {
+  readonly season: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER';
+  readonly modifierType: 'DISCOVERY_RATE' | 'SUCCESS_RATE' | 'COST_REDUCTION';
+  readonly magnitude: number;
+  readonly affectedLegendaryTypes: readonly LegendaryType[];
+}
+
+export interface IRaidCompositionManager {
+  readonly activeCompositions: ReadonlyMap<string, IRaidComposition>;
+  readonly templates: readonly IRaidCompositionTemplate[];
+  readonly autoAssignmentRules: readonly IAutoAssignmentRule[];
+}
+
+export interface IRaidCompositionTemplate {
+  readonly templateId: string;
+  readonly name: string;
+  readonly raidType: RaidType;
+  readonly recommendedRoles: ReadonlyMap<RaidRole, number>;
+  readonly description: string;
+  readonly difficulty: DifficultyLevel;
+  readonly successRate: number;
+}
+
+export interface IAutoAssignmentRule {
+  readonly ruleId: string;
+  readonly name: string;
+  readonly conditions: readonly string[];
+  readonly priority: number;
+  readonly assignmentLogic: string;
+  readonly isActive: boolean;
+}
+
+export interface IPVPCompositionManager {
+  readonly pvpCompositions: ReadonlyMap<string, IPVPComposition>;
+  readonly pvpStrategies: readonly IPVPStrategy[];
+  readonly competitiveRankings: ReadonlyMap<string, number>;
+}
+
+export interface IPVPComposition {
+  readonly compositionId: string;
+  readonly name: string;
+  readonly pvpMode: 'ARENA' | 'BATTLEGROUND' | 'GUILD_WAR' | 'TOURNAMENT';
+  readonly teamSize: number;
+  readonly members: readonly IPVPMemberSlot[];
+  readonly strategy: IPVPStrategy;
+  readonly winRate: number;
+}
+
+export interface IPVPMemberSlot {
+  readonly slotId: string;
+  readonly memberId?: string;
+  readonly pvpRole: 'DAMAGE_DEALER' | 'SUPPORT' | 'TANK' | 'HEALER' | 'SPECIALIST';
+  readonly isFlexible: boolean;
+  readonly performanceRating: number;
+}
+
+export interface IPVPStrategy {
+  readonly strategyId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly tacticalApproach: 'AGGRESSIVE' | 'DEFENSIVE' | 'BALANCED' | 'CONTROL';
+  readonly keyTactics: readonly string[];
+  readonly counters: readonly string[];
+  readonly effectiveness: ReadonlyMap<string, number>;
+}
+
+export interface ITacticResearchQueue {
+  readonly queuedResearch: readonly ITacticResearchItem[];
+  readonly researchCapacity: number;
+  readonly researchSpeed: number;
+  readonly completedResearch: readonly string[];
+}
+
+export interface ITacticResearchItem {
+  readonly tacticId: string;
+  readonly researchProgress: number; // 0-100
+  readonly estimatedCompletion: Date;
+  readonly requiredResources: IResourceCost;
+  readonly prerequisites: readonly string[];
+}
+
+export interface ITacticRestrictions {
+  readonly requiredLevel: number;
+  readonly requiredFacilities: readonly string[];
+  readonly requiredMembers: readonly string[];
+  readonly cooldownPeriod: number;
+  readonly resourceCost: IResourceCost;
+}
+
+export interface ITacticSelectionFactors {
+  readonly situationalModifiers: ReadonlyMap<string, number>;
+  readonly memberCompatibility: ReadonlyMap<string, number>;
+  readonly difficultyEffectiveness: ReadonlyMap<DifficultyLevel, number>;
+  readonly raidTypeOptimization: ReadonlyMap<RaidType, number>;
+}
+
+export interface IAIAutoAssignmentSystem {
+  readonly assignmentAlgorithm: string;
+  readonly learningModel: string;
+  readonly accuracyScore: number;
+  readonly recentPerformance: readonly IAssignmentPerformance[];
+}
+
+export interface IAssignmentPerformance {
+  readonly assignmentId: string;
+  readonly accuracy: number;
+  readonly memberSatisfaction: number;
+  readonly raidSuccess: boolean;
+  readonly executedAt: Date;
+  readonly feedbackScore: number;
+}
+
+export interface IMemberAvailabilityTracker {
+  readonly memberAvailability: ReadonlyMap<string, IAvailabilityData>;
+  readonly scheduleConflicts: readonly IScheduleConflict[];
+  readonly predictiveModel: IPredictiveAvailabilityModel;
+}
+
+export interface IAvailabilityData {
+  readonly memberId: string;
+  readonly currentStatus: 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'ON_COOLDOWN';
+  readonly availableUntil?: Date;
+  readonly weeklySchedule: ReadonlyMap<string, ITimeSlot[]>;
+  readonly preferredPlayTimes: readonly ITimeSlot[];
+}
+
+export interface ITimeSlot {
+  readonly startTime: string; // HH:MM format
+  readonly endTime: string;   // HH:MM format
+  readonly dayOfWeek: number; // 0-6
+  readonly timezone: string;
+}
+
+export interface IScheduleConflict {
+  readonly conflictId: string;
+  readonly affectedMembers: readonly string[];
+  readonly conflictType: 'TIME_OVERLAP' | 'RESOURCE_COMPETITION' | 'ROLE_SHORTAGE';
+  readonly severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  readonly suggestedResolution: string;
+}
+
+export interface IPredictiveAvailabilityModel {
+  readonly modelType: string;
+  readonly accuracy: number;
+  readonly lastTrainingDate: Date;
+  readonly predictions: ReadonlyMap<string, IAvailabilityPrediction>;
+}
+
+export interface IAvailabilityPrediction {
+  readonly memberId: string;
+  readonly predictedAvailability: number; // 0-1
+  readonly confidence: number; // 0-1
+  readonly timeframe: string;
+  readonly factors: readonly string[];
+}
+
+export interface IIntimacyTrigger {
+  readonly triggerId: string;
+  readonly eventType: string;
+  readonly intimacyChange: number;
+  readonly conditions: readonly string[];
+  readonly priority: number;
+}
+
+export interface IDiplomaticAttitudeFactors {
+  readonly historicalRelations: number;
+  readonly recentInteractions: number;
+  readonly competitiveRivalry: number;
+  readonly diplomaticEfforts: number;
+  readonly thirdPartyInfluence: number;
+  readonly personalityAlignment: number;
+}
+
+export interface IBaseStats {
+  readonly strength: number;
+  readonly agility: number;
+  readonly intellect: number;
+  readonly stamina: number;
+  readonly luck: number;
+  readonly charisma: number;
+}
+
+export interface IBossAbility {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly damage: number;
+  readonly castTime: number;
+  readonly cooldown: number;
+  readonly targetType: 'SINGLE' | 'MULTIPLE' | 'ALL' | 'RANDOM';
+  readonly effects: readonly IAbilityEffect[];
+}
+
+export interface IEncounterPhase {
+  readonly phaseId: string;
+  readonly name: string;
+  readonly healthThreshold: number;
+  readonly duration?: number;
+  readonly specialMechanics: readonly string[];
+  readonly abilities: readonly IBossAbility[];
+}
+
+export interface ILootEntry {
+  readonly itemId: string;
+  readonly itemName: string;
+  readonly rarity: ItemRarity;
+  readonly dropChance: number;
+  readonly itemLevel: number;
+  readonly stats: ReadonlyMap<string, number>;
+}
+
+export enum ItemRarity {
+  COMMON = 'COMMON',
+  UNCOMMON = 'UNCOMMON', 
+  RARE = 'RARE',
+  EPIC = 'EPIC',
+  LEGENDARY = 'LEGENDARY',
+}
+
+export interface ICasualty {
+  readonly memberId: string;
+  readonly memberName: string;
+  readonly injuryType: 'MINOR' | 'SERIOUS' | 'CRITICAL';
+  readonly recoveryTime: number;
+  readonly treatmentCost: IResourceCost;
+}
+
+export interface ICombatLogEntry {
+  readonly timestamp: Date;
+  readonly eventType: 'DAMAGE' | 'HEALING' | 'BUFF' | 'DEBUFF' | 'DEATH' | 'RESURRECTION';
+  readonly source: string;
+  readonly target: string;
+  readonly amount: number;
+  readonly description: string;
+}
+
+export interface IWorldState {
+  readonly worldId: string;
+  readonly competingGuilds: readonly string[];
+  readonly globalEvents: readonly IGlobalEvent[];
+  readonly economicState: IEconomicState;
+  readonly politicalSituation: IPoliticalSituation;
+}
+
+export interface IGlobalEvent {
+  readonly eventId: string;
+  readonly eventType: string;
+  readonly name: string;
+  readonly description: string;
+  readonly startDate: Date;
+  readonly endDate: Date;
+  readonly globalEffects: readonly IGlobalEffect[];
+  readonly participationRewards: readonly IEventReward[];
+}
+
+export interface IGlobalEffect {
+  readonly effectType: string;
+  readonly magnitude: number;
+  readonly affectedSystems: readonly string[];
+  readonly duration: number;
+}
+
+export interface IEventReward {
+  readonly rewardType: 'RESOURCES' | 'ITEMS' | 'EXPERIENCE' | 'REPUTATION';
+  readonly amount: number;
+  readonly conditions: readonly string[];
+  readonly description: string;
+}
+
+export interface IEconomicState {
+  readonly marketTrends: ReadonlyMap<string, number>;
+  readonly resourcePrices: ReadonlyMap<string, number>;
+  readonly tradingVolume: number;
+  readonly economicStability: number;
+}
+
+export interface IPoliticalSituation {
+  readonly dominantGuild?: string;
+  readonly alliances: readonly IAlliance[];
+  readonly conflicts: readonly IConflict[];
+  readonly diplomaticTensions: ReadonlyMap<string, number>;
+}
+
+export interface IAlliance {
+  readonly allianceId: string;
+  readonly memberGuilds: readonly string[];
+  readonly allianceType: 'TRADE' | 'MILITARY' | 'RESEARCH' | 'DEFENSIVE';
+  readonly benefits: readonly string[];
+  readonly obligations: readonly string[];
+  readonly createdAt: Date;
+}
+
+export interface IConflict {
+  readonly conflictId: string;
+  readonly involvedGuilds: readonly string[];
+  readonly conflictType: 'TERRITORIAL' | 'RESOURCE' | 'IDEOLOGICAL' | 'PERSONAL';
+  readonly intensity: number; // 0-100
+  readonly startDate: Date;
+  readonly resolution?: IConflictResolution;
+}
+
+export interface IConflictResolution {
+  readonly resolutionType: 'VICTORY' | 'DEFEAT' | 'NEGOTIATED' | 'STALEMATE';
+  readonly victor?: string;
+  readonly terms: readonly string[];
+  readonly resolvedAt: Date;
 }

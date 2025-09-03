@@ -3,10 +3,12 @@
  * 作为测试基线和参考实现
  */
 
-import {
+import type {
   Repository,
   Entity,
   RepositoryQueryParams,
+} from '../../contracts/repos';
+import {
   EntityNotFoundError,
   ConcurrencyError,
 } from '../../contracts/repos';

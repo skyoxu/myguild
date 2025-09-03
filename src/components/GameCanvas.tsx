@@ -149,7 +149,11 @@ export function GameCanvas({
   useEffect(() => {
     const subscriptions = gameEvents.onGameError(event => {
       console.error('Game error via EventBus:', event);
-      setError(event.data.error);
+      if (event.type === 'game.error' && 'error' in event.data) {
+        setError(event.data.error);
+      } else if (event.type === 'game.warning' && 'warning' in event.data) {
+        setError(event.data.warning);
+      }
     });
 
     return () => {

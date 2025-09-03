@@ -17,10 +17,11 @@
 
 import { trace, context, SpanStatusCode, SpanKind } from '@opentelemetry/api';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { Resource } from '@opentelemetry/semantic-conventions';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-tracing-base';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-import { SentrySpanExporter } from '@sentry/opentelemetry-node';
+import { EventEmitter } from 'events';
 
 /* 分布式追踪配置接口 */
 export interface DistributedTracingConfig {
@@ -106,7 +107,7 @@ export interface PerformanceAnalysis {
 /**
  * 🌟 企业级分布式追踪管理器
  */
-export class DistributedTracingManager {
+export class DistributedTracingManager extends EventEmitter {
   private static instance: DistributedTracingManager;
 
   private config: DistributedTracingConfig;
@@ -136,6 +137,7 @@ export class DistributedTracingManager {
   };
 
   private constructor() {
+    super();
     this.config = this.getDefaultConfig();
   }
 
@@ -165,10 +167,10 @@ export class DistributedTracingManager {
       console.log(`🎯 采样率: ${this.config.sampling.defaultRate * 100}%`);
 
       // 创建资源
-      const resource = new Resource({
-        'service.name': this.config.serviceName,
-        'service.version': this.config.serviceVersion,
-        'deployment.environment': this.config.environment,
+      const resource = resourceFromAttributes({
+        [SEMRESATTRS_SERVICE_NAME]: this.config.serviceName,
+        [SEMRESATTRS_SERVICE_VERSION]: this.config.serviceVersion,
+        [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: this.config.environment,
       });
 
       // 配置导出器
@@ -242,6 +244,9 @@ export class DistributedTracingManager {
       // 更新指标
       this.performanceMetrics.totalSpans++;
       this.performanceMetrics.activeSpans++;
+
+      // 发出事件
+      this.emit('span-created', span);
 
       return span;
     } catch (error) {
@@ -390,16 +395,16 @@ export class DistributedTracingManager {
   private createSpanProcessors(): any[] {
     const processors: any[] = [];
 
-    // Sentry 导出器
-    if (this.config.exporters.sentry?.enabled) {
-      try {
-        const sentryExporter = new SentrySpanExporter();
-        processors.push(new BatchSpanProcessor(sentryExporter));
-        console.log('✅ Sentry 追踪导出器已启用');
-      } catch (error) {
-        console.warn('⚠️ Sentry 导出器配置失败:', error);
-      }
-    }
+    // Sentry 导出器 - 暂时禁用复杂集成
+    // if (this.config.exporters.sentry?.enabled) {
+    //   try {
+    //     const sentryExporter = new SentrySpanExporter();
+    //     processors.push(new BatchSpanProcessor(sentryExporter));
+    //     console.log('✅ Sentry 追踪导出器已启用');
+    //   } catch (error) {
+    //     console.warn('⚠️ Sentry 导出器配置失败:', error);
+    //   }
+    // }
 
     // Jaeger 导出器
     if (this.config.exporters.jaeger?.enabled) {

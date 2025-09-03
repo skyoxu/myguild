@@ -191,7 +191,7 @@ export interface GameEventMetadata {
   broadcast?: boolean; // 是否广播到所有监听器
 }
 
-// 完整的游戏事件接口
-export interface EnhancedGameEvent extends GameDomainEvent {
+// 完整的游戏事件接口 - 使用交叉类型而非扩展联合类型
+export type EnhancedGameEvent = GameDomainEvent & {
   metadata: GameEventMetadata;
-}
+};

@@ -126,8 +126,8 @@ export function GameStateProvider({
     const handleStateManagerEvent = (event: DomainEvent) => {
       switch (event.type) {
         case 'game.state.updated':
-          if (event.data && 'gameState' in event.data) {
-            setGameState({ ...event.data.gameState });
+          if (event.data && typeof event.data === 'object' && 'gameState' in event.data && typeof event.data.gameState === 'object' && event.data.gameState !== null) {
+            setGameState({ ...(event.data.gameState as GameState) });
           }
           break;
 

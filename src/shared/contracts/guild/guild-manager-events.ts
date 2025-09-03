@@ -3,7 +3,8 @@
  * 基于 CloudEvents v1.0 规范
  */
 
-import type { CloudEvent } from '../events/CloudEvent';
+import type { CloudEvent } from '../cloudevents-core';
+import { mkEvent, assertCe } from '../cloudevents-core';
 
 // CloudEvent 扩展接口
 export interface GuildManagerCloudEvent<T = any> extends CloudEvent<T> {
@@ -328,7 +329,7 @@ export class GuildEventBuilder {
   }
 
   /**
-   * 创建基础CloudEvent
+   * 创建基础CloudEvent - 使用 cloudevents-core 的 mkEvent 确保规范兼容性
    */
   private static createBaseEvent<T>(
     type: GuildEventType,
@@ -339,33 +340,28 @@ export class GuildEventBuilder {
       dataschema?: string;
     }
   ): GuildManagerCloudEvent<T> {
-    return {
-      specversion: this.DEFAULT_SPEC_VERSION,
-      id: this.generateEventId(),
-      time: new Date().toISOString(),
+    const baseEvent = mkEvent({
       type,
       source: options.source || this.DEFAULT_SOURCE,
-      subject: options.subject,
-      datacontenttype: this.DEFAULT_CONTENT_TYPE,
-      dataschema: options.dataschema,
       data,
-    };
+      datacontenttype: this.DEFAULT_CONTENT_TYPE,
+      subject: options.subject,
+      dataschema: options.dataschema,
+    });
+
+    // 验证事件符合 CloudEvents v1.0 规范
+    assertCe(baseEvent);
+
+    return baseEvent as GuildManagerCloudEvent<T>;
   }
 
-  /**
-   * 生成唯一事件ID
-   */
-  private static generateEventId(): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 10);
-    return `guild-event-${timestamp}-${random}`;
-  }
+  // 注意：事件ID生成现在由 cloudevents-core.mkEvent() 自动处理
 }
 
-// 事件验证器
+// 事件验证器 - 基于 cloudevents-core 核心验证
 export class GuildEventValidator {
   /**
-   * 验证CloudEvent是否符合规范
+   * 验证CloudEvent是否符合规范 - 使用核心 CloudEvents 验证器
    */
   static validate<T>(event: GuildManagerCloudEvent<T>): {
     valid: boolean;
@@ -373,35 +369,21 @@ export class GuildEventValidator {
   } {
     const errors: string[] = [];
 
-    // 验证必需字段
-    if (!event.specversion || event.specversion !== '1.0') {
-      errors.push('specversion must be "1.0"');
-    }
-
-    if (!event.id || typeof event.id !== 'string') {
-      errors.push('id is required and must be a string');
-    }
-
-    if (!event.source || typeof event.source !== 'string') {
-      errors.push('source is required and must be a string');
-    }
-
-    if (!event.type || !Object.values(GuildEventType).includes(event.type)) {
-      errors.push('type is required and must be a valid GuildEventType');
-    }
-
-    if (!event.time) {
-      errors.push('time is required');
-    } else {
-      try {
-        new Date(event.time);
-      } catch {
-        errors.push('time must be a valid ISO 8601 timestamp');
+    try {
+      // 使用 cloudevents-core 的核心验证
+      assertCe(event);
+      
+      // 额外验证 Guild 特定的事件类型
+      if (!event.type || !Object.values(GuildEventType).includes(event.type)) {
+        errors.push('type is required and must be a valid GuildEventType');
       }
-    }
 
-    if (event.datacontenttype && event.datacontenttype !== 'application/json') {
-      errors.push('datacontenttype must be "application/json" if specified');
+      if (event.datacontenttype && event.datacontenttype !== 'application/json') {
+        errors.push('datacontenttype must be "application/json" if specified');
+      }
+
+    } catch (validationError) {
+      errors.push(validationError instanceof Error ? validationError.message : String(validationError));
     }
 
     return {

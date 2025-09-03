@@ -271,8 +271,8 @@ export class SentryDetector {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      // 检查autoSessionTracking配置
-      const sessionTracking = options?.autoSessionTracking;
+      // 检查session tracking配置（新版本使用集成检查）
+      const sessionTracking = (options as any)?.autoSessionTracking;
 
       if (sessionTracking) {
         this.log('✅ 会话跟踪已启用');

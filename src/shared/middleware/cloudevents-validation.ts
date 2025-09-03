@@ -3,8 +3,10 @@
  * 提供运行时事件格式验证和监控能力
  */
 
-import {
+import type {
   CloudEvent,
+} from '../contracts/cloudevents-core.js';
+import {
   assertCe,
   isCloudEvent,
 } from '../contracts/cloudevents-core.js';
@@ -58,6 +60,13 @@ export class CloudEventsValidator {
    */
   configure(options: Partial<typeof this.config>) {
     this.config = { ...this.config, ...options };
+  }
+
+  /**
+   * 获取当前配置
+   */
+  getConfig() {
+    return { ...this.config };
   }
 
   /**
@@ -369,6 +378,8 @@ export const validateEvent = (event: unknown, context?: string) =>
 export const validateEvents = (events: unknown[], context?: string) =>
   cloudEventsValidator.validateBatch(events, context);
 
+import React from 'react';
+
 /**
  * React Hook for CloudEvents validation
  */
@@ -468,13 +479,14 @@ export function createEventBusValidator<
   (eventBus as any).emit = (eventName: string, event: unknown) => {
     if (eventName.startsWith('cloudevent:') || isCloudEvent(event)) {
       if (!cloudEventsValidator.validate(event, `eventbus:${eventName}`)) {
-        if (cloudEventsValidator.config.enableLogging) {
+        const config = cloudEventsValidator.getConfig();
+        if (config.enableLogging) {
           console.warn(
             `[CloudEvents] Invalid event blocked on ${eventName}:`,
             event
           );
         }
-        if (cloudEventsValidator.config.strictMode) {
+        if (config.strictMode) {
           throw new Error(`Invalid CloudEvent emitted on ${eventName}`);
         }
         return;

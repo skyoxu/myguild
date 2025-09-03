@@ -75,8 +75,8 @@ export interface RaidDungeon {
   estimatedDuration: number; // 分钟
   lootTable: RaidReward[];
   bossEncounters: BossEncounter[];
-  createdAt: string;
-  updatedAt: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 /**
@@ -117,6 +117,7 @@ export interface ItemRequirement {
  * 阵容配置实体
  */
 export interface RaidComposition {
+  id: Id;
   compositionId: Id;
   name: string;
   raidType: RaidType;
@@ -130,8 +131,8 @@ export interface RaidComposition {
   readinessLevel: ReadinessLevel;
   guildId: Id;
   createdBy: Id;
-  createdAt: string;
-  lastModified: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 /**
@@ -176,6 +177,7 @@ export interface AvailabilityStatus {
  * 战斗模拟实体
  */
 export interface CombatSimulation {
+  id: Id;
   simulationId: Id;
   raidComposition: RaidComposition;
   targetDungeon: RaidDungeon;
@@ -183,7 +185,8 @@ export interface CombatSimulation {
   tacticModifiers: TacticEffect[];
   predictedOutcome: CombatResult;
   confidenceScore: number; // 0-1
-  createdAt: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
   simulationTimeMs: number;
 }
 
@@ -546,16 +549,16 @@ export const GUILD_MANAGER_CHUNK_002_SLOS = {
 /**
  * 类型守卫和工具函数
  */
-export function isValidRaidType(_value: string): value is RaidType {
+export function isValidRaidType(value: string): value is RaidType {
   return Object.values(RaidType).includes(value as RaidType);
 }
 
-export function isValidRaidRole(_value: string): value is RaidRole {
+export function isValidRaidRole(value: string): value is RaidRole {
   return Object.values(RaidRole).includes(value as RaidRole);
 }
 
 export function isValidDifficultyLevel(
-  _value: string
+  value: string
 ): value is DifficultyLevel {
   return Object.values(DifficultyLevel).includes(value as DifficultyLevel);
 }
@@ -618,7 +621,7 @@ export const createRaidEvent = <T>(
     type,
     source: RAID_EVENT_SOURCES[source],
     data,
-    subject: options.subject || options.compositionId || options.guildId,
+    subject: options.subject || options.compositionId?.toString() || options.guildId?.toString(),
     datacontenttype: 'application/json',
   }) as RaidManagerCloudEvent<T>;
 };

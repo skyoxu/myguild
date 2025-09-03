@@ -392,7 +392,7 @@ export class GameEngineAdapter implements GameEnginePort {
    */
   private async updateGame(delta: number): Promise<void> {
     // 更新时间戳
-    this.currentState.timestamp = new Date();
+    this.currentState = { ...this.currentState, timestamp: new Date() };
 
     // 从场景管理器获取最新状态
     const sceneState = this.sceneManager.getGameState();
@@ -506,7 +506,10 @@ export class GameEngineAdapter implements GameEnginePort {
       async event => {
         console.log('Received load command from React:', event);
         try {
-          const saveId = event.data.saveId;
+          if (!event.data || typeof event.data !== 'object' || !('saveId' in event.data)) {
+            throw new Error('Invalid load command: missing saveId');
+          }
+          const saveId = (event.data as any).saveId;
           const gameState = await this.loadGame(saveId);
           this.publishGameEvent({
             type: 'phaser.response.completed',
@@ -594,7 +597,7 @@ export class GameEngineAdapter implements GameEnginePort {
         gameEvent = {
           type: 'game.state.updated',
           data: {
-            gameState: event.data.state,
+            gameState: event.data && typeof event.data === 'object' && 'state' in event.data ? (event.data as any).state : {},
             timestamp: new Date(),
           },
         };
@@ -604,8 +607,8 @@ export class GameEngineAdapter implements GameEnginePort {
         gameEvent = {
           type: 'game.save.created',
           data: {
-            saveId: event.data.saveId,
-            gameState: event.data.state,
+            saveId: event.data && typeof event.data === 'object' && 'saveId' in event.data ? (event.data as any).saveId : '',
+            gameState: event.data && typeof event.data === 'object' && 'state' in event.data ? (event.data as any).state : {},
           },
         };
         break;
@@ -614,8 +617,8 @@ export class GameEngineAdapter implements GameEnginePort {
         gameEvent = {
           type: 'game.save.loaded',
           data: {
-            saveId: event.data.saveId,
-            gameState: event.data.state,
+            saveId: event.data && typeof event.data === 'object' && 'saveId' in event.data ? (event.data as any).saveId : '',
+            gameState: event.data && typeof event.data === 'object' && 'state' in event.data ? (event.data as any).state : {},
           },
         };
         break;
@@ -624,7 +627,7 @@ export class GameEngineAdapter implements GameEnginePort {
         gameEvent = {
           type: 'game.autosave.completed',
           data: {
-            saveId: event.data.saveId,
+            saveId: event.data && typeof event.data === 'object' && 'saveId' in event.data ? (event.data as any).saveId : '',
             timestamp: new Date(),
           },
         };

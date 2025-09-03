@@ -314,7 +314,7 @@ export class SentryMainDetector {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      const sessionTracking = options?.autoSessionTracking;
+      const sessionTracking = (options as any)?.autoSessionTracking;
 
       if (sessionTracking) {
         this.log('✅ 主进程会话跟踪已启用');

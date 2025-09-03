@@ -219,11 +219,11 @@ export class EventBus {
    */
   private processEvent(event: EnhancedGameEvent): void {
     const startTime = performance.now();
-    const subscriptions = this.listeners.get(event.type) || [];
+    const subscriptions = this.listeners.get((event as any).type) || [];
 
     if (subscriptions.length === 0) {
       if (this.options.enableLogging) {
-        console.warn(`[EventBus] No listeners for event: ${event.type}`);
+        console.warn(`[EventBus] No listeners for event: ${(event as any).type}`);
       }
       return;
     }
@@ -233,13 +233,13 @@ export class EventBus {
 
     for (const subscription of subscriptions) {
       try {
-        const result = subscription.handler(event);
+        const result = subscription.handler(event as any);
 
         // 处理异步处理器
         if (result instanceof Promise) {
           result.catch(error => {
             console.error(
-              `[EventBus] Async handler error for ${event.type}:`,
+              `[EventBus] Async handler error for ${(event as any).type}:`,
               error
             );
           });
@@ -250,7 +250,7 @@ export class EventBus {
           toRemove.push(subscription.id);
         }
       } catch (error) {
-        console.error(`[EventBus] Handler error for ${event.type}:`, error);
+        console.error(`[EventBus] Handler error for ${(event as any).type}:`, error);
       }
     }
 

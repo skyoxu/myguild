@@ -229,7 +229,7 @@ export class GameScene extends BaseScene {
           });
 
           // 更新游戏状态
-          this.gameState.position = { x: targetX, y: targetY };
+          this.setGameState({ position: { x: targetX, y: targetY } });
         }
         break;
 
@@ -284,14 +284,14 @@ export class GameScene extends BaseScene {
   updateScene(time: number, delta: number): void {
     if (!this.player) return;
 
-    // 更新玩家位置
-    this.gameState.position = {
-      x: this.player.x,
-      y: this.player.y,
-    };
-
-    // 更新时间戳
-    this.gameState.timestamp = new Date();
+    // 更新玩家位置和时间戳
+    this.setGameState({
+      position: {
+        x: this.player.x,
+        y: this.player.y,
+      },
+      timestamp: new Date(),
+    });
 
     // 处理连续输入（移动）
     const cursors = (this as any).cursors;

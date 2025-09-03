@@ -198,7 +198,7 @@ export const EVENT_NAMING_EXAMPLES = {
  * @returns Validation result with errors and warnings
  */
 export function validateGlossaryTerm(
-  _term: GlossaryTerm
+  term: GlossaryTerm
 ): GlossaryValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -258,7 +258,7 @@ export function validateGlossaryTerm(
  * @param eventName - The event name to validate
  * @returns True if the event name follows the correct pattern
  */
-export function validateEventNaming(_eventName: string): boolean {
+export function validateEventNaming(eventName: string): boolean {
   return EVENT_NAMING_PATTERN.test(eventName);
 }
 
@@ -269,7 +269,7 @@ export function validateEventNaming(_eventName: string): boolean {
  * @returns Validation result indicating uniqueness
  */
 export function validateTranslationUniqueness(
-  _terms: typeof GlossaryTerms
+  terms: typeof GlossaryTerms
 ): GlossaryValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -303,8 +303,8 @@ export function validateTranslationUniqueness(
  * @returns The translation or undefined if not found
  */
 export function getTermTranslation(
-  _key: GlossaryTermKey,
-  _language: 'en-US' | 'zh-CN'
+  key: GlossaryTermKey,
+  language: 'en-US' | 'zh-CN'
 ): string | undefined {
   return GlossaryTerms[key]?.[language];
 }
@@ -317,8 +317,8 @@ export function getTermTranslation(
  * @returns Array of matching term keys
  */
 export function searchTerms(
-  _query: string,
-  _language: 'en-US' | 'zh-CN' = 'en-US'
+  query: string,
+  language: 'en-US' | 'zh-CN' = 'en-US'
 ): GlossaryTermKey[] {
   const lowerQuery = query.toLowerCase();
 
@@ -354,14 +354,14 @@ export const GlossaryUtils = {
 /**
  * Type guard to check if a string is a valid glossary term key
  */
-export function isGlossaryTermKey(_key: string): key is GlossaryTermKey {
+export function isGlossaryTermKey(key: string): key is GlossaryTermKey {
   return key in GlossaryTerms;
 }
 
 /**
  * Get all term keys by type
  */
-export function getTermKeysByType(_type: TermType): GlossaryTermKey[] {
+export function getTermKeysByType(type: TermType): GlossaryTermKey[] {
   // This would require additional metadata structure in a real implementation
   // For now, return all keys as this requires manual categorization
   return Object.keys(GlossaryTerms) as GlossaryTermKey[];

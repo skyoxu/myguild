@@ -5,58 +5,105 @@
  */
 
 // ============================================================================
-// NFR Keys - 非功能性需求键值定义
+// NFR Keys - 非功能性需求键值定义（简化版）
 // ============================================================================
 
 /**
- * NFR (Non-Functional Requirements) 标识符
+ * 标准化指标单位 - 基于AWS CloudWatch Metrics最佳实践
+ * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html
+ */
+export enum MetricUnit {
+  // 时间单位
+  Milliseconds = 'Milliseconds',
+  Seconds = 'Seconds',
+  Microseconds = 'Microseconds',
+  
+  // 计数单位
+  Count = 'Count',
+  CountPerSecond = 'Count/Second',
+  
+  // 百分比
+  Percent = 'Percent',
+  
+  // 字节单位
+  Bytes = 'Bytes',
+  Kilobytes = 'Kilobytes',
+  Megabytes = 'Megabytes',
+  Gigabytes = 'Gigabytes',
+  
+  // 速率单位
+  BytesPerSecond = 'Bytes/Second',
+  KilobytesPerSecond = 'Kilobytes/Second',
+  MegabytesPerSecond = 'Megabytes/Second',
+  
+  // 无单位
+  None = 'None',
+}
+
+/**
+ * NFR (Non-Functional Requirements) 类别 - 简化版
  * 用于追踪非功能性需求到 SLO 的映射关系
  */
+export enum NFRCategory {
+  RELIABILITY = 'reliability',
+  PERFORMANCE = 'performance', 
+  AVAILABILITY = 'availability',
+  SECURITY = 'security',
+  USABILITY = 'usability',
+}
+
+/**
+ * NFR 标识符生成函数 - 动态生成，避免硬编码
+ */
+export function createNFRKey(category: NFRCategory, name: string): string {
+  return `NFR-${category.toUpperCase()}-${name.toUpperCase()}`;
+}
+
+/**
+ * 常用 NFR 键值对象 - 基于createNFRKey动态生成
+ */
 export const NFR_KEYS = {
-  // 可靠性需求
   RELIABILITY: {
-    CRASH_FREE_USERS: 'NFR-RELIABILITY-001',
-    CRASH_FREE_SESSIONS: 'NFR-RELIABILITY-002',
-    SERVICE_AVAILABILITY: 'NFR-RELIABILITY-003',
-    DATA_CONSISTENCY: 'NFR-RELIABILITY-004',
+    CRASH_FREE_USERS: createNFRKey(NFRCategory.RELIABILITY, 'crash_free_users'),
+    CRASH_FREE_SESSIONS: createNFRKey(NFRCategory.RELIABILITY, 'crash_free_sessions'),
+    SERVICE_AVAILABILITY: createNFRKey(NFRCategory.RELIABILITY, 'service_availability'),
+    DATA_CONSISTENCY: createNFRKey(NFRCategory.RELIABILITY, 'data_consistency'),
   },
-
-  // 性能需求
   PERFORMANCE: {
-    RESPONSE_TIME: 'NFR-PERFORMANCE-001',
-    THROUGHPUT: 'NFR-PERFORMANCE-002',
-    MEMORY_USAGE: 'NFR-PERFORMANCE-003',
-    CPU_USAGE: 'NFR-PERFORMANCE-004',
-    STARTUP_TIME: 'NFR-PERFORMANCE-005',
+    RESPONSE_TIME: createNFRKey(NFRCategory.PERFORMANCE, 'response_time'),
+    THROUGHPUT: createNFRKey(NFRCategory.PERFORMANCE, 'throughput'),
+    MEMORY_USAGE: createNFRKey(NFRCategory.PERFORMANCE, 'memory_usage'), 
+    CPU_USAGE: createNFRKey(NFRCategory.PERFORMANCE, 'cpu_usage'),
+    STARTUP_TIME: createNFRKey(NFRCategory.PERFORMANCE, 'startup_time'),
   },
-
-  // 可用性需求
   AVAILABILITY: {
-    UPTIME: 'NFR-AVAILABILITY-001',
-    RECOVERY_TIME: 'NFR-AVAILABILITY-002',
-    FAILOVER_TIME: 'NFR-AVAILABILITY-003',
+    UPTIME: createNFRKey(NFRCategory.AVAILABILITY, 'uptime'),
+    RECOVERY_TIME: createNFRKey(NFRCategory.AVAILABILITY, 'recovery_time'),
+    FAILOVER_TIME: createNFRKey(NFRCategory.AVAILABILITY, 'failover_time'),
   },
-
-  // 安全性需求
   SECURITY: {
-    AUTH_SUCCESS_RATE: 'NFR-SECURITY-001',
-    DATA_BREACH_PREVENTION: 'NFR-SECURITY-002',
-    PRIVILEGE_COMPLIANCE: 'NFR-SECURITY-003',
+    AUTH_SUCCESS_RATE: createNFRKey(NFRCategory.SECURITY, 'auth_success_rate'),
+    DATA_BREACH_PREVENTION: createNFRKey(NFRCategory.SECURITY, 'data_breach_prevention'),
+    PRIVILEGE_COMPLIANCE: createNFRKey(NFRCategory.SECURITY, 'privilege_compliance'),
   },
 } as const;
 
 /**
- * NFR 类型定义
+ * NFR 类型定义 - 使用工具类型自动推断，避免手工维护
  */
-export type NFRKey =
-  (typeof NFR_KEYS)[keyof typeof NFR_KEYS][keyof (typeof NFR_KEYS)[keyof typeof NFR_KEYS]];
+type NFRKeysFlattened = {
+  [K in keyof typeof NFR_KEYS]: typeof NFR_KEYS[K][keyof typeof NFR_KEYS[K]]
+}[keyof typeof NFR_KEYS];
+
+export type NFRKey = NFRKeysFlattened;
 
 // ============================================================================
 // SLI/SLO 定义
 // ============================================================================
 
 /**
- * SLI (Service Level Indicator) 定义
+ * SLI (Service Level Indicator) 定义 - 增强版
+ * 基于AWS Powertools Metrics最佳实践
  */
 export interface ServiceLevelIndicator {
   /** 指标唯一标识符 */
@@ -65,12 +112,16 @@ export interface ServiceLevelIndicator {
   readonly name: string;
   /** 指标描述 */
   readonly description: string;
-  /** 指标单位 */
-  readonly unit: string;
+  /** 指标单位 - 使用标准化枚举 */
+  readonly unit: MetricUnit;
   /** 对应的 NFR 键值 */
   readonly nfrKey: NFRKey;
   /** 查询语句 */
   readonly query: string;
+  /** 指标维度定义 */
+  readonly dimensions?: readonly string[];
+  /** 指标类型：gauge(瞬时值) | counter(计数器) | histogram(直方图) */
+  readonly metricType: 'gauge' | 'counter' | 'histogram';
 }
 
 /**
@@ -103,27 +154,33 @@ export const CORE_SLIS: Record<string, ServiceLevelIndicator> = {
     id: 'crash_free_users',
     name: 'Crash-Free Users',
     description: '在观察窗口内未遇到崩溃的用户百分比',
-    unit: 'percentage',
+    unit: MetricUnit.Percent,
     nfrKey: NFR_KEYS.RELIABILITY.CRASH_FREE_USERS,
     query: 'sentry.release_health.crash_free_users',
+    dimensions: ['environment', 'release', 'platform'],
+    metricType: 'gauge',
   },
 
   CRASH_FREE_SESSIONS: {
     id: 'crash_free_sessions',
     name: 'Crash-Free Sessions',
     description: '在观察窗口内未崩溃的会话百分比',
-    unit: 'percentage',
+    unit: MetricUnit.Percent,
     nfrKey: NFR_KEYS.RELIABILITY.CRASH_FREE_SESSIONS,
     query: 'sentry.release_health.crash_free_sessions',
+    dimensions: ['environment', 'release', 'platform'],
+    metricType: 'gauge',
   },
 
   RESPONSE_TIME_P95: {
     id: 'response_time_p95',
     name: 'Response Time P95',
     description: '95分位响应时间',
-    unit: 'milliseconds',
+    unit: MetricUnit.Milliseconds,
     nfrKey: NFR_KEYS.PERFORMANCE.RESPONSE_TIME,
     query: 'custom.performance.response_time.p95',
+    dimensions: ['service', 'endpoint', 'environment'],
+    metricType: 'histogram',
   },
 } as const;
 
@@ -595,20 +652,40 @@ export const TIER_0_THRESHOLDS = {
  * 基于03-observability-sentry-logging-v2.md § 3.5
  */
 export interface SamplingConfig {
-  readonly environment: 'production' | 'staging' | 'development';
+  readonly environment: Environment;
   readonly errorSampling: number; // 错误采样率 0.0-1.0
-  readonly transactionSampling: number; // 性能追踪采样率
-  readonly replaySampling: number; // 会话回放采样率
+  readonly transactionSampling: number; // 性能追踪采样率 0.0-1.0
+  readonly replaySampling: number; // 会话回放采样率 0.0-1.0
   readonly costBudgetMonthly: number; // 月度成本预算（美元）
+  readonly adaptiveThresholds?: {
+    readonly errorRateThreshold: number; // 错误率阈值超过时自动降低采样
+    readonly performanceRegressionThreshold: number; // 性能回归阈值
+  };
 }
 
-export const SAMPLING_STRATEGIES: Record<string, SamplingConfig> = {
+/**
+ * 采样策略验证函数
+ */
+export function validateSamplingConfig(config: SamplingConfig): boolean {
+  return (
+    config.errorSampling >= 0 && config.errorSampling <= 1 &&
+    config.transactionSampling >= 0 && config.transactionSampling <= 1 &&
+    config.replaySampling >= 0 && config.replaySampling <= 1 &&
+    config.costBudgetMonthly > 0
+  );
+}
+
+export const SAMPLING_STRATEGIES: Record<Environment, SamplingConfig> = {
   production: {
     environment: 'production',
     errorSampling: 1.0, // 100%错误采集
     transactionSampling: 0.1, // 10%性能追踪
     replaySampling: 0.01, // 1%会话回放
     costBudgetMonthly: 800, // $800/月预算
+    adaptiveThresholds: {
+      errorRateThreshold: 0.05, // 5%错误率阈值
+      performanceRegressionThreshold: 1.2, // 20%性能回归阈值
+    },
   },
 
   staging: {
@@ -617,6 +694,10 @@ export const SAMPLING_STRATEGIES: Record<string, SamplingConfig> = {
     transactionSampling: 0.3, // 30%性能追踪
     replaySampling: 0.05, // 5%会话回放
     costBudgetMonthly: 200, // $200/月预算
+    adaptiveThresholds: {
+      errorRateThreshold: 0.1, // 10%错误率阈值
+      performanceRegressionThreshold: 1.5, // 50%性能回归阈值
+    },
   },
 
   development: {
@@ -625,6 +706,7 @@ export const SAMPLING_STRATEGIES: Record<string, SamplingConfig> = {
     transactionSampling: 1.0, // 100%性能追踪
     replaySampling: 0.1, // 10%会话回放
     costBudgetMonthly: 100, // $100/月预算
+    // development环境不启用自适应阈值
   },
 } as const;
 
@@ -655,7 +737,8 @@ export const DEFAULT_SAMPLING_CONFIG = {
 } as const;
 
 /**
- * 默认观察窗口配置
+ * 默认观察窗口配置 - 增强版
+ * 基于AWS CloudWatch和Sentry最佳实践
  */
 export const DEFAULT_OBSERVATION_WINDOWS = {
   realtime: '5m',
@@ -663,12 +746,362 @@ export const DEFAULT_OBSERVATION_WINDOWS = {
   mediumTerm: '24h',
   longTerm: '7d',
   release: '72h',
+  weekly: '7d',
+  monthly: '30d',
+} as const;
+
+/**
+ * 性能监控配置接口 - 新增
+ * 基于AWS Powertools Metrics最佳实践
+ */
+export interface PerformanceMonitoringConfig {
+  readonly enabled: boolean;
+  readonly sampleRate: number; // 0.0-1.0
+  readonly bufferSize: number; // 指标缓冲区大小
+  readonly flushInterval: number; // 刷新间隔（毫秒）
+  readonly dimensions: {
+    readonly service: string;
+    readonly version: string;
+    readonly environment: Environment;
+  };
+  readonly thresholds: {
+    readonly errorRate: number; // 错误率阈值
+    readonly responseTime: number; // 响应时间阈值（ms）
+    readonly memoryUsage: number; // 内存使用阈值（MB）
+  };
+}
+
+/**
+ * 默认性能监控配置
+ */
+export const DEFAULT_PERFORMANCE_MONITORING_CONFIG: PerformanceMonitoringConfig = {
+  enabled: true,
+  sampleRate: 0.1, // 10%采样率
+  bufferSize: 100, // 100个指标缓冲
+  flushInterval: 30000, // 30秒刷新一次
+  dimensions: {
+    service: process.env.POWERTOOLS_SERVICE_NAME || 'vitegame',
+    version: process.env.npm_package_version || '1.0.0',
+    environment: (process.env.NODE_ENV as Environment) || 'development',
+  },
+  thresholds: {
+    errorRate: 0.05, // 5%错误率阈值
+    responseTime: 2000, // 2秒响应时间阈值
+    memoryUsage: 512, // 512MB内存使用阈值
+  },
 } as const;
 
 // ============================================================================
-// 类型导出
+// 类型导出 - 增强版
 // ============================================================================
 
 export type Environment = 'production' | 'staging' | 'development';
-// SamplingConfig interface已在上面定义，不需要重复类型导出
 export type ObservationWindows = typeof DEFAULT_OBSERVATION_WINDOWS;
+
+/**
+ * 指标类型联合类型 - 用于类型安全的指标操作
+ */
+export type MetricValue = number;
+export type MetricName = string;
+export type MetricDimensions = Record<string, string>;
+export type MetricTimestamp = number | Date;
+
+/**
+ * 指标上报参数接口
+ */
+export interface MetricSubmission {
+  readonly name: MetricName;
+  readonly value: MetricValue;
+  readonly unit: MetricUnit;
+  readonly dimensions?: MetricDimensions;
+  readonly timestamp?: MetricTimestamp;
+}
+
+// ============================================================================
+// 实用工具函数 - 基于AWS Powertools最佳实践
+// ============================================================================
+
+/**
+ * 指标工厂函数 - 创建类型安全的指标提交对象
+ */
+export function createMetricSubmission(
+  name: MetricName,
+  value: MetricValue,
+  unit: MetricUnit,
+  dimensions?: MetricDimensions,
+  timestamp?: MetricTimestamp
+): MetricSubmission {
+  return {
+    name,
+    value,
+    unit,
+    dimensions,
+    timestamp: timestamp || new Date(),
+  };
+}
+
+/**
+ * 性能指标工厂 - 专门用于创建性能相关指标
+ */
+export class PerformanceMetricsFactory {
+  protected readonly defaultDimensions: MetricDimensions;
+
+  constructor(defaultDimensions: MetricDimensions = {}) {
+    this.defaultDimensions = defaultDimensions;
+  }
+
+  /**
+   * 创建响应时间指标
+   */
+  createResponseTimeMetric(
+    value: number,
+    additionalDimensions?: MetricDimensions
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'response_time',
+      value,
+      MetricUnit.Milliseconds,
+      { ...this.defaultDimensions, ...additionalDimensions }
+    );
+  }
+
+  /**
+   * 创建内存使用指标
+   */
+  createMemoryUsageMetric(
+    value: number,
+    additionalDimensions?: MetricDimensions
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'memory_usage',
+      value,
+      MetricUnit.Megabytes,
+      { ...this.defaultDimensions, ...additionalDimensions }
+    );
+  }
+
+  /**
+   * 创建CPU使用率指标
+   */
+  createCPUUsageMetric(
+    value: number,
+    additionalDimensions?: MetricDimensions
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'cpu_usage',
+      value,
+      MetricUnit.Percent,
+      { ...this.defaultDimensions, ...additionalDimensions }
+    );
+  }
+
+  /**
+   * 创建错误计数指标
+   */
+  createErrorCountMetric(
+    value: number = 1,
+    errorType?: string,
+    additionalDimensions?: MetricDimensions
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'error_count',
+      value,
+      MetricUnit.Count,
+      {
+        ...this.defaultDimensions,
+        ...(errorType && { errorType }),
+        ...additionalDimensions,
+      }
+    );
+  }
+
+  /**
+   * 创建吞吐量指标
+   */
+  createThroughputMetric(
+    value: number,
+    additionalDimensions?: MetricDimensions
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'throughput',
+      value,
+      MetricUnit.CountPerSecond,
+      { ...this.defaultDimensions, ...additionalDimensions }
+    );
+  }
+}
+
+/**
+ * 游戏指标工厂 - 专门用于游戏相关指标
+ */
+export class GameMetricsFactory extends PerformanceMetricsFactory {
+  /**
+   * 创建关卡加载时间指标
+   */
+  createLevelLoadTimeMetric(
+    loadTime: number,
+    levelId: string,
+    difficulty?: string
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'level_load_time',
+      loadTime,
+      MetricUnit.Milliseconds,
+      {
+        ...this.defaultDimensions,
+        levelId,
+        ...(difficulty && { difficulty }),
+      }
+    );
+  }
+
+  /**
+   * 创建战斗回合时间指标
+   */
+  createBattleRoundTimeMetric(
+    roundTime: number,
+    battleType: string,
+    round: number
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'battle_round_time',
+      roundTime,
+      MetricUnit.Milliseconds,
+      {
+        ...this.defaultDimensions,
+        battleType,
+        round: round.toString(),
+      }
+    );
+  }
+
+  /**
+   * 创建AI决策时间指标
+   */
+  createAIDecisionTimeMetric(
+    decisionTime: number,
+    aiType: string,
+    complexity: string
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'ai_decision_time',
+      decisionTime,
+      MetricUnit.Milliseconds,
+      {
+        ...this.defaultDimensions,
+        aiType,
+        complexity,
+      }
+    );
+  }
+
+  /**
+   * 创建场景转换时间指标
+   */
+  createSceneTransitionMetric(
+    transitionTime: number,
+    fromScene: string,
+    toScene: string
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'scene_transition_time',
+      transitionTime,
+      MetricUnit.Milliseconds,
+      {
+        ...this.defaultDimensions,
+        fromScene,
+        toScene,
+      }
+    );
+  }
+
+  /**
+   * 创建资源加载时间指标
+   */
+  createAssetLoadTimeMetric(
+    loadTime: number,
+    assetType: string,
+    assetSize?: number
+  ): MetricSubmission {
+    return createMetricSubmission(
+      'asset_load_time',
+      loadTime,
+      MetricUnit.Milliseconds,
+      {
+        ...this.defaultDimensions,
+        assetType,
+        ...(assetSize && { assetSize: assetSize.toString() }),
+      }
+    );
+  }
+}
+
+/**
+ * 指标验证函数
+ */
+export function validateMetricSubmission(metric: MetricSubmission): boolean {
+  if (!metric.name || typeof metric.name !== 'string') return false;
+  if (typeof metric.value !== 'number' || !isFinite(metric.value)) return false;
+  if (!Object.values(MetricUnit).includes(metric.unit)) return false;
+  
+  // 验证维度
+  if (metric.dimensions) {
+    for (const [key, value] of Object.entries(metric.dimensions)) {
+      if (typeof key !== 'string' || typeof value !== 'string') return false;
+      if (key.length === 0 || value.length === 0) return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * 获取当前环境的性能监控配置
+ */
+export function getPerformanceMonitoringConfig(
+  environment?: Environment
+): PerformanceMonitoringConfig {
+  const env = environment || (process.env.NODE_ENV as Environment) || 'development';
+  
+  return {
+    ...DEFAULT_PERFORMANCE_MONITORING_CONFIG,
+    dimensions: {
+      ...DEFAULT_PERFORMANCE_MONITORING_CONFIG.dimensions,
+      environment: env,
+    },
+  };
+}
+
+/**
+ * 检查指标是否应该被采样
+ */
+export function shouldSampleMetric(
+  environment: Environment,
+  metricType: 'error' | 'transaction' | 'replay' = 'transaction'
+): boolean {
+  const config = SAMPLING_STRATEGIES[environment];
+  if (!config) return false;
+
+  const sampleRate = 
+    metricType === 'error' ? config.errorSampling :
+    metricType === 'transaction' ? config.transactionSampling :
+    config.replaySampling;
+
+  return Math.random() < sampleRate;
+}
+
+/**
+ * 创建默认的指标工厂实例
+ */
+export function createMetricsFactory(environment?: Environment): {
+  performance: PerformanceMetricsFactory;
+  game: GameMetricsFactory;
+} {
+  const config = getPerformanceMonitoringConfig(environment);
+  const defaultDimensions = config.dimensions as MetricDimensions;
+
+  return {
+    performance: new PerformanceMetricsFactory(defaultDimensions),
+    game: new GameMetricsFactory(defaultDimensions),
+  };
+}
