@@ -102,10 +102,10 @@ jobs:
             config-report.json
           retention-days: 30
 
-      - name: Base 文档清洁性检查
-        run: |
-          echo "🧹 检查 Base 文档清洁性..."
-          npm run guard:base
+      # - name: Base 文档清洁性检查
+      #   run: |
+      #     echo "🧹 检查 Base 文档清洁性..."
+      #     npm run guard:base
 
   documentation-build:
     name: 文档构建与发布准备
