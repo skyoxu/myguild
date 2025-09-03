@@ -33,7 +33,11 @@ class MockRaidCompositionRepository implements IRaidCompositionRepository {
   }
 
   async save(composition: RaidComposition): Promise<void> {
-    this.compositions.set(composition.compositionId, composition);
+    // Ensure both id and compositionId are set
+    if (!composition.id) {
+      (composition as any).id = composition.compositionId;
+    }
+    this.compositions.set(composition.id, composition);
   }
 
   async delete(id: string): Promise<void> {
@@ -93,8 +97,10 @@ class MockRaidManagementService implements IRaidManagementService {
   async createRaidComposition(
     request: CreateRaidCompositionRequest
   ): Promise<RaidComposition> {
+    const compositionId = `comp-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const composition: RaidComposition = {
-      compositionId: `comp-${Date.now()}`,
+      id: compositionId,
+      compositionId: compositionId,
       name: request.name,
       raidType: request.raidType,
       maxMembers: this.getMaxMembersForType(request.raidType),
@@ -103,8 +109,8 @@ class MockRaidManagementService implements IRaidManagementService {
       readinessLevel: 'DRAFT',
       guildId: request.guildId,
       createdBy: 'test-user-id',
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     await this.repository.save(composition);

@@ -289,8 +289,8 @@ export function sendGameMetric(
     Sentry.addBreadcrumb({
       message: `metric.${metricName}`,
       level: 'info',
-      data: { 
-        value, 
+      data: {
+        value,
         source: 'renderer',
         environment: determineEnvironment(),
         ...tags,

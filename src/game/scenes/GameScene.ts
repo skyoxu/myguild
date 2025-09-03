@@ -47,12 +47,14 @@ export class GameScene extends BaseScene {
 
     // 发布加载进度事件
     this.load.on('progress', (progress: number) => {
-      this.publishEvent(EventUtils.createEvent({
-        type: 'game.loading.progress',
-        source: 'game-scene',
-        data: { progress },
-        id: `loading-${Date.now()}`,
-      }));
+      this.publishEvent(
+        EventUtils.createEvent({
+          type: 'game.loading.progress',
+          source: 'game-scene',
+          data: { progress },
+          id: `loading-${Date.now()}`,
+        })
+      );
     });
   }
 
@@ -67,12 +69,14 @@ export class GameScene extends BaseScene {
     this.setupPhysics();
 
     // 发布场景初始化完成事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.scene.initialized',
-      source: 'game-scene',
-      data: { scene: 'GameScene' },
-      id: `scene-init-${Date.now()}`,
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.scene.initialized',
+        source: 'game-scene',
+        data: { scene: 'GameScene' },
+        id: `scene-init-${Date.now()}`,
+      })
+    );
   }
 
   /**
@@ -257,12 +261,14 @@ export class GameScene extends BaseScene {
             case ' ':
               // 空格键暂停游戏
               this.scene.pause();
-              this.publishEvent(EventUtils.createEvent({
-                type: 'game.state.paused',
-                source: 'game-scene',
-                data: { reason: 'user_input' },
-                id: `pause-${Date.now()}`,
-              }));
+              this.publishEvent(
+                EventUtils.createEvent({
+                  type: 'game.state.paused',
+                  source: 'game-scene',
+                  data: { reason: 'user_input' },
+                  id: `pause-${Date.now()}`,
+                })
+              );
               break;
           }
         }
@@ -270,12 +276,14 @@ export class GameScene extends BaseScene {
     }
 
     // 发布输入处理事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.input.processed',
-      source: 'game-scene',
-      data: { input },
-      id: `input-${Date.now()}`,
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.input.processed',
+        source: 'game-scene',
+        data: { input },
+        id: `input-${Date.now()}`,
+      })
+    );
   }
 
   /**
@@ -319,12 +327,14 @@ export class GameScene extends BaseScene {
 
     // 定期发布游戏状态更新事件（每秒一次）
     if (time % 1000 < delta) {
-      this.publishEvent(EventUtils.createEvent({
-        type: 'game.state.updated',
-        source: 'game-scene',
-        data: { gameState: this.gameState },
-        id: `state-update-${Date.now()}`,
-      }));
+      this.publishEvent(
+        EventUtils.createEvent({
+          type: 'game.state.updated',
+          source: 'game-scene',
+          data: { gameState: this.gameState },
+          id: `state-update-${Date.now()}`,
+        })
+      );
     }
   }
 
@@ -353,11 +363,13 @@ export class GameScene extends BaseScene {
     }
 
     // 发布状态变更事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.state.changed',
-      source: 'game-scene',
-      data: { gameState: this.gameState },
-      id: `state-change-${Date.now()}`,
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.state.changed',
+        source: 'game-scene',
+        data: { gameState: this.gameState },
+        id: `state-change-${Date.now()}`,
+      })
+    );
   }
 }

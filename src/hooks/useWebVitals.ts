@@ -174,7 +174,11 @@ export function useWebVitals(
       try {
         // collectData 是正确的方法名，但它是私有方法，我们改为调用 getPerformanceReport
         const report = collector.current.getPerformanceReport();
-        console.log(`[WebVitals] Custom event: ${componentName}_${name}`, data, report);
+        console.log(
+          `[WebVitals] Custom event: ${componentName}_${name}`,
+          data,
+          report
+        );
       } catch (error) {
         console.warn(`[WebVitals] 记录自定义事件失败:`, error);
       }
@@ -249,7 +253,11 @@ export function withWebVitals<P extends object>(
     } as P & { webVitals: WebVitalsMetrics });
   };
 
-  const displayName = options.componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  const displayName =
+    options.componentName ||
+    WrappedComponent.displayName ||
+    WrappedComponent.name ||
+    'Component';
   ComponentWithWebVitals.displayName = `withWebVitals(${displayName})`;
   return ComponentWithWebVitals;
 }

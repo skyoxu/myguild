@@ -349,7 +349,9 @@ function filterPIIWithOTelSemantics(
       // 使用OTel异常语义
       if (exception.type && (exception as any).message) {
         // 清理异常消息中的敏感信息
-        (exception as any).message = sanitizeMessage((exception as any).message);
+        (exception as any).message = sanitizeMessage(
+          (exception as any).message
+        );
       }
     });
   }
@@ -558,9 +560,9 @@ export async function integrateObservabilityMetrics(): Promise<void> {
           const metrics = {
             timestamp: new Date().toISOString(),
             dbPath: this.config.dbPath,
-            enabled: this.config.enabled
+            enabled: this.config.enabled,
           };
-          
+
           console.log('📊 观测性指标收集完成:', metrics);
         } catch (error) {
           console.warn('⚠️ 指标收集异常:', error);

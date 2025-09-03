@@ -42,11 +42,13 @@ export class TestScene extends BaseScene {
    */
   preload(): void {
     // 发布场景开始加载事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.scene.started' as any,
-      source: 'test-scene',
-      data: { sceneKey: 'TestScene', timestamp: new Date() }
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.scene.started' as any,
+        source: 'test-scene',
+        data: { sceneKey: 'TestScene', timestamp: new Date() },
+      })
+    );
   }
 
   /**
@@ -60,11 +62,13 @@ export class TestScene extends BaseScene {
     this.setupInput();
 
     // 发布场景创建事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.scene.created' as any,
-      source: 'test-scene',
-      data: { sceneKey: 'TestScene', timestamp: new Date() }
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.scene.created' as any,
+        source: 'test-scene',
+        data: { sceneKey: 'TestScene', timestamp: new Date() },
+      })
+    );
   }
 
   /**
@@ -293,28 +297,32 @@ export class TestScene extends BaseScene {
       this.updateUI();
 
       // 发布移动事件
-      this.publishEvent(EventUtils.createEvent({
-        type: 'game.player.moved' as any,
-        source: 'test-scene',
-        data: {
-          position: { x: newX, y: newY },
-          timestamp: new Date(),
-        }
-      }));
+      this.publishEvent(
+        EventUtils.createEvent({
+          type: 'game.player.moved' as any,
+          source: 'test-scene',
+          data: {
+            position: { x: newX, y: newY },
+            timestamp: new Date(),
+          },
+        })
+      );
 
       // 检查是否到达目标区域
       this.checkGoalCollision();
 
       // 发布输入处理事件
-      this.publishEvent(EventUtils.createEvent({
-        type: 'game.input.keyboard' as any,
-        source: 'test-scene',
-        data: {
-          key: input.type === 'keyboard' ? input.data.key : 'click',
-          action: 'keydown',
-          timestamp: new Date(),
-        }
-      }));
+      this.publishEvent(
+        EventUtils.createEvent({
+          type: 'game.input.keyboard' as any,
+          source: 'test-scene',
+          data: {
+            key: input.type === 'keyboard' ? input.data.key : 'click',
+            action: 'keydown',
+            timestamp: new Date(),
+          },
+        })
+      );
     }
   }
 
@@ -373,22 +381,34 @@ export class TestScene extends BaseScene {
     };
 
     // 发布关键的 level.complete 事件（用于数据持久化）
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.level.completed',
-      source: 'test-scene',
-      data: { level: 1, result: { score: levelResult.score, totalMoves: levelResult.totalMoves, duration: levelResult.duration }, timestamp: endTime }
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.level.completed',
+        source: 'test-scene',
+        data: {
+          level: 1,
+          result: {
+            score: levelResult.score,
+            totalMoves: levelResult.totalMoves,
+            duration: levelResult.duration,
+          },
+          timestamp: endTime,
+        },
+      })
+    );
 
     // 发布分数事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.player.scored',
-      source: 'test-scene',
-      data: {
-        score: score,
-        increment: score,
-        timestamp: endTime,
-      }
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.player.scored',
+        source: 'test-scene',
+        data: {
+          score: score,
+          increment: score,
+          timestamp: endTime,
+        },
+      })
+    );
 
     // 更新UI显示完成状态
     this.updateUI();
@@ -451,11 +471,13 @@ export class TestScene extends BaseScene {
    */
   private triggerSceneEnd(): void {
     // 发布场景结束事件
-    this.publishEvent(EventUtils.createEvent({
-      type: 'game.scene.stopped' as any,
-      source: 'test-scene',
-      data: { sceneKey: 'TestScene', timestamp: new Date() }
-    }));
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.scene.stopped' as any,
+        source: 'test-scene',
+        data: { sceneKey: 'TestScene', timestamp: new Date() },
+      })
+    );
 
     // 这里可以切换回主场景或触发应用退出
     // 具体逻辑将在GameVerticalSlice组件中处理

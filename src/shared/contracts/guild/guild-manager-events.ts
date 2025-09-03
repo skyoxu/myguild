@@ -18,6 +18,9 @@ export interface GuildManagerCloudEvent<T = any> extends CloudEvent<T> {
 
 // 公会事件类型枚举
 export enum GuildEventType {
+  // 公会生命周期事件
+  GUILD_CREATED = 'com.guildmanager.guild.created',
+  
   // 成员管理事件
   MEMBER_RECRUITED = 'com.guildmanager.member.recruited',
   MEMBER_PROMOTED = 'com.guildmanager.member.promoted',
@@ -168,6 +171,15 @@ export class GuildEventBuilder {
   private static readonly DEFAULT_SOURCE = '/guild-manager/core';
   private static readonly DEFAULT_SPEC_VERSION = '1.0';
   private static readonly DEFAULT_CONTENT_TYPE = 'application/json';
+
+  /**
+   * 生成公会事件专用的ID格式: guild-event-{timestamp}-{randomString}
+   */
+  private static generateGuildEventId(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 10);
+    return `guild-event-${timestamp}-${random}`;
+  }
 
   /**
    * 创建成员招募事件
@@ -329,7 +341,7 @@ export class GuildEventBuilder {
   }
 
   /**
-   * 创建基础CloudEvent - 使用 cloudevents-core 的 mkEvent 确保规范兼容性
+   * 创建基础CloudEvent - 使用自定义ID生成器确保格式一致性
    */
   private static createBaseEvent<T>(
     type: GuildEventType,
@@ -348,6 +360,9 @@ export class GuildEventBuilder {
       subject: options.subject,
       dataschema: options.dataschema,
     });
+
+    // 使用公会事件专用ID格式覆盖默认UUID
+    (baseEvent as any).id = this.generateGuildEventId();
 
     // 验证事件符合 CloudEvents v1.0 规范
     assertCe(baseEvent);
@@ -372,18 +387,24 @@ export class GuildEventValidator {
     try {
       // 使用 cloudevents-core 的核心验证
       assertCe(event);
-      
+
       // 额外验证 Guild 特定的事件类型
       if (!event.type || !Object.values(GuildEventType).includes(event.type)) {
         errors.push('type is required and must be a valid GuildEventType');
       }
 
-      if (event.datacontenttype && event.datacontenttype !== 'application/json') {
+      if (
+        event.datacontenttype &&
+        event.datacontenttype !== 'application/json'
+      ) {
         errors.push('datacontenttype must be "application/json" if specified');
       }
-
     } catch (validationError) {
-      errors.push(validationError instanceof Error ? validationError.message : String(validationError));
+      errors.push(
+        validationError instanceof Error
+          ? validationError.message
+          : String(validationError)
+      );
     }
 
     return {

@@ -111,12 +111,12 @@ export const GlossaryTerms = {
 
   // Abbreviations (abbr)
   adr: {
-    'en-US': 'Architecture Decision Record',
-    'zh-CN': '架构决策记录',
+    'en-US': 'ADR',
+    'zh-CN': 'ADR',
   },
   csp: {
-    'en-US': 'Content Security Policy',
-    'zh-CN': '内容安全策略',
+    'en-US': 'CSP',
+    'zh-CN': 'CSP',
   },
   dto: {
     'en-US': 'Data Transfer Object',
@@ -259,7 +259,9 @@ export function validateGlossaryTerm(
  * @returns True if the event name follows the correct pattern
  */
 export function validateEventNaming(eventName: string): boolean {
-  return EVENT_NAMING_PATTERN.test(eventName);
+  // Handle placeholder patterns by replacing ${DOMAIN_PREFIX} with a valid placeholder
+  const normalizedName = eventName.replace(/\$\{DOMAIN_PREFIX\}/g, 'app_domain');
+  return EVENT_NAMING_PATTERN.test(normalizedName);
 }
 
 /**

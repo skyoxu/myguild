@@ -3,10 +3,7 @@
 declare global {
   interface Window {
     electronAPI?: {
-      reportEvent?: (event: {
-        type: string;
-        data: any;
-      }) => void;
+      reportEvent?: (event: { type: string; data: any }) => void;
     };
   }
 }

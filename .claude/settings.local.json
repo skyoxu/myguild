@@ -11,7 +11,16 @@
       "mcp__context7__get-library-docs",
       "Bash(npm run test:unit:*)",
       "Bash(dir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": [],

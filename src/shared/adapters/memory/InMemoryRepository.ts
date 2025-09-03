@@ -8,10 +8,7 @@ import type {
   Entity,
   RepositoryQueryParams,
 } from '../../contracts/repos';
-import {
-  EntityNotFoundError,
-  ConcurrencyError,
-} from '../../contracts/repos';
+import { EntityNotFoundError, ConcurrencyError } from '../../contracts/repos';
 
 export class InMemoryRepository<T extends Entity> implements Repository<T> {
   private readonly store = new Map<string, T>();

@@ -223,7 +223,9 @@ export class EventBus {
 
     if (subscriptions.length === 0) {
       if (this.options.enableLogging) {
-        console.warn(`[EventBus] No listeners for event: ${(event as any).type}`);
+        console.warn(
+          `[EventBus] No listeners for event: ${(event as any).type}`
+        );
       }
       return;
     }
@@ -250,7 +252,10 @@ export class EventBus {
           toRemove.push(subscription.id);
         }
       } catch (error) {
-        console.error(`[EventBus] Handler error for ${(event as any).type}:`, error);
+        console.error(
+          `[EventBus] Handler error for ${(event as any).type}:`,
+          error
+        );
       }
     }
 

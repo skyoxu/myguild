@@ -17,25 +17,25 @@ export enum MetricUnit {
   Milliseconds = 'Milliseconds',
   Seconds = 'Seconds',
   Microseconds = 'Microseconds',
-  
+
   // 计数单位
   Count = 'Count',
   CountPerSecond = 'Count/Second',
-  
+
   // 百分比
   Percent = 'Percent',
-  
+
   // 字节单位
   Bytes = 'Bytes',
   Kilobytes = 'Kilobytes',
   Megabytes = 'Megabytes',
   Gigabytes = 'Gigabytes',
-  
+
   // 速率单位
   BytesPerSecond = 'Bytes/Second',
   KilobytesPerSecond = 'Kilobytes/Second',
   MegabytesPerSecond = 'Megabytes/Second',
-  
+
   // 无单位
   None = 'None',
 }
@@ -46,7 +46,7 @@ export enum MetricUnit {
  */
 export enum NFRCategory {
   RELIABILITY = 'reliability',
-  PERFORMANCE = 'performance', 
+  PERFORMANCE = 'performance',
   AVAILABILITY = 'availability',
   SECURITY = 'security',
   USABILITY = 'usability',
@@ -65,14 +65,20 @@ export function createNFRKey(category: NFRCategory, name: string): string {
 export const NFR_KEYS = {
   RELIABILITY: {
     CRASH_FREE_USERS: createNFRKey(NFRCategory.RELIABILITY, 'crash_free_users'),
-    CRASH_FREE_SESSIONS: createNFRKey(NFRCategory.RELIABILITY, 'crash_free_sessions'),
-    SERVICE_AVAILABILITY: createNFRKey(NFRCategory.RELIABILITY, 'service_availability'),
+    CRASH_FREE_SESSIONS: createNFRKey(
+      NFRCategory.RELIABILITY,
+      'crash_free_sessions'
+    ),
+    SERVICE_AVAILABILITY: createNFRKey(
+      NFRCategory.RELIABILITY,
+      'service_availability'
+    ),
     DATA_CONSISTENCY: createNFRKey(NFRCategory.RELIABILITY, 'data_consistency'),
   },
   PERFORMANCE: {
     RESPONSE_TIME: createNFRKey(NFRCategory.PERFORMANCE, 'response_time'),
     THROUGHPUT: createNFRKey(NFRCategory.PERFORMANCE, 'throughput'),
-    MEMORY_USAGE: createNFRKey(NFRCategory.PERFORMANCE, 'memory_usage'), 
+    MEMORY_USAGE: createNFRKey(NFRCategory.PERFORMANCE, 'memory_usage'),
     CPU_USAGE: createNFRKey(NFRCategory.PERFORMANCE, 'cpu_usage'),
     STARTUP_TIME: createNFRKey(NFRCategory.PERFORMANCE, 'startup_time'),
   },
@@ -83,8 +89,14 @@ export const NFR_KEYS = {
   },
   SECURITY: {
     AUTH_SUCCESS_RATE: createNFRKey(NFRCategory.SECURITY, 'auth_success_rate'),
-    DATA_BREACH_PREVENTION: createNFRKey(NFRCategory.SECURITY, 'data_breach_prevention'),
-    PRIVILEGE_COMPLIANCE: createNFRKey(NFRCategory.SECURITY, 'privilege_compliance'),
+    DATA_BREACH_PREVENTION: createNFRKey(
+      NFRCategory.SECURITY,
+      'data_breach_prevention'
+    ),
+    PRIVILEGE_COMPLIANCE: createNFRKey(
+      NFRCategory.SECURITY,
+      'privilege_compliance'
+    ),
   },
 } as const;
 
@@ -92,7 +104,7 @@ export const NFR_KEYS = {
  * NFR 类型定义 - 使用工具类型自动推断，避免手工维护
  */
 type NFRKeysFlattened = {
-  [K in keyof typeof NFR_KEYS]: typeof NFR_KEYS[K][keyof typeof NFR_KEYS[K]]
+  [K in keyof typeof NFR_KEYS]: (typeof NFR_KEYS)[K][keyof (typeof NFR_KEYS)[K]];
 }[keyof typeof NFR_KEYS];
 
 export type NFRKey = NFRKeysFlattened;
@@ -668,9 +680,12 @@ export interface SamplingConfig {
  */
 export function validateSamplingConfig(config: SamplingConfig): boolean {
   return (
-    config.errorSampling >= 0 && config.errorSampling <= 1 &&
-    config.transactionSampling >= 0 && config.transactionSampling <= 1 &&
-    config.replaySampling >= 0 && config.replaySampling <= 1 &&
+    config.errorSampling >= 0 &&
+    config.errorSampling <= 1 &&
+    config.transactionSampling >= 0 &&
+    config.transactionSampling <= 1 &&
+    config.replaySampling >= 0 &&
+    config.replaySampling <= 1 &&
     config.costBudgetMonthly > 0
   );
 }
@@ -774,22 +789,23 @@ export interface PerformanceMonitoringConfig {
 /**
  * 默认性能监控配置
  */
-export const DEFAULT_PERFORMANCE_MONITORING_CONFIG: PerformanceMonitoringConfig = {
-  enabled: true,
-  sampleRate: 0.1, // 10%采样率
-  bufferSize: 100, // 100个指标缓冲
-  flushInterval: 30000, // 30秒刷新一次
-  dimensions: {
-    service: process.env.POWERTOOLS_SERVICE_NAME || 'vitegame',
-    version: process.env.npm_package_version || '1.0.0',
-    environment: (process.env.NODE_ENV as Environment) || 'development',
-  },
-  thresholds: {
-    errorRate: 0.05, // 5%错误率阈值
-    responseTime: 2000, // 2秒响应时间阈值
-    memoryUsage: 512, // 512MB内存使用阈值
-  },
-} as const;
+export const DEFAULT_PERFORMANCE_MONITORING_CONFIG: PerformanceMonitoringConfig =
+  {
+    enabled: true,
+    sampleRate: 0.1, // 10%采样率
+    bufferSize: 100, // 100个指标缓冲
+    flushInterval: 30000, // 30秒刷新一次
+    dimensions: {
+      service: process.env.POWERTOOLS_SERVICE_NAME || 'vitegame',
+      version: process.env.npm_package_version || '1.0.0',
+      environment: (process.env.NODE_ENV as Environment) || 'development',
+    },
+    thresholds: {
+      errorRate: 0.05, // 5%错误率阈值
+      responseTime: 2000, // 2秒响应时间阈值
+      memoryUsage: 512, // 512MB内存使用阈值
+    },
+  } as const;
 
 // ============================================================================
 // 类型导出 - 增强版
@@ -872,12 +888,10 @@ export class PerformanceMetricsFactory {
     value: number,
     additionalDimensions?: MetricDimensions
   ): MetricSubmission {
-    return createMetricSubmission(
-      'memory_usage',
-      value,
-      MetricUnit.Megabytes,
-      { ...this.defaultDimensions, ...additionalDimensions }
-    );
+    return createMetricSubmission('memory_usage', value, MetricUnit.Megabytes, {
+      ...this.defaultDimensions,
+      ...additionalDimensions,
+    });
   }
 
   /**
@@ -887,12 +901,10 @@ export class PerformanceMetricsFactory {
     value: number,
     additionalDimensions?: MetricDimensions
   ): MetricSubmission {
-    return createMetricSubmission(
-      'cpu_usage',
-      value,
-      MetricUnit.Percent,
-      { ...this.defaultDimensions, ...additionalDimensions }
-    );
+    return createMetricSubmission('cpu_usage', value, MetricUnit.Percent, {
+      ...this.defaultDimensions,
+      ...additionalDimensions,
+    });
   }
 
   /**
@@ -903,16 +915,11 @@ export class PerformanceMetricsFactory {
     errorType?: string,
     additionalDimensions?: MetricDimensions
   ): MetricSubmission {
-    return createMetricSubmission(
-      'error_count',
-      value,
-      MetricUnit.Count,
-      {
-        ...this.defaultDimensions,
-        ...(errorType && { errorType }),
-        ...additionalDimensions,
-      }
-    );
+    return createMetricSubmission('error_count', value, MetricUnit.Count, {
+      ...this.defaultDimensions,
+      ...(errorType && { errorType }),
+      ...additionalDimensions,
+    });
   }
 
   /**
@@ -1043,7 +1050,7 @@ export function validateMetricSubmission(metric: MetricSubmission): boolean {
   if (!metric.name || typeof metric.name !== 'string') return false;
   if (typeof metric.value !== 'number' || !isFinite(metric.value)) return false;
   if (!Object.values(MetricUnit).includes(metric.unit)) return false;
-  
+
   // 验证维度
   if (metric.dimensions) {
     for (const [key, value] of Object.entries(metric.dimensions)) {
@@ -1051,7 +1058,7 @@ export function validateMetricSubmission(metric: MetricSubmission): boolean {
       if (key.length === 0 || value.length === 0) return false;
     }
   }
-  
+
   return true;
 }
 
@@ -1061,8 +1068,9 @@ export function validateMetricSubmission(metric: MetricSubmission): boolean {
 export function getPerformanceMonitoringConfig(
   environment?: Environment
 ): PerformanceMonitoringConfig {
-  const env = environment || (process.env.NODE_ENV as Environment) || 'development';
-  
+  const env =
+    environment || (process.env.NODE_ENV as Environment) || 'development';
+
   return {
     ...DEFAULT_PERFORMANCE_MONITORING_CONFIG,
     dimensions: {
@@ -1082,10 +1090,12 @@ export function shouldSampleMetric(
   const config = SAMPLING_STRATEGIES[environment];
   if (!config) return false;
 
-  const sampleRate = 
-    metricType === 'error' ? config.errorSampling :
-    metricType === 'transaction' ? config.transactionSampling :
-    config.replaySampling;
+  const sampleRate =
+    metricType === 'error'
+      ? config.errorSampling
+      : metricType === 'transaction'
+        ? config.transactionSampling
+        : config.replaySampling;
 
   return Math.random() < sampleRate;
 }

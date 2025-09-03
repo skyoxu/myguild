@@ -830,7 +830,11 @@ export interface IIntimacyChange {
 export interface IInteractionRecord {
   readonly actionId: string;
   readonly date: Date;
-  readonly result: 'SUCCESS' | 'FAILURE' | 'CRITICAL_SUCCESS' | 'CRITICAL_FAILURE';
+  readonly result:
+    | 'SUCCESS'
+    | 'FAILURE'
+    | 'CRITICAL_SUCCESS'
+    | 'CRITICAL_FAILURE';
   readonly intimacyChange: number;
   readonly description?: string;
 }
@@ -855,13 +859,21 @@ export interface IMemberTemplate {
 }
 
 export interface IOfficerTemplate extends IMemberTemplate {
-  readonly officerRole: 'QUARTERMASTER' | 'RAID_LEADER' | 'DIPLOMAT' | 'TRAINER';
+  readonly officerRole:
+    | 'QUARTERMASTER'
+    | 'RAID_LEADER'
+    | 'DIPLOMAT'
+    | 'TRAINER';
   readonly leadershipSkills: readonly string[];
   readonly specialAbilities: readonly string[];
 }
 
 export interface IOfficer extends IGuildMember {
-  readonly officerRole: 'QUARTERMASTER' | 'RAID_LEADER' | 'DIPLOMAT' | 'TRAINER';
+  readonly officerRole:
+    | 'QUARTERMASTER'
+    | 'RAID_LEADER'
+    | 'DIPLOMAT'
+    | 'TRAINER';
   readonly officerLevel: number;
   readonly subordinates: readonly string[];
   readonly responsibilities: readonly string[];
@@ -977,7 +989,11 @@ export interface ILegendaryCandidate extends IMemberCandidate {
   readonly legendaryRank: number;
   readonly uniqueAbilities: readonly string[];
   readonly discoveryConditions: readonly string[];
-  readonly recruitmentComplexity: 'SIMPLE' | 'MODERATE' | 'COMPLEX' | 'LEGENDARY';
+  readonly recruitmentComplexity:
+    | 'SIMPLE'
+    | 'MODERATE'
+    | 'COMPLEX'
+    | 'LEGENDARY';
 }
 
 export interface ILegendarySearchCriteria {
@@ -1067,7 +1083,12 @@ export interface IPVPComposition {
 export interface IPVPMemberSlot {
   readonly slotId: string;
   readonly memberId?: string;
-  readonly pvpRole: 'DAMAGE_DEALER' | 'SUPPORT' | 'TANK' | 'HEALER' | 'SPECIALIST';
+  readonly pvpRole:
+    | 'DAMAGE_DEALER'
+    | 'SUPPORT'
+    | 'TANK'
+    | 'HEALER'
+    | 'SPECIALIST';
   readonly isFlexible: boolean;
   readonly performanceRating: number;
 }
@@ -1076,7 +1097,11 @@ export interface IPVPStrategy {
   readonly strategyId: string;
   readonly name: string;
   readonly description: string;
-  readonly tacticalApproach: 'AGGRESSIVE' | 'DEFENSIVE' | 'BALANCED' | 'CONTROL';
+  readonly tacticalApproach:
+    | 'AGGRESSIVE'
+    | 'DEFENSIVE'
+    | 'BALANCED'
+    | 'CONTROL';
   readonly keyTactics: readonly string[];
   readonly counters: readonly string[];
   readonly effectiveness: ReadonlyMap<string, number>;
@@ -1144,7 +1169,7 @@ export interface IAvailabilityData {
 
 export interface ITimeSlot {
   readonly startTime: string; // HH:MM format
-  readonly endTime: string;   // HH:MM format
+  readonly endTime: string; // HH:MM format
   readonly dayOfWeek: number; // 0-6
   readonly timezone: string;
 }
@@ -1152,7 +1177,10 @@ export interface ITimeSlot {
 export interface IScheduleConflict {
   readonly conflictId: string;
   readonly affectedMembers: readonly string[];
-  readonly conflictType: 'TIME_OVERLAP' | 'RESOURCE_COMPETITION' | 'ROLE_SHORTAGE';
+  readonly conflictType:
+    | 'TIME_OVERLAP'
+    | 'RESOURCE_COMPETITION'
+    | 'ROLE_SHORTAGE';
   readonly severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   readonly suggestedResolution: string;
 }
@@ -1229,7 +1257,7 @@ export interface ILootEntry {
 
 export enum ItemRarity {
   COMMON = 'COMMON',
-  UNCOMMON = 'UNCOMMON', 
+  UNCOMMON = 'UNCOMMON',
   RARE = 'RARE',
   EPIC = 'EPIC',
   LEGENDARY = 'LEGENDARY',
@@ -1245,7 +1273,13 @@ export interface ICasualty {
 
 export interface ICombatLogEntry {
   readonly timestamp: Date;
-  readonly eventType: 'DAMAGE' | 'HEALING' | 'BUFF' | 'DEBUFF' | 'DEATH' | 'RESURRECTION';
+  readonly eventType:
+    | 'DAMAGE'
+    | 'HEALING'
+    | 'BUFF'
+    | 'DEBUFF'
+    | 'DEATH'
+    | 'RESURRECTION';
   readonly source: string;
   readonly target: string;
   readonly amount: number;
@@ -1311,7 +1345,11 @@ export interface IAlliance {
 export interface IConflict {
   readonly conflictId: string;
   readonly involvedGuilds: readonly string[];
-  readonly conflictType: 'TERRITORIAL' | 'RESOURCE' | 'IDEOLOGICAL' | 'PERSONAL';
+  readonly conflictType:
+    | 'TERRITORIAL'
+    | 'RESOURCE'
+    | 'IDEOLOGICAL'
+    | 'PERSONAL';
   readonly intensity: number; // 0-100
   readonly startDate: Date;
   readonly resolution?: IConflictResolution;

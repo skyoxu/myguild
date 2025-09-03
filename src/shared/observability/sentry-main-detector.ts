@@ -559,4 +559,3 @@ export async function detailedMainSentryCheck(
   const detector = new SentryMainDetector(options);
   return await detector.detectMainProcessStatus();
 }
-

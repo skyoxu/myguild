@@ -23,7 +23,10 @@ export type GameDomainEvent =
   | ({ type: 'game.engine.started'; data: { timestamp: Date } } & BaseEvent)
   | ({ type: 'game.engine.paused'; data: { timestamp: Date } } & BaseEvent)
   | ({ type: 'game.engine.resumed'; data: { timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.engine.ended'; data: { result: any; timestamp: Date } } & BaseEvent)
+  | ({
+      type: 'game.engine.ended';
+      data: { result: any; timestamp: Date };
+    } & BaseEvent)
 
   // 游戏状态事件
   | ({
@@ -44,7 +47,10 @@ export type GameDomainEvent =
       type: 'game.save.created';
       data: { saveId: string; gameState: GameState };
     } & BaseEvent)
-  | ({ type: 'game.save.loaded'; data: { saveId: string; gameState: GameState } } & BaseEvent)
+  | ({
+      type: 'game.save.loaded';
+      data: { saveId: string; gameState: GameState };
+    } & BaseEvent)
   | ({ type: 'game.save.deleted'; data: { saveId: string } } & BaseEvent)
   | ({ type: 'game.autosave.enabled'; data: { interval: number } } & BaseEvent)
   | ({ type: 'game.autosave.disabled'; data: { timestamp: Date } } & BaseEvent)
@@ -54,11 +60,26 @@ export type GameDomainEvent =
     } & BaseEvent)
 
   // 场景事件
-  | ({ type: 'game.scene.created'; data: { sceneKey: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.scene.started'; data: { sceneKey: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.scene.paused'; data: { sceneKey: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.scene.resumed'; data: { sceneKey: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.scene.stopped'; data: { sceneKey: string; timestamp: Date } } & BaseEvent)
+  | ({
+      type: 'game.scene.created';
+      data: { sceneKey: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'game.scene.started';
+      data: { sceneKey: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'game.scene.paused';
+      data: { sceneKey: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'game.scene.resumed';
+      data: { sceneKey: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'game.scene.stopped';
+      data: { sceneKey: string; timestamp: Date };
+    } & BaseEvent)
   | ({
       type: 'game.scene.transitioned';
       data: { from: string; to: string; timestamp: Date };
@@ -87,14 +108,14 @@ export type GameDomainEvent =
     } & BaseEvent)
   | ({
       type: 'game.level.completed';
-      data: { 
-        level: number; 
-        result?: { 
-          score?: number; 
-          totalMoves?: number; 
-          duration?: number; 
-        }; 
-        timestamp: Date 
+      data: {
+        level: number;
+        result?: {
+          score?: number;
+          totalMoves?: number;
+          duration?: number;
+        };
+        timestamp: Date;
       };
     } & BaseEvent)
 
@@ -113,8 +134,14 @@ export type GameDomainEvent =
     } & BaseEvent)
 
   // UI交互事件
-  | ({ type: 'game.ui.menu.opened'; data: { menuType: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'game.ui.menu.closed'; data: { menuType: string; timestamp: Date } } & BaseEvent)
+  | ({
+      type: 'game.ui.menu.opened';
+      data: { menuType: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'game.ui.menu.closed';
+      data: { menuType: string; timestamp: Date };
+    } & BaseEvent)
   | ({
       type: 'game.ui.button.clicked';
       data: { buttonId: string; context?: string };
@@ -149,7 +176,10 @@ export type GameDomainEvent =
     } & BaseEvent)
 
   // 性能监控事件
-  | ({ type: 'game.performance.fps'; data: { fps: number; timestamp: Date } } & BaseEvent)
+  | ({
+      type: 'game.performance.fps';
+      data: { fps: number; timestamp: Date };
+    } & BaseEvent)
   | ({
       type: 'game.performance.memory';
       data: { used: number; total: number; timestamp: Date };
@@ -158,8 +188,14 @@ export type GameDomainEvent =
   // React <-> Phaser 通信事件
   | ({ type: 'react.command.pause'; data: { timestamp: Date } } & BaseEvent)
   | ({ type: 'react.command.resume'; data: { timestamp: Date } } & BaseEvent)
-  | ({ type: 'react.command.save'; data: { saveId?: string; timestamp: Date } } & BaseEvent)
-  | ({ type: 'react.command.load'; data: { saveId: string; timestamp: Date } } & BaseEvent)
+  | ({
+      type: 'react.command.save';
+      data: { saveId?: string; timestamp: Date };
+    } & BaseEvent)
+  | ({
+      type: 'react.command.load';
+      data: { saveId: string; timestamp: Date };
+    } & BaseEvent)
   | ({ type: 'react.command.restart'; data: { timestamp: Date } } & BaseEvent)
   | ({ type: 'phaser.response.ready'; data: { timestamp: Date } } & BaseEvent)
   | ({

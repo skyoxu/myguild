@@ -263,18 +263,9 @@ export class LevelResultService {
               args: ['--compress', '--verify'],
             },
           });
-          
+
           // 由于executeScript不存在，我们跳到fallback逻辑
           throw new Error('executeScript method not available, using fallback');
-
-          if (backupResult.success) {
-            console.log('✅ 数据库备份完成:', backupId);
-            return {
-              success: true,
-              data: backupId,
-            };
-          }
-          throw new Error(backupResult.error || 'Backup script failed');
         }
       } catch (electronError) {
         console.warn('⚠️ Electron备份失败，回退到本地备份:', electronError);

@@ -27,7 +27,9 @@ import {
   UrgencyLevel,
 } from '../../src/shared/contracts/guild-manager-chunk-001';
 import { CloudEventValidator } from '../../src/shared/validation/CloudEventValidator';
-import { InMemoryRepository } from '../../src/shared/adapters/memory/InMemoryRepository';
+import { TestGuildRepository } from '../../src/shared/adapters/memory/TestGuildRepository';
+import { TestMemberRepository } from '../../src/shared/adapters/memory/TestMemberRepository';
+import { TestTurnRepository } from '../../src/shared/adapters/memory/TestTurnRepository';
 
 describe('Guild Manager Chunk 001 - Core Models', () => {
   let mockGuild: Guild;
@@ -179,15 +181,9 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
   let turnRepo: ITurnRepository;
 
   beforeEach(() => {
-    guildRepo = new InMemoryRepository<Guild, any>((id: any) =>
-      id.toString()
-    ) as any;
-    memberRepo = new InMemoryRepository<GuildMember, any>((id: any) =>
-      id.toString()
-    ) as any;
-    turnRepo = new InMemoryRepository<GameTurn, any>((id: any) =>
-      id.toString()
-    ) as any;
+    guildRepo = new TestGuildRepository();
+    memberRepo = new TestMemberRepository();
+    turnRepo = new TestTurnRepository();
   });
 
   describe('Guild Repository', () => {
@@ -481,7 +477,7 @@ describe('Guild Manager Chunk 001 - CloudEvents Validation Tests', () => {
       specversion: '1.0',
       id: 'test-001',
       source: 'gm://turn-system',
-      type: 'gm.guild.turn.started',
+      type: 'io.vitegame.gm.guild.turn.started',
       time: new Date().toISOString(),
     };
 
@@ -494,7 +490,7 @@ describe('Guild Manager Chunk 001 - CloudEvents Validation Tests', () => {
     const invalidEvent = {
       // 缺少必需字段
       specversion: '1.0',
-      type: 'gm.guild.turn.started',
+      type: 'io.vitegame.gm.guild.turn.started',
     };
 
     const validation = CloudEventValidator.validate(invalidEvent);

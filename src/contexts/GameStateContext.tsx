@@ -126,7 +126,13 @@ export function GameStateProvider({
     const handleStateManagerEvent = (event: DomainEvent) => {
       switch (event.type) {
         case 'game.state.updated':
-          if (event.data && typeof event.data === 'object' && 'gameState' in event.data && typeof event.data.gameState === 'object' && event.data.gameState !== null) {
+          if (
+            event.data &&
+            typeof event.data === 'object' &&
+            'gameState' in event.data &&
+            typeof event.data.gameState === 'object' &&
+            event.data.gameState !== null
+          ) {
             setGameState({ ...(event.data.gameState as GameState) });
           }
           break;
@@ -204,7 +210,11 @@ export function GameStateProvider({
       console.error('Failed to save game:', error);
       gameEvents.publish({
         type: 'game.error',
-        data: { error: (error as Error).message, context: 'context-save', timestamp: new Date() },
+        data: {
+          error: (error as Error).message,
+          context: 'context-save',
+          timestamp: new Date(),
+        },
         source: '/vitegame/game-engine',
         timestamp: new Date(),
       });
@@ -229,7 +239,11 @@ export function GameStateProvider({
         console.error('Failed to load game:', error);
         gameEvents.publish({
           type: 'game.error',
-          data: { error: (error as Error).message, context: 'context-load', timestamp: new Date() },
+          data: {
+            error: (error as Error).message,
+            context: 'context-load',
+            timestamp: new Date(),
+          },
           source: '/vitegame/game-engine',
           timestamp: new Date(),
         });

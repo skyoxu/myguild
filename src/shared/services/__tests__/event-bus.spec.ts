@@ -28,6 +28,7 @@ describe('EventBus', () => {
   beforeEach(() => {
     eventBus = new EventBus({
       enableDebugLogging: false,
+      enableMiddleware: false, // 禁用默认中间件以专注测试中间件管理
       validation: { level: 'disabled' }, // 禁用验证以专注测试事件总线逻辑
     });
   });
@@ -310,28 +311,59 @@ describe('factory functions', () => {
   describe('publishEvent() and subscribeToEvent()', () => {
     test('should use default event bus instance', async () => {
       const handler = vi.fn();
+      const testEvent = {
+        id: 'test-event-001',
+        source: '/vitegame/test-source',
+        type: 'com.vitegame.test.event',
+        specversion: '1.0',
+        time: '2025-08-26T10:30:00Z',
+        datacontenttype: 'application/json',
+        data: { message: 'test' },
+      };
 
-      await subscribeToEvent(validGameEvent.type, handler);
-      await publishEvent(validGameEvent);
+      await subscribeToEvent(testEvent.type, handler);
+      await publishEvent(testEvent);
 
-      expect(handler).toHaveBeenCalledWith(validGameEvent);
+      expect(handler).toHaveBeenCalledWith(testEvent);
     });
   });
 });
 
 describe('error handling', () => {
+  let testEventBus: EventBus;
+  const testEvent = {
+    id: 'test-event-001',
+    source: '/vitegame/test-source',
+    type: 'com.vitegame.test.event',
+    specversion: '1.0',
+    time: '2025-08-26T10:30:00Z',
+    datacontenttype: 'application/json',
+    data: { message: 'test' },
+  };
+
+  beforeEach(() => {
+    testEventBus = new EventBus({
+      enableDebugLogging: false,
+      validation: { level: 'disabled' },
+    });
+  });
+
+  afterEach(() => {
+    testEventBus.destroy();
+  });
+
   test('should emit error events for publication failures', async () => {
     const errorHandler = vi.fn();
-    const emitter = eventBus.getEmitterForTesting();
+    const emitter = testEventBus.getEmitterForTesting();
     emitter.on('error', errorHandler);
 
     const faultyMiddleware: EventMiddleware = () => {
       throw new Error('Middleware failure');
     };
 
-    eventBus.addMiddleware(faultyMiddleware);
+    testEventBus.addMiddleware(faultyMiddleware);
 
-    await expect(eventBus.publish(validGameEvent)).rejects.toThrow(
+    await expect(testEventBus.publish(testEvent)).rejects.toThrow(
       'Middleware failure'
     );
     expect(errorHandler).toHaveBeenCalled();
@@ -339,19 +371,19 @@ describe('error handling', () => {
 
   test('should emit handler-error events', async () => {
     const handlerErrorListener = vi.fn();
-    const emitter = eventBus.getEmitterForTesting();
+    const emitter = testEventBus.getEmitterForTesting();
     emitter.on('handler-error', handlerErrorListener);
 
     const faultyHandler = vi
       .fn()
       .mockRejectedValue(new Error('Handler failure'));
-    await eventBus.subscribe(validGameEvent.type, faultyHandler);
+    await testEventBus.subscribe(testEvent.type, faultyHandler);
 
-    await eventBus.publish(validGameEvent);
+    await testEventBus.publish(testEvent);
 
     expect(handlerErrorListener).toHaveBeenCalledWith({
-      eventType: validGameEvent.type,
-      event: validGameEvent,
+      eventType: testEvent.type,
+      event: testEvent,
       error: 'Handler failure',
       timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
     });

@@ -92,10 +92,13 @@ export class ElectronIPCPerformance {
    * 测量IPC调用时间
    */
   static async measureIPCCall<T>(channel: string, args: any[]): Promise<T> {
-    const result = await measureFunction(`electron.ipc.call.${channel}`, async () => {
-      // @ts-ignore - window.electronAPI通过preload脚本注入
-      return await window.electronAPI.invoke(channel, ...args);
-    });
+    const result = await measureFunction(
+      `electron.ipc.call.${channel}`,
+      async () => {
+        // @ts-ignore - window.electronAPI通过preload脚本注入
+        return await window.electronAPI.invoke(channel, ...args);
+      }
+    );
     return result as T;
   }
 

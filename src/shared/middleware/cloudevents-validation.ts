@@ -3,13 +3,8 @@
  * 提供运行时事件格式验证和监控能力
  */
 
-import type {
-  CloudEvent,
-} from '../contracts/cloudevents-core.js';
-import {
-  assertCe,
-  isCloudEvent,
-} from '../contracts/cloudevents-core.js';
+import type { CloudEvent } from '../contracts/cloudevents-core.js';
+import { assertCe, isCloudEvent } from '../contracts/cloudevents-core.js';
 
 export interface ValidationError {
   timestamp: string;
@@ -159,6 +154,12 @@ export class CloudEventsValidator {
       propertyKey: string,
       descriptor: PropertyDescriptor
     ) => {
+      // 防御性检查：确保descriptor和value存在
+      if (!descriptor || typeof descriptor.value !== 'function') {
+        console.warn(`[CloudEvents] Cannot apply validateEvent decorator to ${propertyKey}: descriptor.value is not a function`);
+        return descriptor;
+      }
+      
       const originalMethod = descriptor.value;
 
       descriptor.value = function (...args: any[]) {

@@ -476,4 +476,3 @@ export class SentryMainDetector {
     }
   }
 }
-

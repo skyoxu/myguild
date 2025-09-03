@@ -621,7 +621,10 @@ export const createRaidEvent = <T>(
     type,
     source: RAID_EVENT_SOURCES[source],
     data,
-    subject: options.subject || options.compositionId?.toString() || options.guildId?.toString(),
+    subject:
+      options.subject ||
+      options.compositionId?.toString() ||
+      options.guildId?.toString(),
     datacontenttype: 'application/json',
   }) as RaidManagerCloudEvent<T>;
 };

@@ -29,33 +29,37 @@ import {
 describe('NFR Keys', () => {
   it('应包含所有必需的可靠性 NFR 键值', () => {
     expect(NFR_KEYS.RELIABILITY).toBeDefined();
-    expect(NFR_KEYS.RELIABILITY.CRASH_FREE_USERS).toBe('NFR-RELIABILITY-001');
+    expect(NFR_KEYS.RELIABILITY.CRASH_FREE_USERS).toBe('NFR-RELIABILITY-CRASH_FREE_USERS');
     expect(NFR_KEYS.RELIABILITY.CRASH_FREE_SESSIONS).toBe(
-      'NFR-RELIABILITY-002'
+      'NFR-RELIABILITY-CRASH_FREE_SESSIONS'
     );
     expect(NFR_KEYS.RELIABILITY.SERVICE_AVAILABILITY).toBe(
-      'NFR-RELIABILITY-003'
+      'NFR-RELIABILITY-SERVICE_AVAILABILITY'
     );
-    expect(NFR_KEYS.RELIABILITY.DATA_CONSISTENCY).toBe('NFR-RELIABILITY-004');
+    expect(NFR_KEYS.RELIABILITY.DATA_CONSISTENCY).toBe('NFR-RELIABILITY-DATA_CONSISTENCY');
   });
 
   it('应包含所有必需的性能 NFR 键值', () => {
     expect(NFR_KEYS.PERFORMANCE).toBeDefined();
-    expect(NFR_KEYS.PERFORMANCE.RESPONSE_TIME).toBe('NFR-PERFORMANCE-001');
-    expect(NFR_KEYS.PERFORMANCE.THROUGHPUT).toBe('NFR-PERFORMANCE-002');
-    expect(NFR_KEYS.PERFORMANCE.MEMORY_USAGE).toBe('NFR-PERFORMANCE-003');
-    expect(NFR_KEYS.PERFORMANCE.CPU_USAGE).toBe('NFR-PERFORMANCE-004');
-    expect(NFR_KEYS.PERFORMANCE.STARTUP_TIME).toBe('NFR-PERFORMANCE-005');
+    expect(NFR_KEYS.PERFORMANCE.RESPONSE_TIME).toBe('NFR-PERFORMANCE-RESPONSE_TIME');
+    expect(NFR_KEYS.PERFORMANCE.THROUGHPUT).toBe('NFR-PERFORMANCE-THROUGHPUT');
+    expect(NFR_KEYS.PERFORMANCE.MEMORY_USAGE).toBe('NFR-PERFORMANCE-MEMORY_USAGE');
+    expect(NFR_KEYS.PERFORMANCE.CPU_USAGE).toBe('NFR-PERFORMANCE-CPU_USAGE');
+    expect(NFR_KEYS.PERFORMANCE.STARTUP_TIME).toBe('NFR-PERFORMANCE-STARTUP_TIME');
   });
 
   it('应包含所有必需的可用性和安全性 NFR 键值', () => {
     expect(NFR_KEYS.AVAILABILITY).toBeDefined();
     expect(NFR_KEYS.SECURITY).toBeDefined();
 
-    // 验证键值格式符合 NFR-{CATEGORY}-{NUMBER} 模式
-    const nfrKeyPattern = /^NFR-[A-Z]+-\d{3}$/;
+    // 验证键值格式符合 NFR-{CATEGORY}-{DESCRIPTOR} 模式
+    const nfrKeyPattern = /^NFR-[A-Z]+-[A-Z_]+$/;
     expect(NFR_KEYS.AVAILABILITY.UPTIME).toMatch(nfrKeyPattern);
     expect(NFR_KEYS.SECURITY.AUTH_SUCCESS_RATE).toMatch(nfrKeyPattern);
+    
+    // 验证具体值
+    expect(NFR_KEYS.AVAILABILITY.UPTIME).toBe('NFR-AVAILABILITY-UPTIME');
+    expect(NFR_KEYS.SECURITY.AUTH_SUCCESS_RATE).toBe('NFR-SECURITY-AUTH_SUCCESS_RATE');
   });
 
   it('所有 NFR 键值应该是唯一的', () => {
@@ -86,7 +90,7 @@ describe('Service Level Indicators (SLI)', () => {
     expect(crashFreeSli.id).toBe('crash_free_users');
     expect(crashFreeSli.name).toBe('Crash-Free Users');
     expect(crashFreeSli.description).toContain('未遇到崩溃的用户百分比');
-    expect(crashFreeSli.unit).toBe('percentage');
+    expect(crashFreeSli.unit).toBe('Percent');
     expect(crashFreeSli.nfrKey).toBe(NFR_KEYS.RELIABILITY.CRASH_FREE_USERS);
     expect(crashFreeSli.query).toContain('sentry');
   });
@@ -95,7 +99,7 @@ describe('Service Level Indicators (SLI)', () => {
     Object.values(CORE_SLIS).forEach(sli => {
       expect(sli.nfrKey).toBeDefined();
       expect(typeof sli.nfrKey).toBe('string');
-      expect(sli.nfrKey).toMatch(/^NFR-[A-Z]+-\d{3}$/);
+      expect(sli.nfrKey).toMatch(/^NFR-[A-Z]+-[A-Z_]+$/);
     });
   });
 });

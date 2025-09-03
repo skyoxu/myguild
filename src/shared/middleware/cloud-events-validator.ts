@@ -111,7 +111,7 @@ export class CloudEventsValidator {
       if (!event[field]) {
         errors.push({
           code: 'MISSING_FIELD',
-          field,
+          field: field as string,
           message: `Required CloudEvents field '${field}' is missing`,
           severity: 'error',
         });

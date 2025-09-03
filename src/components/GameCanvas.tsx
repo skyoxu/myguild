@@ -45,7 +45,11 @@ export function GameCanvas({
       console.log('Game Event:', event);
 
       // 只处理游戏域事件
-      if (!event.type.startsWith('game.') && !event.type.startsWith('phaser.') && !event.type.startsWith('react.')) {
+      if (
+        !event.type.startsWith('game.') &&
+        !event.type.startsWith('phaser.') &&
+        !event.type.startsWith('react.')
+      ) {
         return;
       }
 
@@ -56,17 +60,25 @@ export function GameCanvas({
         gameEvent.type === 'game.state.updated' ||
         gameEvent.type === 'game.state.changed'
       ) {
-        const { gameState: newState } = gameEvent.data.gameState 
+        const { gameState: newState } = gameEvent.data.gameState
           ? { gameState: gameEvent.data.gameState }
-          : gameEvent.data as { gameState: GameState };
+          : (gameEvent.data as { gameState: GameState });
         setGameState(newState);
         onGameStateChange?.(newState);
       }
 
       // 处理错误事件
-      if (gameEvent.type === 'game.error' && gameEvent.data && 'error' in gameEvent.data) {
+      if (
+        gameEvent.type === 'game.error' &&
+        gameEvent.data &&
+        'error' in gameEvent.data
+      ) {
         setError((gameEvent.data as any).error);
-      } else if (gameEvent.type === 'game.warning' && gameEvent.data && 'warning' in gameEvent.data) {
+      } else if (
+        gameEvent.type === 'game.warning' &&
+        gameEvent.data &&
+        'warning' in gameEvent.data
+      ) {
         console.warn('Game warning:', (gameEvent.data as any).warning);
       }
 

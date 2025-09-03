@@ -3,6 +3,7 @@
 exports[`App 组件 > 快照测试 > 应该匹配快照 1`] = `
 <div
   class="app-container p-8 min-h-screen bg-game-ui-background"
+  data-testid="app-root"
 >
   <header
     class="text-center mb-8"
