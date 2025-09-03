@@ -225,15 +225,12 @@ export class GameEngineAdapter implements GameEnginePort {
     this.sceneManager.resumeGame();
     this.stateMachine.transition('running');
 
-    this.publishEvent({
+    this.publishEvent(EventUtils.createEvent({
       type: 'game.engine.resumed',
       source: '/vitegame/game-engine',
       data: { state: this.currentState },
-      timestamp: new Date(),
       id: `resume-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    }));
   }
 
   /**
@@ -250,15 +247,12 @@ export class GameEngineAdapter implements GameEnginePort {
     // 使用状态管理器保存游戏
     const saveId = await this.stateManager.saveGame();
 
-    this.publishEvent({
+    this.publishEvent(EventUtils.createEvent({
       type: 'game.save.completed',
       source: 'game-engine-adapter',
       data: { saveId },
-      timestamp: new Date(),
       id: `save-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    }));
 
     return saveId;
   }
@@ -280,27 +274,21 @@ export class GameEngineAdapter implements GameEnginePort {
       // 应用加载的状态到场景管理器
       this.sceneManager.setGameState(this.currentState);
 
-      this.publishEvent({
+      this.publishEvent(EventUtils.createEvent({
         type: 'game.save.loaded',
         source: 'game-engine-adapter',
         data: { saveId, state: this.currentState },
-        timestamp: new Date(),
         id: `load-${Date.now()}`,
-        specversion: '1.0',
-        datacontenttype: 'application/json',
-      });
+      }));
 
       return this.currentState;
     } catch (error) {
-      this.publishEvent({
+      this.publishEvent(EventUtils.createEvent({
         type: 'game.save.load_failed',
         source: 'game-engine-adapter',
         data: { saveId, error: (error as Error).message },
-        timestamp: new Date(),
         id: `load-error-${Date.now()}`,
-        specversion: '1.0',
-        datacontenttype: 'application/json',
-      });
+      }));
       throw error;
     }
   }
@@ -323,15 +311,12 @@ export class GameEngineAdapter implements GameEnginePort {
       (currentScene as any).handleInput(input);
     }
 
-    this.publishEvent({
+    this.publishEvent(EventUtils.createEvent({
       type: 'game.input.received',
       source: 'game-engine-adapter',
       data: { input },
-      timestamp: new Date(),
       id: `input-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    }));
   }
 
   /**
@@ -378,15 +363,12 @@ export class GameEngineAdapter implements GameEnginePort {
       statistics: this.gameStatistics,
     };
 
-    this.publishEvent({
+    this.publishEvent(EventUtils.createEvent({
       type: 'game.session.ended',
       source: 'game-engine-adapter',
       data: { result },
-      timestamp: new Date(),
       id: `end-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    }));
 
     return result;
   }
