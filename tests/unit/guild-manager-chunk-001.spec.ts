@@ -56,6 +56,7 @@ describe('Guild Manager Chunk 001 - Core Models', () => {
 
     mockMember = {
       id: 'member-001' as any,
+      guildId: 'guild-001' as any,
       name: 'Test Member',
       level: 25,
       role: 'member' as any,
@@ -69,16 +70,21 @@ describe('Guild Manager Chunk 001 - Core Models', () => {
       relationships: {},
       currentState: MemberState.ACTIVE,
       aiGoals: [],
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     mockTurn = {
       id: 'turn-001' as any,
+      guildId: 'guild-001' as any,
+      turnNumber: 1,
       weekNumber: 1,
       currentPhase: TurnPhase.RESOLUTION,
       startedAt: new Date().toISOString(),
       phaseDeadlines: {},
       pendingDecisions: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   });
 
@@ -231,6 +237,7 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
     it('should support basic CRUD operations', async () => {
       const member: GuildMember = {
         id: 'member-001' as any,
+        guildId: 'guild-001' as any,
         name: 'Test Member',
         level: 25,
         role: 'member' as any,
@@ -244,7 +251,8 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
         relationships: {},
         currentState: MemberState.ACTIVE,
         aiGoals: [],
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await memberRepo.save(member);
@@ -267,11 +275,15 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
     it('should support basic CRUD operations', async () => {
       const turn: GameTurn = {
         id: 'turn-001' as any,
+        guildId: 'guild-001' as any,
+        turnNumber: 1,
         weekNumber: 1,
         currentPhase: TurnPhase.RESOLUTION,
         startedAt: new Date().toISOString(),
         phaseDeadlines: {},
         pendingDecisions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await turnRepo.save(turn);
@@ -538,6 +550,7 @@ describe('Guild Manager Chunk 001 - Performance Tests', () => {
     for (let i = 0; i < 1000; i++) {
       members.push({
         id: `member-${i}` as any,
+        guildId: `guild-${Math.floor(i / 100)}` as any,
         name: `Member ${i}`,
         level: Math.floor(Math.random() * 50) + 1,
         role: 'member' as any,
@@ -551,7 +564,8 @@ describe('Guild Manager Chunk 001 - Performance Tests', () => {
         relationships: {},
         currentState: MemberState.ACTIVE,
         aiGoals: [],
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
 
