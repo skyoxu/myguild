@@ -11,10 +11,10 @@ import type {
   GuildStatus,
 } from '../../contracts/guild-manager-chunk-001';
 
-export class TestGuildRepository 
-  extends TestRepository<Guild, GuildId> 
-  implements IGuildRepository {
-
+export class TestGuildRepository
+  extends TestRepository<Guild, GuildId>
+  implements IGuildRepository
+{
   async findByLevel(minLevel: number): Promise<Guild[]> {
     const allGuilds = await this.findAll();
     return allGuilds.filter(guild => guild.level >= minLevel);
@@ -34,7 +34,7 @@ export class TestGuildRepository
     if (!guild) {
       throw new Error(`Guild with id ${id} not found`);
     }
-    
+
     const newTurnNumber = guild.currentTurn + 1;
     await this.update(id, { currentTurn: newTurnNumber } as Partial<Guild>);
     return newTurnNumber;

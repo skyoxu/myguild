@@ -58,7 +58,7 @@ export class EventBus implements EventPublisher, EventSubscriber {
   private publishCount = 0;
   private subscriptionCount = 0;
   // 存储原始handler到wrapped handler的映射，用于正确的unsubscribe
-  private handlerMap = new Map<string, Map<Function, Function>>();
+  private handlerMap = new Map<string, Map<(...args: any[]) => void, (...args: any[]) => void>>();
 
   constructor(config: Partial<EventBusConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -192,7 +192,7 @@ export class EventBus implements EventPublisher, EventSubscriber {
       const wrappedHandler = eventHandlers.get(handler)!;
       this.emitter.off(eventType, wrappedHandler);
       eventHandlers.delete(handler);
-      
+
       // 如果该事件类型没有更多handler，清理映射
       if (eventHandlers.size === 0) {
         this.handlerMap.delete(eventType);
@@ -201,7 +201,7 @@ export class EventBus implements EventPublisher, EventSubscriber {
       // 回退到直接使用原始handler（用于向后兼容）
       this.emitter.off(eventType, handler);
     }
-    
+
     this.subscriptionCount = Math.max(0, this.subscriptionCount - 1);
 
     if (this.config.enableDebugLogging) {

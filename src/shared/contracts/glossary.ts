@@ -260,7 +260,10 @@ export function validateGlossaryTerm(
  */
 export function validateEventNaming(eventName: string): boolean {
   // Handle placeholder patterns by replacing ${DOMAIN_PREFIX} with a valid placeholder
-  const normalizedName = eventName.replace(/\$\{DOMAIN_PREFIX\}/g, 'app_domain');
+  const normalizedName = eventName.replace(
+    /\$\{DOMAIN_PREFIX\}/g,
+    'app_domain'
+  );
   return EVENT_NAMING_PATTERN.test(normalizedName);
 }
 

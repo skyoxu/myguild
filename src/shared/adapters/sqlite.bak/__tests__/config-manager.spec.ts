@@ -32,7 +32,7 @@ describe('SqliteConfigManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // 重置环境变量 - 删除所有SQLite相关的环境变量
     delete process.env.SQLITE_CACHE_SIZE;
     delete process.env.SQLITE_BUSY_TIMEOUT;
@@ -120,7 +120,7 @@ describe('SqliteConfigManager', () => {
       // 模拟低内存情况 - 确保可用内存 < 100MB
       // 由于Math.max(100, 2048 - total)的逻辑，我们需要确保total足够小让结果<100
       mockMemoryUsage.mockReturnValue({
-        heapTotal: 1960 * 1024 * 1024, // 1960MB 
+        heapTotal: 1960 * 1024 * 1024, // 1960MB
         external: 90 * 1024 * 1024, // 90MB - 总共2050MB，超出假设，Math.max(100, -2) = 100
       });
 
@@ -182,7 +182,7 @@ describe('SqliteConfigManager', () => {
         heapTotal: 1536 * 1024 * 1024, // 1536MB
         external: 0,
       });
-      
+
       // 为验证配置设置正确的mock返回值
       mockDatabase.pragma
         .mockReturnValueOnce(['wal']) // validateConfiguration中的journal_mode查询

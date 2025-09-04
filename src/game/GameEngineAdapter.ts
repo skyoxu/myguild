@@ -216,7 +216,7 @@ export class GameEngineAdapter implements GameEnginePort {
   async pauseGame(): Promise<void> {
     this.gameLoop.stop();
     this.sceneManager.pauseGame();
-    
+
     // 只在running状态时才能暂停
     if (this.stateMachine.current === 'running') {
       this.stateMachine.transition('paused');
@@ -238,7 +238,7 @@ export class GameEngineAdapter implements GameEnginePort {
   async resumeGame(): Promise<void> {
     this.gameLoop.start();
     this.sceneManager.resumeGame();
-    
+
     // 只在paused状态时才能恢复到running
     if (this.stateMachine.current === 'paused') {
       this.stateMachine.transition('running');
@@ -435,7 +435,8 @@ export class GameEngineAdapter implements GameEnginePort {
           const newPos = sceneState.position;
           if (oldPos && newPos) {
             const distance = Math.sqrt(
-              Math.pow(newPos.x - oldPos.x, 2) + Math.pow(newPos.y - oldPos.y, 2)
+              Math.pow(newPos.x - oldPos.x, 2) +
+                Math.pow(newPos.y - oldPos.y, 2)
             );
             this.gameStatistics.distanceTraveled += distance;
           }

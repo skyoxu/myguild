@@ -6,7 +6,9 @@
 import type { IRepository } from '../../contracts/ports';
 import type { Entity, Id } from '../../contracts/ports';
 
-export class TestRepository<TEntity extends Entity, TId = Id> implements IRepository<TEntity, TId> {
+export class TestRepository<TEntity extends Entity, TId = Id>
+  implements IRepository<TEntity, TId>
+{
   private readonly store = new Map<string, TEntity>();
   private idCounter = 1;
 
@@ -22,12 +24,13 @@ export class TestRepository<TEntity extends Entity, TId = Id> implements IReposi
     entity: Omit<TEntity, 'id' | 'createdAt' | 'updatedAt'> | TEntity
   ): Promise<TEntity> {
     const now = new Date().toISOString();
-    
+
     // 如果实体已经有ID，则直接使用，否则生成新ID
-    const id = ('id' in entity && entity.id) 
-      ? entity.id as TId 
-      : `test-${this.idCounter++}` as TId;
-    
+    const id =
+      'id' in entity && entity.id
+        ? (entity.id as TId)
+        : (`test-${this.idCounter++}` as TId);
+
     const savedEntity = {
       ...entity,
       id,

@@ -20,7 +20,7 @@ export interface GuildManagerCloudEvent<T = any> extends CloudEvent<T> {
 export enum GuildEventType {
   // 公会生命周期事件
   GUILD_CREATED = 'com.guildmanager.guild.created',
-  
+
   // 成员管理事件
   MEMBER_RECRUITED = 'com.guildmanager.member.recruited',
   MEMBER_PROMOTED = 'com.guildmanager.member.promoted',

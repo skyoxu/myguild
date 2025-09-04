@@ -156,10 +156,12 @@ export class CloudEventsValidator {
     ) => {
       // 防御性检查：确保descriptor和value存在
       if (!descriptor || typeof descriptor.value !== 'function') {
-        console.warn(`[CloudEvents] Cannot apply validateEvent decorator to ${propertyKey}: descriptor.value is not a function`);
+        console.warn(
+          `[CloudEvents] Cannot apply validateEvent decorator to ${propertyKey}: descriptor.value is not a function`
+        );
         return descriptor;
       }
-      
+
       const originalMethod = descriptor.value;
 
       descriptor.value = function (...args: any[]) {

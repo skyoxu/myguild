@@ -33,7 +33,7 @@ describe('CloudEventsValidator', () => {
       enableStatistics: true,
       maxProcessingDelay: 10,
     });
-    
+
     // 重置默认验证器状态，防止测试间污染
     defaultValidator.resetStatistics();
   });
@@ -68,9 +68,11 @@ describe('CloudEventsValidator', () => {
 
     test('should validate source format', () => {
       const invalidEvent = { ...validEvent, source: '   ' }; // 只有空格的无效源
-      
+
       // 在strict模式下应该抛出异常
-      expect(() => validator.validate(invalidEvent)).toThrow('CloudEvents validation failed');
+      expect(() => validator.validate(invalidEvent)).toThrow(
+        'CloudEvents validation failed'
+      );
     });
 
     test('should validate RFC3339 time format', () => {
@@ -142,7 +144,7 @@ describe('CloudEventsValidator', () => {
       const invalidResult = warningValidator.validate(invalidEvent);
 
       const stats = warningValidator.getStatistics();
-      
+
       expect(stats.totalEvents).toBe(2);
       expect(stats.validEvents).toBe(1);
       expect(stats.invalidEvents).toBe(1);
