@@ -49,9 +49,105 @@ jobs:
   # 注意：安全扫描已完全迁移到统一门禁系统 (security-unified.yml)
   # CI工作流不再包含重复的安全检查jobs，避免状态检查冲突
 
-  # ==================== 多平台单元测试 ====================
-  unit-tests:
-    name: 单元测试 (${{ matrix.os }}, Node ${{ matrix.node-version }})
+  # ==================== 稳定名核心作业（必需检查）====================
+  unit-tests-core:
+    name: Unit Tests (ubuntu-latest, Node 20)
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    timeout-minutes: 15
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🧪 运行单元测试（覆盖率）
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+      - name: 📤 上传覆盖率摘要
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          retention-days: 7
+
+  coverage-gate:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    needs: unit-tests-core
+    timeout-minutes: 5
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🔒 覆盖率门禁检查
+        run: node scripts/ci/coverage-gate.js
+
+  build-verification-core:
+    name: Build Verification (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: unit-tests-core
+    timeout-minutes: 10
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🏗️ 构建应用
+        run: npm run build
+      - name: 🔍 验证构建产物
+        run: |
+          ls -la dist/
+          test -f dist/index.html
+          test -d dist/assets/
+
+  release-health-gate:
+    name: Release Health Gate
+    runs-on: ubuntu-latest
+    needs: [unit-tests-core, coverage-gate]
+    timeout-minutes: 5
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🔍 验证发布健康度
+        run: node scripts/release-health-gate.mjs
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || 'bc660-desktop' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+          SENTRY_RELEASE: ${{ github.sha }}
+      - name: ⚠️ Fork PR降级为警告
+        if: ${{ github.event.pull_request.head.repo.fork && failure() }}
+        run: 'echo "Fork PR: skipping hard gate due to missing secrets" && exit 0'
+
+  # ==================== 多平台单元测试扩展（非必需）====================
+  unit-tests-extended:
+    name: 单元测试扩展 (${{ matrix.os }}, Node ${{ matrix.node-version }})
     runs-on: ${{ matrix.os }}
     needs: quality-gates
     timeout-minutes: 20
@@ -80,15 +176,9 @@ jobs:
         env:
           NODE_ENV: test
 
-      - name: 📊 代码覆盖率检查
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
-        run: |
-          # TODO: 集成覆盖率检查
-          echo "代码覆盖率检查 - 待配置测试框架后完善"
-
-  # ==================== E2E功能测试 ====================
-  e2e-functional-tests:
-    name: E2E功能测试
+  # ==================== E2E安全测试 ====================
+  e2e-security-tests:
+    name: E2E安全测试
     runs-on: ubuntu-latest
     needs: quality-gates
     timeout-minutes: 30
@@ -126,11 +216,11 @@ jobs:
             playwright-report/
           retention-days: 30
 
-  # ==================== 构建验证 ====================
-  build-verification:
-    name: 构建验证 (${{ matrix.os }})
+  # ==================== 构建验证扩展（非必需）====================
+  build-verification-extended:
+    name: 构建验证扩展 (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    needs: unit-tests
+    needs: unit-tests-extended
     timeout-minutes: 15
 
     strategy:
@@ -243,7 +333,7 @@ jobs:
   performance-benchmarks:
     name: 性能基准测试
     runs-on: ubuntu-latest
-    needs: build-verification
+    needs: build-verification-core
     timeout-minutes: 15
 
     steps:
@@ -273,7 +363,8 @@ jobs:
   deployment-readiness:
     name: 部署就绪检查
     runs-on: ubuntu-latest
-    needs: [build-verification, e2e-functional-tests, observability-verification]
+    needs:
+      [build-verification-core, e2e-security-tests, observability-verification]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
 
