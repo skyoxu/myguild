@@ -58,7 +58,7 @@
     "test:e2e:smoke": "playwright test --grep @smoke --reporter=line",
     "test:e2e:security": "playwright test --project=electron-security-audit --reporter=html",
     "test:security:electron": "playwright test --project=electron-security-audit --reporter=line",
-    "test:security:e2e": "playwright test --project=electron-security-audit --reporter=json",
+    "test:security:e2e": "playwright test --project=electron-full-e2e --reporter=json",
     "scan:security": "electronegativity --input . --output security-scan.csv --verbose false --electron-version 30.0.0",
     "test:performance": "node scripts/performance-benchmark.js",
     "test:a11y": "node scripts/accessibility-audit.js",
