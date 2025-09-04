@@ -1,0 +1,377 @@
+name: Security Gate (Unified)
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/security-gate-wrapper.js'
+      - '.github/workflows/security-unified.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'electron/**' 
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/security-gate-wrapper.js'
+
+  # 支持手动触发
+  workflow_dispatch:
+
+# 并发控制：相同分支只运行一个实例
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # 阶段1：静态安全扫描（快速，并行执行）
+  static-security-scan:
+    name: 📊 静态安全扫描
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      scan-status: ${{ steps.static-scan.outputs.status }}
+      critical-count: ${{ steps.static-scan.outputs.critical-count }}
+      high-count: ${{ steps.static-scan.outputs.high-count }}
+
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 安装静态安全扫描工具
+        run: |
+          npm install -g @doyensec/electronegativity@1.10.3
+          npm install -g snyk
+          npm install -g audit-ci
+
+      - name: 执行Electronegativity扫描
+        id: electronegativity
+        run: |
+          echo "🔍 运行Electronegativity安全扫描..."
+          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 30.0.0 || echo "⚠️ 扫描完成但有警告"
+          
+          if [ -f electronegativity-scan.csv ]; then
+            echo "✅ Electronegativity扫描完成"
+            echo "electronegativity-status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Electronegativity扫描失败"
+            echo "electronegativity-status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 执行npm audit
+        id: npm-audit
+        run: |
+          echo "🔍 运行npm audit..."
+          npm audit --audit-level high --json > npm-audit-results.json || true
+          
+          if [ -f npm-audit-results.json ]; then
+            echo "✅ npm audit完成"
+            echo "npm-audit-status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ npm audit失败"
+            echo "npm-audit-status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 执行Snyk扫描（如果有Token）
+        id: snyk-scan
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "🔍 运行Snyk扫描..."
+            snyk test --json > snyk-results.json || true
+            snyk monitor || true
+            echo "✅ Snyk扫描完成"
+            echo "snyk-status=success" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ 跳过Snyk扫描（无SNYK_TOKEN）"
+            echo "snyk-status=skipped" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 检查秘钥泄露
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+
+      - name: 汇总静态扫描结果
+        id: static-scan
+        run: |
+          echo "📊 汇总静态安全扫描结果..."
+          
+          CRITICAL_COUNT=0
+          HIGH_COUNT=0
+          
+          # 处理Electronegativity结果
+          if [ -f electronegativity-scan.csv ]; then
+            ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && tolower($3) == "critical" {count++} END {print count+0}' electronegativity-scan.csv)
+            ELECTRO_HIGH=$(awk -F',' 'NR>1 && tolower($3) == "high" {count++} END {print count+0}' electronegativity-scan.csv)
+            CRITICAL_COUNT=$((CRITICAL_COUNT + ELECTRO_CRITICAL))
+            HIGH_COUNT=$((HIGH_COUNT + ELECTRO_HIGH))
+            echo "Electronegativity - Critical: $ELECTRO_CRITICAL, High: $ELECTRO_HIGH"
+          fi
+          
+          # 处理npm audit结果
+          if [ -f npm-audit-results.json ]; then
+            NPM_CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-results.json 2>/dev/null || echo "0")
+            NPM_HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit-results.json 2>/dev/null || echo "0")
+            CRITICAL_COUNT=$((CRITICAL_COUNT + NPM_CRITICAL))
+            HIGH_COUNT=$((HIGH_COUNT + NPM_HIGH))
+            echo "npm audit - Critical: $NPM_CRITICAL, High: $NPM_HIGH"
+          fi
+          
+          # 处理Snyk结果
+          if [ -f snyk-results.json ]; then
+            SNYK_CRITICAL=$(jq '[.vulnerabilities[] | select(.severity == "critical")] | length' snyk-results.json 2>/dev/null || echo "0")
+            SNYK_HIGH=$(jq '[.vulnerabilities[] | select(.severity == "high")] | length' snyk-results.json 2>/dev/null || echo "0")
+            CRITICAL_COUNT=$((CRITICAL_COUNT + SNYK_CRITICAL))
+            HIGH_COUNT=$((HIGH_COUNT + SNYK_HIGH))
+            echo "Snyk - Critical: $SNYK_CRITICAL, High: $SNYK_HIGH"
+          fi
+          
+          echo "📊 静态扫描汇总："
+          echo "  Critical总计: $CRITICAL_COUNT"
+          echo "  High总计: $HIGH_COUNT"
+          
+          # 输出结果
+          echo "critical-count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
+          echo "high-count=$HIGH_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ $CRITICAL_COUNT -gt 0 ]; then
+            echo "status=critical" >> $GITHUB_OUTPUT
+            echo "❌ 发现Critical级别安全问题"
+          elif [ $HIGH_COUNT -gt 5 ]; then
+            echo "status=high" >> $GITHUB_OUTPUT
+            echo "⚠️ High级别安全问题过多"
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "✅ 静态安全扫描通过"
+          fi
+
+      - name: 上传静态扫描报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: static-security-reports
+          path: |
+            electronegativity-scan.csv
+            npm-audit-results.json
+            snyk-results.json
+          retention-days: 30
+
+  # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）
+  e2e-security-test:
+    name: 🧪 E2E安全测试
+    runs-on: windows-latest
+    needs: static-security-scan
+    if: needs.static-security-scan.outputs.critical-count == '0'
+    timeout-minutes: 15
+
+    outputs:
+      e2e-status: ${{ steps.e2e-test.outputs.status }}
+
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 安装Playwright浏览器
+        run: npx playwright install --with-deps
+
+      - name: 构建Electron应用
+        run: |
+          npm run build
+          npm run build:electron
+
+      - name: 执行E2E安全测试
+        id: e2e-test
+        run: |
+          echo "🧪 开始E2E安全测试..."
+          if npm run test:e2e:security; then
+            echo "✅ E2E安全测试通过"
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "❌ E2E安全测试失败"
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+        env:
+          CI: true
+
+      - name: 上传E2E测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-security-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+  # 阶段3：统一安全门禁决策
+  security-gate:
+    name: 🚦 统一安全门禁
+    runs-on: ubuntu-latest
+    needs: [static-security-scan, e2e-security-test]
+    if: always()
+
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 确保日志目录存在
+        run: mkdir -p logs
+
+      - name: 执行统一安全门禁检查
+        run: |
+          echo "🔒 开始执行统一安全门禁检查..."
+          
+          # 使用我们的安全门禁包装脚本
+          node scripts/security-gate-wrapper.js
+        env:
+          STATIC_SCAN_STATUS: ${{ needs.static-security-scan.outputs.scan-status }}
+          CRITICAL_COUNT: ${{ needs.static-security-scan.outputs.critical-count }}
+          HIGH_COUNT: ${{ needs.static-security-scan.outputs.high-count }}
+          E2E_STATUS: ${{ needs.e2e-security-test.outputs.e2e-status }}
+
+      - name: 下载所有安全报告
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 生成统一安全报告
+        run: |
+          echo "📊 生成统一安全门禁报告..."
+          
+          # 创建包含所有结果的综合报告
+          cat > logs/unified-security-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "git_sha": "$GITHUB_SHA",
+            "git_ref": "$GITHUB_REF_NAME",
+            "workflow_run": "$GITHUB_RUN_ID",
+            "static_scan": {
+              "status": "${{ needs.static-security-scan.outputs.scan-status }}",
+              "critical_count": ${{ needs.static-security-scan.outputs.critical-count }},
+              "high_count": ${{ needs.static-security-scan.outputs.high-count }}
+            },
+            "e2e_test": {
+              "status": "${{ needs.e2e-security-test.outputs.e2e-status }}",
+              "executed": "${{ needs.e2e-security-test.result != 'skipped' }}"
+            },
+            "overall_status": "$([ "${{ needs.static-security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-test.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
+          }
+          EOF
+
+      - name: 上传统一安全报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-security-report
+          path: |
+            logs/security-gate-report.json
+            logs/unified-security-report.json
+          retention-days: 30
+
+      - name: 安全门禁结果摘要
+        run: |
+          echo "## 🔒 统一安全门禁结果" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📊 检查摘要" >> $GITHUB_STEP_SUMMARY
+          echo "| 检查项目 | 状态 | 结果 |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 静态安全扫描 | ${{ needs.static-security-scan.outputs.scan-status }} | Critical: ${{ needs.static-security-scan.outputs.critical-count }}, High: ${{ needs.static-security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
+          
+          # 最终门禁决策
+          if [ "${{ needs.static-security-scan.outputs.critical-count }}" != "0" ]; then
+            echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
+            echo "发现 ${{ needs.static-security-scan.outputs.critical-count }} 个Critical级别安全问题，必须修复后才能继续。" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          elif [ "${{ needs.e2e-security-test.outputs.e2e-status }}" = "failed" ]; then
+            echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
+            echo "E2E安全测试失败，请检查Electron安全配置。" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "### ✅ 安全门禁通过" >> $GITHUB_STEP_SUMMARY
+            echo "所有安全检查均已通过，符合ADR-0002安全基线要求。" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 失败时创建Issue
+        uses: actions/github-script@v7
+        if: failure()
+        with:
+          script: |
+            const title = `🔒 统一安全门禁失败 - ${context.payload.head_commit?.message || context.payload.pull_request?.title || 'Security Check'}`;
+            const body = `
+            ## 🚨 统一安全门禁失败报告
+
+            **提交**: ${context.sha}
+            **分支**: ${context.ref}
+            **工作流**: ${context.workflow}
+            **运行ID**: ${context.runId}
+
+            ### 📊 检查结果
+            - **静态扫描状态**: ${{ needs.static-security-scan.outputs.scan-status }}
+            - **Critical问题**: ${{ needs.static-security-scan.outputs.critical-count }}个
+            - **High问题**: ${{ needs.static-security-scan.outputs.high-count }}个
+            - **E2E测试状态**: ${{ needs.e2e-security-test.outputs.e2e-status }}
+
+            ### 📋 需要检查的项目
+            - [ ] 修复所有Critical级别安全问题
+            - [ ] 检查Electron安全配置（nodeIntegration=false, contextIsolation=true）
+            - [ ] 验证CSP安全策略
+            - [ ] 检查IPC通道安全性
+            - [ ] 验证预加载脚本安全性
+
+            ### 🔗 相关链接
+            - [查看详细日志](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            - [下载安全报告](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
+
+            ### ⚠️ 注意事项
+            **安全门禁失败意味着应用存在安全风险，请立即修复后再发布！**
+
+            > 此Issue由GitHub Actions自动创建 - 基于ADR-0002统一安全门禁标准
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'bug', 'urgent', 'P0']
+            });

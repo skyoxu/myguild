@@ -1,0 +1,17 @@
+{
+  "sentry": {
+    "dsn": "https://test123456789@test123.ingest.sentry.io/123456",
+    "environment": "development",
+    "release": "dev-build"
+  },
+  "logging": {
+    "level": "debug",
+    "structured": true
+  },
+  "metrics": {
+    "enabled": true
+  },
+  "crashReporting": {
+    "enabled": true
+  }
+}

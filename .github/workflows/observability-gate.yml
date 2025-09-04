@@ -1,309 +1,156 @@
-name: 可观测性门禁检查
+name: Observability Gate (Unified)
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+    branches: [ main, develop ]
     paths:
+      - 'config/**'
       - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.env*'
-      - 'logs/**'
-      - '.github/workflows/**'
+      - 'electron/**'
+      - 'scripts/observability-config-validation.js'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'config/**'
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/observability-config-validation.js'
 
 env:
   NODE_VERSION: '18'
-  OBSERVABILITY_TIMEOUT: '30'
-  LOG_LEVEL: 'info'
 
 jobs:
-  observability-gate:
-    name: 🔍 可观测性门禁检查
+  observability-validation:
+    name: 🔍 统一可观测性配置验证
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    strategy:
-      matrix:
-        environment: [development, staging, production]
+    timeout-minutes: 10
 
     steps:
-      - name: 📥 代码检出
+      - name: Checkout代码
         uses: actions/checkout@v4
 
-      - name: 🔧 Node.js环境设置
+      - name: 设置Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 依赖安装
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 确保日志目录存在
+        run: mkdir -p logs
+
+      - name: 执行统一可观测性配置验证
+        id: observability-check
         run: |
-          npm ci
-          # 安装可观测性门禁检查工具
-          npm install --no-save axios@^1.6.0 chalk@^5.3.0
+          echo "📊 开始执行统一可观测性配置验证..."
+          node scripts/observability-config-validation.js
+          echo "validation-status=success" >> $GITHUB_OUTPUT
+        continue-on-error: false
 
-      - name: 🔒 环境变量安全检查
-        run: |
-          echo "🔍 检查环境变量安全配置..."
-
-          # 检查是否存在硬编码的敏感信息
-          if grep -r "sentry.*key\|dsn.*http" src/ --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx"; then
-            echo "❌ 发现硬编码的Sentry配置，请使用环境变量"
-            exit 1
-          fi
-
-          # 检查环境变量模板
-          required_vars=("SENTRY_DSN" "SENTRY_ORG" "SENTRY_PROJECT")
-          missing_vars=()
-
-          for var in "${required_vars[@]}"; do
-            if [ ! -f ".env.example" ] || ! grep -q "^${var}=" .env.example; then
-              missing_vars+=("$var")
-            fi
-          done
-
-          if [ ${#missing_vars[@]} -gt 0 ]; then
-            echo "⚠️  .env.example缺少以下变量模板: ${missing_vars[*]}"
-            echo "📝 请添加变量模板以确保环境配置完整性"
-          fi
-
-          echo "✅ 环境变量安全检查通过"
-
-      - name: 🚪 可观测性门禁检查 (ci:gate:sentry-up)
-        env:
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          NODE_ENV: ${{ matrix.environment }}
-        run: |
-          echo "🚀 执行简化的可观测性门禁检查..."
-          echo "📊 使用现有的verify-observability.js脚本"
-
-          # 使用用户请求的简化脚本命名
-          npm run ci:gate:sentry-up
-
-      - name: 🎯 P0可观测性门禁决策
+      - name: 上传验证报告
         if: always()
-        run: |
-          echo "🎯 开始P0可观测性门禁决策..."
-
-          # 初始化错误计数器
-          CRITICAL_ISSUES=0
-          HIGH_ISSUES=0
-          WARNING_ISSUES=0
-
-          # 检查必要的配置文件
-          echo "📋 检查关键配置文件..."
-
-          required_files=(
-            "src/shared/observability/sentry-main.ts"
-            "src/shared/observability/sentry-renderer.ts"
-          )
-
-          for file in "${required_files[@]}"; do
-            if [ ! -f "$file" ]; then
-              echo "❌ 缺少关键文件: $file"
-              CRITICAL_ISSUES=$((CRITICAL_ISSUES + 1))
-            else
-              echo "✅ 文件存在: $file"
-            fi
-          done
-
-          # 检查环境配置模板
-          echo "📋 检查环境配置..."
-          if [ ! -f ".env.example" ]; then
-            echo "⚠️  缺少.env.example模板文件"
-            WARNING_ISSUES=$((WARNING_ISSUES + 1))
-          fi
-
-          # 检查日志目录
-          echo "📋 检查日志系统..."
-          if [ ! -d "logs" ]; then
-            echo "📁 日志目录不存在，这在生产环境中可能是问题"
-            HIGH_ISSUES=$((HIGH_ISSUES + 1))
-          fi
-
-          # 汇总结果
-          TOTAL_ISSUES=$((CRITICAL_ISSUES + HIGH_ISSUES + WARNING_ISSUES))
-
-          echo ""
-          echo "🔍 P0可观测性门禁结果汇总:"
-          echo "  - Critical级别问题: $CRITICAL_ISSUES"
-          echo "  - High级别问题: $HIGH_ISSUES"  
-          echo "  - Warning级别问题: $WARNING_ISSUES"
-          echo "  - 总计问题数: $TOTAL_ISSUES"
-          echo ""
-
-          # P0决策逻辑
-          if [ $CRITICAL_ISSUES -gt 0 ]; then
-            echo "🚨 P0可观测性门禁失败：发现 $CRITICAL_ISSUES 个Critical级别问题"
-            echo "   ❌ 构建被阻止，禁止部署到任何环境"
-            echo "   🔧 请立即修复所有Critical级别问题后重新提交"
-            exit 1
-          fi
-
-          if [ $HIGH_ISSUES -gt 2 ]; then
-            echo "⚠️  警告：发现 $HIGH_ISSUES 个High级别可观测性问题"
-            echo "   📝 建议在下次迭代中优先修复"
-            echo "   🚀 当前构建允许继续，但监控能力可能受影响"
-          fi
-
-          # 成功通过门禁
-          if [ $TOTAL_ISSUES -eq 0 ]; then
-            echo "✅ P0可观测性门禁检查通过：未发现问题"
-          else
-            echo "✅ P0可观测性门禁检查通过：无Critical级别问题"
-          fi
-
-          echo "🎯 可观测性门禁检查完成，构建可以继续"
-
-      - name: 📊 生成可观测性报告
-        if: always()
-        env:
-          ENVIRONMENT: ${{ matrix.environment }}
-        run: |
-          mkdir -p reports
-
-          cat > reports/observability-gate-report-${{ matrix.environment }}.json << EOF
-          {
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "environment": "${{ matrix.environment }}",
-            "git_sha": "$GITHUB_SHA",
-            "git_ref": "$GITHUB_REF_NAME",
-            "checks": {
-              "sentry_config": {
-                "status": "passed",
-                "details": "Sentry配置文件检查通过"
-              },
-              "logging_health": {
-                "status": "passed", 
-                "details": "日志系统健康检查通过"
-              },
-              "connectivity": {
-                "status": "passed",
-                "details": "服务连通性测试通过"
-              }
-            },
-            "recommendations": [
-              "定期检查Sentry Release Health指标",
-              "监控日志存储空间使用情况",
-              "确保生产环境配置与测试环境一致"
-            ]
-          }
-          EOF
-
-          echo "📊 已生成可观测性门禁报告: reports/observability-gate-report-${{ matrix.environment }}.json"
-
-      - name: 📤 上传可观测性报告
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: observability-gate-reports-${{ matrix.environment }}
-          path: reports/observability-gate-report-${{ matrix.environment }}.json
+          name: observability-validation-report
+          path: logs/observability-validation-report.json
           retention-days: 30
 
-      - name: 💬 Slack通知（可选）
-        if: failure()
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          ENVIRONMENT: ${{ matrix.environment }}
+      - name: 输出验证摘要
+        if: always()
         run: |
-          if [ -n "$SLACK_WEBHOOK" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-            --data "{
-              \"text\": \"🚨 可观测性门禁检查失败\",
-              \"blocks\": [
-                {
-                  \"type\": \"section\",
-                  \"text\": {
-                    \"type\": \"mrkdwn\",
-                    \"text\": \"*🚨 可观测性门禁检查失败*\\n\\n*环境:* ${{ matrix.environment }}\\n*分支:* $GITHUB_REF_NAME\\n*提交:* \`$GITHUB_SHA\`\\n\\n请检查可观测性配置和依赖项\"
-                  }
-                },
-                {
-                  \"type\": \"actions\",
-                  \"elements\": [
-                    {
-                      \"type\": \"button\",
-                      \"text\": {
-                        \"type\": \"plain_text\",
-                        \"text\": \"查看详情\"
-                      },
-                      \"url\": \"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"
-                    }
-                  ]
-                }
-              ]
-            }" $SLACK_WEBHOOK
-          fi
-
-  summary:
-    name: 📋 门禁检查汇总
-    runs-on: ubuntu-latest
-    needs: observability-gate
-    if: always()
-
-    steps:
-      - name: 📥 下载所有报告
-        uses: actions/download-artifact@v4
-        with:
-          pattern: observability-gate-reports-*
-          path: all-reports
-
-      - name: 📊 生成汇总报告
-        run: |
-          echo "# 🔍 可观测性门禁检查汇总报告" > summary.md
-          echo "" >> summary.md
-          echo "**检查时间:** $(date)" >> summary.md
-          echo "**Git提交:** $GITHUB_SHA" >> summary.md  
-          echo "**分支:** $GITHUB_REF_NAME" >> summary.md
-          echo "" >> summary.md
-
-          echo "## 📊 各环境检查结果" >> summary.md
-          echo "" >> summary.md
-
-          # 处理每个环境的报告
-          for env in development staging production; do
-            echo "### 🌍 ${env^} 环境" >> summary.md
+          echo "## 🔍 可观测性配置验证结果" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "logs/observability-validation-report.json" ]; then
+            # 提取关键信息
+            status=$(jq -r '.status' logs/observability-validation-report.json)
+            environments=$(jq -r '.summary.environments' logs/observability-validation-report.json)
+            errors=$(jq -r '.summary.errors' logs/observability-validation-report.json)
+            warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
             
-            if [ -f "all-reports/observability-gate-reports-$env/observability-gate-report-$env.json" ]; then
-              echo "✅ **状态:** 检查完成" >> summary.md
-              echo "📄 **报告:** [observability-gate-report-$env.json](all-reports/observability-gate-reports-$env/observability-gate-report-$env.json)" >> summary.md
-            else
-              echo "❌ **状态:** 检查失败或未完成" >> summary.md
+            echo "### 📈 验证摘要" >> $GITHUB_STEP_SUMMARY
+            echo "| 指标 | 值 |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+            echo "| 状态 | $status |" >> $GITHUB_STEP_SUMMARY
+            echo "| 环境数量 | $environments |" >> $GITHUB_STEP_SUMMARY
+            echo "| 错误数量 | $errors |" >> $GITHUB_STEP_SUMMARY
+            echo "| 警告数量 | $warnings |" >> $GITHUB_STEP_SUMMARY
+            
+            # 如果有错误，显示错误详情
+            if [ "$errors" -gt 0 ]; then
+              echo "### ❌ 发现的错误" >> $GITHUB_STEP_SUMMARY
+              jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
             
-            echo "" >> summary.md
-          done
-
-          echo "## 🎯 总体评估" >> summary.md
-          echo "" >> summary.md
-
-          if [ "${{ needs.observability-gate.result }}" == "success" ]; then
-            echo "✅ **门禁状态:** 通过" >> summary.md
-            echo "🚀 **部署建议:** 可以继续部署流程" >> summary.md
+            # 如果有警告，显示警告详情
+            if [ "$warnings" -gt 0 ]; then
+              echo "### ⚠️ 发现的警告" >> $GITHUB_STEP_SUMMARY
+              jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+            fi
           else
-            echo "❌ **门禁状态:** 失败" >> summary.md  
-            echo "🔧 **修复建议:** 请修复可观测性配置问题后重新提交" >> summary.md
+            echo "⚠️ 无法找到验证报告文件" >> $GITHUB_STEP_SUMMARY
           fi
 
-          echo "" >> summary.md
-          echo "---" >> summary.md
-          echo "*报告生成时间: $(date)*" >> summary.md
+      - name: 验证通过检查
+        if: success()
+        run: |
+          echo "✅ 统一可观测性配置验证通过"
+          echo "所有环境的可观测性配置均符合ADR-0003标准"
 
-      - name: 📝 添加PR评论
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: 验证失败处理
+        if: failure()
+        run: |
+          echo "❌ 统一可观测性配置验证失败"
+          echo "请检查配置文件并确保符合ADR-0003可观测性标准"
+          echo "详细报告请查看上传的artifact"
+          exit 1
+
+  # 条件依赖检查：仅在配置文件变更时运行额外验证
+  extended-validation:
+    name: 扩展配置验证
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
+    needs: observability-validation
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
         with:
-          script: |
-            const fs = require('fs');
-            const summary = fs.readFileSync('summary.md', 'utf8');
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
+      - name: 验证Sentry集成配置
+        run: |
+          echo "🛡️ 验证Sentry集成配置..."
+          
+          # 检查必要的环境变量配置示例
+          if ! grep -q "SENTRY_DSN" config/development.json; then
+            echo "⚠️ development.json中未找到SENTRY_DSN配置示例"
+          fi
+          
+          # 检查Release配置
+          if ! grep -q "release" config/production.json; then
+            echo "⚠️ production.json中未找到release配置"
+          fi
+          
+          echo "✅ Sentry集成配置检查完成"
+
+      - name: 验证日志配置一致性
+        run: |
+          echo "📝 验证日志配置一致性..."
+          
+          # 检查所有环境的日志级别设置
+          for env in development staging production; do
+            config_file="config/${env}.json"
+            if [ -f "$config_file" ]; then
+              log_level=$(jq -r '.logging.level // "info"' "$config_file")
+              echo "环境 $env 的日志级别: $log_level"
+            fi
+          done
+          
+          echo "✅ 日志配置一致性检查完成"
