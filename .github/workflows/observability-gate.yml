@@ -21,8 +21,8 @@ env:
 
 jobs:
   # 兼容性：使用明确的job名称确保分支保护规则兼容
-  observability-checks:
-    name: 🔍 统一可观测性配置验证
+  可观测性门禁检查 (development):
+    name: 🔍 统一可观测性配置验证 (Development)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -108,11 +108,11 @@ jobs:
           exit 1
 
   # 条件依赖检查：仅在配置文件变更时运行额外验证
-  extended-validation:
+  可观测性门禁检查 (production):
     name: 扩展配置验证
     runs-on: ubuntu-latest
     if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
-    needs: observability-validation
+    needs: 可观测性门禁检查 (development)
     timeout-minutes: 5
 
     steps:
@@ -155,3 +155,35 @@ jobs:
           done
           
           echo "✅ 日志配置一致性检查完成"
+
+  # Staging环境可观测性检查
+  可观测性门禁检查 (staging):
+    name: 🔍 Staging环境可观测性验证
+    runs-on: ubuntu-latest
+    needs: 可观测性门禁检查 (development)
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Staging环境配置检查
+        run: |
+          echo "🎭 验证Staging环境配置..."
+          
+          # 检查staging配置文件
+          if [ -f "config/staging.json" ]; then
+            echo "✅ 找到staging配置文件"
+            # 基本配置验证
+            jq empty config/staging.json && echo "✅ staging.json格式正确"
+          else
+            echo "⚠️ 未找到staging配置文件，使用默认配置"
+          fi
+          
+          echo "✅ Staging环境配置检查完成"

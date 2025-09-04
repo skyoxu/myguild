@@ -33,7 +33,7 @@ env:
 jobs:
   # 阶段1：静态安全扫描（快速，并行执行）
   # 兼容性：保持与现有分支保护规则兼容的job名称
-  security-scan:
+  安全扫描:
     name: 📊 静态安全扫描（统一）
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -179,11 +179,11 @@ jobs:
           retention-days: 30
 
   # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）
-  e2e-security-test:
+  E2E安全测试:
     name: 🧪 E2E安全测试
     runs-on: windows-latest
-    needs: static-security-scan
-    if: needs.static-security-scan.outputs.critical-count == '0'
+    needs: 安全扫描
+    if: needs.安全扫描.outputs.critical-count == '0'
     timeout-minutes: 15
 
     outputs:
@@ -235,10 +235,10 @@ jobs:
           retention-days: 30
 
   # 阶段3：统一安全门禁决策
-  security-gate:
+  统一安全门禁:
     name: 🚦 统一安全门禁
     runs-on: ubuntu-latest
-    needs: [security-scan, e2e-security-test]
+    needs: [安全扫描, E2E安全测试]
     if: always()
 
     steps:
@@ -264,10 +264,10 @@ jobs:
           # 使用我们的安全门禁包装脚本
           node scripts/security-gate-wrapper.js
         env:
-          STATIC_SCAN_STATUS: ${{ needs.static-security-scan.outputs.scan-status }}
-          CRITICAL_COUNT: ${{ needs.static-security-scan.outputs.critical-count }}
-          HIGH_COUNT: ${{ needs.static-security-scan.outputs.high-count }}
-          E2E_STATUS: ${{ needs.e2e-security-test.outputs.e2e-status }}
+          STATIC_SCAN_STATUS: ${{ needs.安全扫描.outputs.scan-status }}
+          CRITICAL_COUNT: ${{ needs.安全扫描.outputs.critical-count }}
+          HIGH_COUNT: ${{ needs.安全扫描.outputs.high-count }}
+          E2E_STATUS: ${{ needs.E2E安全测试.outputs.e2e-status }}
 
       - name: 下载所有安全报告
         uses: actions/download-artifact@v4
@@ -286,15 +286,15 @@ jobs:
             "git_ref": "$GITHUB_REF_NAME",
             "workflow_run": "$GITHUB_RUN_ID",
             "static_scan": {
-              "status": "${{ needs.static-security-scan.outputs.scan-status }}",
-              "critical_count": ${{ needs.static-security-scan.outputs.critical-count }},
-              "high_count": ${{ needs.static-security-scan.outputs.high-count }}
+              "status": "${{ needs.安全扫描.outputs.scan-status }}",
+              "critical_count": ${{ needs.安全扫描.outputs.critical-count }},
+              "high_count": ${{ needs.安全扫描.outputs.high-count }}
             },
             "e2e_test": {
-              "status": "${{ needs.e2e-security-test.outputs.e2e-status }}",
-              "executed": "${{ needs.e2e-security-test.result != 'skipped' }}"
+              "status": "${{ needs.E2E安全测试.outputs.e2e-status }}",
+              "executed": "${{ needs.E2E安全测试.result != 'skipped' }}"
             },
-            "overall_status": "$([ "${{ needs.static-security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-test.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
+            "overall_status": "$([ "${{ needs.安全扫描.outputs.critical-count }}" = "0" ] && [ "${{ needs.E2E安全测试.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
           }
           EOF
 
@@ -315,15 +315,15 @@ jobs:
           echo "### 📊 检查摘要" >> $GITHUB_STEP_SUMMARY
           echo "| 检查项目 | 状态 | 结果 |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 静态安全扫描 | ${{ needs.static-security-scan.outputs.scan-status }} | Critical: ${{ needs.static-security-scan.outputs.critical-count }}, High: ${{ needs.static-security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 静态安全扫描 | ${{ needs.安全扫描.outputs.scan-status }} | Critical: ${{ needs.安全扫描.outputs.critical-count }}, High: ${{ needs.安全扫描.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E安全测试 | ${{ needs.E2E安全测试.outputs.e2e-status }} | ${{ needs.E2E安全测试.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
           
           # 最终门禁决策
-          if [ "${{ needs.static-security-scan.outputs.critical-count }}" != "0" ]; then
+          if [ "${{ needs.安全扫描.outputs.critical-count }}" != "0" ]; then
             echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
-            echo "发现 ${{ needs.static-security-scan.outputs.critical-count }} 个Critical级别安全问题，必须修复后才能继续。" >> $GITHUB_STEP_SUMMARY
+            echo "发现 ${{ needs.安全扫描.outputs.critical-count }} 个Critical级别安全问题，必须修复后才能继续。" >> $GITHUB_STEP_SUMMARY
             exit 1
-          elif [ "${{ needs.e2e-security-test.outputs.e2e-status }}" = "failed" ]; then
+          elif [ "${{ needs.E2E安全测试.outputs.e2e-status }}" = "failed" ]; then
             echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
             echo "E2E安全测试失败，请检查Electron安全配置。" >> $GITHUB_STEP_SUMMARY
             exit 1
@@ -347,10 +347,10 @@ jobs:
             **运行ID**: ${context.runId}
 
             ### 📊 检查结果
-            - **静态扫描状态**: ${{ needs.static-security-scan.outputs.scan-status }}
-            - **Critical问题**: ${{ needs.static-security-scan.outputs.critical-count }}个
-            - **High问题**: ${{ needs.static-security-scan.outputs.high-count }}个
-            - **E2E测试状态**: ${{ needs.e2e-security-test.outputs.e2e-status }}
+            - **静态扫描状态**: ${{ needs.安全扫描.outputs.scan-status }}
+            - **Critical问题**: ${{ needs.安全扫描.outputs.critical-count }}个
+            - **High问题**: ${{ needs.安全扫描.outputs.high-count }}个
+            - **E2E测试状态**: ${{ needs.E2E安全测试.outputs.e2e-status }}
 
             ### 📋 需要检查的项目
             - [ ] 修复所有Critical级别安全问题
