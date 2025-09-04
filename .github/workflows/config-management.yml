@@ -18,7 +18,7 @@ env:
   RELEASE_PREFIX: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
 jobs:
-  配置验证与文档处理:
+  config-validation-and-docs:
     name: 配置验证与文档处理
     runs-on: ubuntu-latest
 
@@ -109,7 +109,7 @@ jobs:
 
   documentation-build:
     name: 文档构建与发布准备
-    needs: 配置验证与文档处理
+    needs: config-validation-and-docs
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 

@@ -13,7 +13,7 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  质量门禁检查:
+  quality-gate-check:
     name: 📊 软门禁质量检查
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -12,7 +12,7 @@ env:
 
 jobs:
   # ==================== 核心构建测试 ====================
-  build and Test:
+  build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -59,10 +59,10 @@ jobs:
           NODE_ENV: test
 
   # ==================== Electron安全测试 ====================
-  Electron Security Tests:
+  electron-security-tests:
     name: Electron Security Tests
     runs-on: ubuntu-latest
-    needs: build and Test
+    needs: build-and-test
     timeout-minutes: 20
 
     steps:

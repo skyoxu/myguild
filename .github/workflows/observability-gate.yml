@@ -21,7 +21,7 @@ env:
 
 jobs:
   # 兼容性：使用明确的job名称确保分支保护规则兼容
-  可观测性门禁检查 (development):
+  observability-gate-development:
     name: 🔍 统一可观测性配置验证 (Development)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -108,11 +108,11 @@ jobs:
           exit 1
 
   # 条件依赖检查：仅在配置文件变更时运行额外验证
-  可观测性门禁检查 (production):
+  observability-gate-production:
     name: 扩展配置验证
     runs-on: ubuntu-latest
     if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
-    needs: 可观测性门禁检查 (development)
+    needs: observability-gate-development
     timeout-minutes: 5
 
     steps:
@@ -157,10 +157,10 @@ jobs:
           echo "✅ 日志配置一致性检查完成"
 
   # Staging环境可观测性检查
-  可观测性门禁检查 (staging):
+  observability-gate-staging:
     name: 🔍 Staging环境可观测性验证
     runs-on: ubuntu-latest
-    needs: 可观测性门禁检查 (development)
+    needs: observability-gate-development
     timeout-minutes: 5
 
     steps:
