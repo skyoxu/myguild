@@ -38,3 +38,9 @@ node_modules/
 # tasks/ 
 serena/
 zen-mcp-server/
+
+# Test Reports & Coverage (per PR39 fix plan)
+reports/
+coverage/
+playwright-report/
+test-results/
