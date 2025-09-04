@@ -103,8 +103,26 @@ jobs:
         if: failure()
         run: |
           echo "❌ 统一可观测性配置验证失败"
-          echo "请检查配置文件并确保符合ADR-0003可观测性标准"
-          echo "详细报告请查看上传的artifact"
+          echo ""
+          echo "🔍 可能的原因："
+          echo "1. Sentry DSN格式不正确（应为: https://key@org.ingest.sentry.io/projectId）"
+          echo "2. 配置文件缺失必需字段（sentry.dsn, logging.level等）"
+          echo "3. 配置文件JSON格式错误"
+          echo ""
+          echo "📋 解决步骤："
+          echo "1. 检查 config/development.json, config/staging.json, config/production.json"
+          echo "2. 确保Sentry DSN使用正确格式（支持字母数字组合）"
+          echo "3. 验证所有必需字段完整性"
+          echo "4. 参考 ADR-0003 可观测性标准"
+          echo ""
+          if [ -f "logs/observability-validation-report.json" ]; then
+            echo "📊 详细错误信息："
+            jq -r '.errors[]' logs/observability-validation-report.json || echo "无法解析错误详情"
+          else
+            echo "⚠️ 验证报告文件不存在，检查脚本是否正常执行"
+          fi
+          echo ""
+          echo "📁 详细报告请查看 observability-validation-report artifact"
           exit 1
 
   # 条件依赖检查：仅在配置文件变更时运行额外验证

@@ -120,8 +120,8 @@ class ObservabilityConfigValidator {
       const sentryDsn = this.getNestedValue(config, 'sentry.dsn');
       
       if (sentryDsn && typeof sentryDsn === 'string') {
-        // 验证DSN格式
-        const dsnPattern = /^https:\/\/[a-f0-9]+@[a-f0-9]+\.ingest\.sentry\.io\/[0-9]+$/;
+        // 验证DSN格式 - 支持字母数字组合（符合Sentry官方格式）
+        const dsnPattern = /^https:\/\/[a-zA-Z0-9]+@[a-zA-Z0-9]+\.ingest\.sentry\.io\/[0-9]+$/;
         if (!dsnPattern.test(sentryDsn)) {
           this.errors.push(`❌ ${env}环境Sentry DSN格式无效: ${sentryDsn}`);
         } else {
