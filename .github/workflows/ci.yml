@@ -46,30 +46,23 @@ jobs:
         timeout-minutes: 2
 
   # ==================== 安全扫描阶段 ====================
-  security-scan:
-    name: 安全扫描
+  # 注意：安全扫描已迁移到统一门禁系统 (security-unified.yml)
+  # security-scan job现在由统一工作流处理
+  legacy-security-scan:
+    name: 安全扫描（已迁移到统一门禁）
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 2
     needs: quality-gates
 
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 📦 设置 Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: 🔧 安装依赖
-        run: npm ci
-
-      - name: 🛡️ npm audit 安全检查
-        run: npm run security:audit
-
-      - name: 🔐 Electronegativity 安全扫描
-        run: npm run security:scan
+      - name: ✅ 安全检查已由统一门禁处理
+        run: |
+          echo "🚀 安全检查现在由统一门禁系统处理"
+          echo "📋 统一门禁包括："
+          echo "   - 静态安全扫描"
+          echo "   - E2E安全测试"
+          echo "   - 依赖漏洞检查"
+          echo "✅ 此步骤成功完成，实际安全检查请查看 Security Gate (Unified)"
 
       - name: ✅ 安全验证脚本
         run: node scripts/comprehensive-security-validation.mjs

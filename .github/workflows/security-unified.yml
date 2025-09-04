@@ -32,8 +32,9 @@ env:
 
 jobs:
   # 阶段1：静态安全扫描（快速，并行执行）
-  static-security-scan:
-    name: 📊 静态安全扫描
+  # 兼容性：保持与现有分支保护规则兼容的job名称
+  security-scan:
+    name: 📊 静态安全扫描（统一）
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -237,7 +238,7 @@ jobs:
   security-gate:
     name: 🚦 统一安全门禁
     runs-on: ubuntu-latest
-    needs: [static-security-scan, e2e-security-test]
+    needs: [security-scan, e2e-security-test]
     if: always()
 
     steps:

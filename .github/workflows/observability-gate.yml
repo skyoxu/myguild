@@ -20,7 +20,8 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  observability-validation:
+  # 兼容性：使用明确的job名称确保分支保护规则兼容
+  observability-checks:
     name: 🔍 统一可观测性配置验证
     runs-on: ubuntu-latest
     timeout-minutes: 10
