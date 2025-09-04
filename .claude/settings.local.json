@@ -40,16 +40,14 @@
       "Bash(npm run docs:overlay-map:*)",
       "WebFetch(domain:github.com)",
       "Bash(timeout 60 npm run test:unit:*)",
-      "mcp__zen-mcp-server__codereview"
+      "mcp__zen-mcp-server__codereview",
+      "Bash(git stash:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "C:\\c\\buildgame"
-    ]
+    "additionalDirectories": ["C:\\c\\buildgame"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "zen"
-  ]
+  "enabledMcpjsonServers": ["zen"]
 }
