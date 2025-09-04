@@ -39,7 +39,7 @@
     "latest:yml:staging": "node scripts/release/generate-latest-yml.mjs generate $npm_package_version 25",
     "latest:yml:update": "node scripts/release/generate-latest-yml.mjs update",
     "electron": "electron .",
-    "security:scan": "electronegativity --input . --output security-scan.csv --verbose false --electron-version 30.0.0",
+    "security:scan": "electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 30.0.0",
     "security:audit": "npm audit --audit-level high",
     "security:audit:gate": "node scripts/security-audit-gate.mjs gate",
     "security:audit:fix": "node scripts/security-audit-gate.mjs fix",
