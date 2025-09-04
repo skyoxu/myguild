@@ -39,9 +39,7 @@ jobs:
         run: npm ci
 
       - name: Build project
-        run: |
-          npm run build
-          npm run build:electron
+        run: npm run build
         continue-on-error: true
 
       - name: Create performance data directories
@@ -147,7 +145,7 @@ jobs:
           echo "✅ Performance gates passed!"
 
   # 可选：运行实际的Web Vitals测试（需要配置Playwright等工具）
-  Web Vitals & Bundle Size Check:
+  web-vitals-test:
     name: Real Web Vitals Test (Optional)
     runs-on: ubuntu-latest
     if: false # 默认禁用，需要时启用
