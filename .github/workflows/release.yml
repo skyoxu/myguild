@@ -213,9 +213,9 @@ jobs:
       - name: 📦 解压构建产物
         run: tar -xzf build-artifacts.tar.gz
 
-      - name: 🔧 安装Sentry CLI
+      - name: 🔧 设置Sentry CLI
         run: |
-          curl -sL https://sentry.io/get-cli/ | bash
+          echo "使用npm安装的Sentry CLI"
 
       - name: 🚀 创建Sentry Release
         run: |
