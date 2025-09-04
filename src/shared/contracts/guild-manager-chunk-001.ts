@@ -76,6 +76,7 @@ export interface Guild {
 
 export interface GuildMember {
   id: MemberId;
+  guildId: GuildId; // 添加缺失的公会ID属性
   name: string;
   level: number;
   role: MemberRole;
@@ -89,6 +90,8 @@ export interface GuildMember {
 
 export interface GameTurn {
   id: TurnId;
+  guildId: GuildId; // 添加缺失的公会ID属性
+  turnNumber: number; // 添加缺失的回合编号属性
   weekNumber: number;
   currentPhase: TurnPhase;
   startedAt: string;

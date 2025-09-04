@@ -19,9 +19,7 @@ export class TestMemberRepository
 {
   async findByGuildId(guildId: GuildId): Promise<GuildMember[]> {
     const allMembers = await this.findAll();
-    // Note: GuildMember interface doesn't have guildId property
-    // This is a placeholder implementation for testing
-    return allMembers.filter(member => (member as any).guildId === guildId);
+    return allMembers.filter(member => member.guildId === guildId);
   }
 
   async findByRole(role: MemberRole): Promise<GuildMember[]> {

@@ -18,18 +18,15 @@ export class TestTurnRepository
   async getCurrentTurn(guildId: GuildId): Promise<GameTurn | null> {
     const allTurns = await this.findAll();
     // 找到该公会最新的回合
-    // Note: GameTurn interface doesn't have guildId or turnNumber properties
-    // This is a placeholder implementation for testing
     const guildTurns = allTurns
-      .filter(turn => (turn as any).guildId === guildId)
-      .sort((a, b) => (b as any).turnNumber - (a as any).turnNumber);
+      .filter(turn => turn.guildId === guildId)
+      .sort((a, b) => b.turnNumber - a.turnNumber);
 
     return guildTurns[0] || null;
   }
 
   async findByPhase(phase: TurnPhase): Promise<GameTurn[]> {
     const allTurns = await this.findAll();
-    // Note: GameTurn interface uses 'currentPhase' not 'phase'
     return allTurns.filter(turn => turn.currentPhase === phase);
   }
 
