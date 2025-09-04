@@ -92,8 +92,16 @@ jobs:
           cache: 'npm'
       - name: 🔧 安装依赖
         run: npm ci
-      - name: 🔒 覆盖率门禁检查
+      - name: 📊 下载覆盖率报告
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-summary
+          path: coverage/
+      - name: 🔒 覆盖率门禁检查 (90% 硬门)
         run: node scripts/ci/coverage-gate.js
+        env:
+          COVERAGE_MODE: production
+          NODE_ENV: production
 
   build-verification-core:
     name: Build Verification (ubuntu-latest)
@@ -121,7 +129,7 @@ jobs:
   release-health-gate:
     name: Release Health Gate
     runs-on: ubuntu-latest
-    needs: [unit-tests-core, coverage-gate]
+    needs: [unit-tests-core, coverage-gate, electron-security-gate]
     timeout-minutes: 5
     steps:
       - name: 📥 检出代码
@@ -151,6 +159,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: quality-gates
     timeout-minutes: 20
+    # 仅在代码改动时触发，文档类变更跳过
+    if: |
+      contains(github.event.head_commit.message, '[skip-extended]') == false &&
+      (contains(github.event.pull_request.changed_files.*.filename, 'src/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'electron/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'tests/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'package.json') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'vite.config') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'tsconfig') ||
+       github.event_name == 'push')
 
     strategy:
       fail-fast: false
@@ -176,9 +194,9 @@ jobs:
         env:
           NODE_ENV: test
 
-  # ==================== E2E安全测试 ====================
-  e2e-security-tests:
-    name: E2E安全测试
+  # ==================== Electron安全门禁（必需）====================
+  electron-security-gate:
+    name: Electron Security Gate
     runs-on: ubuntu-latest
     needs: quality-gates
     timeout-minutes: 30
@@ -222,6 +240,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: unit-tests-extended
     timeout-minutes: 15
+    # 仅在代码改动时触发，文档类变更跳过
+    if: |
+      contains(github.event.head_commit.message, '[skip-extended]') == false &&
+      (contains(github.event.pull_request.changed_files.*.filename, 'src/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'electron/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'package.json') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'vite.config') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'tsconfig') ||
+       github.event_name == 'push')
 
     strategy:
       matrix:
@@ -335,6 +362,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-verification-core
     timeout-minutes: 15
+    # 仅在代码改动时触发
+    if: |
+      contains(github.event.head_commit.message, '[skip-perf]') == false &&
+      (contains(github.event.pull_request.changed_files.*.filename, 'src/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'electron/') ||
+       contains(github.event.pull_request.changed_files.*.filename, 'package.json') ||
+       github.event_name == 'push')
 
     steps:
       - name: 📥 检出代码
@@ -364,7 +398,11 @@ jobs:
     name: 部署就绪检查
     runs-on: ubuntu-latest
     needs:
-      [build-verification-core, e2e-security-tests, observability-verification]
+      [
+        build-verification-core,
+        electron-security-gate,
+        observability-verification,
+      ]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
 
