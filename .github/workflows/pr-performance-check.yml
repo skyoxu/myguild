@@ -13,15 +13,21 @@ on:
         required: true
         type: string
 
+# 最小权限原则 - 顶层只读权限
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
+  actions: read
 
 jobs:
   performance-check:
     name: Web Vitals & Bundle Size Check
     runs-on: ubuntu-latest
+    
+    # job级别权限 - 仅在需要时提升写权限
+    permissions:
+      contents: read
+      pull-requests: write  # PR评论权限
+      issues: write        # PR评论权限（通过issues API）
 
     steps:
       - name: Checkout code
@@ -32,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -95,6 +101,7 @@ jobs:
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'
+        continue-on-error: true  # PR评论失败不应阻断性能检查流程
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -102,10 +109,14 @@ jobs:
         run: |
           PR_NUMBER="${{ github.event.number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
-          node scripts/pr-integration.mjs comment "${PR_NUMBER}"
+          node scripts/pr-integration.mjs comment "${PR_NUMBER}" || {
+            echo "⚠️ PR评论发布失败（可能是API限流），但性能检查继续"
+            exit 0
+          }
 
       - name: Post PR comment (manual trigger)
         if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true  # PR评论失败不应阻断性能检查流程
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -113,7 +124,10 @@ jobs:
         run: |
           PR_NUMBER="${{ inputs.pr_number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
-          node scripts/pr-integration.mjs comment "${PR_NUMBER}"
+          node scripts/pr-integration.mjs comment "${PR_NUMBER}" || {
+            echo "⚠️ PR评论发布失败（可能是API限流），但性能检查继续"
+            exit 0
+          }
 
       - name: Upload performance artifacts
         if: always()
@@ -157,7 +171,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -185,3 +199,8 @@ jobs:
           name: web-vitals-results
           path: data/web-vitals/
           retention-days: 7
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true

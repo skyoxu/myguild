@@ -65,12 +65,57 @@
       "mcp__task-master-ai__get_tasks",
       "mcp__task-master-ai__list_tags",
       "mcp__task-master-ai__use_tag",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm run security:audit:*)",
+      "Bash(npm run guard:ci:*)",
+      "Bash(COVERAGE_MODE=production node scripts/ci/coverage-gate.js --dry-run)",
+      "Bash(for file in .github/workflows/*.yml)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(if grep -q \"^permissions:\" \"$file\")",
+      "Bash(then echo \"✅ Has permissions\")",
+      "Bash(else echo \"❌ Missing permissions\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for file in ci.yml build-and-test.yml release.yml)",
+      "Bash(do echo -n \"$file: \")",
+      "Bash(find:*)",
+      "Bash(do if ! grep -q \"^permissions:\" \"$file\")",
+      "Bash(then echo \"❌ Missing permissions: $file\")",
+      "Bash(else echo \"✅ Permissions configured: $file\")",
+      "Bash(for file in soft-gates.yml observability-gate.yml release.yml pr-performance-check.yml)",
+      "Bash(do echo \"✅ $file - 已添加并发控制\")",
+      "Read(C:\\/**)",
+      "Bash(od:*)",
+      "Bash(npm run guard:workflow-deps:*)",
+      "Bash(npm run guard:workflows:*)",
+      "Bash(set CI=true)",
+      "Bash(set GITHUB_EVENT_NAME=pull_request)",
+      "Bash(powershell:*)",
+      "Bash(del:*)",
+      "Bash(if grep -q \"^concurrency:\" \"$file\")",
+      "Bash(then echo \"✅ Has concurrency\")",
+      "Bash(else echo \"❌ Missing concurrency\")",
+      "Bash(for file in release-prepare.yml release-ramp.yml staged-release.yml tasks-governance.yml)",
+      "Bash(npm run:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" api repos/:owner/:repo/branches/main/protection)",
+      "Bash(for file in .github/workflows/observability-gate.yml .github/workflows/soft-gates.yml .github/workflows/release.yml .github/workflows/staged-release.yml)",
+      "Bash(if grep -q \"cancel-in-progress: false\" \"$file\")",
+      "Bash(then echo \"❌ No cancel (appropriate for release)\")",
+      "Bash(elif grep -q \"cancel-in-progress: true\" \"$file\")",
+      "Bash(then echo \"✅ Can cancel (appropriate for CI)\")",
+      "Bash(else echo \"⚠️ Unknown\")",
+      "Bash(if grep -q \"paths:\" \"$file\")",
+      "Bash(then echo \"✅ Has paths filter\")",
+      "Bash(else echo \"❌ No paths filter\")"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["C:\\c\\buildgame"]
+    "additionalDirectories": [
+      "C:\\c\\buildgame"
+    ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["zen"]
+  "enabledMcpjsonServers": [
+    "zen"
+  ]
 }

@@ -10,15 +10,13 @@
  * 5. 创建测试报告和覆盖率分析
  */
 
-import { readFile, writeFile, readdir, stat } from 'fs/promises';
-import { join, dirname, relative, extname } from 'path';
-import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+const { readFile, writeFile, readdir, stat, mkdir } = require('fs/promises');
+const { join, dirname, relative, extname } = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const fs = require('fs');
 
 const execAsync = promisify(exec);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..');
 
 // 覆盖率阈值配置 (基于ADR-0005)
@@ -330,14 +328,14 @@ async function analyzeScenarioCoverage(scenario, testFiles) {
  */
 function checkScenarioPattern(content, scenarioDesc) {
   const patterns = {
-    CSP阻止内联脚本: /inline.*script.*block/i,
-    CSP阻止不安全的资源: /unsafe.*resource.*block/i,
-    nodeIntegration禁用: /nodeIntegration.*false/i,
-    contextIsolation启用: /contextIsolation.*true/i,
-    sandbox模式: /sandbox.*true/i,
-    外部导航拦截: /external.*navigation.*block/i,
-    新窗口控制: /window.*open.*control/i,
-    API白名单: /whitelist.*api/i,
+    'CSP阻止内联脚本': /inline.*script.*block/i,
+    'CSP阻止不安全的资源': /unsafe.*resource.*block/i,
+    'nodeIntegration禁用': /nodeIntegration.*false/i,
+    'contextIsolation启用': /contextIsolation.*true/i,
+    'sandbox模式': /sandbox.*true/i,
+    '外部导航拦截': /external.*navigation.*block/i,
+    '新窗口控制': /window.*open.*control/i,
+    'API白名单': /whitelist.*api/i,
   };
 
   const pattern = patterns[scenarioDesc];
@@ -407,7 +405,7 @@ ${missingTest.missing.map(scenario => generateTestCase(scenario, missingTest.sce
  */
 function generateTestCase(scenario, scenarioType) {
   const testCases = {
-    CSP阻止内联脚本执行: `
+    'CSP阻止内联脚本执行': `
   test('CSP应该阻止内联脚本执行', async () => {
     // 尝试执行内联脚本
     const scriptBlocked = await page.evaluate(async () => {
@@ -428,7 +426,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(scriptBlocked).toBe(true);
   });`,
 
-    CSP阻止不安全的资源加载: `
+    'CSP阻止不安全的资源加载': `
   test('CSP应该阻止不安全的外部资源', async () => {
     const resourceBlocked = await page.evaluate(async () => {
       return new Promise((resolve) => {
@@ -444,7 +442,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(resourceBlocked).toBe(true);
   });`,
 
-    nodeIntegration禁用验证: `
+    'nodeIntegration禁用验证': `
   test('渲染进程应该无法访问Node.js API', async () => {
     const nodeDisabled = await page.evaluate(() => {
       return typeof window.require === 'undefined' && 
@@ -455,7 +453,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(nodeDisabled).toBe(true);
   });`,
 
-    contextIsolation启用验证: `
+    'contextIsolation启用验证': `
   test('上下文隔离应该启用', async () => {
     const isolationEnabled = await page.evaluate(() => {
       return typeof window.electronAPI !== 'undefined' && 
@@ -465,7 +463,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(isolationEnabled).toBe(true);
   });`,
 
-    外部导航拦截: `
+    '外部导航拦截': `
   test('应该拦截外部导航尝试', async () => {
     const navigationBlocked = await page.evaluate(async () => {
       const originalLocation = window.location.href;
@@ -692,7 +690,6 @@ async function ensureDirectoryExists(dir) {
   try {
     await stat(dir);
   } catch {
-    const { mkdir } = await import('fs/promises');
     await mkdir(dir, { recursive: true });
   }
 }
@@ -732,7 +729,7 @@ async function main() {
     // 7. 显示结果
     console.log('📊 测试覆盖率分析结果');
     console.log('='.repeat(50));
-    console.log(`单元测试覆盖率:`);
+    console.log('单元测试覆盖率:');
     console.log(
       `  Lines: ${unitCoverage.overall.lines}% (阈值: ${COVERAGE_THRESHOLDS.lines}%)`
     );
@@ -784,11 +781,11 @@ async function main() {
 }
 
 // 只有直接运行此脚本时才执行主函数
-if (process.argv[1] && process.argv[1].endsWith('enhance-test-coverage.mjs')) {
+if (require.main === module) {
   main().catch(console.error);
 }
 
-export {
+module.exports = {
   runUnitTestCoverage,
   analyzeE2ETestCoverage,
   generateEnhancedE2ETests,

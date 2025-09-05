@@ -1,5 +1,10 @@
 name: Observability Gate (Unified)
 
+# 最小权限原则
+permissions:
+  contents: read
+  actions: read
+
 on:
   push:
     branches: [ main, develop ]
@@ -17,7 +22,7 @@ on:
       - 'scripts/observability-config-validation.js'
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20.x'
 
 jobs:
   # 兼容性：使用明确的job名称确保分支保护规则兼容
@@ -35,6 +40,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+
+      - name: 安装jq工具
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: 安装依赖
         run: npm ci
@@ -61,6 +69,9 @@ jobs:
       - name: 输出验证摘要
         if: always()
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 🔍 可观测性配置验证结果" >> $GITHUB_STEP_SUMMARY
           
           if [ -f "logs/observability-validation-report.json" ]; then
@@ -143,6 +154,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: 安装jq工具
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: 验证Sentry集成配置
         run: |
           echo "🛡️ 验证Sentry集成配置..."
@@ -191,6 +205,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: 安装jq工具
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Staging环境配置检查
         run: |
           echo "🎭 验证Staging环境配置..."
@@ -205,3 +222,8 @@ jobs:
           fi
           
           echo "✅ Staging环境配置检查完成"
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

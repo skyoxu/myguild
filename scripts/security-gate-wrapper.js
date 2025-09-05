@@ -7,14 +7,11 @@
  * 基于：ADR-0002 Electron安全基线
  */
 
-import { spawn, exec } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import util from 'util';
-import { fileURLToPath } from 'url';
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const execAsync = util.promisify(exec);
 
 const SECURITY_TESTS = {
@@ -96,6 +93,10 @@ class SecurityGateWrapper {
       if (testConfig.critical) {
         this.errors.push(`❌ 关键安全测试失败: ${testConfig.name} - ${error.message}`);
         console.error(`❌ ${testConfig.name} 失败: ${error.message}`);
+        
+        // 立即硬失败：关键安全测试失败不允许继续
+        console.error('🚨 [硬失败] 关键安全测试失败，立即终止');
+        process.exit(1);
       } else {
         this.warnings.push(`⚠️  非关键安全测试失败: ${testConfig.name} - ${error.message}`);
         console.warn(`⚠️  ${testConfig.name} 失败: ${error.message}`);
@@ -157,6 +158,8 @@ class SecurityGateWrapper {
 
       if (!cspMatch) {
         this.errors.push('❌ 未找到CSP配置');
+        console.error('🚨 [硬失败] CSP配置缺失，违反ADR-0002安全基线');
+        process.exit(1);
       } else {
         const cspValue = cspMatch[1];
         
@@ -180,6 +183,8 @@ class SecurityGateWrapper {
         // 检查不安全的CSP配置
         if (cspValue.includes("'unsafe-inline'") || cspValue.includes("'unsafe-eval'")) {
           this.errors.push('❌ CSP包含不安全配置: unsafe-inline 或 unsafe-eval');
+          console.error('🚨 [硬失败] CSP包含不安全配置，违反ADR-0002安全基线');
+          process.exit(1);
         } else {
           console.log('✅ CSP配置安全');
         }
@@ -200,6 +205,8 @@ class SecurityGateWrapper {
         securityChecks.forEach(check => {
           if (!check.pattern.test(mainContent)) {
             this.errors.push(`❌ Electron安全配置缺失: ${check.setting}`);
+            console.error(`🚨 [硬失败] Electron安全配置缺失: ${check.setting}，违反ADR-0002安全基线`);
+            process.exit(1);
           } else {
             console.log(`✅ ${check.setting} 配置正确`);
           }
@@ -303,4 +310,4 @@ if (process.argv[1] === __filename) {
   });
 }
 
-export default SecurityGateWrapper;
+module.exports = SecurityGateWrapper;

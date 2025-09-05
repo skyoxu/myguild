@@ -1,5 +1,11 @@
 name: Security Gate (Unified)
 
+# 最小权限原则
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
 on:
   push:
     branches: [ main, develop ]
@@ -28,7 +34,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20.x'
 
 jobs:
   # 阶段1：静态安全扫描（快速，并行执行）
@@ -56,6 +62,9 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      - name: 安装jq工具
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: 安装静态安全扫描工具
         run: |
           npm install -g @doyensec/electronegativity@1.10.3
@@ -66,7 +75,7 @@ jobs:
         id: electronegativity
         run: |
           echo "🔍 运行Electronegativity安全扫描..."
-          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 30.0.0 || echo "⚠️ 扫描完成但有警告"
+          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ 扫描完成但有警告"
           
           if [ -f electronegativity-scan.csv ]; then
             echo "✅ Electronegativity扫描完成"
@@ -107,7 +116,7 @@ jobs:
           fi
 
       - name: 检查秘钥泄露
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.90.6
         with:
           path: ./
           base: main
@@ -115,6 +124,7 @@ jobs:
 
       - name: 汇总静态扫描结果
         id: static-scan
+        continue-on-error: false
         run: |
           echo "📊 汇总静态安全扫描结果..."
           
@@ -156,15 +166,20 @@ jobs:
           echo "critical-count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
           echo "high-count=$HIGH_COUNT" >> $GITHUB_OUTPUT
           
+          # ADR-0002 硬失败逻辑：Critical=0, High≤3
           if [ $CRITICAL_COUNT -gt 0 ]; then
-            echo "status=critical" >> $GITHUB_OUTPUT
-            echo "❌ 发现Critical级别安全问题"
-          elif [ $HIGH_COUNT -gt 5 ]; then
-            echo "status=high" >> $GITHUB_OUTPUT
-            echo "⚠️ High级别安全问题过多"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "❌ [硬失败] 发现 $CRITICAL_COUNT 个Critical级别安全问题，根据ADR-0002必须为0"
+            echo "🚨 门禁将强制失败，禁止合并"
+            exit 1
+          elif [ $HIGH_COUNT -gt 3 ]; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "❌ [硬失败] 发现 $HIGH_COUNT 个High级别安全问题，根据ADR-0002最大允许3个"
+            echo "🚨 门禁将强制失败，禁止合并"
+            exit 1
           else
             echo "status=pass" >> $GITHUB_OUTPUT
-            echo "✅ 静态安全扫描通过"
+            echo "✅ 静态安全扫描通过ADR-0002基线要求"
           fi
 
       - name: 上传静态扫描报告
@@ -240,6 +255,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security-scan, e2e-security-test]
     if: always()
+    
+    # 此作业需要创建Issue的权限
+    permissions:
+      contents: read
+      issues: write
+      actions: read
 
     steps:
       - name: Checkout代码
@@ -258,11 +279,22 @@ jobs:
         run: mkdir -p logs
 
       - name: 执行统一安全门禁检查
+        continue-on-error: false
         run: |
           echo "🔒 开始执行统一安全门禁检查..."
           
+          # ADR-0002 硬失败检查：静态扫描必须通过
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "❌ [硬失败] 静态安全扫描未通过，违反ADR-0002安全基线"
+            echo "🚨 Critical或High安全问题阻止合并"
+            exit 1
+          fi
+          
           # 使用我们的安全门禁包装脚本
-          node scripts/security-gate-wrapper.js
+          if ! node scripts/security-gate-wrapper.js; then
+            echo "❌ [硬失败] 安全门禁包装脚本检查失败"
+            exit 1
+          fi
         env:
           STATIC_SCAN_STATUS: ${{ needs.security-scan.outputs.scan-status }}
           CRITICAL_COUNT: ${{ needs.security-scan.outputs.critical-count }}
@@ -294,7 +326,7 @@ jobs:
               "status": "${{ needs.e2e-security-test.outputs.e2e-status }}",
               "executed": "${{ needs.e2e-security-test.result != 'skipped' }}"
             },
-            "overall_status": "$([ "${{ needs.security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-test.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")""
+            "overall_status": "$([ "${{ needs.security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-test.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
           }
           EOF
 
@@ -310,6 +342,9 @@ jobs:
 
       - name: 安全门禁结果摘要
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 🔒 统一安全门禁结果" >> $GITHUB_STEP_SUMMARY
           
           echo "### 📊 检查摘要" >> $GITHUB_STEP_SUMMARY
@@ -318,18 +353,31 @@ jobs:
           echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
           
-          # 最终门禁决策
-          if [ "${{ needs.security-scan.outputs.critical-count }}" != "0" ]; then
-            echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
-            echo "发现 ${{ needs.security-scan.outputs.critical-count }} 个Critical级别安全问题，必须修复后才能继续。" >> $GITHUB_STEP_SUMMARY
+          # ADR-0002 强制硬失败决策（Critical=0, High≤3）
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "### ❌ 安全门禁硬失败" >> $GITHUB_STEP_SUMMARY
+            echo "**ADR-0002违反**: 静态安全扫描未通过基线要求" >> $GITHUB_STEP_SUMMARY
+            echo "- Critical安全问题: ${{ needs.security-scan.outputs.critical-count }}个（要求: 0个）" >> $GITHUB_STEP_SUMMARY
+            echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个（要求: ≤3个）" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚨 **此PR被硬性阻止合并，必须修复所有安全问题**" >> $GITHUB_STEP_SUMMARY
             exit 1
           elif [ "${{ needs.e2e-security-test.outputs.e2e-status }}" = "failed" ]; then
-            echo "### ❌ 安全门禁失败" >> $GITHUB_STEP_SUMMARY
-            echo "E2E安全测试失败，请检查Electron安全配置。" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ 安全门禁硬失败" >> $GITHUB_STEP_SUMMARY
+            echo "**ADR-0002违反**: E2E安全测试失败" >> $GITHUB_STEP_SUMMARY
+            echo "请检查Electron安全配置：" >> $GITHUB_STEP_SUMMARY
+            echo "- nodeIntegration=false ✓" >> $GITHUB_STEP_SUMMARY
+            echo "- contextIsolation=true ✓" >> $GITHUB_STEP_SUMMARY
+            echo "- sandbox=true ✓" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚨 **此PR被硬性阻止合并，必须修复Electron安全配置**" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
             echo "### ✅ 安全门禁通过" >> $GITHUB_STEP_SUMMARY
-            echo "所有安全检查均已通过，符合ADR-0002安全基线要求。" >> $GITHUB_STEP_SUMMARY
+            echo "**ADR-0002合规**: 所有安全检查均已通过，符合严格安全基线要求" >> $GITHUB_STEP_SUMMARY
+            echo "- Critical安全问题: 0个 ✅" >> $GITHUB_STEP_SUMMARY
+            echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个 (≤3) ✅" >> $GITHUB_STEP_SUMMARY
+            echo "- E2E安全测试: 通过 ✅" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: 失败时创建Issue

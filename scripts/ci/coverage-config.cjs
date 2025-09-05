@@ -9,49 +9,49 @@
  * 不同环境的覆盖率阈值配置
  */
 const COVERAGE_CONFIGS = {
-  // 生产环境 - 严格阈值
+  // Production - Strict thresholds
   production: {
     statements: 90,
     branches: 90,
     functions: 90,
     lines: 90,
-    description: '生产环境严格阈值',
+    description: 'Production strict thresholds',
   },
 
-  // 预发布环境 - 较严格阈值
+  // Staging - Semi-strict thresholds
   staging: {
     statements: 80,
     branches: 80,
     functions: 80,
     lines: 80,
-    description: '预发布环境阈值',
+    description: 'Staging environment thresholds',
   },
 
-  // 开发环境 - 宽松阈值（逐步提升）
+  // Development - Flexible thresholds (gradual improvement)
   development: {
     statements: 60,
     branches: 60,
     functions: 60,
     lines: 60,
-    description: '开发环境基础阈值',
+    description: 'Development baseline thresholds',
   },
 
-  // 新项目模式 - 最宽松阈值
+  // Bootstrap - Most flexible thresholds
   bootstrap: {
     statements: 30,
     branches: 30,
     functions: 30,
     lines: 30,
-    description: '新项目启动模式',
+    description: 'New project bootstrap mode',
   },
 
-  // TDD模式 - 高要求阈值
+  // TDD - High requirement thresholds
   tdd: {
     statements: 95,
     branches: 95,
     functions: 95,
     lines: 95,
-    description: 'TDD开发模式高标准',
+    description: 'TDD development high standards',
   },
 };
 
@@ -101,12 +101,13 @@ function shouldSkipCoverageGate() {
   return skipReasons;
 }
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * 根据项目状态推荐覆盖率模式
  */
 function recommendCoverageMode() {
-  import fs from 'fs';
-  import path from 'path';
 
   const projectRoot = path.join(__dirname, '..', '..');
   const testFiles = [];

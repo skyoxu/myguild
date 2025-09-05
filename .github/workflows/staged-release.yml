@@ -1,5 +1,11 @@
 name: 📊 Staged Release with Health Gates
 
+# 最小权限原则
+permissions:
+  contents: write
+  actions: write
+  packages: write
+
 # 渐进发布工作流：5%/25%/50%/100% 阶梯发布 + Sentry健康门禁
 # 基于完整ADR体系：
 # - ADR-0001 (技术栈选型): Electron + React生态
@@ -46,6 +52,11 @@ env:
   APP_VERSION: ${{ inputs.version }}
   STAGING_PERCENTAGE: ${{ inputs.staging_percentage }}
   FEED_FILE: 'dist/latest.yml'
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # 分阶段发布不可中断
 
 jobs:
   # 1. 预检查：验证配置和依赖
@@ -367,6 +378,9 @@ jobs:
 
       - name: Post summary
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 📊 分阶段发布总结" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**版本**: ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
