@@ -55,7 +55,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-    timeout-minutes: ${{ fromJson(env.CI_TIMEOUT_MINUTES) }}
+    timeout-minutes: ${{ env.CI_TIMEOUT_MINUTES }}
 
     steps:
       - name: Checkout代码
@@ -78,7 +78,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-    timeout-minutes: ${{ fromJson(env.CI_TIMEOUT_MINUTES) }}
+    timeout-minutes: ${{ env.CI_TIMEOUT_MINUTES }}
     needs: soft-gate-guardian
 
     # 软门禁job需要权限创建checks和PR评论

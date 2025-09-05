@@ -30,7 +30,7 @@ concurrency:
 jobs:
   validate-tasks:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ fromJson(env.CI_TIMEOUT_MINUTES) }}
+    timeout-minutes: ${{ env.CI_TIMEOUT_MINUTES }}
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
