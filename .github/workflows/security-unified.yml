@@ -8,7 +8,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'src/**'
       - 'electron/**'
@@ -17,10 +17,10 @@ on:
       - 'scripts/security-gate-wrapper.js'
       - '.github/workflows/security-unified.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'src/**'
-      - 'electron/**' 
+      - 'electron/**'
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/security-gate-wrapper.js'
@@ -42,6 +42,10 @@ jobs:
   security-scan:
     name: 📊 静态安全扫描（统一）
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 10
 
     outputs:
@@ -76,7 +80,7 @@ jobs:
         run: |
           echo "🔍 运行Electronegativity安全扫描..."
           electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ 扫描完成但有警告"
-          
+
           if [ -f electronegativity-scan.csv ]; then
             echo "✅ Electronegativity扫描完成"
             echo "electronegativity-status=success" >> $GITHUB_OUTPUT
@@ -90,7 +94,7 @@ jobs:
         run: |
           echo "🔍 运行npm audit..."
           npm audit --audit-level high --json > npm-audit-results.json || true
-          
+
           if [ -f npm-audit-results.json ]; then
             echo "✅ npm audit完成"
             echo "npm-audit-status=success" >> $GITHUB_OUTPUT
@@ -127,10 +131,10 @@ jobs:
         continue-on-error: false
         run: |
           echo "📊 汇总静态安全扫描结果..."
-          
+
           CRITICAL_COUNT=0
           HIGH_COUNT=0
-          
+
           # 处理Electronegativity结果
           if [ -f electronegativity-scan.csv ]; then
             ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && tolower($3) == "critical" {count++} END {print count+0}' electronegativity-scan.csv)
@@ -139,7 +143,7 @@ jobs:
             HIGH_COUNT=$((HIGH_COUNT + ELECTRO_HIGH))
             echo "Electronegativity - Critical: $ELECTRO_CRITICAL, High: $ELECTRO_HIGH"
           fi
-          
+
           # 处理npm audit结果
           if [ -f npm-audit-results.json ]; then
             NPM_CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-results.json 2>/dev/null || echo "0")
@@ -148,7 +152,7 @@ jobs:
             HIGH_COUNT=$((HIGH_COUNT + NPM_HIGH))
             echo "npm audit - Critical: $NPM_CRITICAL, High: $NPM_HIGH"
           fi
-          
+
           # 处理Snyk结果
           if [ -f snyk-results.json ]; then
             SNYK_CRITICAL=$(jq '[.vulnerabilities[] | select(.severity == "critical")] | length' snyk-results.json 2>/dev/null || echo "0")
@@ -157,15 +161,15 @@ jobs:
             HIGH_COUNT=$((HIGH_COUNT + SNYK_HIGH))
             echo "Snyk - Critical: $SNYK_CRITICAL, High: $SNYK_HIGH"
           fi
-          
+
           echo "📊 静态扫描汇总："
           echo "  Critical总计: $CRITICAL_COUNT"
           echo "  High总计: $HIGH_COUNT"
-          
+
           # 输出结果
           echo "critical-count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
           echo "high-count=$HIGH_COUNT" >> $GITHUB_OUTPUT
-          
+
           # ADR-0002 硬失败逻辑：Critical=0, High≤3
           if [ $CRITICAL_COUNT -gt 0 ]; then
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -197,6 +201,10 @@ jobs:
   e2e-security-test:
     name: 🧪 E2E安全测试
     runs-on: windows-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: security-scan
     if: needs.security-scan.outputs.critical-count == '0'
     timeout-minutes: 15
@@ -253,9 +261,13 @@ jobs:
   unified-security-gate:
     name: 🚦 统一安全门禁
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [security-scan, e2e-security-test]
     if: always()
-    
+
     # 此作业需要创建Issue的权限
     permissions:
       contents: read
@@ -282,14 +294,14 @@ jobs:
         continue-on-error: false
         run: |
           echo "🔒 开始执行统一安全门禁检查..."
-          
+
           # ADR-0002 硬失败检查：静态扫描必须通过
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
             echo "❌ [硬失败] 静态安全扫描未通过，违反ADR-0002安全基线"
             echo "🚨 Critical或High安全问题阻止合并"
             exit 1
           fi
-          
+
           # 使用我们的安全门禁包装脚本
           if ! node scripts/security-gate-wrapper.js; then
             echo "❌ [硬失败] 安全门禁包装脚本检查失败"
@@ -309,7 +321,7 @@ jobs:
       - name: 生成统一安全报告
         run: |
           echo "📊 生成统一安全门禁报告..."
-          
+
           # 创建包含所有结果的综合报告
           cat > logs/unified-security-report.json << EOF
           {
@@ -346,13 +358,13 @@ jobs:
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
           echo "## 🔒 统一安全门禁结果" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### 📊 检查摘要" >> $GITHUB_STEP_SUMMARY
           echo "| 检查项目 | 状态 | 结果 |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|------|------|" >> $GITHUB_STEP_SUMMARY
           echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
-          
+
           # ADR-0002 强制硬失败决策（Critical=0, High≤3）
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
             echo "### ❌ 安全门禁硬失败" >> $GITHUB_STEP_SUMMARY

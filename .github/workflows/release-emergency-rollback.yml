@@ -42,11 +42,15 @@ env:
 # ==================== 并发控制 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false  # 紧急回滚不可中断
+  cancel-in-progress: false # 紧急回滚不可中断
 
 jobs:
   emergency_rollback:
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 10
     permissions:
       contents: write

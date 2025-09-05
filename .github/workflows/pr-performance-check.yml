@@ -23,6 +23,11 @@ jobs:
     name: Web Vitals & Bundle Size Check
     runs-on: ubuntu-latest
 
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+
     # job级别权限 - 仅在需要时提升写权限
     permissions:
       contents: read
@@ -44,7 +49,7 @@ jobs:
       - name: Install dependencies (Hardened)
         uses: ./.github/actions/npm-install
         with:
-          node-version: '18.x'
+          node-version: '20.x'
 
       - name: Build project
         run: npm run build
@@ -179,7 +184,7 @@ jobs:
       - name: Install dependencies (Hardened)
         uses: ./.github/actions/npm-install
         with:
-          node-version: '18.x'
+          node-version: '20.x'
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium

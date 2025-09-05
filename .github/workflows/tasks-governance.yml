@@ -13,7 +13,7 @@ on:
       - '.taskmaster/tasks/tasks.json'
       - 'scripts/**'
   push:
-    branches: [ main ]
+    branches: [main]
 
 # ==================== 并发控制 ====================
 concurrency:
@@ -23,6 +23,10 @@ concurrency:
 jobs:
   validate-tasks:
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

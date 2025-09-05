@@ -7,7 +7,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'src/**'
       - 'electron/**'
@@ -20,7 +20,7 @@ on:
       - 'vitest.config.ts'
       - '.github/workflows/soft-gates.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'src/**'
       - 'electron/**'
@@ -44,8 +44,12 @@ jobs:
   soft-gate-guardian:
     name: 🛡️ 软门禁守护检查
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 3
-    
+
     steps:
       - name: Checkout代码
         uses: actions/checkout@v4
@@ -58,13 +62,17 @@ jobs:
   quality-gate-check:
     name: 📊 软门禁质量检查
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 20
     needs: soft-gate-guardian
 
     # 软门禁job需要权限创建checks和PR评论
     permissions:
       checks: write
-      issues: write        # PR评论需要issues权限
+      issues: write # PR评论需要issues权限
       contents: read
 
     # 软门禁永远不应该失败（即使有问题也返回成功）
@@ -93,7 +101,7 @@ jobs:
         id: soft-gates
         run: |
           echo "🚦 开始执行软门禁质量检查..."
-          
+
           # 执行软门禁脚本（永不失败）
           node scripts/soft-gate-reporter.js || {
             echo "⚠️ 软门禁脚本执行异常，但不阻塞流程"
@@ -103,7 +111,7 @@ jobs:
             echo "soft-gate-summary=执行过程中遇到问题，请检查日志" >> $GITHUB_OUTPUT
             exit 0
           }
-          
+
           echo "✅ 软门禁检查完成"
 
       - name: 读取软门禁输出
@@ -129,13 +137,13 @@ jobs:
       - name: 创建中性状态检查
         uses: actions/github-script@v7
         if: always()
-        continue-on-error: true  # 软门禁不应阻断，checks创建失败也要继续
+        continue-on-error: true # 软门禁不应阻断，checks创建失败也要继续
         with:
           script: |
             // 读取软门禁结果
             const fs = require('fs');
             let softGateData;
-            
+
             try {
               if (fs.existsSync('logs/soft-gate-report.json')) {
                 const reportContent = fs.readFileSync('logs/soft-gate-report.json', 'utf8');
@@ -144,14 +152,14 @@ jobs:
             } catch (error) {
               console.log('无法读取软门禁报告，使用默认值');
             }
-            
+
             // 设置默认值
             const score = softGateData?.overallScore || 75;
             const title = `质量评分: ${score}/100`;
             const summary = softGateData ? 
               `共执行${softGateData.summary?.totalGates || 0}项质量检查` : 
               '软门禁检查完成';
-            
+
             // 构建详细描述
             let details = '';
             if (softGateData?.feedback) {
@@ -160,7 +168,7 @@ jobs:
             if (softGateData?.recommendations && softGateData.recommendations.length > 0) {
               details += '\n\n**改进建议:**\n' + softGateData.recommendations.join('\n');
             }
-            
+
             // 创建中性状态（软门禁特色：提供反馈但不阻塞）
             const { data: checkRun } = await github.rest.checks.create({
               owner: context.repo.owner,
@@ -175,23 +183,23 @@ jobs:
                 text: details || '质量检查完成，详细信息请查看报告。'
               }
             });
-            
+
             console.log(`创建中性状态检查: ${checkRun.html_url}`);
-            
+
             // 如果是PR，添加评论（容错处理API限流）
             if (context.payload.pull_request) {
               try {
                 const commentBody = `
             ## 📊 软门禁质量评分报告
-            
+
             **总体评分**: ${score}/100 ⭐
-            
+
             ${summary}
-            
+
             ${details ? '### 详细反馈\n' + details : ''}
-            
+
             ---
-            
+
             > 💡 **说明**: 软门禁提供质量反馈但不阻塞合并。建议在合并前考虑改进建议。
             > 
             > 📋 [查看详细报告](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
@@ -217,7 +225,7 @@ jobs:
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
           echo "## 📊 软门禁质量检查结果" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -f "logs/soft-gate-report.json" ]; then
             # 提取关键信息
             overall_score=$(jq -r '.overallScore // 75' logs/soft-gate-report.json)
@@ -263,7 +271,7 @@ jobs:
             echo "### ⚠️ 无法生成详细报告" >> $GITHUB_STEP_SUMMARY
             echo "软门禁检查完成，但报告文件缺失。" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "*💡 软门禁提供质量反馈但不阻塞合并 - 基于ADR-0005质量门禁标准*" >> $GITHUB_STEP_SUMMARY

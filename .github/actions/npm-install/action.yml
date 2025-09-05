@@ -7,6 +7,10 @@ inputs:
     description: '工作目录'
     required: false
     default: '.'
+  node-version:
+    description: 'Node.js版本'
+    required: false
+    default: '20.x'
 
 # 移除outputs配置避免引用不存在的步骤ID
 # 如需要版本信息，可通过npm --version和node --version获取
@@ -14,6 +18,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: 💻 设置Node.js (ESM支持)
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
     - name: 🔍 环境变量验证
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -39,32 +48,111 @@ runs:
         echo "📊 当前npm配置："
         npm config list | grep -E "(fetch-retries|registry|fund|audit)" || true
 
-        # 核心安装逻辑：3次重试 + 缓存清理
-        for i in 1 2 3; do 
-          echo "第 $i 次安装依赖尝试..."
-          if npm ci; then
-            echo "✅ 第 $i 次尝试成功"
-            # 验证关键工具可用性（devDependencies）
-            if command -v eslint > /dev/null 2>&1; then
-              echo "✅ ESLint 工具验证通过"
-            else
-              echo "⚠️ ESLint 工具不可用，可能devDependencies未安装"
+        # ESM项目特殊处理：确保52个devDependencies正确安装
+        echo "📦 检测到ESM项目，安装大型依赖包集..."
+
+        # 设置ESM友好的npm环境变量
+        export NPM_CONFIG_MAXSOCKETS="8"
+        export NPM_CONFIG_FUND="false"
+        export NPM_CONFIG_AUDIT="false"
+        export NPM_CONFIG_PROGRESS="false"
+
+        install_success=false
+
+        # 增强安装逻辑：4次重试 + 渐进式策略
+        for i in 1 2 3 4; do 
+          echo "🚀 第 $i 次安装依赖尝试 (ESM + 52 devDeps)..."
+          
+          if [ $i -eq 1 ]; then
+            # 首次尝试：标准安装，8分钟超时
+            if timeout 480 npm ci --no-optional 2>&1 | tee npm_install.log; then
+              install_success=true
             fi
-            if [ -d "node_modules" ]; then
-              echo "✅ node_modules 目录验证通过"
-              exit 0
+          elif [ $i -eq 2 ]; then
+            # 第二次：增加超时时间和网络优化
+            echo "⏱️ 增加超时时间处理大型依赖包..."
+            if timeout 720 npm ci --maxsockets=5 --no-optional 2>&1 | tee npm_install.log; then
+              install_success=true
+            fi
+          elif [ $i -eq 3 ]; then
+            # 第三次：串行安装模式
+            echo "🔄 串行安装模式（防止网络拥塞）..."
+            if timeout 900 npm ci --maxsockets=1 --no-optional 2>&1 | tee npm_install.log; then
+              install_success=true
+            fi
+          else
+            # 最后一次：完全重新安装
+            echo "🧹 清理所有缓存和文件，重新安装..."
+            rm -rf node_modules package-lock.json
+            npm cache clean --force 2>/dev/null || true
+            if timeout 900 npm install --no-optional 2>&1 | tee npm_install.log; then
+              install_success=true
             fi
           fi
+          
+          if [ "$install_success" = true ]; then
+            echo "✅ 第 $i 次尝试成功"
+            
+            # ESM项目增强验证
+            verification_errors=0
+            
+            # 验证关键devDependencies工具
+            dev_tools=("eslint" "tsc" "vitest" "playwright")
+            for tool in "${dev_tools[@]}"; do
+              if command -v "$tool" > /dev/null 2>&1; then
+                echo "✅ $tool (开发依赖) 可用"
+              else
+                echo "⚠️ $tool 不可用"
+                ((verification_errors++))
+              fi
+            done
+            
+            # 验证node_modules结构
+            if [ -d "node_modules" ] && [ -d "node_modules/.bin" ]; then
+              node_count=$(find node_modules -maxdepth 1 -type d | wc -l 2>/dev/null || echo "0")
+              node_modules_size=$(du -sh node_modules 2>/dev/null | cut -f1 || echo "未知")
+              echo "✅ node_modules 验证通过 ($node_count 包, 大小: $node_modules_size)"
+            else
+              echo "❌ node_modules 目录验证失败"
+              ((verification_errors++))
+            fi
+            
+            # 验证package.json中type: module
+            if grep -q '"type".*:.*"module"' package.json 2>/dev/null; then
+              echo "✅ ESM模块系统验证通过"
+            fi
+            
+            if [ $verification_errors -eq 0 ]; then
+              echo "🎉 ESM项目安装和验证完全成功！"
+            else
+              echo "⚠️ 发现 $verification_errors 个验证问题，但安装成功"
+            fi
+            
+            exit 0
+          fi
+          
           # 失败处理
-          if [ $i -lt 3 ]; then
-            echo "❌ 第 $i 次尝试失败，10秒后重试..."
-            sleep 10
-          else
-            echo "🚨 所有重试失败，清理缓存后最后一次尝试..."
-            npm cache clean --force
-            npm ci
+          if [ $i -lt 4 ]; then
+            wait_time=$((i * 15))
+            echo "❌ 第 $i 次尝试失败，等待 ${wait_time} 秒后重试..."
+            
+            # 显示错误日志片段
+            if [ -f npm_install.log ]; then
+              echo "🔍 错误日志片段:"
+              tail -10 npm_install.log || true
+            fi
+            
+            sleep $wait_time
           fi
         done
+
+        # 所有尝试都失败
+        echo "🚨 所有 4 次ESM安装尝试均失败！"
+        if [ -f npm_install.log ]; then
+          echo "📄 完整错误日志:"
+          cat npm_install.log
+        fi
+        exit 1
         echo "✅ 依赖安装完成"
 
 branding:

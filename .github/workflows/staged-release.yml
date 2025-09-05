@@ -9,7 +9,7 @@ permissions:
 # 渐进发布工作流：5%/25%/50%/100% 阶梯发布 + Sentry健康门禁
 # 基于完整ADR体系：
 # - ADR-0001 (技术栈选型): Electron + React生态
-# - ADR-0002 (Electron安全): 安全基线与CSP策略  
+# - ADR-0002 (Electron安全): 安全基线与CSP策略
 # - ADR-0003 (可观测性): Sentry健康门禁集成
 # - ADR-0004 (事件总线): CloudEvents契约验证
 # - ADR-0005 (质量门禁): CI/CD流水线质量检查
@@ -56,13 +56,17 @@ env:
 # ==================== 并发控制 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false  # 分阶段发布不可中断
+  cancel-in-progress: false # 分阶段发布不可中断
 
 jobs:
   # 1. 预检查：验证配置和依赖
   pre_check:
     name: 🔍 Pre-flight Check
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     outputs:
       can_proceed: ${{ steps.validation.outputs.can_proceed }}
       previous_stage: ${{ steps.current_status.outputs.percentage }}
@@ -128,6 +132,10 @@ jobs:
   health_check:
     name: 🏥 Health Check
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: pre_check
     if: ${{ needs.pre_check.outputs.can_proceed == 'true' && !inputs.skip_health_check && inputs.staging_percentage != '5' }}
     outputs:
@@ -201,6 +209,10 @@ jobs:
   deploy_release:
     name: 🚀 Deploy Release
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [pre_check, health_check]
     if: ${{ always() && needs.pre_check.outputs.can_proceed == 'true' && (needs.health_check.result == 'success' || needs.health_check.result == 'skipped' || inputs.skip_health_check) }}
 
@@ -284,6 +296,10 @@ jobs:
   post_deploy_monitoring:
     name: 📊 Post-Deploy Monitoring
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [pre_check, deploy_release]
     if: ${{ success() && inputs.staging_percentage != '100' }}
 
@@ -355,6 +371,10 @@ jobs:
   notify:
     name: 📢 Notification
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [pre_check, health_check, deploy_release]
     if: always()
 

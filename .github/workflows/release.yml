@@ -52,6 +52,10 @@ jobs:
   prepare:
     name: 🔍 环境准备和验证
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     outputs:
       version: ${{ steps.version.outputs.version }}
       release_name: ${{ steps.release.outputs.name }}
@@ -113,6 +117,10 @@ jobs:
   build:
     name: 🔨 构建应用
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: prepare
     steps:
       - name: 📥 检出代码
@@ -157,6 +165,10 @@ jobs:
   e2e-smoke:
     name: 🧪 E2E冒烟测试
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, build]
     steps:
       - name: 📥 检出代码
@@ -202,6 +214,10 @@ jobs:
   create-release:
     name: 🚀 创建Sentry Release
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, build, e2e-smoke]
     if: needs.prepare.outputs.environment != 'development'
     steps:
@@ -258,6 +274,10 @@ jobs:
   health-check:
     name: 🏥 Release Health门槛检查
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, create-release]
     if: needs.prepare.outputs.environment == 'production' && !github.event.inputs.skip_health_check
     steps:
@@ -331,6 +351,10 @@ jobs:
   deploy:
     name: 🚀 标记部署完成
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, create-release, health-check]
     if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
     steps:
@@ -367,6 +391,10 @@ jobs:
   rollback:
     name: 🔄 自动回滚处理
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, create-release, health-check]
     if: failure() && needs.health-check.result == 'failure'
     steps:
@@ -389,6 +417,10 @@ jobs:
   summary:
     name: 📊 发布流程总结
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     needs: [prepare, build, e2e-smoke, create-release, health-check, deploy]
     if: always()
     steps:
@@ -418,4 +450,4 @@ jobs:
 # ==================== 并发控制 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false  # release工作流不取消正在进行的部署
+  cancel-in-progress: false # release工作流不取消正在进行的部署

@@ -38,6 +38,10 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 10
     permissions:
       contents: write
