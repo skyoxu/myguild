@@ -92,14 +92,41 @@ const requiredEnvVars = ['SENTRY_AUTH_TOKEN'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:');
+  // 检测CI环境和PR上下文
+  const isCI = process.env.CI === 'true';
+  const isPR = process.env.GITHUB_EVENT_NAME === 'pull_request';
+  const isForkPR = process.env.GITHUB_EVENT_NAME === 'pull_request' && 
+    process.env.GITHUB_EVENT_PATH && 
+    JSON.stringify(process.env).includes('fork');
+
+  console.error('⚠️  Missing required environment variables:');
   missingEnvVars.forEach(envVar => console.error(`  - ${envVar}`));
-  console.error('');
-  console.error('💡 Please set the required environment variables:');
-  console.error('  export SENTRY_AUTH_TOKEN="your-sentry-auth-token"');
-  console.error('  export SENTRY_ORG="your-org-slug"');
-  console.error('  export SENTRY_PROJECT="your-project-slug"');
-  process.exit(1);
+  
+  if (isCI && isPR) {
+    console.error('');
+    console.error('💡 PR context detected - Release Health Gate will be skipped');
+    console.error('   This is expected behavior for pull requests where secrets are not available');
+    console.error('   The gate will run normally when merged to main branch');
+    
+    if (isForkPR) {
+      console.error('🔀 Fork PR detected - secrets unavailable for security reasons');
+    }
+    
+    // PR上下文中优雅退出，不阻塞CI流程
+    console.error('');
+    console.error('✅ Release Health Gate: SKIPPED (PR context)');
+    process.exit(0);
+  } else {
+    // 非PR上下文，仍然需要硬失败
+    console.error('');
+    console.error('💡 Please set the required environment variables:');
+    console.error('  export SENTRY_AUTH_TOKEN="your-sentry-auth-token"');
+    console.error('  export SENTRY_ORG="your-org-slug"');
+    console.error('  export SENTRY_PROJECT="your-project-slug"');
+    console.error('');
+    console.error('❌ Release Health Gate: FAILED (missing secrets in production context)');
+    process.exit(1);
+  }
 }
 
 // ============================================================================

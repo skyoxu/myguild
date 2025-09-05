@@ -1,5 +1,10 @@
 name: Release Monitor - 发布监控
 
+# 最小权限原则
+permissions:
+  contents: read
+  actions: write
+
 on:
   schedule:
     # 每 15 分钟监控一次发布健康度
@@ -25,6 +30,11 @@ env:
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   monitor:
     runs-on: ubuntu-latest
@@ -45,6 +55,9 @@ jobs:
 
       - name: '🔧 Install dependencies'
         run: npm ci --only=production
+
+      - name: '🛠️ Install system tools'
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: '⏰ Check monitoring conditions'
         id: conditions
@@ -202,6 +215,9 @@ jobs:
       - name: '📋 Monitoring summary'
         if: always()
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 📊 发布监控报告" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**监控时间**: $(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_STEP_SUMMARY

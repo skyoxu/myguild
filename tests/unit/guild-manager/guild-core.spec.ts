@@ -438,7 +438,8 @@ describe('Guild Core Functionality', () => {
             name: `Member ${i}`,
             characterClass: 'WARRIOR',
           };
-          const cost = new ResourceAmount(100, 50, 10);
+          // 增加招募成本，使得资源不足以支持所有招募
+          const cost = new ResourceAmount(150, 75, 20);
           return guild.recruitMember(candidate, cost);
         });
       });
@@ -446,6 +447,7 @@ describe('Guild Core Functionality', () => {
       const results = await Promise.all(promises);
 
       // Only some recruits should succeed due to resource constraints
+      // 1000金币/150成本 = 6.67，所以最多6次成功，其余4次失败
       const successful = results.filter(r => r.success);
       const failed = results.filter(r => !r.success);
 

@@ -110,28 +110,6 @@ export class CSPManager {
   }
 
   /**
-   * 生成测试配置
-   */
-  static generateTestingConfig(): any {
-    return {
-      environment: 'test',
-      expectedDirectives: [
-        'default-src',
-        'script-src',
-        'style-src',
-        'img-src',
-        'connect-src',
-        'font-src',
-        'object-src',
-        'frame-ancestors',
-        'base-uri',
-        'form-action',
-      ],
-      testMode: true,
-    };
-  }
-
-  /**
    * 验证CSP策略完整性
    */
   static validateCSP(csp: string): {

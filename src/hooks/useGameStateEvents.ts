@@ -144,7 +144,7 @@ export function useGameStateEvents(options: UseGameStateEventsOptions = {}) {
 
         // 发布状态更新事件
         gameEvents.publish({
-          type: 'guild.state.updated',
+          type: 'game.state.updated',
           data: { gameState: updatedState, timestamp: new Date() },
         });
       }

@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { BaseScene } from './BaseScene';
+import { EventUtils } from '../../shared/contracts/events';
 
 export class MenuScene extends BaseScene {
   private menuButtons: Phaser.GameObjects.Text[] = [];
@@ -23,15 +24,14 @@ export class MenuScene extends BaseScene {
     this.setupInput();
 
     // 发布菜单初始化完成事件
-    this.publishEvent({
-      type: 'game.menu.initialized',
-      source: 'menu-scene',
-      data: { scene: 'MenuScene' },
-      timestamp: new Date(),
-      id: `menu-init-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.menu.initialized',
+        source: 'menu-scene',
+        data: { scene: 'MenuScene' },
+        id: `menu-init-${Date.now()}`,
+      })
+    );
   }
 
   private setupBackground(): void {
@@ -164,15 +164,14 @@ export class MenuScene extends BaseScene {
 
   private handleMenuAction(action: string): void {
     // 发布菜单动作事件
-    this.publishEvent({
-      type: 'game.menu.action',
-      source: 'menu-scene',
-      data: { action },
-      timestamp: new Date(),
-      id: `menu-action-${Date.now()}`,
-      specversion: '1.0',
-      datacontenttype: 'application/json',
-    });
+    this.publishEvent(
+      EventUtils.createEvent({
+        type: 'game.menu.action',
+        source: 'menu-scene',
+        data: { action },
+        id: `menu-action-${Date.now()}`,
+      })
+    );
 
     switch (action) {
       case 'start-game':
@@ -195,15 +194,14 @@ export class MenuScene extends BaseScene {
 
       case 'exit':
         // 发布退出事件
-        this.publishEvent({
-          type: 'game.exit.requested',
-          source: 'menu-scene',
-          data: { reason: 'user_menu_selection' },
-          timestamp: new Date(),
-          id: `exit-${Date.now()}`,
-          specversion: '1.0',
-          datacontenttype: 'application/json',
-        });
+        this.publishEvent(
+          EventUtils.createEvent({
+            type: 'game.exit.requested',
+            source: 'menu-scene',
+            data: { reason: 'user_menu_selection' },
+            id: `exit-${Date.now()}`,
+          })
+        );
         break;
     }
   }

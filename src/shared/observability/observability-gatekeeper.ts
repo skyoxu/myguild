@@ -7,23 +7,23 @@
 import {
   SentryDetector,
   sentryDetector,
-  SentryDetectionResult,
+  type SentryDetectionResult,
 } from './sentry-detector';
 import {
   SentryMainDetector,
   sentryMainDetector,
-  SentryMainDetectionResult,
+  type SentryMainDetectionResult,
 } from './sentry-main-detector';
 import {
   ConfigValidator,
   configValidator,
-  ConfigValidationResult,
-  Environment,
+  type ConfigValidationResult,
+  type Environment,
 } from './config-validator';
 import {
   LoggingHealthChecker,
   loggingHealthChecker,
-  LoggingHealthResult,
+  type LoggingHealthResult,
 } from './logging-health-checker';
 
 // 门禁检查整体结果

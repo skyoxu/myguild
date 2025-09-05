@@ -143,17 +143,10 @@ export class SentryDetector {
    */
   private async checkHubStatus(): Promise<'active' | 'inactive' | 'error'> {
     try {
-      const hub = Sentry.getCurrentHub();
+      const client = Sentry.getClient();
 
-      if (!hub) {
-        this.log('❌ Sentry Hub未找到');
-        return 'inactive';
-      }
-
-      // 检查Hub是否活跃
-      const client = hub.getClient();
       if (!client) {
-        this.log('⚠️  Sentry Hub存在但Client未连接');
+        this.log('❌ Sentry Client未找到');
         return 'inactive';
       }
 
@@ -278,8 +271,8 @@ export class SentryDetector {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      // 检查autoSessionTracking配置
-      const sessionTracking = options?.autoSessionTracking;
+      // 检查session tracking配置（新版本使用集成检查）
+      const sessionTracking = (options as any)?.autoSessionTracking;
 
       if (sessionTracking) {
         this.log('✅ 会话跟踪已启用');
@@ -483,8 +476,3 @@ export class SentryMainDetector {
     }
   }
 }
-
-/**
- * 类型导出
- */
-export type { SentryDetectionResult, SentryDetectionOptions };

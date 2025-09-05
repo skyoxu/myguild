@@ -1,0 +1,20 @@
+# Base Architecture Index
+
+This file serves as an index for the base architecture documentation.
+
+## Base Documents
+- 01-introduction-and-goals-v2.md
+- 02-security-baseline-electron-v2.md  
+- 03-observability-sentry-logging-v2.md
+- 04-system-context-c4-event-flows-v2.md
+- 05-data-models-and-storage-ports-v2.md
+- 06-runtime-view-loops-state-machines-error-paths-v2.md
+- 07-dev-build-and-gates-v2.md
+- 08-crosscutting-and-feature-slices.base.md
+- 09-performance-and-capacity-v2.md
+- 10-i18n-ops-release-v2.md
+- 11-risks-and-technical-debt-v2.md
+- 12-glossary-v2.md
+
+## Status
+All base architecture documents are clean of PRD-specific content and use placeholder variables.

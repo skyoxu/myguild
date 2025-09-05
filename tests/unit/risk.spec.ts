@@ -27,7 +27,7 @@ import type {
 export const createMockRiskEntry = (
   overrides?: Partial<RiskEntry>
 ): RiskEntry => {
-  return {
+  const baseEntry = {
     id: 'RISK-2024-001',
     title: 'Mock Performance Risk',
     description: 'Mock risk for testing purposes',
@@ -58,6 +58,26 @@ export const createMockRiskEntry = (
     reviewDate: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days from now
     ...overrides,
   };
+
+  // 重新计算riskScore和riskLevel，如果probability或impact被覆盖
+  if (overrides?.probability !== undefined || overrides?.impact !== undefined) {
+    const probability = overrides?.probability ?? baseEntry.probability;
+    const impact = overrides?.impact ?? baseEntry.impact;
+    baseEntry.riskScore = probability * impact;
+    
+    // 重新计算riskLevel
+    if (baseEntry.riskScore >= 20) {
+      baseEntry.riskLevel = 'critical';
+    } else if (baseEntry.riskScore >= 15) {
+      baseEntry.riskLevel = 'high';
+    } else if (baseEntry.riskScore >= 9) {
+      baseEntry.riskLevel = 'medium';
+    } else {
+      baseEntry.riskLevel = 'low';
+    }
+  }
+
+  return baseEntry;
 };
 
 export const createMockTDR = (
@@ -165,7 +185,7 @@ describe('Risk Registry Core Functions', () => {
         else riskLevel = 'critical';
 
         const risk: RiskEntry = {
-          id: `RISK-${Date.now()}`,
+          id: `RISK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           title: request.title,
           description: request.description,
           category: request.category,
@@ -287,7 +307,7 @@ describe('Risk Registry Core Functions', () => {
 
       const risk = await mockRiskRegistry.addRisk(request);
 
-      expect(risk.id).toMatch(/^RISK-\d+$/);
+      expect(risk.id).toMatch(/^RISK-\d+-[a-z0-9]+$/);
       expect(risk.title).toBe(request.title);
       expect(risk.description).toBe(request.description);
       expect(risk.category).toBe(request.category);
@@ -311,8 +331,11 @@ describe('Risk Registry Core Functions', () => {
     });
 
     it('should list risks with filtering', async () => {
+      // Verify mockRiskRegistry is fresh
+      expect(mockRiskRegistry.risks.size).toBe(0);
+
       // Create multiple risks
-      await mockRiskRegistry.addRisk(
+      const perfRisk = await mockRiskRegistry.addRisk(
         createMockCreateRiskRequest({
           title: 'Performance Risk',
           category: 'performance',
@@ -321,7 +344,7 @@ describe('Risk Registry Core Functions', () => {
         })
       );
 
-      await mockRiskRegistry.addRisk(
+      const secRisk = await mockRiskRegistry.addRisk(
         createMockCreateRiskRequest({
           title: 'Security Risk',
           category: 'security',
@@ -329,6 +352,12 @@ describe('Risk Registry Core Functions', () => {
           impact: 3,
         })
       );
+
+      // Verify both risks are stored
+      expect(mockRiskRegistry.risks.size).toBe(2);
+      
+      const allRisks = await mockRiskRegistry.listRisks();
+      expect(allRisks).toHaveLength(2);
 
       // Test category filtering
       const performanceRisks = await mockRiskRegistry.listRisks({
@@ -815,16 +844,18 @@ describe('Traceability Analysis', () => {
         // Mock validation logic
         if (matrix.riskTraces?.length > 0) {
           for (const trace of matrix.riskTraces) {
-            if (
-              trace.sloImpacts?.some(
-                (impact: any) => impact.currentStatus === 'violated'
-              )
-            ) {
-              if (!trace.testReferences?.some((test: any) => !test.passed)) {
-                issues.push(
-                  `Risk ${trace.riskId} claims SLO violation but tests are passing`
-                );
-              }
+            // Check for SLO violations
+            const hasSloViolation = trace.sloImpacts?.some(
+              (impact: any) => impact.currentStatus === 'violated'
+            );
+            
+            // Check if all tests are passing (no failed tests)
+            const allTestsPassing = trace.testReferences?.every((test: any) => test.passed === true);
+            
+            if (hasSloViolation && allTestsPassing) {
+              issues.push(
+                `Risk ${trace.riskId} claims SLO violation but tests are passing`
+              );
             }
           }
         }
@@ -905,9 +936,9 @@ describe('Traceability Analysis', () => {
         await mockTraceabilityAnalyzer.validateMatrix(inconsistentMatrix);
 
       expect(validation.passed).toBe(false);
-      expect(validation.issues).toContain(
-        expect.stringContaining('SLO violation but tests are passing')
-      );
+      expect(validation.issues).toEqual([
+        'Risk RISK-INCONSISTENT claims SLO violation but tests are passing'
+      ]);
     });
   });
 });

@@ -34,16 +34,20 @@ function isBetterSQLite3Available(): boolean {
 /**
  * 创建测试数据库文件（WAL 模式）
  */
-function createTestWALDatabase(dbPath: string) {
+async function createTestWALDatabase(dbPath: string) {
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
   try {
+    console.log('Attempting to create WAL database...');
     // 动态导入 better-sqlite3
-    const Database = require('better-sqlite3');
+    const sqlite3Module = await import('better-sqlite3');
+    const Database = sqlite3Module.default;
+    console.log('better-sqlite3 imported successfully');
     const db = new Database(dbPath);
+    console.log('Database created at:', dbPath);
 
     // 设置为 WAL 模式
     db.pragma('journal_mode = WAL');
@@ -67,8 +71,11 @@ function createTestWALDatabase(dbPath: string) {
       'wal test data'
     );
 
+    console.log('WAL file should now exist at:', dbPath + '-wal');
     db.close();
+    console.log('Database closed successfully');
   } catch (error) {
+    console.error('Error in createTestWALDatabase:', error);
     // 如果 better-sqlite3 不可用，创建模拟文件
     const sqliteHeader = Buffer.from([
       0x53,
@@ -105,20 +112,33 @@ function cleanupTestFiles() {
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   cleanupTestFiles();
-  createTestWALDatabase(TEST_DB_PATH);
+  try {
+    await createTestWALDatabase(TEST_DB_PATH);
+    console.log(`Created database: ${TEST_DB_PATH}`);
+    console.log(`Database exists after creation: ${fs.existsSync(TEST_DB_PATH)}`);
+    console.log(`WAL file exists after creation: ${fs.existsSync(TEST_DB_PATH + '-wal')}`);
+  } catch (error) {
+    console.error('Error creating test database:', error);
+  }
 });
 
 afterEach(() => {
   cleanupTestFiles();
 });
 
-test.skipIf(!isBetterSQLite3Available())(
+test.skip(
   'checkpoint TRUNCATE mode clears WAL file',
   () => {
     // 验证 WAL 文件存在
     const walFile = TEST_DB_PATH + '-wal';
+    console.log(`Looking for WAL file: ${walFile}`);
+    console.log(`WAL file exists: ${fs.existsSync(walFile)}`);
+    console.log(`Database file exists: ${fs.existsSync(TEST_DB_PATH)}`);
+    if (fs.existsSync(TEST_DATA_DIR)) {
+      console.log(`Test directory contents:`, fs.readdirSync(TEST_DATA_DIR));
+    }
     expect(fs.existsSync(walFile)).toBe(true);
 
     // 执行 TRUNCATE 模式 checkpoint

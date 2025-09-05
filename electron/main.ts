@@ -6,7 +6,7 @@ import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
 
 // 安全配置常量（用于测试验证）
-const _SECURITY_PREFERENCES = {
+export const SECURITY_PREFERENCES = {
   sandbox: true,
   contextIsolation: true,
   nodeIntegration: false,
@@ -20,7 +20,7 @@ function createSecureBrowserWindow(): BrowserWindow {
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,

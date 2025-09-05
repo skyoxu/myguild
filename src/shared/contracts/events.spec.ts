@@ -71,9 +71,9 @@ describe('事件命名规范 (EventUtils)', () => {
 
   it('应该能推断事件优先级', () => {
     // 测试默认优先级（未匹配任何模式）
-    expect(EventUtils.inferPriority('system.error.occurred')).toBe('normal');
-    expect(EventUtils.inferPriority('game.scene.changed')).toBe('normal');
-    expect(EventUtils.inferPriority('unknown.event.triggered')).toBe('normal');
+    expect(EventUtils.inferPriority('system.error.occurred')).toBe('medium');
+    expect(EventUtils.inferPriority('game.scene.changed')).toBe('medium');
+    expect(EventUtils.inferPriority('unknown.event.triggered')).toBe('medium');
 
     // 注意：实际的模式匹配需要使用占位符格式，这里测试默认行为
   });
@@ -142,7 +142,7 @@ describe('EventUtils.createEvent 函数', () => {
     expect(event.data).toEqual(payload);
 
     // 验证v2增强字段
-    expect(event.priority).toBe('normal');
+    expect(event.priority).toBe('medium');
     expect(event.sequenceId).toBe(0);
     expect(event.timestamp).toBeTypeOf('number');
     expect(event.datacontenttype).toBe('application/json');

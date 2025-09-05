@@ -3,13 +3,12 @@
  * 作为测试基线和参考实现
  */
 
-import {
+import type {
   Repository,
   Entity,
   RepositoryQueryParams,
-  EntityNotFoundError,
-  ConcurrencyError,
 } from '../../contracts/repos';
+import { EntityNotFoundError, ConcurrencyError } from '../../contracts/repos';
 
 export class InMemoryRepository<T extends Entity> implements Repository<T> {
   private readonly store = new Map<string, T>();

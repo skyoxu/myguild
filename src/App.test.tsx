@@ -14,13 +14,13 @@ describe('App 组件', () => {
 
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toBeInTheDocument();
-      expect(heading).toHaveTextContent('Phaser + React + TypeScript');
+      expect(heading).toHaveTextContent('Phaser 3 + React 19 + TypeScript');
     });
 
     it('应该包含正确的技术栈信息', () => {
       render(<App />);
 
-      const title = screen.getByText(/Phaser.*React.*TypeScript/);
+      const title = screen.getByText(/Phaser 3.*React 19.*TypeScript/);
       expect(title).toBeInTheDocument();
     });
 

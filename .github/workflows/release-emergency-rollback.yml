@@ -1,5 +1,10 @@
 name: Emergency Rollback - 紧急回滚
 
+# 最小权限原则
+permissions:
+  contents: write
+  actions: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -33,6 +38,11 @@ on:
 env:
   PREV_GA_VERSION: ${{ inputs.target_version || vars.PREV_GA_VERSION || '0.0.9' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # 紧急回滚不可中断
 
 jobs:
   emergency_rollback:
@@ -68,6 +78,9 @@ jobs:
 
       - name: '🔧 Install dependencies'
         run: npm ci --only=production
+
+      - name: '🛠️ Install system tools'
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: '🔍 Pre-rollback validation'
         run: |
@@ -251,6 +264,9 @@ jobs:
       - name: '📋 Emergency rollback summary'
         if: always()
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8  
           echo "## 🚨 紧急回滚执行报告" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**⚠️  这是一个紧急回滚操作**" >> $GITHUB_STEP_SUMMARY

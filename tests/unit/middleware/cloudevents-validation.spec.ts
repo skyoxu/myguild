@@ -336,6 +336,11 @@ describe('Express中间件集成', () => {
 });
 
 describe('内存管理', () => {
+  beforeEach(() => {
+    cloudEventsValidator.resetStats();
+    cloudEventsValidator.clearErrors();
+  });
+
   it('应该能够清除错误历史', () => {
     cloudEventsValidator.validate({ invalid: 1 });
     cloudEventsValidator.validate({ invalid: 2 });

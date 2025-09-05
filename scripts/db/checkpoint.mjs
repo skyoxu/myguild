@@ -115,8 +115,8 @@ async function executeCheckpoint(dbPath, truncate = false, verbose = false) {
   const mode = truncate ? 'TRUNCATE' : 'FULL';
 
   if (verbose) {
-    console.log(`🔄 执行 WAL checkpoint (${mode} 模式)...`);
-    console.log(`📁 数据库: ${dbPath}`);
+    console.error(`🔄 执行 WAL checkpoint (${mode} 模式)...`);
+    console.error(`📁 数据库: ${dbPath}`);
   }
 
   let db;
@@ -129,7 +129,7 @@ async function executeCheckpoint(dbPath, truncate = false, verbose = false) {
     const journalMode = db.pragma('journal_mode', { simple: true });
     if (journalMode !== 'wal') {
       if (verbose) {
-        console.log(`⚠️  数据库不在 WAL 模式 (当前: ${journalMode})`);
+        console.error(`⚠️  数据库不在 WAL 模式 (当前: ${journalMode})`);
       }
       return {
         ok: true,
@@ -164,8 +164,8 @@ async function executeCheckpoint(dbPath, truncate = false, verbose = false) {
     };
 
     if (verbose) {
-      console.log(`✅ Checkpoint 完成 (${duration}ms)`);
-      console.log(`📊 结果: ${JSON.stringify(checkpointResult)}`);
+      console.error(`✅ Checkpoint 完成 (${duration}ms)`);
+      console.error(`📊 结果: ${JSON.stringify(checkpointResult)}`);
     }
   } finally {
     if (db) {
@@ -173,7 +173,7 @@ async function executeCheckpoint(dbPath, truncate = false, verbose = false) {
         db.close();
       } catch (closeError) {
         if (verbose) {
-          console.warn(`⚠️  关闭数据库时出错: ${closeError.message}`);
+          console.error(`⚠️  关闭数据库时出错: ${closeError.message}`);
         }
       }
     }

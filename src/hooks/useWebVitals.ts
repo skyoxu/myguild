@@ -9,10 +9,8 @@
  */
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import {
-  getWebVitalsMonitor,
-  WebVitalsMetrics,
-} from '../shared/observability/web-vitals-monitor';
+import { getWebVitalsMonitor } from '../shared/observability/web-vitals-monitor';
+import type { WebVitalsMetrics } from '../shared/observability/web-vitals-monitor';
 import { getWebVitalsCollector } from '../shared/observability/web-vitals-collector';
 import type { WebVitalsCollectorConfig } from '../shared/observability/web-vitals-collector';
 
@@ -174,8 +172,13 @@ export function useWebVitals(
 
       // 使用 collector 记录自定义事件
       try {
-        collector.current.collectMetrics();
-        console.log(`[WebVitals] Custom event: ${componentName}_${name}`, data);
+        // collectData 是正确的方法名，但它是私有方法，我们改为调用 getPerformanceReport
+        const report = collector.current.getPerformanceReport();
+        console.log(
+          `[WebVitals] Custom event: ${componentName}_${name}`,
+          data,
+          report
+        );
       } catch (error) {
         console.warn(`[WebVitals] 记录自定义事件失败:`, error);
       }
@@ -250,7 +253,12 @@ export function withWebVitals<P extends object>(
     } as P & { webVitals: WebVitalsMetrics });
   };
 
-  ComponentWithWebVitals.displayName = `withWebVitals(${componentName})`;
+  const displayName =
+    options.componentName ||
+    WrappedComponent.displayName ||
+    WrappedComponent.name ||
+    'Component';
+  ComponentWithWebVitals.displayName = `withWebVitals(${displayName})`;
   return ComponentWithWebVitals;
 }
 

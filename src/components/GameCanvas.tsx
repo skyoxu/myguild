@@ -7,6 +7,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { GameEngineAdapter } from '../game/GameEngineAdapter';
 import type { GameState, GameConfig } from '../ports/game-engine.port';
 import type { DomainEvent } from '../shared/contracts/events';
+import type { GameDomainEvent } from '../shared/contracts/events/GameEvents';
 import { useGameEvents } from '../hooks/useGameEvents';
 
 interface GameCanvasProps {
@@ -43,19 +44,42 @@ export function GameCanvas({
     (event: DomainEvent) => {
       console.log('Game Event:', event);
 
+      // 只处理游戏域事件
+      if (
+        !event.type.startsWith('game.') &&
+        !event.type.startsWith('phaser.') &&
+        !event.type.startsWith('react.')
+      ) {
+        return;
+      }
+
+      const gameEvent = event as unknown as GameDomainEvent;
+
       // 更新游戏状态
       if (
-        event.type === 'game.state.updated' ||
-        event.type === 'game.state.changed'
+        gameEvent.type === 'game.state.updated' ||
+        gameEvent.type === 'game.state.changed'
       ) {
-        const { gameState: newState } = event.data as { gameState: GameState };
+        const { gameState: newState } = gameEvent.data.gameState
+          ? { gameState: gameEvent.data.gameState }
+          : (gameEvent.data as { gameState: GameState });
         setGameState(newState);
         onGameStateChange?.(newState);
       }
 
       // 处理错误事件
-      if (event.type === 'game.error') {
-        setError((event.data as { error: string }).error);
+      if (
+        gameEvent.type === 'game.error' &&
+        gameEvent.data &&
+        'error' in gameEvent.data
+      ) {
+        setError((gameEvent.data as any).error);
+      } else if (
+        gameEvent.type === 'game.warning' &&
+        gameEvent.data &&
+        'warning' in gameEvent.data
+      ) {
+        console.warn('Game warning:', (gameEvent.data as any).warning);
       }
 
       // 转发事件给父组件
@@ -137,7 +161,11 @@ export function GameCanvas({
   useEffect(() => {
     const subscriptions = gameEvents.onGameError(event => {
       console.error('Game error via EventBus:', event);
-      setError(event.data.error);
+      if (event.type === 'game.error' && 'error' in event.data) {
+        setError(event.data.error);
+      } else if (event.type === 'game.warning' && 'warning' in event.data) {
+        setError(event.data.warning);
+      }
     });
 
     return () => {

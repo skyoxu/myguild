@@ -302,9 +302,12 @@ export class ReleaseHealthManager {
       this.incrementMetric('windows.created');
 
       // 监控窗口崩溃
-      window.webContents.on('crashed', (event, killed) => {
-        this.recordCrashEvent('renderer', { killed });
-      });
+      window.webContents.on(
+        'render-process-gone',
+        (event: any, details: any) => {
+          this.recordCrashEvent('renderer', { details });
+        }
+      );
 
       // 监控窗口无响应
       window.on('unresponsive', () => {

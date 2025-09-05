@@ -109,23 +109,15 @@ export function initSentryRenderer(): Promise<boolean> {
 
         // 🔧 渲染进程集成
         integrations: [
-          new Sentry.Integrations.BrowserTracing({
-            // 🎯 游戏特定路由追踪
-            routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-              React.useEffect,
-              useLocation,
-              useNavigationType,
-              createRoutesFromChildren,
-              matchRoutes
-            ) as any,
-          }),
-          new Sentry.Integrations.HttpClient(),
-          new Sentry.Integrations.TryCatch(),
+          Sentry.browserTracingIntegration(),
+          Sentry.httpClientIntegration(),
+          Sentry.captureConsoleIntegration(),
         ],
 
         // 🚫 隐私保护
         beforeSend(event, hint) {
-          return filterRendererPII(event, hint);
+          const filteredEvent = filterRendererPII(event, hint);
+          return filteredEvent as any;
         },
 
         beforeBreadcrumb(breadcrumb) {
@@ -189,7 +181,7 @@ function validateRendererConfig(config: RendererSentryConfig): boolean {
  */
 function validateRendererInitialization(): boolean {
   try {
-    const client = Sentry.getCurrentHub().getClient();
+    const client = Sentry.getClient();
     return !!client && !!client.getOptions().dsn;
   } catch (error) {
     console.error('渲染进程Sentry初始化验证异常:', error);
@@ -207,10 +199,10 @@ function filterRendererPII(
   // 过滤用户输入敏感信息
   if (event.request?.data) {
     const data = event.request.data;
-    if (typeof data === 'object') {
-      delete data.password;
-      delete data.token;
-      delete data.apiKey;
+    if (typeof data === 'object' && data !== null) {
+      delete (data as any).password;
+      delete (data as any).token;
+      delete (data as any).apiKey;
     }
   }
 
@@ -293,8 +285,12 @@ export function sendGameMetric(
 ): void {
   try {
     // 使用您要求的distribution格式
-    Sentry.metrics.distribution(metricName, value, {
-      tags: {
+    // Metrics API has changed, use addBreadcrumb instead
+    Sentry.addBreadcrumb({
+      message: `metric.${metricName}`,
+      level: 'info',
+      data: {
+        value,
         source: 'renderer',
         environment: determineEnvironment(),
         ...tags,
@@ -330,9 +326,10 @@ export function reportBattleRoundTime(
 
 // 导出React集成所需的依赖
 import React, { useEffect } from 'react';
-import {
-  useLocation,
-  useNavigationType,
-  createRoutesFromChildren,
-  matchRoutes,
-} from 'react-router-dom';
+// React Router integration disabled due to API compatibility issues
+// import {
+//   useLocation,
+//   useNavigationType,
+//   createRoutesFromChildren,
+//   matchRoutes,
+// } from 'react-router-dom';

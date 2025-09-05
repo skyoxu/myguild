@@ -148,7 +148,7 @@ export class SatisfactionLevel {
     if (this.value >= 80) return SatisfactionCategory.VERY_SATISFIED;
     if (this.value >= 60) return SatisfactionCategory.SATISFIED;
     if (this.value >= 40) return SatisfactionCategory.NEUTRAL;
-    if (this.value >= 20) return SatisfactionCategory.DISSATISFIED;
+    if (this.value > 20) return SatisfactionCategory.DISSATISFIED;
     return SatisfactionCategory.VERY_DISSATISFIED;
   }
 

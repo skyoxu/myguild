@@ -1,5 +1,10 @@
 name: Release Ramp - 渐进发布与自动回滚
 
+# 最小权限原则
+permissions:
+  contents: write
+  actions: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -36,6 +41,11 @@ env:
   # 通知配置
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # 分阶段发布不可中断
+
 jobs:
   ramp:
     runs-on: ubuntu-latest
@@ -64,6 +74,9 @@ jobs:
 
       - name: '🔧 Install dependencies'
         run: npm ci --only=production
+
+      - name: '🛠️ Install system tools'
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: '📋 Validate prerequisites'
         run: |
@@ -255,6 +268,9 @@ jobs:
       - name: '📊 Summary report'
         if: always()
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 🎯 渐进发布执行报告" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 配置项 | 值 |" >> $GITHUB_STEP_SUMMARY

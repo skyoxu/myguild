@@ -1,9 +1,67 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`App 组件 > 快照测试 > 应该匹配快照 1`] = `
-<div>
-  <h1>
-    Phaser + React + TypeScript
-  </h1>
+<div
+  class="app-container p-8 min-h-screen bg-game-ui-background"
+  data-testid="app-root"
+>
+  <header
+    class="text-center mb-8"
+  >
+    <h1
+      class="text-game-title font-bold text-game-primary mb-4"
+    >
+      Phaser 3 + React 19 + TypeScript
+    </h1>
+    <p
+      class="text-game-subtitle text-game-ui-muted"
+    >
+      符合 CLAUDE.md 技术栈要求的游戏开发环境
+    </p>
+    <div
+      class="flex justify-center gap-4 mt-6"
+    >
+      <button
+        class="px-4 py-2 rounded-lg transition-colors bg-blue-600 text-white"
+      >
+        🎮 常规游戏
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500"
+      >
+        🚀 竖切测试
+      </button>
+    </div>
+  </header>
+  <main
+    class="flex justify-center"
+  >
+    <div
+      class="flex flex-col items-center"
+    >
+      <div
+        class="game-canvas loading shadow-lg"
+        style="border: 2px solid rgb(49, 130, 206); border-radius: 8px; background-color: rgb(26, 32, 44); width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"
+      >
+        <div
+          style="color: rgb(255, 255, 255); font-size: 18px;"
+        >
+          正在加载游戏引擎...
+        </div>
+      </div>
+      <p
+        class="text-center mt-4 text-gray-400 text-sm max-w-md"
+      >
+        这是标准的游戏画布，使用现有的 GameEngineAdapter 和 MenuScene/GameScene
+      </p>
+    </div>
+  </main>
+  <footer
+    class="text-center mt-8 text-game-ui-muted"
+  >
+    <p>
+      🎮 技术栈：Electron + React 19 + Vite + Phaser 3 + Tailwind CSS v4 + TypeScript
+    </p>
+  </footer>
 </div>
 `;

@@ -70,11 +70,13 @@ export interface Guild {
   members: GuildMember[];
   currentTurn: number;
   status: GuildStatus;
-  updatedAt: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface GuildMember {
   id: MemberId;
+  guildId: GuildId; // 添加缺失的公会ID属性
   name: string;
   level: number;
   role: MemberRole;
@@ -82,11 +84,14 @@ export interface GuildMember {
   relationships: RelationshipMap;
   currentState: MemberState;
   aiGoals: PersonalGoal[];
-  updatedAt: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface GameTurn {
   id: TurnId;
+  guildId: GuildId; // 添加缺失的公会ID属性
+  turnNumber: number; // 添加缺失的回合编号属性
   weekNumber: number;
   currentPhase: TurnPhase;
   startedAt: string;
@@ -490,10 +495,10 @@ export interface MemberSummary {
   total: number;
   byRole: Record<MemberRole, number>;
   byState: Record<MemberState, number>;
-  recentChanges: MemberStateChange[];
+  recentChanges: MemberStateChangeEvent[];
 }
 
-export interface MemberStateChange {
+export interface MemberStateChangeEvent {
   memberId: MemberId;
   previousState: MemberState;
   newState: MemberState;
@@ -621,7 +626,7 @@ export const createGuildEvent = <T>(
     type,
     source: GUILD_EVENT_SOURCES[source],
     data,
-    subject: options.subject || options.guildId,
+    subject: options.subject || options.guildId?.toString(),
     datacontenttype: 'application/json',
   }) as GuildManagerCloudEvent<T>;
 };

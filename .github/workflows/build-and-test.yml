@@ -10,6 +10,15 @@ env:
   NODE_VERSION: '20.x'
   COVERAGE_THRESHOLD: 90
 
+permissions:
+  contents: read
+  actions: read
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ==================== 核心构建测试 ====================
   build-and-test:
@@ -59,7 +68,7 @@ jobs:
           NODE_ENV: test
 
   # ==================== Electron安全测试 ====================
-  electron-security:
+  electron-security-tests:
     name: Electron Security Tests
     runs-on: ubuntu-latest
     needs: build-and-test

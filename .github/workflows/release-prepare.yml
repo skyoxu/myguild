@@ -1,5 +1,10 @@
 name: Release Preparation - 发布准备
 
+# 最小权限原则
+permissions:
+  contents: write
+  actions: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -22,6 +27,11 @@ env:
   SENTRY_ORG: ${{ vars.SENTRY_ORG || 'your-org' }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || 'vitegame' }}
 
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # 发布准备不可中断
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -43,6 +53,9 @@ jobs:
 
       - name: '🔧 Install dependencies'
         run: npm ci --only=production
+
+      - name: '🛠️ Install system tools'
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: '✅ Validate version format'
         run: |
@@ -170,6 +183,9 @@ jobs:
 
       - name: '📊 Display preparation summary'
         run: |
+          # 确保UTF-8编码输出
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           echo "## 📦 发布准备完成" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY

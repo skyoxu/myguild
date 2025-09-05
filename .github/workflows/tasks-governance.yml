@@ -1,4 +1,10 @@
 name: tasks-governance
+
+# 最小权限原则
+permissions:
+  contents: read
+  actions: read
+
 on:
   pull_request:
     paths:
@@ -8,6 +14,11 @@ on:
       - 'scripts/**'
   push:
     branches: [ main ]
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-tasks:

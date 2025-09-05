@@ -109,7 +109,12 @@ class SecurityPolicyManager {
     totalEvents: number;
     allowedEvents: number;
     deniedEvents: number;
-    recentEvents: typeof this.auditLog;
+    recentEvents: Array<{
+      timestamp: string;
+      type: string;
+      action: string;
+      details: string;
+    }>;
     securityScore: number;
   } {
     const totalEvents = this.auditLog.length;
@@ -353,7 +358,18 @@ class SecurityPolicyManager {
     timestamp: string;
     environment: 'production' | 'development';
     config: SecurityConfig;
-    auditSummary: ReturnType<typeof this.getSecurityAuditReport>;
+    auditSummary: {
+      totalEvents: number;
+      allowedEvents: number;
+      deniedEvents: number;
+      recentEvents: Array<{
+        timestamp: string;
+        type: string;
+        action: string;
+        details: string;
+      }>;
+      securityScore: number;
+    };
   } {
     return {
       timestamp: new Date().toISOString(),

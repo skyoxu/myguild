@@ -57,6 +57,8 @@ export class EventBus implements EventPublisher, EventSubscriber {
   private config: EventBusConfig;
   private publishCount = 0;
   private subscriptionCount = 0;
+  // 存储原始handler到wrapped handler的映射，用于正确的unsubscribe
+  private handlerMap = new Map<string, Map<(...args: any[]) => void, (...args: any[]) => void>>();
 
   constructor(config: Partial<EventBusConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -155,6 +157,12 @@ export class EventBus implements EventPublisher, EventSubscriber {
       }
     };
 
+    // 存储原始handler到wrapped handler的映射
+    if (!this.handlerMap.has(eventType)) {
+      this.handlerMap.set(eventType, new Map());
+    }
+    this.handlerMap.get(eventType)!.set(handler, wrappedHandler);
+
     this.emitter.on(eventType, wrappedHandler);
     this.subscriptionCount++;
 
@@ -177,8 +185,23 @@ export class EventBus implements EventPublisher, EventSubscriber {
   /**
    * 取消订阅
    */
-  unsubscribe(eventType: string, handler: Function): void {
-    this.emitter.off(eventType, handler);
+  unsubscribe(eventType: string, handler: (...args: any[]) => void): void {
+    // 使用映射获取对应的wrapped handler
+    const eventHandlers = this.handlerMap.get(eventType);
+    if (eventHandlers && eventHandlers.has(handler)) {
+      const wrappedHandler = eventHandlers.get(handler)!;
+      this.emitter.off(eventType, wrappedHandler);
+      eventHandlers.delete(handler);
+
+      // 如果该事件类型没有更多handler，清理映射
+      if (eventHandlers.size === 0) {
+        this.handlerMap.delete(eventType);
+      }
+    } else {
+      // 回退到直接使用原始handler（用于向后兼容）
+      this.emitter.off(eventType, handler);
+    }
+
     this.subscriptionCount = Math.max(0, this.subscriptionCount - 1);
 
     if (this.config.enableDebugLogging) {
@@ -236,6 +259,7 @@ export class EventBus implements EventPublisher, EventSubscriber {
   destroy(): void {
     this.emitter.removeAllListeners();
     this.middlewares = [];
+    this.handlerMap.clear();
     this.publishCount = 0;
     this.subscriptionCount = 0;
 

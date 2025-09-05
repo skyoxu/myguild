@@ -169,7 +169,7 @@ export function GameNotifications({
 
     // 监听UI通知事件
     const uiSubscription = gameEvents.subscribe(
-      'guild.ui.notification.shown',
+      'game.ui.notification.shown',
       event => {
         const notificationData = event.data as {
           message?: string;

@@ -116,7 +116,10 @@ export class LevelResultService {
       // 验证数据完整性
       const validationResult = this.validateResult(completeResult);
       if (!validationResult.success) {
-        return validationResult;
+        return {
+          success: false,
+          error: validationResult.error,
+        };
       }
 
       // 主存储逻辑
@@ -249,20 +252,20 @@ export class LevelResultService {
 
       // 通过 Electron API 调用备份脚本
       try {
-        if (window.electronAPI?.executeScript) {
-          const backupResult = await window.electronAPI.executeScript({
-            script: 'node scripts/db/backup.mjs',
-            args: ['--compress', '--verify'],
+        // 注意：executeScript 方法不存在于当前的electronAPI接口中
+        // 改为使用 reportEvent 来记录备份请求
+        if (window.electronAPI?.reportEvent) {
+          window.electronAPI.reportEvent({
+            type: 'backup_requested',
+            data: {
+              backupId,
+              script: 'node scripts/db/backup.mjs',
+              args: ['--compress', '--verify'],
+            },
           });
 
-          if (backupResult.success) {
-            console.log('✅ 数据库备份完成:', backupId);
-            return {
-              success: true,
-              data: backupId,
-            };
-          }
-          throw new Error(backupResult.error || 'Backup script failed');
+          // 由于executeScript不存在，我们跳到fallback逻辑
+          throw new Error('executeScript method not available, using fallback');
         }
       } catch (electronError) {
         console.warn('⚠️ Electron备份失败，回退到本地备份:', electronError);

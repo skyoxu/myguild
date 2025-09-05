@@ -103,6 +103,24 @@ export class MockScene {
   preload() {}
   create() {}
   update() {}
+
+  // 游戏状态相关方法（用于GameScene）
+  private mockGameState: any = {
+    level: 1,
+    score: 0,
+    health: 100,
+    inventory: [],
+    position: { x: 400, y: 300 },
+    timestamp: new Date(),
+  };
+
+  getGameState() {
+    return { ...this.mockGameState };
+  }
+
+  setGameState(state: any) {
+    this.mockGameState = { ...this.mockGameState, ...state };
+  }
 }
 
 // 模拟 Phaser.Game

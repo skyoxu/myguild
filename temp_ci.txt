@@ -1,0 +1,104 @@
+    needs: unit-tests
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 检出代�?
+        uses: actions/checkout@v4
+
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 🔧 安装依赖
+        run: npm ci
+
+      - name: 📊 可观测性配置验�?
+        run: npm run test:observability
+
+      - name: 📈 生成可观测性报�?
+        run: |
+          mkdir -p reports
+          npm run test:observability > reports/observability-verification.json
+
+      - name: 📋 上传可观测性报�?
+        uses: actions/upload-artifact@v4
+        with:
+          name: observability-report
+          path: reports/
+          retention-days: 7
+
+  # ==================== 性能基准测试 ====================
+  performance-benchmarks:
+    name: 性能基准测试
+    runs-on: ubuntu-latest
+    needs: build-verification
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 检出代�?
+        uses: actions/checkout@v4
+
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 🔧 安装依赖
+        run: npm ci
+
+      - name: �?事件循环延迟基准
+        run: |
+          node scripts/benchmarks/event-loop-latency.ts
+          # TODO: 配置性能回归阈值检�?
+
+      - name: 📊 性能指标收集
+        run: |
+          # TODO: 集成性能监控指标收集
+          echo "性能指标收集 - 待完�?
+
+  # ==================== 部署就绪检�?====================
+  deployment-readiness:
+    name: 部署就绪检�?
+    runs-on: ubuntu-latest
+    needs: [build-verification, e2e-security-tests, observability-verification]
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 检出代�?
+        uses: actions/checkout@v4
+
+      - name: �?所有检查通过
+        run: |
+          echo "🎉 所有质量门禁检查通过�?
+          echo "�?代码质量检�? 通过"
+          echo "�?安全扫描: 通过"
+          echo "�?单元测试: 通过"
+          echo "�?E2E安全测试: 通过"
+          echo "�?构建验证: 通过"
+          echo "�?可观测性验�? 通过"
+          echo ""
+          echo "🚀 项目已就绪，可以部署�?
+
+      - name: 📊 生成部署清单
+        run: |
+          echo "部署清单 - $(date)" > deployment-checklist.md
+          echo "- [x] 代码质量检�? >> deployment-checklist.md
+          echo "- [x] 安全基线验证" >> deployment-checklist.md
+          echo "- [x] 功能测试覆盖" >> deployment-checklist.md
+          echo "- [x] 可观测性配�? >> deployment-checklist.md
+
+      - name: 📋 上传部署清单
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-checklist
+          path: deployment-checklist.md
+          retention-days: 90
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

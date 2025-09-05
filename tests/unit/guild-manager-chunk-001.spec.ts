@@ -27,7 +27,9 @@ import {
   UrgencyLevel,
 } from '../../src/shared/contracts/guild-manager-chunk-001';
 import { CloudEventValidator } from '../../src/shared/validation/CloudEventValidator';
-import { InMemoryRepository } from '../../src/shared/adapters/memory/InMemoryRepository';
+import { TestGuildRepository } from '../../src/shared/adapters/memory/TestGuildRepository';
+import { TestMemberRepository } from '../../src/shared/adapters/memory/TestMemberRepository';
+import { TestTurnRepository } from '../../src/shared/adapters/memory/TestTurnRepository';
 
 describe('Guild Manager Chunk 001 - Core Models', () => {
   let mockGuild: Guild;
@@ -54,6 +56,7 @@ describe('Guild Manager Chunk 001 - Core Models', () => {
 
     mockMember = {
       id: 'member-001' as any,
+      guildId: 'guild-001' as any,
       name: 'Test Member',
       level: 25,
       role: 'member' as any,
@@ -67,16 +70,21 @@ describe('Guild Manager Chunk 001 - Core Models', () => {
       relationships: {},
       currentState: MemberState.ACTIVE,
       aiGoals: [],
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     mockTurn = {
       id: 'turn-001' as any,
+      guildId: 'guild-001' as any,
+      turnNumber: 1,
       weekNumber: 1,
       currentPhase: TurnPhase.RESOLUTION,
       startedAt: new Date().toISOString(),
       phaseDeadlines: {},
       pendingDecisions: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   });
 
@@ -179,15 +187,9 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
   let turnRepo: ITurnRepository;
 
   beforeEach(() => {
-    guildRepo = new InMemoryRepository<Guild, any>((id: any) =>
-      id.toString()
-    ) as any;
-    memberRepo = new InMemoryRepository<GuildMember, any>((id: any) =>
-      id.toString()
-    ) as any;
-    turnRepo = new InMemoryRepository<GameTurn, any>((id: any) =>
-      id.toString()
-    ) as any;
+    guildRepo = new TestGuildRepository();
+    memberRepo = new TestMemberRepository();
+    turnRepo = new TestTurnRepository();
   });
 
   describe('Guild Repository', () => {
@@ -235,6 +237,7 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
     it('should support basic CRUD operations', async () => {
       const member: GuildMember = {
         id: 'member-001' as any,
+        guildId: 'guild-001' as any,
         name: 'Test Member',
         level: 25,
         role: 'member' as any,
@@ -248,7 +251,8 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
         relationships: {},
         currentState: MemberState.ACTIVE,
         aiGoals: [],
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await memberRepo.save(member);
@@ -271,11 +275,15 @@ describe('Guild Manager Chunk 001 - Repository Contracts', () => {
     it('should support basic CRUD operations', async () => {
       const turn: GameTurn = {
         id: 'turn-001' as any,
+        guildId: 'guild-001' as any,
+        turnNumber: 1,
         weekNumber: 1,
         currentPhase: TurnPhase.RESOLUTION,
         startedAt: new Date().toISOString(),
         phaseDeadlines: {},
         pendingDecisions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await turnRepo.save(turn);
@@ -481,7 +489,7 @@ describe('Guild Manager Chunk 001 - CloudEvents Validation Tests', () => {
       specversion: '1.0',
       id: 'test-001',
       source: 'gm://turn-system',
-      type: 'gm.guild.turn.started',
+      type: 'io.vitegame.gm.guild.turn.started',
       time: new Date().toISOString(),
     };
 
@@ -494,7 +502,7 @@ describe('Guild Manager Chunk 001 - CloudEvents Validation Tests', () => {
     const invalidEvent = {
       // 缺少必需字段
       specversion: '1.0',
-      type: 'gm.guild.turn.started',
+      type: 'io.vitegame.gm.guild.turn.started',
     };
 
     const validation = CloudEventValidator.validate(invalidEvent);
@@ -542,6 +550,7 @@ describe('Guild Manager Chunk 001 - Performance Tests', () => {
     for (let i = 0; i < 1000; i++) {
       members.push({
         id: `member-${i}` as any,
+        guildId: `guild-${Math.floor(i / 100)}` as any,
         name: `Member ${i}`,
         level: Math.floor(Math.random() * 50) + 1,
         role: 'member' as any,
@@ -555,7 +564,8 @@ describe('Guild Manager Chunk 001 - Performance Tests', () => {
         relationships: {},
         currentState: MemberState.ACTIVE,
         aiGoals: [],
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
 

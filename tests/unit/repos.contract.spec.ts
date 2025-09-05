@@ -57,8 +57,8 @@ class InMemoryRepository<T extends Entity> implements Repository<T> {
   async upsert(entity: T): Promise<void> {
     const existing = this.store.get(entity.id);
 
-    // 乐观锁检查
-    if (existing && existing.version >= entity.version) {
+    // 乐观锁检查 - 只有当现有版本大于传入版本时才冲突
+    if (existing && existing.version > entity.version) {
       throw new ConcurrencyError(
         'TestEntity',
         entity.id,

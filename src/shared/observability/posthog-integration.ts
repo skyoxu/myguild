@@ -101,15 +101,9 @@ export class PostHogIntegration {
         capture_pageview: true,
         capture_pageleave: true,
 
-        // G建议：会话回放设置
+        // G建议：会话回放设置 (简化配置以避免类型冲突)
         session_recording: {
-          enabled: this.config.enableSessionRecording,
           maskAllInputs: true, // 隐私保护：遮罩所有输入
-          maskAllText: false, // 保留文本内容用于分析
-          recordCrossOriginIframes: false,
-          sampling: {
-            sessionSamplingRate: this.config.samplingRate,
-          },
         },
 
         // 特性开关配置
@@ -117,8 +111,7 @@ export class PostHogIntegration {
           featureFlags: this.config.enableFeatureFlags ? {} : undefined,
         },
 
-        // 热力图配置
-        heatmaps: this.config.enableHeatmaps,
+        // 热力图配置 (移除不存在的配置项)
 
         // 隐私和GDPR合规
         respect_dnt: true,

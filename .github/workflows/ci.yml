@@ -3,8 +3,32 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'vitest.config.ts'
+      - 'playwright.config.ts'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'vitest.config.ts'
+      - 'playwright.config.ts'
+      - '.github/workflows/ci.yml'
   schedule:
     # 每日晨检 - 每天UTC 02:00 (北京时间10:00)
     - cron: '0 2 * * *'
@@ -13,12 +37,52 @@ env:
   NODE_VERSION_MATRIX: '18.x, 20.x, 22.x'
   COVERAGE_THRESHOLD: 90
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  # ==================== 守护自检 ====================
+  workflow-guardian:
+    name: 🛡️ Workflow Guardian Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔍 Actionlint 工作流语法检查
+        uses: rhysd/actionlint-action@v1
+        with:
+          fail-on-error: true
+
+      - name: 📦 设置 Node.js (守护脚本)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 🔧 安装依赖 (守护脚本)
+        run: npm ci
+
+      - name: 🔗 Needs 依赖校验
+        run: |
+          echo "🔍 校验所有工作流 needs 依赖完整性..."
+          node scripts/ci/workflow-guardian.mjs
+
+      - name: 🛡️ 分支保护规则同步检查
+        run: |
+          echo "🔍 检查分支保护规则与关键jobs一致性..."
+          node scripts/ci/branch-protection-guardian.mjs
+        continue-on-error: true  # 分支保护检查失败不阻断开发流程，但会记录问题
+
   # ==================== 质量门禁阶段 ====================
   quality-gates:
-    name: 质量门禁检查
+    name: Quality Gates Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: workflow-guardian
 
     steps:
       - name: 📥 检出代码
@@ -39,57 +103,148 @@ jobs:
         run: npm run lint
 
       - name: 🏗️ TypeScript 编译检查
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: 📊 可观测性门禁检查
         run: npm run ci:gate:sentry-up
         timeout-minutes: 2
 
-  # ==================== 安全扫描阶段 ====================
-  security-scan:
-    name: 安全扫描
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: quality-gates
+      - name: 🔧 工作流一致性检查
+        run: npm run ci:gate:workflow
+        timeout-minutes: 2
 
+  # ==================== 安全扫描阶段 ====================
+  # 注意：安全扫描已完全迁移到统一门禁系统 (security-unified.yml)
+  # CI工作流不再包含重复的安全检查jobs，避免状态检查冲突
+
+  # ==================== 稳定名核心作业（必需检查）====================
+  unit-tests-core:
+    name: Unit Tests (ubuntu-latest, Node 20)
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    timeout-minutes: 15
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
-
       - name: 📦 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-
       - name: 🔧 安装依赖
         run: npm ci
-
-      - name: 🛡️ npm audit 安全检查
-        run: npm run security:audit
-
-      - name: 🔐 Electronegativity 安全扫描
-        run: npm run security:scan
-
-      - name: ✅ 安全验证脚本
-        run: npm run security:validate
-
-      - name: 📋 上传安全扫描报告
-        if: always()
+      - name: 🧪 运行单元测试（覆盖率）
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+      - name: 📤 上传覆盖率摘要
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: security-scan-results
-          path: |
-            security-scan.json
-            security-validation-report.json
-          retention-days: 30
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          retention-days: 7
 
-  # ==================== 多平台单元测试 ====================
-  unit-tests:
-    name: 单元测试 (${{ matrix.os }}, Node ${{ matrix.node-version }})
+  coverage-gate:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    needs: unit-tests-core
+    timeout-minutes: 5
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🔍 Coverage 脚本语法检查 (UTF-8 编码验证)
+        run: |
+          echo "🔍 验证 coverage-config.cjs 语法和编码..."
+          node --check scripts/ci/coverage-config.cjs
+          node -e "require('./scripts/ci/coverage-config.cjs'); console.log('✅ 脚本语法和编码验证通过')"
+      - name: 📊 下载覆盖率报告
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-summary
+          path: coverage/
+      - name: 🔒 覆盖率门禁检查 (90% 硬门)
+        run: node scripts/ci/coverage-gate.cjs
+        env:
+          COVERAGE_MODE: production
+          NODE_ENV: production
+
+  build-verification-core:
+    name: Build Verification (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: unit-tests-core
+    timeout-minutes: 10
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🏗️ 构建应用
+        run: npm run build
+      - name: 🔍 验证构建产物
+        run: |
+          ls -la dist/
+          test -f dist/index.html
+          test -d dist/assets/
+
+  release-health-gate:
+    name: Release Health Gate
+    runs-on: ubuntu-latest
+    needs: [unit-tests-core, coverage-gate, electron-security-gate]
+    timeout-minutes: 5
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      - name: 📦 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: 🔧 安装依赖
+        run: npm ci
+      - name: 🔍 验证发布健康度
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        run: node scripts/release-health-gate.mjs
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || 'bc660-desktop' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+          SENTRY_RELEASE: ${{ github.sha }}
+      
+      - name: ⚠️ Release Health Gate跳过（缺少secrets）
+        if: ${{ secrets.SENTRY_AUTH_TOKEN == '' }}
+        run: |
+          echo "⚠️ SENTRY_AUTH_TOKEN未配置，跳过发布健康度检查"
+          echo "💡 在生产环境中请配置Sentry认证令牌以启用完整的发布健康度验证"
+          echo "status=skipped" >> $GITHUB_OUTPUT
+      - name: ⚠️ Fork PR降级为警告
+        if: ${{ github.event.pull_request.head.repo.fork && failure() }}
+        run: 'echo "Fork PR: skipping hard gate due to missing secrets" && exit 0'
+
+  # ==================== 多平台单元测试扩展（非必需）====================
+  unit-tests-extended:
+    name: Unit Tests Extended Matrix
     runs-on: ${{ matrix.os }}
     needs: quality-gates
     timeout-minutes: 20
+    # 仅在代码改动时触发，文档类变更跳过
+    if: |
+      contains(github.event.head_commit.message, '[skip-extended]') == false &&
+      github.event_name != 'schedule'
 
     strategy:
       fail-fast: false
@@ -100,32 +255,51 @@ jobs:
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 检查代码文件变更
+        uses: tj-actions/changed-files@v44
+        id: changed-files
+        with:
+          files: |
+            src/**
+            tests/**
+            *.js
+            *.ts
+            *.json
+            package*.json
+            vite.config.*
+            tsconfig.json
+            *.config.js
+            *.config.ts
+          files_ignore: |
+            docs/**
+            *.md
+            **/*.md
 
       - name: 📦 设置 Node.js ${{ matrix.node-version }}
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: 🔧 安装依赖
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm ci
 
       - name: 🧪 运行单元测试
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm test
         env:
           NODE_ENV: test
 
-      - name: 📊 代码覆盖率检查
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
-        run: |
-          # TODO: 集成覆盖率检查
-          echo "代码覆盖率检查 - 待配置测试框架后完善"
-
-  # ==================== E2E安全测试 ====================
-  e2e-security-tests:
-    name: E2E安全测试
+  # ==================== Electron安全门禁（必需）====================
+  electron-security-gate:
+    name: Electron Security Gate
     runs-on: ubuntu-latest
-    needs: [quality-gates, security-scan]
+    needs: quality-gates
     timeout-minutes: 30
 
     steps:
@@ -151,6 +325,28 @@ jobs:
         env:
           CI: true
 
+      - name: 🔍 Electron安全基线校验
+        run: |
+          echo "🔍 执行Electron安全基线静态校验..."
+          
+          # 预加载脚本安全校验
+          if [ -f "scripts/validate-preload-security.mjs" ]; then
+            node scripts/validate-preload-security.mjs
+          else
+            echo "⚠️ 预加载安全校验脚本不存在，跳过检查"
+          fi
+          
+          # CSP一致性校验  
+          if [ -f "scripts/validate-csp-consistency.mjs" ]; then
+            node scripts/validate-csp-consistency.mjs
+          elif [ -f "scripts/scan_electron_safety.mjs" ]; then
+            node scripts/scan_electron_safety.mjs
+          else
+            echo "⚠️ CSP校验脚本不存在，跳过检查"
+          fi
+          
+          echo "✅ Electron安全基线校验完成"
+
       - name: 📋 上传E2E测试报告
         if: always()
         uses: actions/upload-artifact@v4
@@ -161,12 +357,16 @@ jobs:
             playwright-report/
           retention-days: 30
 
-  # ==================== 构建验证 ====================
-  build-verification:
-    name: 构建验证 (${{ matrix.os }})
+  # ==================== 构建验证扩展（非必需）====================
+  build-verification-extended:
+    name: Build Verification Extended Matrix
     runs-on: ${{ matrix.os }}
-    needs: unit-tests
+    needs: unit-tests-extended
     timeout-minutes: 15
+    # 仅在代码改动时触发，文档类变更跳过
+    if: |
+      contains(github.event.head_commit.message, '[skip-extended]') == false &&
+      github.event_name != 'schedule'
 
     strategy:
       matrix:
@@ -175,35 +375,66 @@ jobs:
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 检查代码文件变更
+        uses: tj-actions/changed-files@v44
+        id: changed-files
+        with:
+          files: |
+            src/**
+            tests/**
+            *.js
+            *.ts
+            *.json
+            package*.json
+            vite.config.*
+            tsconfig.json
+            *.config.js
+            *.config.ts
+          files_ignore: |
+            docs/**
+            *.md
+            **/*.md
 
       - name: 📦 设置 Node.js
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
       - name: 🔧 安装依赖
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm ci
 
       - name: 🏗️ 构建应用
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build
 
       - name: 🔍 验证构建产物
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          ls -la dist/
-          # 验证关键文件存在
-          test -f dist/index.html
-          test -d dist/assets/
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            dir dist\
+            if not exist "dist\index.html" exit 1
+            if not exist "dist\assets\" exit 1
+          else
+            ls -la dist/
+            test -f dist/index.html
+            test -d dist/assets/
+          fi
 
       - name: 📦 Electron打包测试 (仅Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && steps.changed-files.outputs.any_changed == 'true'
         run: |
           # TODO: 配置Electron Builder后启用
           echo "Electron打包测试 - 待配置完善"
 
   # ==================== 依赖安全审计 ====================
   dependency-audit:
-    name: 依赖安全审计
+    name: Dependency Security Audit
     runs-on: ubuntu-latest
     needs: quality-gates
     timeout-minutes: 10
@@ -222,7 +453,7 @@ jobs:
         run: npm ci
 
       - name: 🔍 Snyk安全扫描
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@v0.4.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -236,9 +467,9 @@ jobs:
 
   # ==================== 可观测性验证 ====================
   observability-verification:
-    name: 可观测性验证
+    name: Observability Verification
     runs-on: ubuntu-latest
-    needs: unit-tests
+    needs: unit-tests-core
     timeout-minutes: 10
 
     steps:
@@ -271,10 +502,13 @@ jobs:
 
   # ==================== 性能基准测试 ====================
   performance-benchmarks:
-    name: 性能基准测试
+    name: Performance Benchmarks
     runs-on: ubuntu-latest
-    needs: build-verification
+    needs: build-verification-core
     timeout-minutes: 15
+    # 仅在代码改动时触发
+    if: |
+      contains(github.event.head_commit.message, '[skip-perf]') == false
 
     steps:
       - name: 📥 检出代码
@@ -301,9 +535,14 @@ jobs:
 
   # ==================== 部署就绪检查 ====================
   deployment-readiness:
-    name: 部署就绪检查
+    name: Deployment Readiness Check
     runs-on: ubuntu-latest
-    needs: [build-verification, e2e-security-tests, observability-verification]
+    needs:
+      [
+        build-verification-core,
+        electron-security-gate,
+        observability-verification,
+      ]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
 

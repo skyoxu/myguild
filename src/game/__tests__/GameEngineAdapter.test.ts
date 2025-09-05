@@ -137,12 +137,19 @@ describe('GameEngineAdapter', () => {
       // 先保存
       const saveId = await gameEngine.saveGame();
 
-      // 需要计算正确的校验和以通过验证
-      const crypto = await import('node:crypto');
-      const correctChecksum = crypto
-        .createHash('md5')
-        .update(JSON.stringify(initialState))
-        .digest('hex');
+      // 使用与GameStateManager相同的校验和计算方法
+      const calculateChecksum = (state: any): string => {
+        const stateStr = JSON.stringify(state, Object.keys(state).sort());
+        let hash = 0;
+        for (let i = 0; i < stateStr.length; i++) {
+          const char = stateStr.charCodeAt(i);
+          hash = (hash << 5) - hash + char;
+          hash = hash & hash; // 转换为32位整数
+        }
+        return hash.toString(16);
+      };
+
+      const correctChecksum = calculateChecksum(initialState);
 
       // 模拟存储的数据
       const saveData = {

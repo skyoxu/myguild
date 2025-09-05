@@ -42,6 +42,11 @@ env:
   CRASH_FREE_USER_THRESHOLD: '99.8'
   ADOPTION_RATE_7D_THRESHOLD: '50.0'
 
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
 jobs:
   # 📋 环境检查和准备
   prepare:
@@ -213,9 +218,9 @@ jobs:
       - name: 📦 解压构建产物
         run: tar -xzf build-artifacts.tar.gz
 
-      - name: 🔧 安装Sentry CLI
+      - name: 🔧 设置Sentry CLI
         run: |
-          curl -sL https://sentry.io/get-cli/ | bash
+          echo "使用npm安装的Sentry CLI"
 
       - name: 🚀 创建Sentry Release
         run: |
@@ -409,3 +414,8 @@ jobs:
           else
             echo "❌ Release流程存在问题，请检查失败的步骤"
           fi
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # release工作流不取消正在进行的部署

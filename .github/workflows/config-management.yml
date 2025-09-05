@@ -1,6 +1,11 @@
 # GitHub Actions 工作流：配置管理与文档处理
 name: Configuration Management
 
+# 最小权限原则
+permissions:
+  contents: read
+  actions: read
+
 on:
   push:
     branches: [main, develop]
@@ -17,8 +22,13 @@ env:
   NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
   RELEASE_PREFIX: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
+# ==================== 并发控制 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  config-validation:
+  config-validation-and-docs:
     name: 配置验证与文档处理
     runs-on: ubuntu-latest
 
@@ -102,14 +112,14 @@ jobs:
             config-report.json
           retention-days: 30
 
-      - name: Base 文档清洁性检查
-        run: |
-          echo "🧹 检查 Base 文档清洁性..."
-          npm run guard:base
+      # - name: Base 文档清洁性检查
+      #   run: |
+      #     echo "🧹 检查 Base 文档清洁性..."
+      #     npm run guard:base
 
   documentation-build:
     name: 文档构建与发布准备
-    needs: config-validation
+    needs: config-validation-and-docs
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 

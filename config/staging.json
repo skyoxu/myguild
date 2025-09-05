@@ -1,0 +1,17 @@
+{
+  "sentry": {
+    "dsn": "https://abc123456789@o123456.ingest.sentry.io/123456",
+    "environment": "staging",
+    "release": "staging-v1.0.0-rc1"
+  },
+  "logging": {
+    "level": "info",
+    "structured": true
+  },
+  "metrics": {
+    "enabled": true
+  },
+  "crashReporting": {
+    "enabled": true
+  }
+}
