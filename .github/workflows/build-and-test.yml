@@ -48,6 +48,9 @@ jobs:
           echo "node version: $(node --version)"
 
       - name: 🔧 安装依赖 (带重试)
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
         run: |
           for i in 1 2 3; do 
             echo "第 $i 次安装依赖尝试..."
@@ -57,6 +60,27 @@ jobs:
             }
           done
           echo "依赖安装完成"
+
+      - name: 🔧 验证工具可用性
+        run: |
+          echo "验证开发工具安装状态..."
+          node -v && npm -v
+          echo "检查ESLint可用性..."
+          npx eslint -v || { 
+            echo "❌ ESLint未正确安装"
+            echo "devDependencies状态:"
+            npm ls eslint --depth=0 || true
+            echo "package.json中的eslint定义:"
+            cat package.json | grep -A2 -B2 '"eslint"' || echo "未找到eslint配置"
+            exit 1
+          }
+          echo "检查TypeScript编译器..."
+          npx tsc -v || {
+            echo "❌ TypeScript编译器未正确安装"
+            npm ls typescript --depth=0 || true
+            exit 1
+          }
+          echo "✅ 所有开发工具验证通过"
 
       - name: 🔍 ESLint 检查
         run: npm run lint
@@ -111,6 +135,9 @@ jobs:
           echo "node version: $(node --version)"
 
       - name: 🔧 安装依赖 (带重试)
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
         run: |
           for i in 1 2 3; do 
             echo "第 $i 次安装依赖尝试..."
@@ -120,6 +147,21 @@ jobs:
             }
           done
           echo "依赖安装完成"
+
+      - name: 🔧 验证工具可用性 (安全测试)
+        run: |
+          echo "验证Playwright和测试工具..."
+          npx playwright --version || {
+            echo "❌ Playwright未正确安装"
+            npm ls @playwright/test --depth=0 || true
+            exit 1
+          }
+          echo "验证ESLint可用性..."
+          npx eslint -v || {
+            echo "⚠️ ESLint不可用，但安全测试可继续"
+            npm ls eslint --depth=0 || true
+          }
+          echo "✅ 安全测试工具验证完成"
 
       - name: 🖥️ 安装系统依赖 (Electron)
         run: |
