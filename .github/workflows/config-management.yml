@@ -31,6 +31,10 @@ jobs:
   config-validation-and-docs:
     name: 配置验证与文档处理
     runs-on: ubuntu-latest
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
       - name: 检出代码

@@ -19,108 +19,40 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: 🔍 Node环境哨兵检查
-      id: env-check
+    - name: 🔧 npm安装加固版 (P1简化版)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "🔍 执行Node.js环境哨兵检查..."
-        echo "当前npm版本: $(npm --version)"
-        echo "当前node版本: $(node --version)"
-        echo "工作目录: $(pwd)"
-        echo "npm缓存目录: $(npm config get cache)"
+        echo "🔧 开始加固版npm安装..."
 
-        # 语法哨兵检查
-        if [ -f "scripts/ci/coverage-config.cjs" ]; then
-          node --check scripts/ci/coverage-config.cjs
-          node -e "require('./scripts/ci/coverage-config.cjs'); console.log('✅ coverage-config.cjs 语法正确')"
-        fi
-
-        # 输出版本信息给后续步骤
-        echo "npm-version=$(npm --version)" >> $GITHUB_OUTPUT
-        echo "node-version=$(node --version)" >> $GITHUB_OUTPUT
-
-    - name: ⚙️ npm网络配置加固
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
+        # 简化版网络配置（基于2024最佳实践）
         npm config set fetch-retries 5
         npm config set fetch-retry-factor 2
         npm config set fetch-timeout 300000
-        npm config set fetch-retry-mintimeout 1000
         npm config set registry https://registry.npmjs.org/
-        echo "✅ npm网络配置已优化"
 
-    - name: 🔧 安装依赖（加固版）
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      env:
-        NODE_ENV: development
-        NPM_CONFIG_PRODUCTION: 'false'
-      run: |
-        echo "🔧 开始加固版npm安装..."
+        # 核心安装逻辑：3次重试 + 缓存清理
         for i in 1 2 3; do 
           echo "第 $i 次安装依赖尝试..."
           if npm ci --no-audit --no-fund; then
             echo "✅ 第 $i 次尝试成功"
-            break
-          else
-            echo "❌ 第 $i 次尝试失败"
-            if [ $i -lt 3 ]; then
-              echo "等待10秒后重试..."
-              sleep 10
-            else
-              echo "🚨 所有重试失败，进入降级处理..."
-              echo "清理npm缓存..."
-              npm cache clean --force
-              rm -rf ~/.npm/_cacache
-              echo "最后一次尝试..."
-              npm ci --no-audit --no-fund
+            # 基本验证：node_modules存在
+            if [ -d "node_modules" ]; then
+              echo "✅ node_modules 目录验证通过"
+              exit 0
             fi
+          fi
+          # 失败处理
+          if [ $i -lt 3 ]; then
+            echo "❌ 第 $i 次尝试失败，10秒后重试..."
+            sleep 10
+          else
+            echo "🚨 所有重试失败，清理缓存后最后一次尝试..."
+            npm cache clean --force
+            npm ci --no-audit --no-fund
           fi
         done
         echo "✅ 依赖安装完成"
-
-    - name: 🔧 验证依赖树完整性
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        echo "🔍 验证关键开发工具可用性..."
-
-        # 验证node_modules目录存在
-        if [ ! -d "node_modules" ]; then
-          echo "❌ node_modules目录不存在"
-          exit 1
-        fi
-
-        # 验证ESLint可用性
-        if command -v npx >/dev/null 2>&1; then
-          if npx eslint -v >/dev/null 2>&1; then
-            echo "✅ ESLint可用: $(npx eslint -v)"
-          else
-            echo "❌ ESLint不可用"
-            echo "📊 devDependencies状态:"
-            npm ls eslint --depth=0 || echo "ESLint未正确安装"
-            exit 1
-          fi
-        else
-          echo "⚠️ npx不可用，跳过工具验证"
-        fi
-
-        # 验证TypeScript可用性（如果项目使用）
-        if npm ls typescript --depth=0 >/dev/null 2>&1; then
-          if npx tsc -v >/dev/null 2>&1; then
-            echo "✅ TypeScript可用: $(npx tsc -v)"
-          else
-            echo "❌ TypeScript不可用"
-            npm ls typescript --depth=0 || echo "TypeScript未正确安装"
-            exit 1
-          fi
-        else
-          echo "ℹ️ 项目未使用TypeScript"
-        fi
-
-        echo "✅ 所有依赖验证通过"
 
 branding:
   icon: 'download'

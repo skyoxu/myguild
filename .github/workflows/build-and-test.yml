@@ -25,6 +25,10 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
       - name: 📥 检出代码
@@ -73,6 +77,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     timeout-minutes: 20
+    # P0修复：job级别环境变量确保devDependencies正确安装
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
       - name: 📥 检出代码
