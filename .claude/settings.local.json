@@ -12,7 +12,6 @@
       "Bash(npm run test:unit:*)",
       "Bash(dir:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)",
       "Bash(gh run list:*)",
       "Bash(gh:*)",
       "Bash(npm run lint:*)",

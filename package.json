@@ -100,7 +100,7 @@
     "guard:csp:simple": "node scripts/verify-csp-compliance-simple.mjs",
     "guard:workflow": "node scripts/ci/workflow-guardian.mjs",
     "guard:branch-protection": "node scripts/ci/branch-protection-guardian.mjs",
-    "guard:ci": "npm run guard:workflow && npm run guard:branch-protection",
+    "guard:ci:basic": "npm run guard:workflow && npm run guard:branch-protection",
     "guard:bundle": "node scripts/bundle-size-check.mjs",
     "guard:web-vitals": "node scripts/web-vitals-gate.mjs check",
     "guard:web-vitals:baseline": "node scripts/web-vitals-gate.mjs baseline",
