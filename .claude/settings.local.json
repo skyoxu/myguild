@@ -9,7 +9,9 @@
       "Bash(npx actionlint:*)",
       "mcp__brave-search__brave_web_search",
       "Bash(npx:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": [],

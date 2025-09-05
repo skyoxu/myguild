@@ -6,24 +6,27 @@ import react from 'eslint-plugin-react';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
-import { globalIgnores } from 'eslint/config';
+// 移除错误的导入路径 - globalIgnores 不存在于 eslint/config 中
 
 export default tseslint.config([
-  globalIgnores([
-    'dist',
-    'build',
-    'node_modules',
-    'electron-dist',
-    'coverage',
-    'logs',
-    'test-results',
-    'tests_08_templates',
-    'configs',
-    'docs',
-    // 临时忽略有语法错误的文件
-    'scripts/release-health-gate.mjs',
-    'src/shared/observability/monitoring-example.ts',
-  ]),
+  {
+    // 全局忽略配置 - 使用标准flat config语法
+    ignores: [
+      'dist',
+      'build',
+      'node_modules',
+      'electron-dist',
+      'coverage',
+      'logs',
+      'test-results',
+      'tests_08_templates',
+      'configs',
+      'docs',
+      // 临时忽略有语法错误的文件
+      'scripts/release-health-gate.mjs',
+      'src/shared/observability/monitoring-example.ts',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -46,11 +49,8 @@ export default tseslint.config([
       react,
     },
     rules: {
-      // 根据环境调整 Prettier 规则：CI 环境且非 main 分支时降级为警告
-      'prettier/prettier':
-        process.env.CI && process.env.GITHUB_REF !== 'refs/heads/main'
-          ? 'warn'
-          : 'error',
+      // Prettier 规则：使用静态配置避免动态解析问题
+      'prettier/prettier': 'error',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
