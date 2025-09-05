@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 
-const execAsync = util.promisify(exec);
+const _execAsync = util.promisify(exec); // Reserved for future use
 
 const SECURITY_TESTS = {
   electron: {
