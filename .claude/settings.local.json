@@ -1,6 +1,16 @@
 {
   "permissions": {
-    "allow": ["Bash(set GITHUB_REF=refs/heads/feature/test)"],
+    "allow": [
+      "Bash(set GITHUB_REF=refs/heads/feature/test)",
+      "Bash(git push:*)",
+      "mcp__zen-mcp-server__thinkdeep",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(npx actionlint:*)",
+      "mcp__brave-search__brave_web_search",
+      "Bash(npx:*)",
+      "Bash(git add:*)"
+    ],
     "deny": [],
     "ask": [],
     "additionalDirectories": ["C:\\c\\buildgame"]
