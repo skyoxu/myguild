@@ -8,35 +8,48 @@ inputs:
     required: false
     default: '.'
 
-outputs:
-  npm-version:
-    description: '安装的npm版本'
-    value: ${{ steps.env-check.outputs.npm-version }}
-  node-version:
-    description: '安装的Node.js版本'
-    value: ${{ steps.env-check.outputs.node-version }}
+# 移除outputs配置避免引用不存在的步骤ID
+# 如需要版本信息，可通过npm --version和node --version获取
 
 runs:
   using: 'composite'
   steps:
-    - name: 🔧 npm安装加固版 (P1简化版)
+    - name: 🔍 环境变量验证
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "🔧 开始加固版npm安装..."
+        echo "🔍 验证关键环境变量..."
+        echo "NODE_ENV: ${NODE_ENV:-未设置}"
+        echo "NPM_CONFIG_PRODUCTION: ${NPM_CONFIG_PRODUCTION:-未设置}"
 
-        # 简化版网络配置（基于2024最佳实践）
-        npm config set fetch-retries 5
-        npm config set fetch-retry-factor 2
-        npm config set fetch-timeout 300000
-        npm config set registry https://registry.npmjs.org/
+        # 验证devDependencies安装环境配置
+        if [ "${NODE_ENV}" != "development" ] || [ "${NPM_CONFIG_PRODUCTION}" != "false" ]; then
+          echo "⚠️ 警告：环境变量可能导致devDependencies未安装"
+          echo "  建议设置：NODE_ENV=development, NPM_CONFIG_PRODUCTION=false"
+        fi
+
+    - name: 🔧 npm安装加固版 (P2最终版)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🔧 开始npm安装..."
+        echo "📋 使用项目级.npmrc配置（网络重试、缓存等）"
+
+        # 显示当前npm配置（调试用）
+        echo "📊 当前npm配置："
+        npm config list | grep -E "(fetch-retries|registry|fund|audit)" || true
 
         # 核心安装逻辑：3次重试 + 缓存清理
         for i in 1 2 3; do 
           echo "第 $i 次安装依赖尝试..."
-          if npm ci --no-audit --no-fund; then
+          if npm ci; then
             echo "✅ 第 $i 次尝试成功"
-            # 基本验证：node_modules存在
+            # 验证关键工具可用性（devDependencies）
+            if command -v eslint > /dev/null 2>&1; then
+              echo "✅ ESLint 工具验证通过"
+            else
+              echo "⚠️ ESLint 工具不可用，可能devDependencies未安装"
+            fi
             if [ -d "node_modules" ]; then
               echo "✅ node_modules 目录验证通过"
               exit 0
@@ -49,7 +62,7 @@ runs:
           else
             echo "🚨 所有重试失败，清理缓存后最后一次尝试..."
             npm cache clean --force
-            npm ci --no-audit --no-fund
+            npm ci
           fi
         done
         echo "✅ 依赖安装完成"
