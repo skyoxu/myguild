@@ -18,11 +18,30 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Node.js with ESM support
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: 'npm'
+    - name: Validate Node.js environment
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "Validating Node.js environment setup..."
+
+        # Verify Node.js is available and version
+        if ! command -v node >/dev/null 2>&1; then
+          echo "❌ ERROR: Node.js not found. Please ensure actions/setup-node@v4 runs before this action."
+          exit 1
+        fi
+
+        node_version=$(node --version)
+        echo "✅ Node.js version: $node_version"
+
+        # Verify npm is available
+        if ! command -v npm >/dev/null 2>&1; then
+          echo "❌ ERROR: npm not found. Node.js installation may be incomplete."
+          exit 1
+        fi
+
+        npm_version=$(npm --version)
+        echo "✅ npm version: $npm_version"
+
     - name: Validate environment variables
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -121,7 +140,7 @@ runs:
             dev_tools_list="eslint tsc vitest playwright"
             
             for tool in $dev_tools_list; do
-              # FIXED: Check node_modules/.bin instead of global PATH
+              # Enhanced check: node_modules/.bin first, then npm list verification
               if [ -f "node_modules/.bin/$tool" ] || [ -f "node_modules/.bin/${tool}.cmd" ]; then
                 echo "SUCCESS: $tool (dev dependency) available in node_modules/.bin/"
               elif npm list "$tool" >/dev/null 2>&1; then
