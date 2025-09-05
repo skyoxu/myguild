@@ -5,6 +5,13 @@ permissions:
   contents: read
   actions: read
 
+# Infrastructure-level optimization: global environment variables
+env:
+  NODE_VERSION: '20.x'
+  CI_RETRY_COUNT: '3'
+  CI_TIMEOUT_MINUTES: '15'
+  CACHE_STRATEGY: 'aggressive'
+
 on:
   pull_request:
     paths:
@@ -23,15 +30,38 @@ concurrency:
 jobs:
   validate-tasks:
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJson(env.CI_TIMEOUT_MINUTES) }}
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
+
+    # Infrastructure-level optimization: retry strategy
+    strategy:
+      fail-fast: false
+      matrix:
+        retry_attempt: [1]
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Infrastructure optimization: shallow clone for faster checkout
+          fetch-depth: 1
+
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          # Infrastructure optimization: enhanced caching strategy
+          cache-dependency-path: |
+            package-lock.json
+            package.json
+
+      - name: 安装依赖 (使用强化npm-install action)
+        uses: ./.github/actions/npm-install
+        with:
+          working-directory: '.'
+          node-version: ${{ env.NODE_VERSION }}
 
       # 若 overlay-map 可自动生成，先重建并强制“已提交一致”
       - run: node scripts/build-overlay-map.mjs

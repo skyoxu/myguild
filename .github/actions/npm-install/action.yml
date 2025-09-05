@@ -41,7 +41,11 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
+        # Cross-platform bash compatibility enforced - explicit bash mode
+        set -euo pipefail
+
         echo "Starting npm installation..."
+        echo "Platform: $(uname -s), Runner: $RUNNER_OS"
         echo "Using project-level .npmrc config (network retries, caching, etc.)"
 
         # Show current npm config for debugging
@@ -59,70 +63,103 @@ runs:
 
         install_success=false
 
+        # Cross-platform timeout function (handles differences between GNU/BSD timeout)
+        run_with_timeout() {
+          local timeout_seconds=$1
+          shift
+          
+          # Use GitHub Actions timeout for cross-platform compatibility
+          if command -v timeout >/dev/null 2>&1; then
+            # GNU/Linux timeout (most GitHub runners)
+            timeout "${timeout_seconds}" "$@"
+          else
+            # Fallback for systems without timeout
+            echo "WARNING: timeout command not available, running without timeout limit"
+            "$@"
+          fi
+        }
+
         # Enhanced installation logic: 4 retries with progressive strategy
         for i in 1 2 3 4; do 
           echo "Attempt $i for dependency installation (ESM + 52 devDeps)..."
           
-          if [ $i -eq 1 ]; then
+          if [ "$i" -eq 1 ]; then
             # First attempt: standard installation, 8-minute timeout
-            if timeout 480 npm ci --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 480 npm ci --no-optional 2>&1 | tee npm_install.log; then
               install_success=true
             fi
-          elif [ $i -eq 2 ]; then
+          elif [ "$i" -eq 2 ]; then
             # Second attempt: increased timeout and network optimization
             echo "Increasing timeout for large dependency packages..."
-            if timeout 720 npm ci --maxsockets=5 --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 720 npm ci --maxsockets=5 --no-optional 2>&1 | tee npm_install.log; then
               install_success=true
             fi
-          elif [ $i -eq 3 ]; then
+          elif [ "$i" -eq 3 ]; then
             # Third attempt: serial installation mode
             echo "Using serial installation mode (prevent network congestion)..."
-            if timeout 900 npm ci --maxsockets=1 --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 900 npm ci --maxsockets=1 --no-optional 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           else
             # Final attempt: complete reinstallation
             echo "Cleaning all caches and files, reinstalling..."
-            rm -rf node_modules package-lock.json
+            rm -rf node_modules package-lock.json 2>/dev/null || true
             npm cache clean --force 2>/dev/null || true
-            if timeout 900 npm install --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 900 npm install --no-optional 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           fi
           
-          if [ "$install_success" = true ]; then
+          if [ "$install_success" = "true" ]; then
             echo "SUCCESS: Attempt $i succeeded"
             
             # ESM project enhanced verification
             verification_errors=0
             
-            # Verify critical devDependencies tools
-            dev_tools=("eslint" "tsc" "vitest" "playwright")
-            for tool in "${dev_tools[@]}"; do
-              if command -v "$tool" > /dev/null 2>&1; then
-                echo "SUCCESS: $tool (dev dependency) available"
+            # Cross-platform array handling: Verify critical devDependencies tools
+            # Define tools as space-separated string to avoid bash array compatibility issues
+            dev_tools_list="eslint tsc vitest playwright"
+            
+            for tool in $dev_tools_list; do
+              # FIXED: Check node_modules/.bin instead of global PATH
+              if [ -f "node_modules/.bin/$tool" ] || [ -f "node_modules/.bin/${tool}.cmd" ]; then
+                echo "SUCCESS: $tool (dev dependency) available in node_modules/.bin/"
+              elif npm list "$tool" >/dev/null 2>&1; then
+                echo "SUCCESS: $tool (dev dependency) found via npm list"
               else
-                echo "WARNING: $tool not available"
-                ((verification_errors++))
+                echo "WARNING: $tool not available in node_modules or npm registry"
+                verification_errors=$((verification_errors + 1))
               fi
             done
             
-            # Verify node_modules structure
+            # Cross-platform node_modules structure verification
             if [ -d "node_modules" ] && [ -d "node_modules/.bin" ]; then
-              node_count=$(find node_modules -maxdepth 1 -type d | wc -l 2>/dev/null || echo "0")
-              node_modules_size=$(du -sh node_modules 2>/dev/null | cut -f1 || echo "unknown")
+              # Cross-platform directory counting (avoid GNU-specific options)
+              if command -v find >/dev/null 2>&1; then
+                node_count=$(find node_modules -maxdepth 1 -type d 2>/dev/null | wc -l || echo "0")
+              else
+                node_count=$(ls -1d node_modules/*/ 2>/dev/null | wc -l || echo "0")
+              fi
+              
+              # Cross-platform size calculation
+              if command -v du >/dev/null 2>&1; then
+                node_modules_size=$(du -sh node_modules 2>/dev/null | cut -f1 || echo "unknown")
+              else
+                node_modules_size="calculated"
+              fi
+              
               echo "SUCCESS: node_modules verification passed ($node_count packages, size: $node_modules_size)"
             else
               echo "ERROR: node_modules directory verification failed"
-              ((verification_errors++))
+              verification_errors=$((verification_errors + 1))
             fi
             
-            # Verify package.json type: module
+            # Verify package.json type: module (cross-platform grep)
             if grep -q '"type".*:.*"module"' package.json 2>/dev/null; then
               echo "SUCCESS: ESM module system verification passed"
             fi
             
-            if [ $verification_errors -eq 0 ]; then
+            if [ "$verification_errors" -eq 0 ]; then
               echo "COMPLETE SUCCESS: ESM project installation and verification fully successful!"
             else
               echo "WARNING: Found $verification_errors verification issues, but installation succeeded"
@@ -132,17 +169,22 @@ runs:
           fi
           
           # Failure handling
-          if [ $i -lt 4 ]; then
+          if [ "$i" -lt 4 ]; then
             wait_time=$((i * 15))
             echo "FAILED: Attempt $i failed, waiting ${wait_time} seconds before retry..."
             
-            # Show error log snippet
+            # Show error log snippet (cross-platform tail)
             if [ -f npm_install.log ]; then
               echo "Error log snippet:"
-              tail -10 npm_install.log || true
+              if command -v tail >/dev/null 2>&1; then
+                tail -10 npm_install.log 2>/dev/null || true
+              else
+                echo "Last lines of npm_install.log:"
+                sed -n '$-9,$p' npm_install.log 2>/dev/null || true
+              fi
             fi
             
-            sleep $wait_time
+            sleep "$wait_time"
           fi
         done
 
@@ -150,7 +192,7 @@ runs:
         echo "CRITICAL FAILURE: All 4 ESM installation attempts failed!"
         if [ -f npm_install.log ]; then
           echo "Complete error log:"
-          cat npm_install.log
+          cat npm_install.log 2>/dev/null || echo "Could not read log file"
         fi
         exit 1
 
