@@ -46,8 +46,6 @@ jobs:
 
       - name: 安装依赖（加固版）
         uses: ./.github/actions/npm-install
-        with:
-          node-version: '18.x'
 
       - name: 确保日志目录存在
         run: mkdir -p logs

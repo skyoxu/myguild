@@ -3,10 +3,6 @@ description: '统一的npm安装加固操作，解决系统性安装失败问题
 author: 'CI/CD Team'
 
 inputs:
-  node-version:
-    description: 'Node.js版本'
-    required: false
-    default: '18.x'
   working-directory:
     description: '工作目录'
     required: false
@@ -15,33 +11,32 @@ inputs:
 outputs:
   npm-version:
     description: '安装的npm版本'
-    value: ${{ steps.setup.outputs.npm-version }}
+    value: ${{ steps.env-check.outputs.npm-version }}
   node-version:
     description: '安装的Node.js版本'
-    value: ${{ steps.setup.outputs.node-version }}
+    value: ${{ steps.env-check.outputs.node-version }}
 
 runs:
   using: 'composite'
   steps:
-    - name: 📦 设置Node.js
-      id: setup
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: 'npm'
-        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
-
-    - name: 🔍 Node语法哨兵检查
+    - name: 🔍 Node环境哨兵检查
+      id: env-check
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "🔍 执行Node.js语法哨兵检查..."
+        echo "🔍 执行Node.js环境哨兵检查..."
+        echo "当前npm版本: $(npm --version)"
+        echo "当前node版本: $(node --version)"
+        echo "工作目录: $(pwd)"
+        echo "npm缓存目录: $(npm config get cache)"
+
+        # 语法哨兵检查
         if [ -f "scripts/ci/coverage-config.cjs" ]; then
           node --check scripts/ci/coverage-config.cjs
           node -e "require('./scripts/ci/coverage-config.cjs'); console.log('✅ coverage-config.cjs 语法正确')"
         fi
-        echo "npm版本: $(npm --version)"
-        echo "node版本: $(node --version)"
+
+        # 输出版本信息给后续步骤
         echo "npm-version=$(npm --version)" >> $GITHUB_OUTPUT
         echo "node-version=$(node --version)" >> $GITHUB_OUTPUT
 
@@ -66,7 +61,7 @@ runs:
         echo "🔧 开始加固版npm安装..."
         for i in 1 2 3; do 
           echo "第 $i 次安装依赖尝试..."
-          if npm ci --include=dev --prefer-offline --no-audit --no-fund; then
+          if npm ci --no-audit --no-fund; then
             echo "✅ 第 $i 次尝试成功"
             break
           else
@@ -80,7 +75,7 @@ runs:
               npm cache clean --force
               rm -rf ~/.npm/_cacache
               echo "最后一次尝试..."
-              npm ci --include=dev --no-audit --no-fund
+              npm ci --no-audit --no-fund
             fi
           fi
         done

@@ -63,28 +63,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: ⚙️ 准备npm网络配置 (守护脚本)
-        run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-factor 2
-          npm config set fetch-timeout 300000
-          npm config set registry https://registry.npmjs.org/
-          echo "npm版本: $(npm --version)"
-          echo "node版本: $(node --version)"
-
-      - name: 🔧 安装依赖 (守护脚本)
-        env:
-          NODE_ENV: development
-          NPM_CONFIG_PRODUCTION: 'false'
-        run: |
-          for i in 1 2 3; do 
-            echo "第 $i 次安装依赖尝试..."
-            npm ci --no-audit --no-fund && break || {
-              echo "第 $i 次尝试失败，等待10秒后重试..."
-              sleep 10
-            }
-          done
-          echo "依赖安装完成"
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 🔗 Needs 依赖校验
         run: |
@@ -116,38 +96,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: ⚙️ 准备npm网络配置
-        run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-factor 2
-          npm config set fetch-timeout 300000
-          npm config set registry https://registry.npmjs.org/
-          echo "npm版本: $(npm --version)"
-          echo "node版本: $(node --version)"
-
-      - name: 🔧 安装依赖
-        env:
-          NODE_ENV: development
-          NPM_CONFIG_PRODUCTION: 'false'
-        run: |
-          for i in 1 2 3; do 
-            echo "第 $i 次安装依赖尝试..."
-            npm ci --no-audit --no-fund && break || {
-              echo "第 $i 次尝试失败，等待10秒后重试..."
-              sleep 10
-            }
-          done
-          echo "依赖安装完成"
-
-      - name: 🔧 验证工具可用性
-        run: |
-          echo "验证开发工具安装状态..."
-          npx eslint -v || { 
-            echo "❌ ESLint未正确安装"
-            npm ls eslint --depth=0 || true
-            exit 1
-          }
-          echo "✅ ESLint验证通过"
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 🔍 ESLint 检查
         run: npm run lint
@@ -182,28 +132,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: ⚙️ 准备npm网络配置
-        run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-factor 2
-          npm config set fetch-timeout 300000
-          npm config set registry https://registry.npmjs.org/
-          echo "npm版本: $(npm --version)"
-          echo "node版本: $(node --version)"
-
-      - name: 🔧 安装依赖
-        env:
-          NODE_ENV: development
-          NPM_CONFIG_PRODUCTION: 'false'
-        run: |
-          for i in 1 2 3; do 
-            echo "第 $i 次安装依赖尝试..."
-            npm ci --no-audit --no-fund && break || {
-              echo "第 $i 次尝试失败，等待10秒后重试..."
-              sleep 10
-            }
-          done
-          echo "依赖安装完成"
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 🧪 运行单元测试（覆盖率）
         run: npm run test:coverage
@@ -230,8 +160,8 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
       - name: 🔍 Coverage 脚本语法检查 (UTF-8 编码验证)
         run: |
           echo "🔍 验证 coverage-config.cjs 语法和编码..."
@@ -261,8 +191,8 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
       - name: 🏗️ 构建应用
         run: npm run build
       - name: 🔍 验证构建产物
@@ -284,8 +214,8 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
       - name: 🔍 验证发布健康度
         if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
         run: node scripts/release-health-gate.mjs
@@ -384,8 +314,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 🖥️ 安装系统依赖 (Electron)
         run: |
@@ -521,8 +451,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 🔍 Snyk安全扫描
         uses: snyk/actions/node@v0.4.0
@@ -554,8 +484,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: 📊 可观测性配置验证
         run: npm run test:observability
@@ -592,8 +522,8 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: 🔧 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
 
       - name: ⚡ 事件循环延迟基准
         run: |

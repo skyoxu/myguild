@@ -106,7 +106,8 @@
       "Bash(if grep -q \"paths:\" \"$file\")",
       "Bash(then echo \"✅ Has paths filter\")",
       "Bash(else echo \"❌ No paths filter\")",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" run list --branch main --limit 5)"
     ],
     "deny": [],
     "ask": [],
