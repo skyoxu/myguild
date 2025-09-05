@@ -38,8 +38,25 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: ⚙️ 准备npm网络配置
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-timeout 300000
+          npm config set registry https://registry.npmjs.org/
+          echo "npm version: $(npm --version)"
+          echo "node version: $(node --version)"
+
+      - name: 🔧 安装依赖 (带重试)
+        run: |
+          for i in 1 2 3; do 
+            echo "第 $i 次安装依赖尝试..."
+            npm ci --no-audit --no-fund && break || {
+              echo "第 $i 次尝试失败，等待10秒后重试..."
+              sleep 10
+            }
+          done
+          echo "依赖安装完成"
 
       - name: 🔍 ESLint 检查
         run: npm run lint
@@ -84,8 +101,25 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖
-        run: npm ci
+      - name: ⚙️ 准备npm网络配置
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-timeout 300000
+          npm config set registry https://registry.npmjs.org/
+          echo "npm version: $(npm --version)"
+          echo "node version: $(node --version)"
+
+      - name: 🔧 安装依赖 (带重试)
+        run: |
+          for i in 1 2 3; do 
+            echo "第 $i 次安装依赖尝试..."
+            npm ci --no-audit --no-fund && break || {
+              echo "第 $i 次尝试失败，等待10秒后重试..."
+              sleep 10
+            }
+          done
+          echo "依赖安装完成"
 
       - name: 🖥️ 安装系统依赖 (Electron)
         run: |
