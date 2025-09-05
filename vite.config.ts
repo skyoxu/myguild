@@ -25,6 +25,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // Source Maps支持 - Sentry部署必需
+    sourcemap:
+      process.env.NODE_ENV === 'production' ||
+      process.env.GENERATE_SOURCEMAP === 'true',
   },
   resolve: {
     alias: {

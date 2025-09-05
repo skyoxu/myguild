@@ -1,11 +1,15 @@
 /**
  * CloudEvents v1.0规范兼容事件系统使用示例
- * 
+ *
  * 本示例展示了修复后的事件系统如何正确创建和处理CloudEvents
  * 符合CloudEvents v1.0规范的同时保持向后兼容性
  */
 
-import { EventUtils, type DomainEvent, type EventPriority } from '../src/shared/contracts/events';
+import {
+  EventUtils,
+  type DomainEvent,
+  type EventPriority,
+} from '../src/shared/contracts/events';
 
 // ============================================================================
 // 示例1: 标准CloudEvents v1.0事件创建
@@ -18,10 +22,10 @@ const gameEvent = EventUtils.createEvent({
   data: {
     playerId: 'player-123',
     newLevel: 5,
-    experience: 1250
+    experience: 1250,
   },
   subject: 'player-123',
-  datacontenttype: 'application/json'
+  datacontenttype: 'application/json',
 });
 
 console.log('CloudEvents兼容的游戏事件:', gameEvent);
@@ -39,7 +43,7 @@ const uiEvent = EventUtils.createEvent(
   {
     priority: 'high' as EventPriority,
     traceId: 'trace-abc123',
-    sequenceId: 1
+    sequenceId: 1,
   }
 );
 
@@ -56,10 +60,10 @@ const systemEvent = EventUtils.createEvent({
   data: {
     errorCode: 'E001',
     message: 'Connection timeout',
-    stack: 'Error stack trace...'
+    stack: 'Error stack trace...',
   },
   subject: 'network-connection',
-  time: new Date().toISOString()
+  time: new Date().toISOString(),
 });
 
 console.log('系统错误事件:', systemEvent);
@@ -71,19 +75,19 @@ console.log('系统错误事件:', systemEvent);
 // 检查必需字段
 function validateCloudEvent(event: any): boolean {
   const required = ['specversion', 'id', 'source', 'type'];
-  
+
   for (const field of required) {
     if (!event[field]) {
       console.error(`缺少必需字段: ${field}`);
       return false;
     }
   }
-  
+
   if (event.specversion !== '1.0') {
     console.error(`不支持的specversion: ${event.specversion}`);
     return false;
   }
-  
+
   return true;
 }
 
@@ -104,11 +108,11 @@ priorities.forEach(priority => {
     { priority },
     { priority }
   );
-  
+
   console.log(`${priority} 优先级事件:`, {
     type: event.type,
     priority: event.priority,
-    id: event.id
+    id: event.id,
   });
 });
 
@@ -118,15 +122,11 @@ priorities.forEach(priority => {
 
 const validEventNames = [
   'game.player.created',
-  'ui.dialog.opened', 
-  'system.lifecycle.started'
+  'ui.dialog.opened',
+  'system.lifecycle.started',
 ];
 
-const invalidEventNames = [
-  'invalid-name',
-  'game.player',
-  'game..empty'
-];
+const invalidEventNames = ['invalid-name', 'game.player', 'game..empty'];
 
 console.log('\n有效的事件名称:');
 validEventNames.forEach(name => {
@@ -142,17 +142,13 @@ invalidEventNames.forEach(name => {
 // 示例7: 事件模式匹配
 // ============================================================================
 
-const patterns = [
-  'game.*',
-  'ui.dialog.*',
-  'system.**.occurred'
-];
+const patterns = ['game.*', 'ui.dialog.*', 'system.**.occurred'];
 
 const eventNames = [
   'game.player.created',
   'ui.dialog.opened',
   'ui.button.clicked',
-  'system.error.occurred'
+  'system.error.occurred',
 ];
 
 console.log('\n模式匹配测试:');
@@ -166,9 +162,4 @@ patterns.forEach(pattern => {
   });
 });
 
-export {
-  gameEvent,
-  uiEvent,  
-  systemEvent,
-  validateCloudEvent
-};
+export { gameEvent, uiEvent, systemEvent, validateCloudEvent };

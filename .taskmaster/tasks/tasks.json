@@ -22,13 +22,8 @@
       "scaffold",
       "electron-vite"
     ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "运行 `npm run dev` 可见空白窗口并在浏览器控制台输出 \"Hello Guild Manager\"",
@@ -45,9 +40,7 @@
     "description": "统一代码风格。集成 eslint (airbnb-typescript), prettier, lint-staged, husky。提交前自动格式化 & lint；CI 阶段阻止未通过检查的提交。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0001"
-    ],
+    "dependencies": ["T-0001"],
     "details": "统一代码风格。集成 eslint (airbnb-typescript), prettier, lint-staged, husky。提交前自动格式化 & lint；CI 阶段阻止未通过检查的提交。",
     "testStrategy": [
       "执行 `npm run lint` 无错误",
@@ -55,19 +48,9 @@
       "CI fail 当 eslint error>0"
     ],
     "subtasks": [],
-    "labels": [
-      "eslint",
-      "prettier",
-      "husky",
-      "ci"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["eslint", "prettier", "husky", "ci"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "执行 `npm run lint` 无错误",
@@ -81,27 +64,16 @@
     "description": "通过 PostCSS 插件将 TailwindCSS 编译进渲染进程，支持 JIT；在 `tailwind.config.ts` 中开启暗黑模式 class；提供示例按钮组件演示。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0001"
-    ],
+    "dependencies": ["T-0001"],
     "details": "通过 PostCSS 插件将 TailwindCSS 编译进渲染进程，支持 JIT；在 `tailwind.config.ts` 中开启暗黑模式 class；提供示例按钮组件演示。",
     "testStrategy": [
       "组件切换 dark/light class 生效",
       "生产构建文件大小统计 Tailwind 样式树摇成功 (<30kb gz)"
     ],
     "subtasks": [],
-    "labels": [
-      "tailwind",
-      "react",
-      "vite"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["tailwind", "react", "vite"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "组件切换 dark/light class 生效",
@@ -114,27 +86,16 @@
     "description": "安装 Zustand + middleware。创建 `src/store/index.ts` 暴露根 store，包括 UI 状态与游戏状态占位。集成 devtools 插件，仅在开发环境启用。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0001"
-    ],
+    "dependencies": ["T-0001"],
     "details": "安装 Zustand + middleware。创建 `src/store/index.ts` 暴露根 store，包括 UI 状态与游戏状态占位。集成 devtools 插件，仅在开发环境启用。",
     "testStrategy": [
       "可在 React 组件中调用 `useStore` 返回状态",
       "Redux DevTools 插件能实时观察状态"
     ],
     "subtasks": [],
-    "labels": [
-      "zustand",
-      "state-management",
-      "typescript"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["zustand", "state-management", "typescript"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "可在 React 组件中调用 `useStore` 返回状态",
@@ -147,28 +108,16 @@
     "description": "选择 `better-sqlite3` 作为同步驱动。封装 `db.ts`：① 负责创建/打开 `guild_manager.db`; ② 提供 `run`, `get`, `all` typed helpers；③ 日志拦截查询耗时(>50ms)；④ 处理数据库文件路径（用户数据目录）。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0001"
-    ],
+    "dependencies": ["T-0001"],
     "details": "选择 `better-sqlite3` 作为同步驱动。封装 `db.ts`：① 负责创建/打开 `guild_manager.db`; ② 提供 `run`, `get`, `all` typed helpers；③ 日志拦截查询耗时(>50ms)；④ 处理数据库文件路径（用户数据目录）。",
     "testStrategy": [
       "首次启动自动创建数据库文件",
       "执行示例 query 成功插入并读取"
     ],
     "subtasks": [],
-    "labels": [
-      "sqlite",
-      "node",
-      "backend",
-      "typescript"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["sqlite", "node", "backend", "typescript"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "首次启动自动创建数据库文件",
@@ -181,27 +130,16 @@
     "description": "使用 `electron-db-migrate` 或自研脚本管理 schema 升级。`migrations/` 目录放置 .sql 文件，版本号递增。启动时检测 `PRAGMA user_version` 并按需执行。记录迁移日志到 table `migration_history`。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0005"
-    ],
+    "dependencies": ["T-0005"],
     "details": "使用 `electron-db-migrate` 或自研脚本管理 schema 升级。`migrations/` 目录放置 .sql 文件，版本号递增。启动时检测 `PRAGMA user_version` 并按需执行。记录迁移日志到 table `migration_history`。",
     "testStrategy": [
       "向数据库添加新列后自动迁移成功",
       "回滚逻辑(降级)记录提示而非执行"
     ],
     "subtasks": [],
-    "labels": [
-      "sqlite",
-      "migration",
-      "backend"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["sqlite", "migration", "backend"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "向数据库添加新列后自动迁移成功",
@@ -214,21 +152,11 @@
     "description": "创建 `guilds`, `members`, `events`, `finances`, `stats` 五张核心表。字段设计满足公会、角色、事件池、财务流水、统计快照需求。附加索引：guild_id, member_id, created_at。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0006"
-    ],
+    "dependencies": ["T-0006"],
     "details": "创建 `guilds`, `members`, `events`, `finances`, `stats` 五张核心表。字段设计满足公会、角色、事件池、财务流水、统计快照需求。附加索引：guild_id, member_id, created_at。",
-    "testStrategy": [
-      "`PRAGMA foreign_keys` 为 ON",
-      "ER 图附件更新到 /docs/"
-    ],
+    "testStrategy": ["`PRAGMA foreign_keys` 为 ON", "ER 图附件更新到 /docs/"],
     "subtasks": [],
-    "labels": [
-      "sqlite",
-      "schema-design",
-      "guild",
-      "公会"
-    ],
+    "labels": ["sqlite", "schema-design", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -241,13 +169,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "`PRAGMA foreign_keys` 为 ON",
@@ -264,9 +186,7 @@
     "description": "在 preload 中用 contextBridge.exposeInMainWorld('api', { ... }) 暴露白名单函数；渲染进程仅调用 window.api.*；主进程集中注册 ipcMain.handle('channel', handler) 并做参数校验（与 ADR-0002 对齐）。封装为 `window.api.guildCreate(payload)` 样式，返回 promise。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0005"
-    ],
+    "dependencies": ["T-0005"],
     "details": "在 preload 中用 contextBridge.exposeInMainWorld('api', { ... }) 暴露白名单函数；渲染进程仅调用 window.api.*；主进程集中注册 ipcMain.handle('channel', handler) 并做参数校验（与 ADR-0002 对齐）。封装为 `window.api.guildCreate(payload)` 样式，返回 promise。",
     "testStrategy": [
       "验证 contextIsolation=true 和 nodeIntegration=false",
@@ -275,20 +195,9 @@
       "参数校验能够拒绝恶意输入"
     ],
     "subtasks": [],
-    "labels": [
-      "electron",
-      "ipc",
-      "security",
-      "contextbridge",
-      "typescript"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["electron", "ipc", "security", "contextbridge", "typescript"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
     "acceptance": [
       "preload 脚本正确暴露白名单 API",
@@ -303,33 +212,18 @@
     "description": "在 `GameCanvas` 组件中创建 Phaser.Game 实例，将 React props 作为 Scene 数据传入。配置 WebGL 渲染，动态 resize；打包时分离 phaser 到单独 chunk。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0001"
-    ],
+    "dependencies": ["T-0001"],
     "details": "在 `GameCanvas` 组件中创建 Phaser.Game 实例，将 React props 作为 Scene 数据传入。配置 WebGL 渲染，动态 resize；打包时分离 phaser 到单独 chunk。",
     "testStrategy": [
       "页面出现蓝色背景示例 Scene",
       "窗口大小调整后 Canvas 填充"
     ],
     "subtasks": [],
-    "labels": [
-      "phaser",
-      "react",
-      "typescript",
-      "game"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["phaser", "react", "typescript", "game"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "页面出现蓝色背景示例 Scene",
-      "窗口大小调整后 Canvas 填充"
-    ]
+    "acceptance": ["页面出现蓝色背景示例 Scene", "窗口大小调整后 Canvas 填充"]
   },
   {
     "id": "T-0010",
@@ -337,33 +231,18 @@
     "description": "在 Phaser Scene 中实现 `update()` 钩子，控制游戏内一天=60秒。提供暂停、快进 4x 速率控制。与 Zustand 状态同步当前游戏时间。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0009",
-      "T-0004"
-    ],
+    "dependencies": ["T-0009", "T-0004"],
     "details": "在 Phaser Scene 中实现 `update()` 钩子，控制游戏内一天=60秒。提供暂停、快进 4x 速率控制。与 Zustand 状态同步当前游戏时间。",
     "testStrategy": [
       "UI 显示 00:00 -> 23:59 循环",
       "快进时 update 频率正常加速"
     ],
     "subtasks": [],
-    "labels": [
-      "phaser",
-      "game-loop",
-      "typescript"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["phaser", "game-loop", "typescript"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "UI 显示 00:00 -> 23:59 循环",
-      "快进时 update 频率正常加速"
-    ]
+    "acceptance": ["UI 显示 00:00 -> 23:59 循环", "快进时 update 频率正常加速"]
   },
   {
     "id": "T-0011",
@@ -371,10 +250,7 @@
     "description": "创建事件驱动架构，包含事件总线、事件监听器和事件处理器。支持公会事件、成员事件、任务事件等类型。设计事件优先级队列和异步处理机制。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0008",
-      "T-0004"
-    ],
+    "dependencies": ["T-0008", "T-0004"],
     "details": "创建事件驱动架构，包含事件总线、事件监听器和事件处理器。支持公会事件、成员事件、任务事件等类型。设计事件优先级队列和异步处理机制。",
     "testStrategy": [
       "事件可以被正确发布和监听",
@@ -382,13 +258,7 @@
       "事件系统具有良好的性能表现"
     ],
     "subtasks": [],
-    "labels": [
-      "event-system",
-      "architecture",
-      "typescript",
-      "guild",
-      "公会"
-    ],
+    "labels": ["event-system", "architecture", "typescript", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -401,13 +271,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "事件可以被正确发布和监听",
@@ -425,10 +289,7 @@
     "description": "开发公会创建、编辑、删除功能。包含公会基本信息管理、成员权限系统、公会设置配置。提供公会搜索和筛选功能。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0007",
-      "T-0011"
-    ],
+    "dependencies": ["T-0007", "T-0011"],
     "details": "开发公会创建、编辑、删除功能。包含公会基本信息管理、成员权限系统、公会设置配置。提供公会搜索和筛选功能。",
     "testStrategy": [
       "可以创建和管理公会",
@@ -436,12 +297,7 @@
       "搜索功能响应及时"
     ],
     "subtasks": [],
-    "labels": [
-      "guild",
-      "management",
-      "react",
-      "typescript"
-    ],
+    "labels": ["guild", "management", "react", "typescript"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -454,13 +310,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "可以创建和管理公会",
@@ -478,21 +328,11 @@
     "description": "实现公会成员的添加、移除、角色分配功能。包含成员信息展示、活跃度统计、贡献度计算。支持批量操作和成员搜索。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0012"
-    ],
+    "dependencies": ["T-0012"],
     "details": "实现公会成员的添加、移除、角色分配功能。包含成员信息展示、活跃度统计、贡献度计算。支持批量操作和成员搜索。",
-    "testStrategy": [
-      "成员操作功能完整",
-      "数据统计准确",
-      "批量操作性能良好"
-    ],
+    "testStrategy": ["成员操作功能完整", "数据统计准确", "批量操作性能良好"],
     "subtasks": [],
-    "labels": [
-      "member",
-      "management",
-      "database"
-    ],
+    "labels": ["member", "management", "database"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -505,13 +345,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "成员操作功能完整",
@@ -529,21 +363,11 @@
     "description": "开发公会财务收支管理、预算制定、财务报表生成功能。包含收入来源追踪、支出分类统计、资金流向分析。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0012"
-    ],
+    "dependencies": ["T-0012"],
     "details": "开发公会财务收支管理、预算制定、财务报表生成功能。包含收入来源追踪、支出分类统计、资金流向分析。",
-    "testStrategy": [
-      "财务数据记录准确",
-      "报表生成正确",
-      "数据可视化效果良好"
-    ],
+    "testStrategy": ["财务数据记录准确", "报表生成正确", "数据可视化效果良好"],
     "subtasks": [],
-    "labels": [
-      "finance",
-      "reporting",
-      "analytics"
-    ],
+    "labels": ["finance", "reporting", "analytics"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -556,13 +380,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "财务数据记录准确",
@@ -580,35 +398,15 @@
     "description": "基于Tailwind CSS和React创建可复用的UI组件库。包含按钮、表单、模态框、数据表格、图表等常用组件。确保组件的可访问性和响应式设计。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0003"
-    ],
+    "dependencies": ["T-0003"],
     "details": "基于Tailwind CSS和React创建可复用的UI组件库。包含按钮、表单、模态框、数据表格、图表等常用组件。确保组件的可访问性和响应式设计。",
-    "testStrategy": [
-      "组件库功能完整",
-      "支持响应式设计",
-      "满足可访问性标准"
-    ],
+    "testStrategy": ["组件库功能完整", "支持响应式设计", "满足可访问性标准"],
     "subtasks": [],
-    "labels": [
-      "ui",
-      "components",
-      "tailwind",
-      "accessibility"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["ui", "components", "tailwind", "accessibility"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "组件库功能完整",
-      "支持响应式设计",
-      "满足可访问性标准"
-    ]
+    "acceptance": ["组件库功能完整", "支持响应式设计", "满足可访问性标准"]
   },
   {
     "id": "T-0016",
@@ -616,16 +414,9 @@
     "description": "创建交互式仪表板展示公会关键指标。包含成员活跃度图表、财务趋势分析、任务完成情况统计。使用Chart.js或D3.js实现动态图表。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0015",
-      "T-0014"
-    ],
+    "dependencies": ["T-0015", "T-0014"],
     "details": "创建交互式仪表板展示公会关键指标。包含成员活跃度图表、财务趋势分析、任务完成情况统计。使用Chart.js或D3.js实现动态图表。",
-    "testStrategy": [
-      "图表显示数据准确",
-      "交互性良好",
-      "性能满足要求"
-    ],
+    "testStrategy": ["图表显示数据准确", "交互性良好", "性能满足要求"],
     "subtasks": [],
     "labels": [
       "dashboard",
@@ -647,13 +438,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "图表显示数据准确",
@@ -671,23 +456,11 @@
     "description": "实现公会内部任务创建、分配、跟踪功能。包含任务优先级管理、进度追踪、完成度统计。支持任务模板和批量分配。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0013",
-      "T-0011"
-    ],
+    "dependencies": ["T-0013", "T-0011"],
     "details": "实现公会内部任务创建、分配、跟踪功能。包含任务优先级管理、进度追踪、完成度统计。支持任务模板和批量分配。",
-    "testStrategy": [
-      "任务管理功能齐全",
-      "进度追踪准确",
-      "模板系统易用"
-    ],
+    "testStrategy": ["任务管理功能齐全", "进度追踪准确", "模板系统易用"],
     "subtasks": [],
-    "labels": [
-      "task",
-      "assignment",
-      "tracking",
-      "workflow"
-    ],
+    "labels": ["task", "assignment", "tracking", "workflow"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -700,13 +473,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "任务管理功能齐全",
@@ -724,15 +491,9 @@
     "description": "开发应用内通知和系统提醒功能。包含消息推送、邮件通知、桌面提醒。支持通知优先级和用户偏好设置。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0008"
-    ],
+    "dependencies": ["T-0008"],
     "details": "开发应用内通知和系统提醒功能。包含消息推送、邮件通知、桌面提醒。支持通知优先级和用户偏好设置。",
-    "testStrategy": [
-      "通知功能正常工作",
-      "用户设置生效",
-      "消息送达及时"
-    ],
+    "testStrategy": ["通知功能正常工作", "用户设置生效", "消息送达及时"],
     "subtasks": [],
     "labels": [
       "notification",
@@ -754,13 +515,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "通知功能正常工作",
@@ -778,25 +533,11 @@
     "description": "开发全局搜索功能，支持公会、成员、任务的快速查找。包含高级筛选、搜索历史、智能建议。使用ElasticSearch或本地索引。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0012",
-      "T-0013"
-    ],
+    "dependencies": ["T-0012", "T-0013"],
     "details": "开发全局搜索功能，支持公会、成员、任务的快速查找。包含高级筛选、搜索历史、智能建议。使用ElasticSearch或本地索引。",
-    "testStrategy": [
-      "搜索结果准确快速",
-      "筛选功能完整",
-      "智能建议有用"
-    ],
+    "testStrategy": ["搜索结果准确快速", "筛选功能完整", "智能建议有用"],
     "subtasks": [],
-    "labels": [
-      "search",
-      "filter",
-      "indexing",
-      "performance",
-      "guild",
-      "公会"
-    ],
+    "labels": ["search", "filter", "indexing", "performance", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -809,13 +550,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "搜索结果准确快速",
@@ -833,25 +568,11 @@
     "description": "实现各类报告的自动生成功能。包含活动报告、财务报告、成员报告。支持PDF导出、定时生成、邮件发送。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0014",
-      "T-0016"
-    ],
+    "dependencies": ["T-0014", "T-0016"],
     "details": "实现各类报告的自动生成功能。包含活动报告、财务报告、成员报告。支持PDF导出、定时生成、邮件发送。",
-    "testStrategy": [
-      "报告生成准确",
-      "PDF格式正确",
-      "定时任务稳定"
-    ],
+    "testStrategy": ["报告生成准确", "PDF格式正确", "定时任务稳定"],
     "subtasks": [],
-    "labels": [
-      "reports",
-      "pdf",
-      "automation",
-      "scheduling",
-      "guild",
-      "公会"
-    ],
+    "labels": ["reports", "pdf", "automation", "scheduling", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -864,13 +585,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "报告生成准确",
@@ -888,35 +603,15 @@
     "description": "开发用户个人设置管理功能。包含主题切换、语言选择、通知偏好、显示选项。支持设置导入导出和云端同步。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0008"
-    ],
+    "dependencies": ["T-0008"],
     "details": "开发用户个人设置管理功能。包含主题切换、语言选择、通知偏好、显示选项。支持设置导入导出和云端同步。",
-    "testStrategy": [
-      "设置保存正确",
-      "主题切换流畅",
-      "同步功能稳定"
-    ],
+    "testStrategy": ["设置保存正确", "主题切换流畅", "同步功能稳定"],
     "subtasks": [],
-    "labels": [
-      "settings",
-      "preferences",
-      "theming",
-      "i18n"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["settings", "preferences", "theming", "i18n"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "设置保存正确",
-      "主题切换流畅",
-      "同步功能稳定"
-    ]
+    "acceptance": ["设置保存正确", "主题切换流畅", "同步功能稳定"]
   },
   {
     "id": "T-0022",
@@ -924,22 +619,11 @@
     "description": "实现基于角色的权限控制系统。包含角色定义、权限分配、访问控制。支持自定义角色和权限继承。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0013"
-    ],
+    "dependencies": ["T-0013"],
     "details": "实现基于角色的权限控制系统。包含角色定义、权限分配、访问控制。支持自定义角色和权限继承。",
-    "testStrategy": [
-      "权限控制有效",
-      "角色管理灵活",
-      "安全性得到保障"
-    ],
+    "testStrategy": ["权限控制有效", "角色管理灵活", "安全性得到保障"],
     "subtasks": [],
-    "labels": [
-      "permission",
-      "rbac",
-      "security",
-      "authorization"
-    ],
+    "labels": ["permission", "rbac", "security", "authorization"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -952,13 +636,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "权限控制有效",
@@ -976,35 +654,15 @@
     "description": "实现数据库备份、数据导出导入、灾难恢复功能。支持自动备份、增量备份、云端存储备份。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0007"
-    ],
+    "dependencies": ["T-0007"],
     "details": "实现数据库备份、数据导出导入、灾难恢复功能。支持自动备份、增量备份、云端存储备份。",
-    "testStrategy": [
-      "备份功能可靠",
-      "恢复过程顺利",
-      "数据完整性保证"
-    ],
+    "testStrategy": ["备份功能可靠", "恢复过程顺利", "数据完整性保证"],
     "subtasks": [],
-    "labels": [
-      "backup",
-      "recovery",
-      "database",
-      "cloud"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["backup", "recovery", "database", "cloud"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "备份功能可靠",
-      "恢复过程顺利",
-      "数据完整性保证"
-    ]
+    "acceptance": ["备份功能可靠", "恢复过程顺利", "数据完整性保证"]
   },
   {
     "id": "T-0024",
@@ -1012,35 +670,15 @@
     "description": "设计可扩展的插件系统，支持第三方功能扩展。包含插件API、插件管理、热插拔、安全沙箱。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0008"
-    ],
+    "dependencies": ["T-0008"],
     "details": "设计可扩展的插件系统，支持第三方功能扩展。包含插件API、插件管理、热插拔、安全沙箱。",
-    "testStrategy": [
-      "插件系统稳定",
-      "API设计合理",
-      "安全机制有效"
-    ],
+    "testStrategy": ["插件系统稳定", "API设计合理", "安全机制有效"],
     "subtasks": [],
-    "labels": [
-      "plugins",
-      "extensibility",
-      "api",
-      "sandbox"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["plugins", "extensibility", "api", "sandbox"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "插件系统稳定",
-      "API设计合理",
-      "安全机制有效"
-    ]
+    "acceptance": ["插件系统稳定", "API设计合理", "安全机制有效"]
   },
   {
     "id": "T-0025",
@@ -1048,35 +686,15 @@
     "description": "创建完整的API文档和开发者指南。包含接口规范、示例代码、SDK开发、测试工具。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0024"
-    ],
+    "dependencies": ["T-0024"],
     "details": "创建完整的API文档和开发者指南。包含接口规范、示例代码、SDK开发、测试工具。",
-    "testStrategy": [
-      "文档内容完整准确",
-      "示例代码可运行",
-      "开发者体验良好"
-    ],
+    "testStrategy": ["文档内容完整准确", "示例代码可运行", "开发者体验良好"],
     "subtasks": [],
-    "labels": [
-      "api",
-      "documentation",
-      "sdk",
-      "developer"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["api", "documentation", "sdk", "developer"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "文档内容完整准确",
-      "示例代码可运行",
-      "开发者体验良好"
-    ]
+    "acceptance": ["文档内容完整准确", "示例代码可运行", "开发者体验良好"]
   },
   {
     "id": "T-0026",
@@ -1084,35 +702,15 @@
     "description": "实现应用性能监控、错误追踪、用户行为分析。包含性能指标收集、异常报告、分析报告生成。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0010"
-    ],
+    "dependencies": ["T-0010"],
     "details": "实现应用性能监控、错误追踪、用户行为分析。包含性能指标收集、异常报告、分析报告生成。",
-    "testStrategy": [
-      "监控数据准确",
-      "异常及时捕获",
-      "分析报告有用"
-    ],
+    "testStrategy": ["监控数据准确", "异常及时捕获", "分析报告有用"],
     "subtasks": [],
-    "labels": [
-      "monitoring",
-      "performance",
-      "analytics",
-      "tracking"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["monitoring", "performance", "analytics", "tracking"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "监控数据准确",
-      "异常及时捕获",
-      "分析报告有用"
-    ]
+    "acceptance": ["监控数据准确", "异常及时捕获", "分析报告有用"]
   },
   {
     "id": "T-0027",
@@ -1120,35 +718,15 @@
     "description": "添加多语言支持，包含文本翻译、日期格式、数字格式、RTL布局支持。使用react-i18next实现动态语言切换。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0015"
-    ],
+    "dependencies": ["T-0015"],
     "details": "添加多语言支持，包含文本翻译、日期格式、数字格式、RTL布局支持。使用react-i18next实现动态语言切换。",
-    "testStrategy": [
-      "语言切换正常",
-      "翻译内容完整",
-      "格式显示正确"
-    ],
+    "testStrategy": ["语言切换正常", "翻译内容完整", "格式显示正确"],
     "subtasks": [],
-    "labels": [
-      "i18n",
-      "localization",
-      "translation",
-      "rtl"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["i18n", "localization", "translation", "rtl"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "语言切换正常",
-      "翻译内容完整",
-      "格式显示正确"
-    ]
+    "acceptance": ["语言切换正常", "翻译内容完整", "格式显示正确"]
   },
   {
     "id": "T-0028",
@@ -1156,35 +734,15 @@
     "description": "实现应用离线工作能力。包含数据缓存、离线存储、同步机制、冲突解决。使用Service Worker和IndexedDB。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0007"
-    ],
+    "dependencies": ["T-0007"],
     "details": "实现应用离线工作能力。包含数据缓存、离线存储、同步机制、冲突解决。使用Service Worker和IndexedDB。",
-    "testStrategy": [
-      "离线功能正常",
-      "数据同步准确",
-      "冲突处理合理"
-    ],
+    "testStrategy": ["离线功能正常", "数据同步准确", "冲突处理合理"],
     "subtasks": [],
-    "labels": [
-      "offline",
-      "sync",
-      "cache",
-      "indexeddb"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["offline", "sync", "cache", "indexeddb"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "离线功能正常",
-      "数据同步准确",
-      "冲突处理合理"
-    ]
+    "acceptance": ["离线功能正常", "数据同步准确", "冲突处理合理"]
   },
   {
     "id": "T-0029",
@@ -1192,37 +750,15 @@
     "description": "为所有核心模块编写全面的单元测试。使用Jest/Vitest框架，包含模拟数据、异步测试、边界案例。目标覆盖率≥90%。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0012",
-      "T-0013",
-      "T-0014"
-    ],
+    "dependencies": ["T-0012", "T-0013", "T-0014"],
     "details": "为所有核心模块编写全面的单元测试。使用Jest/Vitest框架，包含模拟数据、异步测试、边界案例。目标覆盖率≥90%。",
-    "testStrategy": [
-      "测试覆盖率达标",
-      "测试用例全面",
-      "测试运行稳定"
-    ],
+    "testStrategy": ["测试覆盖率达标", "测试用例全面", "测试运行稳定"],
     "subtasks": [],
-    "labels": [
-      "testing",
-      "unit-tests",
-      "jest",
-      "coverage"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["testing", "unit-tests", "jest", "coverage"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "测试覆盖率达标",
-      "测试用例全面",
-      "测试运行稳定"
-    ]
+    "acceptance": ["测试覆盖率达标", "测试用例全面", "测试运行稳定"]
   },
   {
     "id": "T-0030",
@@ -1230,36 +766,15 @@
     "description": "构建端到端测试套件，使用Playwright测试用户工作流。包含UI测试、数据库测试、API测试。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0015",
-      "T-0016"
-    ],
+    "dependencies": ["T-0015", "T-0016"],
     "details": "构建端到端测试套件，使用Playwright测试用户工作流。包含UI测试、数据库测试、API测试。",
-    "testStrategy": [
-      "E2E测试通过",
-      "测试场景完整",
-      "测试报告清晰"
-    ],
+    "testStrategy": ["E2E测试通过", "测试场景完整", "测试报告清晰"],
     "subtasks": [],
-    "labels": [
-      "testing",
-      "e2e",
-      "playwright",
-      "integration"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["testing", "e2e", "playwright", "integration"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "E2E测试通过",
-      "测试场景完整",
-      "测试报告清晰"
-    ]
+    "acceptance": ["E2E测试通过", "测试场景完整", "测试报告清晰"]
   },
   {
     "id": "T-0031",
@@ -1267,35 +782,15 @@
     "description": "加强应用安全防护，包含输入验证、XSS防护、CSRF保护、安全头设置。进行安全测试和漏洞扫描。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0022"
-    ],
+    "dependencies": ["T-0022"],
     "details": "加强应用安全防护，包含输入验证、XSS防护、CSRF保护、安全头设置。进行安全测试和漏洞扫描。",
-    "testStrategy": [
-      "安全测试通过",
-      "漏洞修复完成",
-      "防护机制有效"
-    ],
+    "testStrategy": ["安全测试通过", "漏洞修复完成", "防护机制有效"],
     "subtasks": [],
-    "labels": [
-      "security",
-      "validation",
-      "xss",
-      "csrf"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["security", "validation", "xss", "csrf"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "安全测试通过",
-      "漏洞修复完成",
-      "防护机制有效"
-    ]
+    "acceptance": ["安全测试通过", "漏洞修复完成", "防护机制有效"]
   },
   {
     "id": "T-0032",
@@ -1303,35 +798,15 @@
     "description": "进行全面性能优化，包含代码分割、懒加载、缓存策略、数据库优化。使用性能分析工具识别瓶颈。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0026"
-    ],
+    "dependencies": ["T-0026"],
     "details": "进行全面性能优化，包含代码分割、懒加载、缓存策略、数据库优化。使用性能分析工具识别瓶颈。",
-    "testStrategy": [
-      "启动时间 <3秒",
-      "页面响应 <200ms",
-      "内存使用合理"
-    ],
+    "testStrategy": ["启动时间 <3秒", "页面响应 <200ms", "内存使用合理"],
     "subtasks": [],
-    "labels": [
-      "performance",
-      "optimization",
-      "caching",
-      "profiling"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["performance", "optimization", "caching", "profiling"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "启动时间 <3秒",
-      "页面响应 <200ms",
-      "内存使用合理"
-    ]
+    "acceptance": ["启动时间 <3秒", "页面响应 <200ms", "内存使用合理"]
   },
   {
     "id": "T-0033",
@@ -1339,35 +814,15 @@
     "description": "实现全局错误处理、异常捕获、错误报告系统。包含错误边界、重试机制、优雅降级。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0026"
-    ],
+    "dependencies": ["T-0026"],
     "details": "实现全局错误处理、异常捕获、错误报告系统。包含错误边界、重试机制、优雅降级。",
-    "testStrategy": [
-      "错误捕获完整",
-      "恢复机制有效",
-      "用户体验友好"
-    ],
+    "testStrategy": ["错误捕获完整", "恢复机制有效", "用户体验友好"],
     "subtasks": [],
-    "labels": [
-      "error-handling",
-      "resilience",
-      "recovery",
-      "logging"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["error-handling", "resilience", "recovery", "logging"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "错误捕获完整",
-      "恢复机制有效",
-      "用户体验友好"
-    ]
+    "acceptance": ["错误捕获完整", "恢复机制有效", "用户体验友好"]
   },
   {
     "id": "T-0034",
@@ -1375,36 +830,15 @@
     "description": "设置持续集成和部署流程。包含代码检查、自动测试、构建打包、发布部署。使用GitHub Actions或Jenkins。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0029",
-      "T-0030"
-    ],
+    "dependencies": ["T-0029", "T-0030"],
     "details": "设置持续集成和部署流程。包含代码检查、自动测试、构建打包、发布部署。使用GitHub Actions或Jenkins。",
-    "testStrategy": [
-      "CI流程稳定运行",
-      "自动化测试通过",
-      "部署过程可靠"
-    ],
+    "testStrategy": ["CI流程稳定运行", "自动化测试通过", "部署过程可靠"],
     "subtasks": [],
-    "labels": [
-      "ci-cd",
-      "automation",
-      "deployment",
-      "github-actions"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["ci-cd", "automation", "deployment", "github-actions"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "CI流程稳定运行",
-      "自动化测试通过",
-      "部署过程可靠"
-    ]
+    "acceptance": ["CI流程稳定运行", "自动化测试通过", "部署过程可靠"]
   },
   {
     "id": "T-0035",
@@ -1412,35 +846,15 @@
     "description": "设计结构化日志记录系统。包含日志级别、日志轮转、远程日志收集、日志分析。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0026"
-    ],
+    "dependencies": ["T-0026"],
     "details": "设计结构化日志记录系统。包含日志级别、日志轮转、远程日志收集、日志分析。",
-    "testStrategy": [
-      "日志记录完整",
-      "日志格式统一",
-      "分析功能有用"
-    ],
+    "testStrategy": ["日志记录完整", "日志格式统一", "分析功能有用"],
     "subtasks": [],
-    "labels": [
-      "logging",
-      "monitoring",
-      "analysis",
-      "structured"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["logging", "monitoring", "analysis", "structured"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "日志记录完整",
-      "日志格式统一",
-      "分析功能有用"
-    ]
+    "acceptance": ["日志记录完整", "日志格式统一", "分析功能有用"]
   },
   {
     "id": "T-0036",
@@ -1448,35 +862,15 @@
     "description": "创建数据导入导出工具，支持从其他公会管理工具迁移数据。包含格式转换、数据验证、批量处理。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0023"
-    ],
+    "dependencies": ["T-0023"],
     "details": "创建数据导入导出工具，支持从其他公会管理工具迁移数据。包含格式转换、数据验证、批量处理。",
-    "testStrategy": [
-      "迁移功能正常",
-      "数据准确完整",
-      "处理速度满意"
-    ],
+    "testStrategy": ["迁移功能正常", "数据准确完整", "处理速度满意"],
     "subtasks": [],
-    "labels": [
-      "migration",
-      "data-import",
-      "conversion",
-      "validation"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["migration", "data-import", "conversion", "validation"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "迁移功能正常",
-      "数据准确完整",
-      "处理速度满意"
-    ]
+    "acceptance": ["迁移功能正常", "数据准确完整", "处理速度满意"]
   },
   {
     "id": "T-0037",
@@ -1484,22 +878,11 @@
     "description": "创建在线帮助系统和用户文档。包含操作指南、常见问题、视频教程、搜索功能。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0025"
-    ],
+    "dependencies": ["T-0025"],
     "details": "创建在线帮助系统和用户文档。包含操作指南、常见问题、视频教程、搜索功能。",
-    "testStrategy": [
-      "文档内容完整",
-      "搜索功能有效",
-      "用户反馈良好"
-    ],
+    "testStrategy": ["文档内容完整", "搜索功能有效", "用户反馈良好"],
     "subtasks": [],
-    "labels": [
-      "documentation",
-      "help",
-      "tutorial",
-      "search"
-    ],
+    "labels": ["documentation", "help", "tutorial", "search"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -1512,13 +895,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "文档内容完整",
@@ -1536,35 +913,15 @@
     "description": "开发可定制的主题系统，支持深色/浅色模式、自定义颜色、字体大小调节。使用CSS变量和Tailwind Dark模式。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0027"
-    ],
+    "dependencies": ["T-0027"],
     "details": "开发可定制的主题系统，支持深色/浅色模式、自定义颜色、字体大小调节。使用CSS变量和Tailwind Dark模式。",
-    "testStrategy": [
-      "主题切换流畅",
-      "自定义选项丰富",
-      "可访问性良好"
-    ],
+    "testStrategy": ["主题切换流畅", "自定义选项丰富", "可访问性良好"],
     "subtasks": [],
-    "labels": [
-      "theming",
-      "dark-mode",
-      "customization",
-      "accessibility"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["theming", "dark-mode", "customization", "accessibility"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "主题切换流畅",
-      "自定义选项丰富",
-      "可访问性良好"
-    ]
+    "acceptance": ["主题切换流畅", "自定义选项丰富", "可访问性良好"]
   },
   {
     "id": "T-0039",
@@ -1572,35 +929,15 @@
     "description": "优化移动设备访问体验，实现响应式设计。包含触摸操作、移动导航、离线支持。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0038"
-    ],
+    "dependencies": ["T-0038"],
     "details": "优化移动设备访问体验，实现响应式设计。包含触摸操作、移动导航、离线支持。",
-    "testStrategy": [
-      "移动体验良好",
-      "触摸操作自然",
-      "布局适应性强"
-    ],
+    "testStrategy": ["移动体验良好", "触摸操作自然", "布局适应性强"],
     "subtasks": [],
-    "labels": [
-      "mobile",
-      "responsive",
-      "touch",
-      "navigation"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["mobile", "responsive", "touch", "navigation"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "移动体验良好",
-      "触摸操作自然",
-      "布局适应性强"
-    ]
+    "acceptance": ["移动体验良好", "触摸操作自然", "布局适应性强"]
   },
   {
     "id": "T-0040",
@@ -1608,24 +945,11 @@
     "description": "实现实时数据同步和消息推送。包含WebSocket连接管理、断线重连、消息队列、状态同步。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0018"
-    ],
+    "dependencies": ["T-0018"],
     "details": "实现实时数据同步和消息推送。包含WebSocket连接管理、断线重连、消息队列、状态同步。",
-    "testStrategy": [
-      "实时同步正常",
-      "连接稳定可靠",
-      "消息传递及时"
-    ],
+    "testStrategy": ["实时同步正常", "连接稳定可靠", "消息传递及时"],
     "subtasks": [],
-    "labels": [
-      "websocket",
-      "realtime",
-      "sync",
-      "messaging",
-      "guild",
-      "公会"
-    ],
+    "labels": ["websocket", "realtime", "sync", "messaging", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -1638,13 +962,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "实时同步正常",
@@ -1662,35 +980,15 @@
     "description": "添加键盘快捷键支持，提高操作效率。包含全局快捷键、上下文快捷键、快捷键定制。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0021"
-    ],
+    "dependencies": ["T-0021"],
     "details": "添加键盘快捷键支持，提高操作效率。包含全局快捷键、上下文快捷键、快捷键定制。",
-    "testStrategy": [
-      "快捷键响应及时",
-      "定制功能完整",
-      "无冲突问题"
-    ],
+    "testStrategy": ["快捷键响应及时", "定制功能完整", "无冲突问题"],
     "subtasks": [],
-    "labels": [
-      "keyboard",
-      "shortcuts",
-      "hotkeys",
-      "accessibility"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["keyboard", "shortcuts", "hotkeys", "accessibility"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "快捷键响应及时",
-      "定制功能完整",
-      "无冲突问题"
-    ]
+    "acceptance": ["快捷键响应及时", "定制功能完整", "无冲突问题"]
   },
   {
     "id": "T-0042",
@@ -1698,24 +996,11 @@
     "description": "实现高级数据分析功能。包含趋势分析、预测模型、异常检测、数据挖掘。使用机器学习算法。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0016"
-    ],
+    "dependencies": ["T-0016"],
     "details": "实现高级数据分析功能。包含趋势分析、预测模型、异常检测、数据挖掘。使用机器学习算法。",
-    "testStrategy": [
-      "分析结果准确",
-      "预测模型有效",
-      "异常检测灵敏"
-    ],
+    "testStrategy": ["分析结果准确", "预测模型有效", "异常检测灵敏"],
     "subtasks": [],
-    "labels": [
-      "analytics",
-      "ml",
-      "prediction",
-      "data-mining",
-      "guild",
-      "公会"
-    ],
+    "labels": ["analytics", "ml", "prediction", "data-mining", "guild", "公会"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -1728,13 +1013,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "分析结果准确",
@@ -1752,22 +1031,11 @@
     "description": "建立自动化测试平台，包含测试用例管理、自动执行、结果报告、回归测试。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0030"
-    ],
+    "dependencies": ["T-0030"],
     "details": "建立自动化测试平台，包含测试用例管理、自动执行、结果报告、回归测试。",
-    "testStrategy": [
-      "测试执行自动化",
-      "报告内容详细",
-      "回归测试有效"
-    ],
+    "testStrategy": ["测试执行自动化", "报告内容详细", "回归测试有效"],
     "subtasks": [],
-    "labels": [
-      "automation",
-      "testing",
-      "regression",
-      "reporting"
-    ],
+    "labels": ["automation", "testing", "regression", "reporting"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -1780,13 +1048,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "测试执行自动化",
@@ -1804,35 +1066,15 @@
     "description": "建立版本管理系统，包含版本号管理、发布说明、回滚机制、A/B测试支持。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0034"
-    ],
+    "dependencies": ["T-0034"],
     "details": "建立版本管理系统，包含版本号管理、发布说明、回滚机制、A/B测试支持。",
-    "testStrategy": [
-      "版本管理清晰",
-      "发布流程顺畅",
-      "回滚机制可靠"
-    ],
+    "testStrategy": ["版本管理清晰", "发布流程顺畅", "回滚机制可靠"],
     "subtasks": [],
-    "labels": [
-      "versioning",
-      "release",
-      "rollback",
-      "ab-testing"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["versioning", "release", "rollback", "ab-testing"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "版本管理清晰",
-      "发布流程顺畅",
-      "回滚机制可靠"
-    ]
+    "acceptance": ["版本管理清晰", "发布流程顺畅", "回滚机制可靠"]
   },
   {
     "id": "T-0045",
@@ -1840,22 +1082,11 @@
     "description": "创建系统监控界面，显示应用健康状态、性能指标、错误率、用户活跃度等关键指标。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0035"
-    ],
+    "dependencies": ["T-0035"],
     "details": "创建系统监控界面，显示应用健康状态、性能指标、错误率、用户活跃度等关键指标。",
-    "testStrategy": [
-      "监控数据实时更新",
-      "指标展示清晰",
-      "告警机制有效"
-    ],
+    "testStrategy": ["监控数据实时更新", "指标展示清晰", "告警机制有效"],
     "subtasks": [],
-    "labels": [
-      "monitoring",
-      "dashboard",
-      "metrics",
-      "health"
-    ],
+    "labels": ["monitoring", "dashboard", "metrics", "health"],
     "adrRefs": [
       "ADR-0002",
       "ADR-0001",
@@ -1868,13 +1099,7 @@
       "ADR-0009",
       "ADR-0010"
     ],
-    "archRefs": [
-      "CH01",
-      "CH03",
-      "CH04",
-      "CH05",
-      "CH06"
-    ],
+    "archRefs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
     "overlay": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
     "acceptance": [
       "监控数据实时更新",
@@ -1892,35 +1117,15 @@
     "description": "使用Docker容器化应用，包含容器镜像构建、编排配置、环境管理、扩展部署。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0034"
-    ],
+    "dependencies": ["T-0034"],
     "details": "使用Docker容器化应用，包含容器镜像构建、编排配置、环境管理、扩展部署。",
-    "testStrategy": [
-      "容器运行正常",
-      "部署过程自动化",
-      "扩展性良好"
-    ],
+    "testStrategy": ["容器运行正常", "部署过程自动化", "扩展性良好"],
     "subtasks": [],
-    "labels": [
-      "docker",
-      "containerization",
-      "deployment",
-      "orchestration"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["docker", "containerization", "deployment", "orchestration"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "容器运行正常",
-      "部署过程自动化",
-      "扩展性良好"
-    ]
+    "acceptance": ["容器运行正常", "部署过程自动化", "扩展性良好"]
   },
   {
     "id": "T-0047",
@@ -1928,35 +1133,15 @@
     "description": "加强数据安全保护，包含数据加密、密钥管理、访问控制、安全审计。符合数据保护法规要求。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0031"
-    ],
+    "dependencies": ["T-0031"],
     "details": "加强数据安全保护，包含数据加密、密钥管理、访问控制、安全审计。符合数据保护法规要求。",
-    "testStrategy": [
-      "数据加密完整",
-      "安全审计通过",
-      "合规要求满足"
-    ],
+    "testStrategy": ["数据加密完整", "安全审计通过", "合规要求满足"],
     "subtasks": [],
-    "labels": [
-      "encryption",
-      "security",
-      "compliance",
-      "audit"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["encryption", "security", "compliance", "audit"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "数据加密完整",
-      "安全审计通过",
-      "合规要求满足"
-    ]
+    "acceptance": ["数据加密完整", "安全审计通过", "合规要求满足"]
   },
   {
     "id": "T-0048",
@@ -1964,35 +1149,15 @@
     "description": "创建用户反馈收集和处理系统。包含反馈表单、问题追踪、优先级管理、响应机制。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0037"
-    ],
+    "dependencies": ["T-0037"],
     "details": "创建用户反馈收集和处理系统。包含反馈表单、问题追踪、优先级管理、响应机制。",
-    "testStrategy": [
-      "反馈收集便捷",
-      "处理流程高效",
-      "用户满意度高"
-    ],
+    "testStrategy": ["反馈收集便捷", "处理流程高效", "用户满意度高"],
     "subtasks": [],
-    "labels": [
-      "feedback",
-      "support",
-      "tracking",
-      "communication"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["feedback", "support", "tracking", "communication"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "反馈收集便捷",
-      "处理流程高效",
-      "用户满意度高"
-    ]
+    "acceptance": ["反馈收集便捷", "处理流程高效", "用户满意度高"]
   },
   {
     "id": "T-0049",
@@ -2000,35 +1165,15 @@
     "description": "建立内部知识库和用户培训系统。包含操作文档、最佳实践、培训课程、认证考试。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0048"
-    ],
+    "dependencies": ["T-0048"],
     "details": "建立内部知识库和用户培训系统。包含操作文档、最佳实践、培训课程、认证考试。",
-    "testStrategy": [
-      "知识库内容丰富",
-      "培训效果良好",
-      "认证体系完整"
-    ],
+    "testStrategy": ["知识库内容丰富", "培训效果良好", "认证体系完整"],
     "subtasks": [],
-    "labels": [
-      "knowledge-base",
-      "training",
-      "documentation",
-      "certification"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["knowledge-base", "training", "documentation", "certification"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "知识库内容丰富",
-      "培训效果良好",
-      "认证体系完整"
-    ]
+    "acceptance": ["知识库内容丰富", "培训效果良好", "认证体系完整"]
   },
   {
     "id": "T-0050",
@@ -2036,38 +1181,15 @@
     "description": "完成整个系统的最终集成、性能调优、生产部署。包含系统测试、用户验收、上线部署、运维监控。",
     "status": "pending",
     "priority": "medium",
-    "dependencies": [
-      "T-0044",
-      "T-0045",
-      "T-0046",
-      "T-0047"
-    ],
+    "dependencies": ["T-0044", "T-0045", "T-0046", "T-0047"],
     "details": "完成整个系统的最终集成、性能调优、生产部署。包含系统测试、用户验收、上线部署、运维监控。",
-    "testStrategy": [
-      "系统集成成功",
-      "性能达到要求",
-      "生产环境稳定运行"
-    ],
+    "testStrategy": ["系统集成成功", "性能达到要求", "生产环境稳定运行"],
     "subtasks": [],
-    "labels": [
-      "integration",
-      "deployment",
-      "production",
-      "maintenance"
-    ],
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ],
+    "labels": ["integration", "deployment", "production", "maintenance"],
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"],
     "overlay": "",
-    "acceptance": [
-      "系统集成成功",
-      "性能达到要求",
-      "生产环境稳定运行"
-    ]
+    "acceptance": ["系统集成成功", "性能达到要求", "生产环境稳定运行"]
   },
   {
     "tasks": [
@@ -2088,12 +1210,7 @@
       "updated": "2025-08-30T06:22:59.420Z",
       "description": "开发环境标签"
     },
-    "adrRefs": [
-      "ADR-0002"
-    ],
-    "archRefs": [
-      "CH01",
-      "CH03"
-    ]
+    "adrRefs": ["ADR-0002"],
+    "archRefs": ["CH01", "CH03"]
   }
 ]

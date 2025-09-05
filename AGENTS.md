@@ -1,6 +1,6 @@
 # AGENTS.md — Codex (Reviewer & Architect Only)
 
-> **Scope**: Codex only performs *architecture & code review and planning*. It does **not** write code or push commits. Output must be review comments, change proposals, ADR drafts, acceptance checklists, and implementation plans.
+> **Scope**: Codex only performs _architecture & code review and planning_. It does **not** write code or push commits. Output must be review comments, change proposals, ADR drafts, acceptance checklists, and implementation plans.
 > **_直言不讳+止损机制_**请用中文回答我的所有问题，每次都用审视的目光，仔细看我输入的潜在问题，你要指出我的问题，并给出明显在我思考框架之外的建议。
 
 ---
@@ -8,6 +8,7 @@
 ## 1) Repository Reality (what exists in this repo)
 
 **Structure**
+
 - `src/` — TypeScript + React 19 + Phaser + Electron
   - `src/components/` UI (PascalCase components)
   - `src/game/` scenes/state
@@ -19,6 +20,7 @@
 - Outputs: `dist/`, `build/`, `coverage/`, `test-results/`
 
 **Scripts & Tasks (npm)**
+
 - Dev / Build:
   - `npm run dev`, `npm run preview`, `npm run build`
   - Electron: `npm run dev:electron`, `npm run build:electron`
@@ -31,6 +33,7 @@
   - Release safety (Electron fuses): `npm run security:fuses:prod`
 
 **Coverage gates**
+
 - Provider: v8
 - **Global threshold**: **90%** for lines/branches/functions/statements (enforced by `test:coverage:gate`).
 
@@ -52,23 +55,28 @@
 ## 3) Review flow for PRs
 
 **Pre-flight**
+
 - Build is green; `npm run lint`, `npm run typecheck`, `npm run test:coverage:gate` pass
 - For UI/gameplay, attach screenshots/GIFs in the PR
 - Use Conventional Commits in PR titles & commits
 
 **Architecture alignment**
+
 - Cite relevant ADRs and overlays (08-x docs); propose an ADR draft if this PR changes policy or thresholds
 - Check quality goals & constraints are upheld
 
 **Code health**
+
 - Small, focused diffs; readable design; tests present and meaningful
 - Unit + E2E where applicable; coverage ≥ **90%** global
 
 **Security**
+
 - Electron baseline flags set; CSP/permissions/preload surfaces reviewed
 - Call out risky switches (`appendSwitch`, debug flags) and remote content rules
 
 **Observability & Release health**
+
 - Verify Sentry release is created in CI and sessions are flowing
 - Crash‑Free gating: see thresholds below
 
@@ -80,6 +88,7 @@ If needed, create `IMPLEMENTATION_PLAN.md` in the PR (or include the following i
 
 ```markdown
 ## Stage N: [Name]
+
 **Goal**: [Specific deliverable]
 **Success Criteria**: [Testable outcomes]
 **Tests**: [Specific test cases]

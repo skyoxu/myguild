@@ -140,8 +140,9 @@ jobs:
           npm run lint || echo "⚠️ Lint检查有警告"
           npm run typecheck || echo "⚠️ 类型检查有警告"
 
-      - name: 🧪 运行测试
-        run: npm test
+      - name: 🧪 运行测试 (Release稳定模式)
+        run: npm run test:unit -- --run --reporter=dot --passWithNoTests
+        continue-on-error: false
 
       - name: 🏗️ 构建应用
         run: npm run build
@@ -234,9 +235,10 @@ jobs:
       - name: 📦 解压构建产物
         run: tar -xzf build-artifacts.tar.gz
 
-      - name: 🔧 设置Sentry CLI
+      - name: 🔧 安装 Sentry CLI
         run: |
-          echo "使用npm安装的Sentry CLI"
+          curl -sL https://sentry.io/get-cli/ | bash
+          echo "✅ Sentry CLI 安装完成"
 
       - name: 🚀 创建Sentry Release
         run: |
@@ -358,6 +360,11 @@ jobs:
     needs: [prepare, create-release, health-check]
     if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
     steps:
+      - name: 📦 安装 Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          echo "✅ Sentry CLI 安装完成"
+
       - name: 🚀 标记Sentry部署
         run: |
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"

@@ -11,35 +11,38 @@
 修改新工作流中的job名称，确保与当前分支保护规则兼容：
 
 #### security-unified.yml
+
 ```yaml
 jobs:
   # 保持与当前分支保护规则兼容的job名称
-  security-scan:  # 替代原 ci.yml 中的 security-scan
-    name: 🛡️ 统一安全扫描 
+  security-scan: # 替代原 ci.yml 中的 security-scan
+    name: 🛡️ 统一安全扫描
     # ... existing config
-    
-  security-gate:  # 替代原 security-e2e.yml 中的 security-gate
+
+  security-gate: # 替代原 security-e2e.yml 中的 security-gate
     name: 🚦 统一安全门禁
     needs: [security-scan]
     # ... existing config
 ```
 
 #### observability-gate.yml
+
 ```yaml
 jobs:
-  observability-checks:  # 新的status check名称
+  observability-checks: # 新的status check名称
     name: 🔍 统一可观测性检查
     # ... existing config
 ```
 
 #### 在ci.yml中添加兼容性桥接
+
 ```yaml
 jobs:
   quality-gates:
     # 保持原有的quality-gates job，确保兼容性
     name: 质量门禁检查
     # 现有配置保持不变
-    
+
   # 新增：调用统一门禁
   unified-gates-bridge:
     name: 统一门禁桥接
@@ -66,8 +69,9 @@ jobs:
 ## 📋 当前GitHub分支保护规则推测
 
 基于现有工作流，推测当前required status checks可能包括：
+
 - `CI/CD Pipeline / quality-gates`
-- `Security Scan / security-scan` 
+- `Security Scan / security-scan`
 - `Electron安全基线验证 / security-gate`
 
 ## 🎯 推荐执行步骤

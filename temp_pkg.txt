@@ -1,0 +1,21 @@
+    "rollup-plugin-visualizer": "^6.0.3",
+    "snyk": "^1.1296.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,scss,yaml,yml}": [
+      "prettier --write"
+    ],
+    "src/**/*.{ts,tsx}": [
+      "npm run test:unit -- --run --passWithNoTests"
+    ]
+  }
+}

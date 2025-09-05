@@ -117,8 +117,12 @@ beforeEach(async () => {
   try {
     await createTestWALDatabase(TEST_DB_PATH);
     console.log(`Created database: ${TEST_DB_PATH}`);
-    console.log(`Database exists after creation: ${fs.existsSync(TEST_DB_PATH)}`);
-    console.log(`WAL file exists after creation: ${fs.existsSync(TEST_DB_PATH + '-wal')}`);
+    console.log(
+      `Database exists after creation: ${fs.existsSync(TEST_DB_PATH)}`
+    );
+    console.log(
+      `WAL file exists after creation: ${fs.existsSync(TEST_DB_PATH + '-wal')}`
+    );
   } catch (error) {
     console.error('Error creating test database:', error);
   }
@@ -128,32 +132,29 @@ afterEach(() => {
   cleanupTestFiles();
 });
 
-test.skip(
-  'checkpoint TRUNCATE mode clears WAL file',
-  () => {
-    // 验证 WAL 文件存在
-    const walFile = TEST_DB_PATH + '-wal';
-    console.log(`Looking for WAL file: ${walFile}`);
-    console.log(`WAL file exists: ${fs.existsSync(walFile)}`);
-    console.log(`Database file exists: ${fs.existsSync(TEST_DB_PATH)}`);
-    if (fs.existsSync(TEST_DATA_DIR)) {
-      console.log(`Test directory contents:`, fs.readdirSync(TEST_DATA_DIR));
-    }
-    expect(fs.existsSync(walFile)).toBe(true);
-
-    // 执行 TRUNCATE 模式 checkpoint
-    const result = execSync(
-      `node scripts/db/checkpoint.mjs --database=${TEST_DB_PATH} --truncate --verbose`,
-      { encoding: 'utf8', stdio: 'pipe', timeout: 30000 } // WAL checkpoint 30s超时
-    );
-
-    const checkpointData = JSON.parse(result);
-    expect(checkpointData.ok).toBe(true);
-    expect(checkpointData.mode).toBe('TRUNCATE');
-    expect(checkpointData.timestamp).toBeDefined();
-    expect(checkpointData.database).toBe(TEST_DB_PATH);
+test.skip('checkpoint TRUNCATE mode clears WAL file', () => {
+  // 验证 WAL 文件存在
+  const walFile = TEST_DB_PATH + '-wal';
+  console.log(`Looking for WAL file: ${walFile}`);
+  console.log(`WAL file exists: ${fs.existsSync(walFile)}`);
+  console.log(`Database file exists: ${fs.existsSync(TEST_DB_PATH)}`);
+  if (fs.existsSync(TEST_DATA_DIR)) {
+    console.log(`Test directory contents:`, fs.readdirSync(TEST_DATA_DIR));
   }
-);
+  expect(fs.existsSync(walFile)).toBe(true);
+
+  // 执行 TRUNCATE 模式 checkpoint
+  const result = execSync(
+    `node scripts/db/checkpoint.mjs --database=${TEST_DB_PATH} --truncate --verbose`,
+    { encoding: 'utf8', stdio: 'pipe', timeout: 30000 } // WAL checkpoint 30s超时
+  );
+
+  const checkpointData = JSON.parse(result);
+  expect(checkpointData.ok).toBe(true);
+  expect(checkpointData.mode).toBe('TRUNCATE');
+  expect(checkpointData.timestamp).toBeDefined();
+  expect(checkpointData.database).toBe(TEST_DB_PATH);
+});
 
 test.skipIf(!isBetterSQLite3Available())(
   'checkpoint handles non-WAL databases gracefully',

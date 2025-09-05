@@ -328,14 +328,14 @@ async function analyzeScenarioCoverage(scenario, testFiles) {
  */
 function checkScenarioPattern(content, scenarioDesc) {
   const patterns = {
-    'CSP阻止内联脚本': /inline.*script.*block/i,
-    'CSP阻止不安全的资源': /unsafe.*resource.*block/i,
-    'nodeIntegration禁用': /nodeIntegration.*false/i,
-    'contextIsolation启用': /contextIsolation.*true/i,
-    'sandbox模式': /sandbox.*true/i,
-    '外部导航拦截': /external.*navigation.*block/i,
-    '新窗口控制': /window.*open.*control/i,
-    'API白名单': /whitelist.*api/i,
+    CSP阻止内联脚本: /inline.*script.*block/i,
+    CSP阻止不安全的资源: /unsafe.*resource.*block/i,
+    nodeIntegration禁用: /nodeIntegration.*false/i,
+    contextIsolation启用: /contextIsolation.*true/i,
+    sandbox模式: /sandbox.*true/i,
+    外部导航拦截: /external.*navigation.*block/i,
+    新窗口控制: /window.*open.*control/i,
+    API白名单: /whitelist.*api/i,
   };
 
   const pattern = patterns[scenarioDesc];
@@ -405,7 +405,7 @@ ${missingTest.missing.map(scenario => generateTestCase(scenario, missingTest.sce
  */
 function generateTestCase(scenario, scenarioType) {
   const testCases = {
-    'CSP阻止内联脚本执行': `
+    CSP阻止内联脚本执行: `
   test('CSP应该阻止内联脚本执行', async () => {
     // 尝试执行内联脚本
     const scriptBlocked = await page.evaluate(async () => {
@@ -426,7 +426,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(scriptBlocked).toBe(true);
   });`,
 
-    'CSP阻止不安全的资源加载': `
+    CSP阻止不安全的资源加载: `
   test('CSP应该阻止不安全的外部资源', async () => {
     const resourceBlocked = await page.evaluate(async () => {
       return new Promise((resolve) => {
@@ -442,7 +442,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(resourceBlocked).toBe(true);
   });`,
 
-    'nodeIntegration禁用验证': `
+    nodeIntegration禁用验证: `
   test('渲染进程应该无法访问Node.js API', async () => {
     const nodeDisabled = await page.evaluate(() => {
       return typeof window.require === 'undefined' && 
@@ -453,7 +453,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(nodeDisabled).toBe(true);
   });`,
 
-    'contextIsolation启用验证': `
+    contextIsolation启用验证: `
   test('上下文隔离应该启用', async () => {
     const isolationEnabled = await page.evaluate(() => {
       return typeof window.electronAPI !== 'undefined' && 
@@ -463,7 +463,7 @@ function generateTestCase(scenario, scenarioType) {
     expect(isolationEnabled).toBe(true);
   });`,
 
-    '外部导航拦截': `
+    外部导航拦截: `
   test('应该拦截外部导航尝试', async () => {
     const navigationBlocked = await page.evaluate(async () => {
       const originalLocation = window.location.href;

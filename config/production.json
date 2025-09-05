@@ -1,7 +1,7 @@
 {
   "sentry": {
     "dsn": "https://prod123456789@prod123.ingest.sentry.io/123456",
-    "environment": "production", 
+    "environment": "production",
     "release": "v1.0.0"
   },
   "logging": {

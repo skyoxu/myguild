@@ -84,16 +84,8 @@
         "Version": "v1.2.0",
         "Priority": "High",
         "Risk": "Medium",
-        "Depends-On": [
-          "PRD-GM-BASE-ARCHITECTURE"
-        ],
-        "Arch-Refs": [
-          "CH01",
-          "CH03",
-          "CH04",
-          "CH05",
-          "CH06"
-        ],
+        "Depends-On": ["PRD-GM-BASE-ARCHITECTURE"],
+        "Arch-Refs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
         "ADRs": [
           "ADR-0001",
           "ADR-0002",
@@ -118,19 +110,12 @@
           "txn.guild-manager.raid-operations",
           "txn.guild-manager.member-operations"
         ],
-        "SLO-Refs": [
-          "UI_P95_100ms",
-          "EVENT_P95_50ms",
-          "CRASH_FREE_99.5"
-        ],
+        "SLO-Refs": ["UI_P95_100ms", "EVENT_P95_50ms", "CRASH_FREE_99.5"],
         "Release_Gates": {
           "Quality_Gate": {
             "enabled": true,
             "threshold": "unit_test_coverage >= 80%",
-            "blockingFailures": [
-              "test_failures",
-              "coverage_below_threshold"
-            ],
+            "blockingFailures": ["test_failures", "coverage_below_threshold"],
             "windowHours": 24
           },
           "Security_Gate": {
@@ -145,10 +130,7 @@
           "Performance_Gate": {
             "enabled": true,
             "threshold": "p95_response_time <= 100ms",
-            "blockingFailures": [
-              "performance_regression",
-              "memory_leaks"
-            ],
+            "blockingFailures": ["performance_regression", "memory_leaks"],
             "windowHours": 6
           },
           "Acceptance_Gate": {
@@ -163,10 +145,7 @@
           "API_Contract_Gate": {
             "enabled": true,
             "threshold": "api_contract_compliance >= 100%",
-            "blockingFailures": [
-              "contract_violations",
-              "breaking_changes"
-            ],
+            "blockingFailures": ["contract_violations", "breaking_changes"],
             "windowHours": 12
           },
           "Sentry_Release_Health_Gate": {
@@ -215,19 +194,9 @@
         },
         "Security_Policies": {
           "permissions": {
-            "read": [
-              "guild-member",
-              "guild-officer",
-              "guild-master"
-            ],
-            "write": [
-              "guild-officer",
-              "guild-master"
-            ],
-            "admin": [
-              "guild-master",
-              "system-admin"
-            ]
+            "read": ["guild-member", "guild-officer", "guild-master"],
+            "write": ["guild-officer", "guild-master"],
+            "admin": ["guild-master", "system-admin"]
           },
           "cspNotes": "Electron CSP: default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; connect-src 'self' https://api.${PRODUCT_DOMAIN}; style-src 'self' 'nonce-${NONCE_PLACEHOLDER}'; img-src 'self' data: https:; font-src 'self'"
         },

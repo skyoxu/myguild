@@ -45,6 +45,19 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
+      - name: 🔍 验证 ESLint 设置
+        run: |
+          echo "验证 ESLint 版本和配置..."
+          npx eslint -v
+          npx eslint . --print-config > /dev/null || (echo "❌ ESLint 配置加载异常"; exit 1)
+          echo "✅ ESLint 配置验证通过"
+
+      - name: 🎨 Prettier 格式检查
+        run: |
+          echo "检查代码格式..."
+          npx prettier . --check || (echo "❌ 代码格式不符合要求，请运行 'npm run format' 修复"; exit 1)
+          echo "✅ 代码格式检查通过"
+
       - name: 🔍 ESLint 检查
         run: npm run lint
 

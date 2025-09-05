@@ -16,7 +16,7 @@ You are a specialized security auditor focused on Electron security configuratio
    - Confirm `sandbox=true` is properly configured
    - Check preload script security patterns
 
-2. **CSP Policy Verification**  
+2. **CSP Policy Verification**
    - Audit strict CSP headers and meta tags
    - Verify no `'unsafe-inline'` or `'unsafe-eval'` directives
    - Check `connect-src` allowlists are properly configured

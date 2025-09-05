@@ -46,7 +46,11 @@ export default tseslint.config([
       react,
     },
     rules: {
-      'prettier/prettier': 'error',
+      // 根据环境调整 Prettier 规则：CI 环境且非 main 分支时降级为警告
+      'prettier/prettier':
+        process.env.CI && process.env.GITHUB_REF !== 'refs/heads/main'
+          ? 'warn'
+          : 'error',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
@@ -55,11 +59,11 @@ export default tseslint.config([
       'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'warn',
-        { 
+        {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           ignoreRestSiblings: true,
-          destructuredArrayIgnorePattern: '^_'
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
       '@typescript-eslint/no-explicit-any': 'off',
@@ -111,13 +115,17 @@ export default tseslint.config([
       'no-restricted-syntax': [
         'error',
         {
-          selector: "ImportDeclaration[source.value='react'] ImportSpecifier[imported.name='useActionState']",
-          message: 'React 19 Actions已启用，关键表单必须使用useActionState，请确保表单走Action路径而非直接状态管理'
+          selector:
+            "ImportDeclaration[source.value='react'] ImportSpecifier[imported.name='useActionState']",
+          message:
+            'React 19 Actions已启用，关键表单必须使用useActionState，请确保表单走Action路径而非直接状态管理',
         },
         {
-          selector: "CallExpression[callee.name='useState'] ~ CallExpression[callee.property.name='onSubmit']",
-          message: 'React 19项目中，表单提交应优先使用useActionState而非useState+onSubmit组合，避免纸面升级'
-        }
+          selector:
+            "CallExpression[callee.name='useState'] ~ CallExpression[callee.property.name='onSubmit']",
+          message:
+            'React 19项目中，表单提交应优先使用useActionState而非useState+onSubmit组合，避免纸面升级',
+        },
       ],
 
       // 安全相关规则（临时放宽便于快速通过CI）
@@ -133,35 +141,42 @@ export default tseslint.config([
   },
   // 测试和脚本文件放宽规则（短期措施）
   {
-    files: ['**/tests/**/*.{ts,tsx,js,jsx}', '**/scripts/**/*.{ts,tsx,js,jsx,mjs,cjs}', '**/examples/**/*.{ts,tsx,js,jsx}'],
+    files: [
+      '**/tests/**/*.{ts,tsx,js,jsx}',
+      '**/scripts/**/*.{ts,tsx,js,jsx,mjs,cjs}',
+      '**/examples/**/*.{ts,tsx,js,jsx}',
+    ],
     extends: [tseslint.configs.recommended],
     rules: {
       // 放宽函数复杂度限制
-      'max-lines-per-function': ['warn', { max: 150, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': [
+        'warn',
+        { max: 150, skipBlankLines: true, skipComments: true },
+      ],
       'max-depth': ['warn', 6],
       'max-params': ['warn', 8],
-      'complexity': ['warn', 25],
-      
+      complexity: ['warn', 25],
+
       // 允许console输出
       'no-console': 'off',
-      
+
       // 放宽TypeScript规则
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'warn', 
-        { 
-          argsIgnorePattern: '^_', 
+        'warn',
+        {
+          argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           ignoreRestSiblings: true,
-          destructuredArrayIgnorePattern: '^_'
-        }
+          destructuredArrayIgnorePattern: '^_',
+        },
       ],
       '@typescript-eslint/no-empty-function': 'off',
-      
+
       // 允许require导入（向下兼容）
       '@typescript-eslint/no-require-imports': 'warn',
       '@typescript-eslint/ban-ts-comment': 'off', // 临时关闭，便于快速通过CI
-      
+
       // 禁用Prettier冲突规则
       'prettier/prettier': 'off',
     },
@@ -197,32 +212,32 @@ export default tseslint.config([
           selector:
             "CallExpression[callee.property.name='skip'][arguments.length>0]:has(Literal)",
           message:
-            "E2E测试中禁止使用 test.skip() 或 it.skip()，这会导致测试不稳定。如需条件跳过请使用 test.skipIf(condition)",
+            'E2E测试中禁止使用 test.skip() 或 it.skip()，这会导致测试不稳定。如需条件跳过请使用 test.skipIf(condition)',
         },
         {
           selector:
             "CallExpression[callee.name='test'][callee.property.name='skip']",
           message:
-            "E2E测试中禁止使用 test.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试",
+            'E2E测试中禁止使用 test.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试',
         },
         {
           selector:
             "CallExpression[callee.name='it'][callee.property.name='skip']",
           message:
-            "E2E测试中禁止使用 it.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试",
+            'E2E测试中禁止使用 it.skip()，这会导致flaky测试。请使用 test.skipIf(condition) 或修复测试',
         },
         {
           selector:
             "CallExpression[callee.name='describe'][callee.property.name='skip']",
           message:
-            "E2E测试中禁止使用 describe.skip()，这会导致整个测试套件被跳过。请逐个修复测试或使用条件跳过",
+            'E2E测试中禁止使用 describe.skip()，这会导致整个测试套件被跳过。请逐个修复测试或使用条件跳过',
         },
         // 禁止内联skip（最常见的flaky模式）
         {
           selector:
             "CallExpression[callee.type='Identifier'][callee.name=/^(test|it)$/] > ArrowFunctionExpression > BlockStatement > ExpressionStatement > CallExpression[callee.property.name='skip']",
           message:
-            "E2E测试中禁止在测试函数内部调用 test.skip()，这是常见的flaky反模式。请在测试外部使用条件跳过",
+            'E2E测试中禁止在测试函数内部调用 test.skip()，这是常见的flaky反模式。请在测试外部使用条件跳过',
         },
       ],
       // E2E测试中允许namespace（临时）

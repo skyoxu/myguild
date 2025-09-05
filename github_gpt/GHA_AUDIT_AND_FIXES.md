@@ -23,6 +23,7 @@
 - 最小修复（二选一）：
   - A. 触发层过滤（推荐简单）：在 `on.pull_request.paths`/`paths-ignore` 粒度控制重任务触发，无需在 job/step 再判定。
   - B. 引入 `changed-files` Action（保持 step 条件）：
+
     ```yaml
     - name: Get changed files
       id: changed-files

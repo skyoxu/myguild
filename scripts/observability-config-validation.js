@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 可观测性配置统一验证脚本
- * 
+ *
  * 功能：验证所有环境(dev/staging/prod)的可观测性配置一致性
  * 替代：原来的三个分离环境检查项
  * 基于：ADR-0003 可观测性和发布健康标准
@@ -16,8 +16,8 @@ const __dirname = path.dirname(__filename);
 
 const CONFIG_PATHS = {
   development: 'config/development.json',
-  staging: 'config/staging.json', 
-  production: 'config/production.json'
+  staging: 'config/staging.json',
+  production: 'config/production.json',
 };
 
 const REQUIRED_OBSERVABILITY_FIELDS = [
@@ -27,7 +27,7 @@ const REQUIRED_OBSERVABILITY_FIELDS = [
   'logging.level',
   'logging.structured',
   'metrics.enabled',
-  'crashReporting.enabled'
+  'crashReporting.enabled',
 ];
 
 class ObservabilityConfigValidator {
@@ -42,7 +42,7 @@ class ObservabilityConfigValidator {
    */
   loadConfigs() {
     console.log('🔍 加载环境配置文件...');
-    
+
     for (const [env, configPath] of Object.entries(CONFIG_PATHS)) {
       try {
         if (!fs.existsSync(configPath)) {
@@ -68,11 +68,13 @@ class ObservabilityConfigValidator {
     for (const [env, config] of Object.entries(this.configs)) {
       for (const field of REQUIRED_OBSERVABILITY_FIELDS) {
         const value = this.getNestedValue(config, field);
-        
+
         if (value === undefined || value === null) {
           this.errors.push(`❌ ${env}环境缺少必需字段: ${field}`);
         } else {
-          console.log(`✓ ${env}.${field}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
+          console.log(
+            `✓ ${env}.${field}: ${typeof value === 'string' ? value : JSON.stringify(value)}`
+          );
         }
       }
     }
@@ -91,19 +93,21 @@ class ObservabilityConfigValidator {
     }
 
     // 检查关键配置字段的一致性（除了environment字段）
-    const consistencyFields = REQUIRED_OBSERVABILITY_FIELDS.filter(field => 
-      !field.includes('environment') && !field.includes('dsn')
+    const consistencyFields = REQUIRED_OBSERVABILITY_FIELDS.filter(
+      field => !field.includes('environment') && !field.includes('dsn')
     );
 
     for (const field of consistencyFields) {
-      const values = environments.map(env => 
+      const values = environments.map(env =>
         this.getNestedValue(this.configs[env], field)
       );
 
       const uniqueValues = [...new Set(values.map(v => JSON.stringify(v)))];
-      
+
       if (uniqueValues.length > 1) {
-        this.warnings.push(`⚠️  字段 ${field} 在环境间不一致: ${uniqueValues.join(', ')}`);
+        this.warnings.push(
+          `⚠️  字段 ${field} 在环境间不一致: ${uniqueValues.join(', ')}`
+        );
       } else {
         console.log(`✓ ${field} 在所有环境间一致`);
       }
@@ -118,10 +122,11 @@ class ObservabilityConfigValidator {
 
     for (const [env, config] of Object.entries(this.configs)) {
       const sentryDsn = this.getNestedValue(config, 'sentry.dsn');
-      
+
       if (sentryDsn && typeof sentryDsn === 'string') {
         // 验证DSN格式 - 支持字母数字组合（符合Sentry官方格式）
-        const dsnPattern = /^https:\/\/[a-zA-Z0-9]+@[a-zA-Z0-9]+\.ingest\.sentry\.io\/[0-9]+$/;
+        const dsnPattern =
+          /^https:\/\/[a-zA-Z0-9]+@[a-zA-Z0-9]+\.ingest\.sentry\.io\/[0-9]+$/;
         if (!dsnPattern.test(sentryDsn)) {
           this.errors.push(`❌ ${env}环境Sentry DSN格式无效: ${sentryDsn}`);
         } else {
@@ -152,10 +157,10 @@ class ObservabilityConfigValidator {
       summary: {
         environments: Object.keys(this.configs).length,
         errors: this.errors.length,
-        warnings: this.warnings.length
+        warnings: this.warnings.length,
       },
       errors: this.errors,
-      warnings: this.warnings
+      warnings: this.warnings,
     };
 
     // 保存报告文件
@@ -174,7 +179,7 @@ class ObservabilityConfigValidator {
     console.log('🚀 开始可观测性配置验证...\n');
 
     this.loadConfigs();
-    
+
     if (Object.keys(this.configs).length === 0) {
       this.errors.push('❌ 未能加载任何配置文件');
       return this.generateReport();
@@ -209,14 +214,17 @@ class ObservabilityConfigValidator {
 // 主执行逻辑
 if (process.argv[1] === __filename) {
   const validator = new ObservabilityConfigValidator();
-  
-  validator.validate().then(report => {
-    // 基于验证结果设置进程退出码
-    process.exit(report.status === 'PASS' ? 0 : 1);
-  }).catch(error => {
-    console.error('💥 验证过程出现异常:', error);
-    process.exit(1);
-  });
+
+  validator
+    .validate()
+    .then(report => {
+      // 基于验证结果设置进程退出码
+      process.exit(report.status === 'PASS' ? 0 : 1);
+    })
+    .catch(error => {
+      console.error('💥 验证过程出现异常:', error);
+      process.exit(1);
+    });
 }
 
 export default ObservabilityConfigValidator;

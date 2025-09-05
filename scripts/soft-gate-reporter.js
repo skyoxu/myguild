@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 软门禁报告脚本
- * 
+ *
  * 功能：实现GitHub中性状态软门禁，提供反馈但不阻塞合并
  * 应用：性能测试、Bundle大小检查等非阻塞质量门禁
  * 基于：ADR-0005 质量门禁标准
@@ -22,9 +22,9 @@ const SOFT_GATES = {
     thresholds: {
       loadTime: 3000, // 3秒
       memoryUsage: 100 * 1024 * 1024, // 100MB
-      cpuUsage: 80 // 80%
+      cpuUsage: 80, // 80%
     },
-    weight: 'medium'
+    weight: 'medium',
   },
   bundleSize: {
     name: 'Bundle大小检查',
@@ -32,18 +32,18 @@ const SOFT_GATES = {
     thresholds: {
       maxSize: 5 * 1024 * 1024, // 5MB
       jsSize: 2 * 1024 * 1024, // 2MB
-      cssSize: 500 * 1024 // 500KB
+      cssSize: 500 * 1024, // 500KB
     },
-    weight: 'high'
+    weight: 'high',
   },
   accessibility: {
     name: '可访问性测试',
     command: 'npm run test:a11y',
     thresholds: {
       score: 90, // 最低90分
-      violations: 0 // 零违规
+      violations: 0, // 零违规
     },
-    weight: 'medium'
+    weight: 'medium',
   },
   lighthouse: {
     name: 'Lighthouse审计',
@@ -52,10 +52,10 @@ const SOFT_GATES = {
       performance: 85,
       accessibility: 90,
       bestPractices: 85,
-      seo: 80
+      seo: 80,
     },
-    weight: 'low'
-  }
+    weight: 'low',
+  },
 };
 
 class SoftGateReporter {
@@ -72,18 +72,18 @@ class SoftGateReporter {
    */
   async runSoftGate(gateKey, gateConfig) {
     console.log(`\n📊 执行软门禁: ${gateConfig.name}...`);
-    
+
     const startTime = Date.now();
-    
+
     try {
       // 执行检查命令（如果存在）
       let output = '';
       if (gateConfig.command) {
         try {
-          output = execSync(gateConfig.command, { 
+          output = execSync(gateConfig.command, {
             encoding: 'utf8',
             stdio: ['pipe', 'pipe', 'pipe'],
-            timeout: 120000 // 2分钟超时
+            timeout: 120000, // 2分钟超时
           });
         } catch (error) {
           // 命令失败不影响软门禁状态，只记录
@@ -93,19 +93,20 @@ class SoftGateReporter {
 
       const duration = Date.now() - startTime;
       const result = await this.analyzeGateResult(gateKey, gateConfig, output);
-      
+
       result.duration = duration;
       result.timestamp = new Date().toISOString();
-      
+
       this.results[gateKey] = result;
-      
+
       // 生成反馈
       this.generateGateFeedback(gateKey, result);
-      
-      console.log(`${result.status === 'success' ? '✅' : '⚠️'} ${gateConfig.name}: ${result.summary}`);
-      
-      return result;
 
+      console.log(
+        `${result.status === 'success' ? '✅' : '⚠️'} ${gateConfig.name}: ${result.summary}`
+      );
+
+      return result;
     } catch (error) {
       const result = {
         gate: gateConfig.name,
@@ -113,12 +114,12 @@ class SoftGateReporter {
         summary: `执行失败: ${error.message}`,
         duration: Date.now() - startTime,
         error: error.message,
-        weight: gateConfig.weight
+        weight: gateConfig.weight,
       };
-      
+
       this.results[gateKey] = result;
       this.feedback.push(`❌ ${gateConfig.name} 执行异常: ${error.message}`);
-      
+
       return result;
     }
   }
@@ -133,7 +134,7 @@ class SoftGateReporter {
       summary: '',
       details: {},
       score: 100,
-      weight: gateConfig.weight
+      weight: gateConfig.weight,
     };
 
     try {
@@ -155,8 +156,12 @@ class SoftGateReporter {
       }
 
       // 基于阈值计算分数和状态
-      result.score = this.calculateGateScore(gateKey, gateConfig, result.details);
-      
+      result.score = this.calculateGateScore(
+        gateKey,
+        gateConfig,
+        result.details
+      );
+
       if (result.score >= 85) {
         result.status = 'success';
         result.summary = `优秀 (${result.score}分)`;
@@ -167,7 +172,6 @@ class SoftGateReporter {
         result.status = 'warning';
         result.summary = `需改进 (${result.score}分)`;
       }
-
     } catch (error) {
       result.status = 'error';
       result.summary = `分析失败: ${error.message}`;
@@ -185,7 +189,7 @@ class SoftGateReporter {
     const details = {
       loadTime: Math.random() * 4000 + 1000, // 1-5秒
       memoryUsage: Math.random() * 150 * 1024 * 1024, // 0-150MB
-      cpuUsage: Math.random() * 100 // 0-100%
+      cpuUsage: Math.random() * 100, // 0-100%
     };
 
     return details;
@@ -196,7 +200,7 @@ class SoftGateReporter {
    */
   async analyzeBundleSize() {
     let details = {};
-    
+
     try {
       // 检查dist目录中的文件大小
       const distPath = 'dist';
@@ -205,19 +209,19 @@ class SoftGateReporter {
         let jsSize = 0;
         let cssSize = 0;
 
-        const scanDirectory = (dirPath) => {
+        const scanDirectory = dirPath => {
           const files = fs.readdirSync(dirPath);
-          
+
           files.forEach(file => {
             const filePath = path.join(dirPath, file);
             const stats = fs.statSync(filePath);
-            
+
             if (stats.isDirectory()) {
               scanDirectory(filePath);
             } else {
               const fileSize = stats.size;
               totalSize += fileSize;
-              
+
               if (file.endsWith('.js')) {
                 jsSize += fileSize;
               } else if (file.endsWith('.css')) {
@@ -233,7 +237,7 @@ class SoftGateReporter {
           totalSize,
           jsSize,
           cssSize,
-          fileCount: fs.readdirSync(distPath).length
+          fileCount: fs.readdirSync(distPath).length,
         };
       } else {
         // 如果没有dist目录，使用源文件大小估算
@@ -242,13 +246,13 @@ class SoftGateReporter {
           jsSize: 0,
           cssSize: 0,
           fileCount: 0,
-          note: 'dist目录不存在，使用估算值'
+          note: 'dist目录不存在，使用估算值',
         };
       }
     } catch (error) {
       details = {
         error: error.message,
-        totalSize: 0
+        totalSize: 0,
       };
     }
 
@@ -263,7 +267,7 @@ class SoftGateReporter {
     const details = {
       score: Math.floor(Math.random() * 20) + 80, // 80-100分
       violations: Math.floor(Math.random() * 3), // 0-2个违规
-      warnings: Math.floor(Math.random() * 5) // 0-4个警告
+      warnings: Math.floor(Math.random() * 5), // 0-4个警告
     };
 
     return details;
@@ -278,7 +282,7 @@ class SoftGateReporter {
       performance: Math.floor(Math.random() * 30) + 70, // 70-100
       accessibility: Math.floor(Math.random() * 20) + 80, // 80-100
       bestPractices: Math.floor(Math.random() * 30) + 70, // 70-100
-      seo: Math.floor(Math.random() * 40) + 60 // 60-100
+      seo: Math.floor(Math.random() * 40) + 60, // 60-100
     };
 
     return details;
@@ -295,19 +299,28 @@ class SoftGateReporter {
       switch (gateKey) {
         case 'performance':
           if (details.loadTime > thresholds.loadTime) {
-            score -= Math.min(30, (details.loadTime - thresholds.loadTime) / 100);
+            score -= Math.min(
+              30,
+              (details.loadTime - thresholds.loadTime) / 100
+            );
           }
           if (details.memoryUsage > thresholds.memoryUsage) {
-            score -= Math.min(25, ((details.memoryUsage - thresholds.memoryUsage) / (1024 * 1024)));
+            score -= Math.min(
+              25,
+              (details.memoryUsage - thresholds.memoryUsage) / (1024 * 1024)
+            );
           }
           if (details.cpuUsage > thresholds.cpuUsage) {
-            score -= Math.min(20, (details.cpuUsage - thresholds.cpuUsage));
+            score -= Math.min(20, details.cpuUsage - thresholds.cpuUsage);
           }
           break;
 
         case 'bundleSize':
           if (details.totalSize > thresholds.maxSize) {
-            score -= Math.min(40, ((details.totalSize - thresholds.maxSize) / (1024 * 1024)) * 10);
+            score -= Math.min(
+              40,
+              ((details.totalSize - thresholds.maxSize) / (1024 * 1024)) * 10
+            );
           }
           break;
 
@@ -316,8 +329,12 @@ class SoftGateReporter {
           break;
 
         case 'lighthouse':
-          const avgScore = (details.performance + details.accessibility + 
-                           details.bestPractices + details.seo) / 4;
+          const avgScore =
+            (details.performance +
+              details.accessibility +
+              details.bestPractices +
+              details.seo) /
+            4;
           score = Math.max(0, avgScore);
           break;
       }
@@ -332,14 +349,19 @@ class SoftGateReporter {
    * 生成门禁反馈
    */
   generateGateFeedback(gateKey, result) {
-    const emoji = result.status === 'success' ? '✅' : result.status === 'warning' ? '⚠️' : '❌';
-    
+    const emoji =
+      result.status === 'success'
+        ? '✅'
+        : result.status === 'warning'
+          ? '⚠️'
+          : '❌';
+
     this.feedback.push({
       gate: result.gate,
       status: result.status,
       score: result.score,
       message: `${emoji} ${result.gate}: ${result.summary}`,
-      weight: result.weight
+      weight: result.weight,
     });
 
     // 基于结果生成建议
@@ -356,29 +378,29 @@ class SoftGateReporter {
       performance: [
         '考虑使用代码分割减少初始加载时间',
         '优化图片和静态资源大小',
-        '使用Web Worker处理CPU密集型任务'
+        '使用Web Worker处理CPU密集型任务',
       ],
       bundleSize: [
         '启用Tree Shaking移除未使用代码',
         '使用动态导入进行代码分割',
-        '压缩和优化静态资源'
+        '压缩和优化静态资源',
       ],
       accessibility: [
         '添加适当的ARIA标签',
         '确保键盘导航功能完整',
-        '提高颜色对比度'
+        '提高颜色对比度',
       ],
       lighthouse: [
         '优化Core Web Vitals指标',
         '添加元数据和SEO标签',
-        '实施性能最佳实践'
-      ]
+        '实施性能最佳实践',
+      ],
     };
 
     if (recommendations[gateKey]) {
-      this.recommendations.push(...recommendations[gateKey].map(rec => 
-        `💡 ${result.gate}: ${rec}`
-      ));
+      this.recommendations.push(
+        ...recommendations[gateKey].map(rec => `💡 ${result.gate}: ${rec}`)
+      );
     }
   }
 
@@ -404,12 +426,12 @@ class SoftGateReporter {
    */
   generateGitHubOutput() {
     this.overallScore = this.calculateOverallScore();
-    
+
     const summary = {
       status: 'neutral', // 软门禁始终为neutral状态
       title: `质量评分: ${this.overallScore}/100`,
       summary: `共执行${Object.keys(this.results).length}项质量检查`,
-      details: this.feedback.map(f => f.message).join('\n')
+      details: this.feedback.map(f => f.message).join('\n'),
     };
 
     // 输出到GitHub Actions
@@ -419,7 +441,7 @@ class SoftGateReporter {
         `soft-gate-score=${this.overallScore}`,
         `soft-gate-title=${summary.title}`,
         `soft-gate-summary=${summary.summary}`,
-        `soft-gate-details<<EOF\n${summary.details}\nEOF`
+        `soft-gate-details<<EOF\n${summary.details}\nEOF`,
       ];
 
       try {
@@ -447,10 +469,16 @@ class SoftGateReporter {
       recommendations: this.recommendations,
       summary: {
         totalGates: Object.keys(this.results).length,
-        successCount: Object.values(this.results).filter(r => r.status === 'success').length,
-        warningCount: Object.values(this.results).filter(r => r.status === 'warning').length,
-        errorCount: Object.values(this.results).filter(r => r.status === 'error').length
-      }
+        successCount: Object.values(this.results).filter(
+          r => r.status === 'success'
+        ).length,
+        warningCount: Object.values(this.results).filter(
+          r => r.status === 'warning'
+        ).length,
+        errorCount: Object.values(this.results).filter(
+          r => r.status === 'error'
+        ).length,
+      },
     };
 
     // 保存详细报告
@@ -468,8 +496,8 @@ class SoftGateReporter {
   async executeAllSoftGates() {
     console.log('🚦 开始执行软门禁检查...\n');
 
-    const gatePromises = Object.entries(SOFT_GATES).map(
-      ([key, config]) => this.runSoftGate(key, config)
+    const gatePromises = Object.entries(SOFT_GATES).map(([key, config]) =>
+      this.runSoftGate(key, config)
     );
 
     await Promise.allSettled(gatePromises);
@@ -494,7 +522,7 @@ class SoftGateReporter {
 
     return {
       github: githubSummary,
-      detailed: detailedReport
+      detailed: detailedReport,
     };
   }
 }
@@ -502,15 +530,20 @@ class SoftGateReporter {
 // 主执行逻辑
 if (process.argv[1] === __filename) {
   const reporter = new SoftGateReporter();
-  
-  reporter.executeAllSoftGates().then(result => {
-    // 软门禁总是返回成功退出码，因为它不阻塞合并
-    console.log(`\n✨ 软门禁检查完成，总体评分: ${result.detailed.overallScore}/100`);
-    process.exit(0);
-  }).catch(error => {
-    console.error('💥 软门禁执行异常:', error);
-    process.exit(0); // 软门禁异常也不阻塞
-  });
+
+  reporter
+    .executeAllSoftGates()
+    .then(result => {
+      // 软门禁总是返回成功退出码，因为它不阻塞合并
+      console.log(
+        `\n✨ 软门禁检查完成，总体评分: ${result.detailed.overallScore}/100`
+      );
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('💥 软门禁执行异常:', error);
+      process.exit(0); // 软门禁异常也不阻塞
+    });
 }
 
 export default SoftGateReporter;

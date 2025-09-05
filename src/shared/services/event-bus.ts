@@ -58,7 +58,10 @@ export class EventBus implements EventPublisher, EventSubscriber {
   private publishCount = 0;
   private subscriptionCount = 0;
   // 存储原始handler到wrapped handler的映射，用于正确的unsubscribe
-  private handlerMap = new Map<string, Map<(...args: any[]) => void, (...args: any[]) => void>>();
+  private handlerMap = new Map<
+    string,
+    Map<(...args: any[]) => void, (...args: any[]) => void>
+  >();
 
   constructor(config: Partial<EventBusConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };

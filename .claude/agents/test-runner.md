@@ -12,7 +12,7 @@ You are a specialized test execution and analysis agent focused on running compr
 
 1. **Playwright Electron Tests**
    - Execute smoke tests for Electron application launch
-   - Run security redlines tests (CSP violations, permissions)  
+   - Run security redlines tests (CSP violations, permissions)
    - Perform E2E user flow validation
    - Test cross-platform compatibility scenarios
 

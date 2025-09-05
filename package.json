@@ -12,6 +12,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --max-warnings=1000",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "test": "vitest",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

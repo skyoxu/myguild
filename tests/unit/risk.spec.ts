@@ -64,7 +64,7 @@ export const createMockRiskEntry = (
     const probability = overrides?.probability ?? baseEntry.probability;
     const impact = overrides?.impact ?? baseEntry.impact;
     baseEntry.riskScore = probability * impact;
-    
+
     // 重新计算riskLevel
     if (baseEntry.riskScore >= 20) {
       baseEntry.riskLevel = 'critical';
@@ -355,7 +355,7 @@ describe('Risk Registry Core Functions', () => {
 
       // Verify both risks are stored
       expect(mockRiskRegistry.risks.size).toBe(2);
-      
+
       const allRisks = await mockRiskRegistry.listRisks();
       expect(allRisks).toHaveLength(2);
 
@@ -848,10 +848,12 @@ describe('Traceability Analysis', () => {
             const hasSloViolation = trace.sloImpacts?.some(
               (impact: any) => impact.currentStatus === 'violated'
             );
-            
+
             // Check if all tests are passing (no failed tests)
-            const allTestsPassing = trace.testReferences?.every((test: any) => test.passed === true);
-            
+            const allTestsPassing = trace.testReferences?.every(
+              (test: any) => test.passed === true
+            );
+
             if (hasSloViolation && allTestsPassing) {
               issues.push(
                 `Risk ${trace.riskId} claims SLO violation but tests are passing`
@@ -937,7 +939,7 @@ describe('Traceability Analysis', () => {
 
       expect(validation.passed).toBe(false);
       expect(validation.issues).toEqual([
-        'Risk RISK-INCONSISTENT claims SLO violation but tests are passing'
+        'Risk RISK-INCONSISTENT claims SLO violation but tests are passing',
       ]);
     });
   });

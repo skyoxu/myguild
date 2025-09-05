@@ -32,12 +32,14 @@ gh api repos/:owner/:repo/actions/runs?branch=main | jq '.workflow_runs[0].jobs_
 ## 📋 关键 Job 名称
 
 **绝对不可更改**（分支保护依赖）:
+
 - `quality-gates`
-- `unit-tests-core`  
+- `unit-tests-core`
 - `coverage-gate`
 - `electron-security-gate`
 
 **更改需要同步分支保护**:
+
 - `workflow-guardian` (推荐保护)
 
 ## 🛠️ 常用检查命令

@@ -23,7 +23,7 @@ function checkEncodingRisks(filePath) {
   if (!fs.existsSync(filePath)) {
     return {
       exists: false,
-      issues: [`File not found: ${filePath}`]
+      issues: [`File not found: ${filePath}`],
     };
   }
 
@@ -39,7 +39,9 @@ function checkEncodingRisks(filePath) {
     if (line.includes('description:') || line.includes('console.log')) {
       const nonAscii = line.match(/[^\x00-\x7F]/g);
       if (nonAscii) {
-        issues.push(`Line ${lineNumber}: Non-ASCII characters in output context: ${nonAscii.join(', ')}`);
+        issues.push(
+          `Line ${lineNumber}: Non-ASCII characters in output context: ${nonAscii.join(', ')}`
+        );
       }
     }
 
@@ -53,7 +55,9 @@ function checkEncodingRisks(filePath) {
     const doubleQuotes = (line.match(/"/g) || []).length;
     if (singleQuotes % 2 !== 0 || doubleQuotes % 2 !== 0) {
       if (line.includes('description:') || line.trim().endsWith(',')) {
-        issues.push(`Line ${lineNumber}: Potential unclosed string (encoding-related)`);
+        issues.push(
+          `Line ${lineNumber}: Potential unclosed string (encoding-related)`
+        );
       }
     }
   });
@@ -62,7 +66,7 @@ function checkEncodingRisks(filePath) {
     exists: true,
     size: content.length,
     lines: lines.length,
-    issues: issues
+    issues: issues,
   };
 }
 
@@ -71,21 +75,21 @@ function checkEncodingRisks(filePath) {
  */
 function validateSyntax(filePath) {
   const { spawn } = require('child_process');
-  
-  return new Promise((resolve) => {
+
+  return new Promise(resolve => {
     const nodeCheck = spawn('node', ['--check', filePath], {
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     let stderr = '';
-    nodeCheck.stderr.on('data', (data) => {
+    nodeCheck.stderr.on('data', data => {
       stderr += data.toString();
     });
 
-    nodeCheck.on('close', (code) => {
+    nodeCheck.on('close', code => {
       resolve({
         valid: code === 0,
-        error: stderr.trim()
+        error: stderr.trim(),
       });
     });
   });
@@ -102,15 +106,17 @@ async function runEncodingCheck() {
 
   for (const filePath of CRITICAL_FILES) {
     console.log(`\n📁 Checking: ${filePath}`);
-    
+
     const encodingCheck = checkEncodingRisks(filePath);
-    
+
     if (!encodingCheck.exists) {
       console.log('⚠️  File not found (skipping)');
       continue;
     }
 
-    console.log(`📏 Size: ${encodingCheck.size} bytes, ${encodingCheck.lines} lines`);
+    console.log(
+      `📏 Size: ${encodingCheck.size} bytes, ${encodingCheck.lines} lines`
+    );
 
     // Encoding risk analysis
     if (encodingCheck.issues.length > 0) {
@@ -138,12 +144,14 @@ async function runEncodingCheck() {
 
   console.log('\n🎯 Summary');
   console.log('===========');
-  
+
   if (hasIssues) {
     console.log('❌ Encoding consistency check FAILED');
     console.log('\n💡 Recommended actions:');
     console.log('1. Convert non-ASCII strings to ASCII equivalents');
-    console.log('2. Use UTF-8 with BOM for PowerShell compatibility (if needed)');
+    console.log(
+      '2. Use UTF-8 with BOM for PowerShell compatibility (if needed)'
+    );
     console.log('3. Ensure editor saves files as UTF-8');
     console.log('4. Check .editorconfig charset setting');
     process.exit(1);
@@ -165,5 +173,5 @@ module.exports = {
   checkEncodingRisks,
   validateSyntax,
   runEncodingCheck,
-  CRITICAL_FILES
+  CRITICAL_FILES,
 };

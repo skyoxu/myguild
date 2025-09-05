@@ -22,11 +22,9 @@
    // C:/Users/weiruan/claude_desktop_config.json (全局) ✅ 有MCP配置
    // C:/Users/weiruan/.claude.json (项目级) ❌ 缺少MCP配置
 3. 配置覆盖原理
-
-
-    - 项目目录存在 .claude.json 时，完全覆盖全局配置
-    - 不是合并，是完全替换
-    - zen-mcp-server工作是因为它配置在项目级文件中
+   - 项目目录存在 .claude.json 时，完全覆盖全局配置
+   - 不是合并，是完全替换
+   - zen-mcp-server工作是因为它配置在项目级文件中
 
 ✅ 解决方案
 
@@ -62,10 +60,8 @@
 2. 检查当前目录是否有项目级配置
    ls .claude.json
 3. 配置决策:
-
-
-    - 如果存在 .claude.json → 必须在项目级配置
-    - 如果不存在 → 可在全局配置
+   - 如果存在 .claude.json → 必须在项目级配置
+   - 如果不存在 → 可在全局配置
 
 4. 添加配置 (Windows环境使用 cmd /c 模式)
    {

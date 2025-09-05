@@ -108,7 +108,6 @@ const path = require('path');
  * 根据项目状态推荐覆盖率模式
  */
 function recommendCoverageMode() {
-
   const projectRoot = path.join(__dirname, '..', '..');
   const testFiles = [];
 

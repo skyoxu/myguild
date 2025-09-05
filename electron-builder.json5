@@ -19,9 +19,7 @@
     '!**/*.ts',
     '!**/*.map',
   ],
-  asarUnpack: [
-    '**/*.node'
-  ],
+  asarUnpack: ['**/*.node'],
   extraMetadata: {
     main: 'dist-electron/main.js',
   },

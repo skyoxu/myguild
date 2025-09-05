@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 const workflowFiles = [
   '.github/workflows/soft-gates.yml',
   '.github/workflows/security-unified.yml',
-  '.github/workflows/observability-gate.yml'
+  '.github/workflows/observability-gate.yml',
 ];
 
 console.log('🔍 验证GitHub Actions工作流YAML语法...\n');
@@ -27,5 +27,7 @@ for (const file of workflowFiles) {
   }
 }
 
-console.log('\n' + (allValid ? '✅ 所有工作流YAML语法验证通过' : '❌ 发现YAML语法错误'));
+console.log(
+  '\n' + (allValid ? '✅ 所有工作流YAML语法验证通过' : '❌ 发现YAML语法错误')
+);
 process.exit(allValid ? 0 : 1);

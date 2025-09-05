@@ -250,34 +250,38 @@ function analyzePreloadSecurity(content, filePath) {
   const dangerousApis = ['require', '__dirname', '__filename', 'global'];
   const safeProcessUsage = [
     'process.contextIsolated',
-    'process.sandboxed', 
+    'process.sandboxed',
     'process.platform',
     'process.versions',
     'process.env.SECURITY_TEST_MODE',
     'process.env.NODE_ENV',
-    'process.env.APP_VERSION'
+    'process.env.APP_VERSION',
   ];
-  
+
   // 安全的require使用模式（通常用于安全检查）
   const safeRequirePatterns = [
-    'typeof require === \'undefined\'',
+    "typeof require === 'undefined'",
     'typeof require === "undefined"',
     'require === undefined',
     '// require is safe',
     '/* require is safe */',
   ];
-  
+
   for (const api of dangerousApis) {
     if (content.includes(api)) {
       // 检查是否是安全的require使用模式
       if (api === 'require') {
-        const hasSafeRequireUsage = safeRequirePatterns.some(pattern => content.includes(pattern));
+        const hasSafeRequireUsage = safeRequirePatterns.some(pattern =>
+          content.includes(pattern)
+        );
         if (hasSafeRequireUsage) {
-          console.log(`✅ ${filePath}: 检测到安全的require使用模式(typeof检查)`);
+          console.log(
+            `✅ ${filePath}: 检测到安全的require使用模式(typeof检查)`
+          );
           continue; // 跳过这个警告
         }
       }
-      
+
       // 检查是否有安全标记注释
       if (!content.includes(`// ${api} is safe`)) {
         issues.push({
@@ -291,20 +295,27 @@ function analyzePreloadSecurity(content, filePath) {
       }
     }
   }
-  
+
   // 检查 process 的使用是否安全
-  if (content.includes('process.') && !safeProcessUsage.some(safe => content.includes(safe))) {
+  if (
+    content.includes('process.') &&
+    !safeProcessUsage.some(safe => content.includes(safe))
+  ) {
     // 如果使用了 process 但不是安全的用法，则报告
     const processUsage = content.match(/process\.[\w.]+/g) || [];
-    const unsafeUsage = processUsage.filter(usage => !safeProcessUsage.some(safe => usage.includes(safe.split('.')[1])));
-    
+    const unsafeUsage = processUsage.filter(
+      usage =>
+        !safeProcessUsage.some(safe => usage.includes(safe.split('.')[1]))
+    );
+
     if (unsafeUsage.length > 0) {
       issues.push({
         type: 'security',
         severity: 'low', // 降低严重级别，因为有些 process 使用是安全的
         file: filePath,
         message: `预加载脚本中检测到潜在不安全的 process 使用: ${unsafeUsage.join(', ')}`,
-        recommendation: '仅使用安全的 process 属性如 contextIsolated, sandboxed, platform, versions',
+        recommendation:
+          '仅使用安全的 process 属性如 contextIsolated, sandboxed, platform, versions',
       });
     }
   }
@@ -390,15 +401,15 @@ function analyzeCSP(content, filePath) {
   const cspContentMatch = content.match(
     /<meta[^>]*http-equiv=['"](Content-Security-Policy|content-security-policy)['"][^>]*content=['"](.*?)['"]/i
   );
-  
+
   let cspContent;
-  
+
   if (!cspContentMatch) {
     // 尝试另一种顺序：content 在 http-equiv 之前
     const altCspMatch = content.match(
       /<meta[^>]*content=['"](.*?)['"][^>]*http-equiv=['"](Content-Security-Policy|content-security-policy)['"]/i
     );
-    
+
     if (!altCspMatch) {
       issues.push({
         type: 'security',
@@ -408,7 +419,7 @@ function analyzeCSP(content, filePath) {
       });
       return issues;
     }
-    
+
     cspContent = altCspMatch[1];
   } else {
     cspContent = cspContentMatch[2];
@@ -458,7 +469,7 @@ function analyzeCSP(content, filePath) {
   // 检查必需的指令 - 改进逻辑以正确识别有效配置
   const hasDefaultSrc = cspContent.includes('default-src');
   const hasScriptSrc = cspContent.includes('script-src');
-  
+
   // default-src 'self' 是有效的基础配置
   if (!hasDefaultSrc && !hasScriptSrc) {
     issues.push({
@@ -469,7 +480,7 @@ function analyzeCSP(content, filePath) {
       recommendation: '添加 default-src 或 script-src 指令到 CSP 配置中',
     });
   }
-  
+
   // 检查 default-src 'none' vs 'self' 策略
   if (hasDefaultSrc) {
     if (cspContent.includes("default-src 'none'")) {

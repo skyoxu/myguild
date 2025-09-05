@@ -7,10 +7,15 @@
 ### 1. 单例模式使用
 
 ```typescript
-import { cloudEventsValidator, validateEvent } from './cloudevents-validation.js';
+import {
+  cloudEventsValidator,
+  validateEvent,
+} from './cloudevents-validation.js';
 
 // 基本验证
-const event = { /* 你的事件对象 */ };
+const event = {
+  /* 你的事件对象 */
+};
 if (validateEvent(event)) {
   console.log('事件格式正确');
 } else {
@@ -19,7 +24,9 @@ if (validateEvent(event)) {
 
 // 获取验证统计
 const stats = cloudEventsValidator.getStats();
-console.log(`验证总数: ${stats.totalValidated}, 错误率: ${stats.errorRate * 100}%`);
+console.log(
+  `验证总数: ${stats.totalValidated}, 错误率: ${stats.errorRate * 100}%`
+);
 ```
 
 ### 2. 配置验证器
@@ -28,10 +35,10 @@ console.log(`验证总数: ${stats.totalValidated}, 错误率: ${stats.errorRate
 import { cloudEventsValidator } from './cloudevents-validation.js';
 
 cloudEventsValidator.configure({
-  strictMode: true,        // 严格模式：验证失败时抛出异常
-  enableLogging: true,     // 启用日志记录
-  maxErrorHistory: 200,    // 保留最多200个错误记录
-  enableMetrics: true,     // 启用指标收集
+  strictMode: true, // 严格模式：验证失败时抛出异常
+  enableLogging: true, // 启用日志记录
+  maxErrorHistory: 200, // 保留最多200个错误记录
+  enableMetrics: true, // 启用指标收集
 });
 ```
 
@@ -53,7 +60,7 @@ validatedEventBus.emit('cloudevent:game.started', {
   type: 'game.scene.loaded',
   specversion: '1.0',
   time: new Date().toISOString(),
-  data: { sceneId: 'main-menu' }
+  data: { sceneId: 'main-menu' },
 });
 ```
 
@@ -107,7 +114,7 @@ function CloudEventsMonitor() {
       <p>总验证数: {stats.totalValidated}</p>
       <p>错误数: {stats.totalErrors}</p>
       <p>错误率: {(stats.errorRate * 100).toFixed(2)}%</p>
-      
+
       {errors.length > 0 && (
         <div>
           <h4>最近错误:</h4>
@@ -132,7 +139,7 @@ function CloudEventsMonitor() {
 import { CloudEventsValidator } from './cloudevents-validation.js';
 
 class GameEventHandler {
-  @CloudEventsValidator.getInstance().validateEvent('GameEventHandler')
+  @(CloudEventsValidator.getInstance().validateEvent('GameEventHandler'))
   handleGameEvent(event: CloudEvent) {
     // 这个方法只会在event是有效的CloudEvent时执行
     console.log('处理游戏事件:', event);
@@ -148,15 +155,15 @@ class GameEventHandler {
 import { cloudEventsValidator } from './cloudevents-validation.js';
 
 // 监听验证错误
-const unsubscribe = cloudEventsValidator.onError((error) => {
+const unsubscribe = cloudEventsValidator.onError(error => {
   console.error('CloudEvents验证错误:', error);
-  
+
   // 发送到监控系统
   sendToMonitoring({
     type: 'cloudevents_validation_error',
     error: error.error,
     context: error.context,
-    timestamp: error.timestamp
+    timestamp: error.timestamp,
   });
 });
 
@@ -171,9 +178,9 @@ import { cloudEventsValidator } from './cloudevents-validation.js';
 
 // 启动实时监控
 const stopMonitoring = cloudEventsValidator.startMonitoring({
-  intervalMs: 30000,        // 30秒检查一次
-  logStats: true,           // 记录统计信息
-  alertThreshold: 0.05,     // 5%错误率阈值
+  intervalMs: 30000, // 30秒检查一次
+  logStats: true, // 记录统计信息
+  alertThreshold: 0.05, // 5%错误率阈值
 });
 
 // 停止监控
@@ -189,7 +196,7 @@ const report = cloudEventsValidator.generateReport();
 console.log('验证报告:', {
   stats: report.stats,
   recentErrors: report.recentErrors,
-  recommendations: report.recommendations
+  recommendations: report.recommendations,
 });
 ```
 
@@ -199,9 +206,15 @@ console.log('验证报告:', {
 import { validateEvents } from './cloudevents-validation.js';
 
 const events = [
-  { /* 事件1 */ },
-  { /* 事件2 */ },
-  { /* 事件3 */ }
+  {
+    /* 事件1 */
+  },
+  {
+    /* 事件2 */
+  },
+  {
+    /* 事件3 */
+  },
 ];
 
 const { valid, invalid } = validateEvents(events, 'batch-process');
@@ -223,7 +236,7 @@ invalid.forEach(item => {
 async function validateLargeEventBatch(events: unknown[]) {
   const chunkSize = 100;
   const results = [];
-  
+
   for (let i = 0; i < events.length; i += chunkSize) {
     const chunk = events.slice(i, i + chunkSize);
     const result = await new Promise(resolve => {
@@ -233,7 +246,7 @@ async function validateLargeEventBatch(events: unknown[]) {
     });
     results.push(result);
   }
-  
+
   return results;
 }
 ```
