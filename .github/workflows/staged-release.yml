@@ -153,7 +153,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-install
 
       - name: Wait for health data (non-pilot releases)
         if: ${{ inputs.staging_percentage != '5' }}
@@ -227,7 +227,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-install
 
       - name: Ensure dist directory exists
         run: mkdir -p dist

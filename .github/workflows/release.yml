@@ -133,7 +133,7 @@ jobs:
           cache: 'npm'
 
       - name: 📦 安装依赖
-        run: npm ci
+        uses: ./.github/actions/npm-install
 
       - name: 🔍 运行代码检查
         run: |
@@ -181,7 +181,7 @@ jobs:
           cache: 'npm'
 
       - name: 📦 安装依赖
-        run: npm ci
+        uses: ./.github/actions/npm-install
 
       - name: 📥 下载构建产物
         uses: actions/download-artifact@v4
@@ -291,7 +291,7 @@ jobs:
           cache: 'npm'
 
       - name: 📦 安装依赖
-        run: npm ci
+        uses: ./.github/actions/npm-install
 
       - name: 🏥 执行健康门槛检查
         run: |

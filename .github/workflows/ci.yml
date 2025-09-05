@@ -307,9 +307,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖
+      - name: 🔧 安装依赖（加固版）
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: npm ci
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: 🧪 运行单元测试
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -427,9 +429,11 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
+      - name: 🔧 安装依赖（加固版）
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: npm ci
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '20.x'
 
       - name: 🏗️ 构建应用
         if: steps.changed-files.outputs.any_changed == 'true'
