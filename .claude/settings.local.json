@@ -106,16 +106,13 @@
       "Bash(else echo \"⚠️ Unknown\")",
       "Bash(if grep -q \"paths:\" \"$file\")",
       "Bash(then echo \"✅ Has paths filter\")",
-      "Bash(else echo \"❌ No paths filter\")"
+      "Bash(else echo \"❌ No paths filter\")",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "C:\\c\\buildgame"
-    ]
+    "additionalDirectories": ["C:\\c\\buildgame"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "zen"
-  ]
+  "enabledMcpjsonServers": ["zen"]
 }
