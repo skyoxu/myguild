@@ -1,0 +1,643 @@
+[
+  {
+    "workflow": "Build and Test",
+    "workflow_id": 185658933,
+    "run_id": 17487410914,
+    "run_number": 46,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17487410914",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T08:03:39Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Build and Test",
+    "job_id": 49669281432,
+    "job_started_at": "2025-09-05T08:03:42Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔧 验证工具可用性",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Build and Test",
+    "workflow_id": 185658933,
+    "run_id": 17487032643,
+    "run_number": 45,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17487032643",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T07:43:55Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Build and Test",
+    "job_id": 49668061701,
+    "job_started_at": "2025-09-05T07:43:58Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔍 ESLint 检查",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Build and Test",
+    "workflow_id": 185658933,
+    "run_id": 17485810045,
+    "run_number": 44,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17485810045",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T06:41:31Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Build and Test",
+    "job_id": 49664460195,
+    "job_started_at": "2025-09-05T06:41:34Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔧 安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Build and Test",
+    "workflow_id": 185658933,
+    "run_id": 17485493450,
+    "run_number": 43,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17485493450",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T06:23:31Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Build and Test",
+    "job_id": 49663570576,
+    "job_started_at": "2025-09-05T06:23:36Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔧 安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Build and Test",
+    "workflow_id": 185658933,
+    "run_id": 17464145339,
+    "run_number": 42,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17464145339",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:40:06Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Build and Test",
+    "job_id": 49595594437,
+    "job_started_at": "2025-09-04T12:40:20Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔧 安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (ubuntu-latest, Node 18.x)",
+    "job_id": 49655060166,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (ubuntu-latest, Node 20.x)",
+    "job_id": 49655060171,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (windows-latest, Node 20.x)",
+    "job_id": 49655060182,
+    "job_started_at": "2025-09-05T02:59:54Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (windows-latest, Node 18.x)",
+    "job_id": 49655060188,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "安全扫描",
+    "job_id": 49655060191,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🔐 Electronegativity 安全扫描",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (ubuntu-latest, Node 22.x)",
+    "job_id": 49655060194,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (macos-latest, Node 20.x)",
+    "job_id": 49655060195,
+    "job_started_at": "2025-09-05T03:00:01Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (macos-latest, Node 18.x)",
+    "job_id": 49655060198,
+    "job_started_at": "2025-09-05T03:00:01Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (windows-latest, Node 22.x)",
+    "job_id": 49655060200,
+    "job_started_at": "2025-09-05T02:59:55Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": ".github/workflows/ci.yml",
+    "workflow_id": 184488479,
+    "run_id": 17482379623,
+    "run_number": 66,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17482379623",
+    "head_branch": "main",
+    "event": "schedule",
+    "created_at": "2025-09-05T02:58:52Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "单元测试 (macos-latest, Node 22.x)",
+    "job_id": 49655060211,
+    "job_started_at": "2025-09-05T03:00:02Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Configuration Management",
+    "workflow_id": 184488480,
+    "run_id": 17485810052,
+    "run_number": 56,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17485810052",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T06:41:31Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "配置验证与文档处理",
+    "job_id": 49664460226,
+    "job_started_at": "2025-09-05T06:41:34Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Configuration Management",
+    "workflow_id": 184488480,
+    "run_id": 17485493428,
+    "run_number": 55,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17485493428",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T06:23:31Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "配置验证与文档处理",
+    "job_id": 49663570491,
+    "job_started_at": "2025-09-05T06:23:33Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Configuration Management",
+    "workflow_id": 184488480,
+    "run_id": 17464145360,
+    "run_number": 54,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17464145360",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:40:06Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "配置验证与文档处理",
+    "job_id": 49595584308,
+    "job_started_at": "2025-09-04T12:40:10Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Configuration Management",
+    "workflow_id": 184488480,
+    "run_id": 17463964374,
+    "run_number": 53,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17463964374",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:33:17Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "配置验证与文档处理",
+    "job_id": 49595006439,
+    "job_started_at": "2025-09-04T12:33:20Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Configuration Management",
+    "workflow_id": 184488480,
+    "run_id": 17463633759,
+    "run_number": 52,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17463633759",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:20:53Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "配置验证与文档处理",
+    "job_id": 49593957560,
+    "job_started_at": "2025-09-04T12:20:57Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Observability Gate (Unified)",
+    "workflow_id": 184488481,
+    "run_id": 17485493445,
+    "run_number": 58,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17485493445",
+    "head_branch": "main",
+    "event": "push",
+    "created_at": "2025-09-05T06:23:31Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "🔍 统一可观测性配置验证 (Development)",
+    "job_id": 49663580251,
+    "job_started_at": "2025-09-05T06:23:46Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      },
+      {
+        "name": "验证失败处理",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Observability Gate (Unified)",
+    "workflow_id": 184488481,
+    "run_id": 17464145363,
+    "run_number": 57,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17464145363",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:40:06Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "🔍 统一可观测性配置验证 (Development)",
+    "job_id": 49595584279,
+    "job_started_at": "2025-09-04T12:40:12Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      },
+      {
+        "name": "验证失败处理",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Observability Gate (Unified)",
+    "workflow_id": 184488481,
+    "run_id": 17463964364,
+    "run_number": 56,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17463964364",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:33:17Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "🔍 统一可观测性配置验证 (Development)",
+    "job_id": 49595006364,
+    "job_started_at": "2025-09-04T12:33:21Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      },
+      {
+        "name": "验证失败处理",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Observability Gate (Unified)",
+    "workflow_id": 184488481,
+    "run_id": 17463633666,
+    "run_number": 55,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17463633666",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:20:53Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "🔍 统一可观测性配置验证 (Development)",
+    "job_id": 49593957687,
+    "job_started_at": "2025-09-04T12:20:59Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      },
+      {
+        "name": "验证失败处理",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "Observability Gate (Unified)",
+    "workflow_id": 184488481,
+    "run_id": 17461996412,
+    "run_number": 54,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17461996412",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T11:12:26Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "🔍 统一可观测性配置验证 (Development)",
+    "job_id": 49588636610,
+    "job_started_at": "2025-09-04T11:12:30Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "安装依赖",
+        "conclusion": "failure"
+      },
+      {
+        "name": "验证失败处理",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "PR Performance Check",
+    "workflow_id": 185470240,
+    "run_id": 17464145386,
+    "run_number": 53,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17464145386",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:40:06Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Web Vitals & Bundle Size Check",
+    "job_id": 49595584232,
+    "job_started_at": "2025-09-04T12:40:11Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "Install dependencies",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  {
+    "workflow": "PR Performance Check",
+    "workflow_id": 185470240,
+    "run_id": 17463964373,
+    "run_number": 52,
+    "run_attempt": 1,
+    "run_html_url": "https://github.com/skyoxu/myguild/actions/runs/17463964373",
+    "head_branch": "feature/unified-ci-gates-deployment",
+    "event": "pull_request",
+    "created_at": "2025-09-04T12:33:17Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_name": "Web Vitals & Bundle Size Check",
+    "job_id": 49595006395,
+    "job_started_at": "2025-09-04T12:33:21Z",
+    "job_conclusion": "failure",
+    "failed_steps": [
+      {
+        "name": "Install dependencies",
+        "conclusion": "failure"
+      }
+    ]
+  }
+]

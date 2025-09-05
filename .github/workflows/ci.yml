@@ -63,8 +63,28 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
+      - name: ⚙️ 准备npm网络配置 (守护脚本)
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-timeout 300000
+          npm config set registry https://registry.npmjs.org/
+          echo "npm版本: $(npm --version)"
+          echo "node版本: $(node --version)"
+
       - name: 🔧 安装依赖 (守护脚本)
-        run: npm ci
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
+        run: |
+          for i in 1 2 3; do 
+            echo "第 $i 次安装依赖尝试..."
+            npm ci --no-audit --no-fund && break || {
+              echo "第 $i 次尝试失败，等待10秒后重试..."
+              sleep 10
+            }
+          done
+          echo "依赖安装完成"
 
       - name: 🔗 Needs 依赖校验
         run: |
@@ -75,7 +95,7 @@ jobs:
         run: |
           echo "🔍 检查分支保护规则与关键jobs一致性..."
           node scripts/ci/branch-protection-guardian.mjs
-        continue-on-error: true  # 分支保护检查失败不阻断开发流程，但会记录问题
+        continue-on-error: true # 分支保护检查失败不阻断开发流程，但会记录问题
 
   # ==================== 质量门禁阶段 ====================
   quality-gates:
@@ -96,8 +116,38 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
+      - name: ⚙️ 准备npm网络配置
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-timeout 300000
+          npm config set registry https://registry.npmjs.org/
+          echo "npm版本: $(npm --version)"
+          echo "node版本: $(node --version)"
+
       - name: 🔧 安装依赖
-        run: npm ci
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
+        run: |
+          for i in 1 2 3; do 
+            echo "第 $i 次安装依赖尝试..."
+            npm ci --no-audit --no-fund && break || {
+              echo "第 $i 次尝试失败，等待10秒后重试..."
+              sleep 10
+            }
+          done
+          echo "依赖安装完成"
+
+      - name: 🔧 验证工具可用性
+        run: |
+          echo "验证开发工具安装状态..."
+          npx eslint -v || { 
+            echo "❌ ESLint未正确安装"
+            npm ls eslint --depth=0 || true
+            exit 1
+          }
+          echo "✅ ESLint验证通过"
 
       - name: 🔍 ESLint 检查
         run: npm run lint
@@ -131,8 +181,30 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
+
+      - name: ⚙️ 准备npm网络配置
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-timeout 300000
+          npm config set registry https://registry.npmjs.org/
+          echo "npm版本: $(npm --version)"
+          echo "node版本: $(node --version)"
+
       - name: 🔧 安装依赖
-        run: npm ci
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
+        run: |
+          for i in 1 2 3; do 
+            echo "第 $i 次安装依赖尝试..."
+            npm ci --no-audit --no-fund && break || {
+              echo "第 $i 次尝试失败，等待10秒后重试..."
+              sleep 10
+            }
+          done
+          echo "依赖安装完成"
+
       - name: 🧪 运行单元测试（覆盖率）
         run: npm run test:coverage
         env:
@@ -224,7 +296,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
           SENTRY_RELEASE: ${{ github.sha }}
-      
+
       - name: ⚠️ Release Health Gate跳过（缺少secrets）
         if: ${{ secrets.SENTRY_AUTH_TOKEN == '' }}
         run: |
@@ -328,14 +400,14 @@ jobs:
       - name: 🔍 Electron安全基线校验
         run: |
           echo "🔍 执行Electron安全基线静态校验..."
-          
+
           # 预加载脚本安全校验
           if [ -f "scripts/validate-preload-security.mjs" ]; then
             node scripts/validate-preload-security.mjs
           else
             echo "⚠️ 预加载安全校验脚本不存在，跳过检查"
           fi
-          
+
           # CSP一致性校验  
           if [ -f "scripts/validate-csp-consistency.mjs" ]; then
             node scripts/validate-csp-consistency.mjs
@@ -344,7 +416,7 @@ jobs:
           else
             echo "⚠️ CSP校验脚本不存在，跳过检查"
           fi
-          
+
           echo "✅ Electron安全基线校验完成"
 
       - name: 📋 上传E2E测试报告

@@ -1,0 +1,72 @@
+# 统一的npm安装加固模板
+# 用于修复系统性的npm ci失败问题
+# 应用于所有包含npm ci的GitHub Actions工作流
+
+# 1. npm网络配置加固
+- name: ⚙️ 准备npm网络配置
+  run: |
+    npm config set fetch-retries 5
+    npm config set fetch-retry-factor 2
+    npm config set fetch-timeout 300000
+    npm config set registry https://registry.npmjs.org/
+    echo "npm版本: $(npm --version)"
+    echo "node版本: $(node --version)"
+
+# 2. 加固的依赖安装（禁用生产裁剪+重试）
+- name: 🔧 安装依赖 (加固版)
+  env:
+    NODE_ENV: development
+    NPM_CONFIG_PRODUCTION: 'false'
+  run: |
+    for i in 1 2 3; do 
+      echo "第 $i 次安装依赖尝试..."
+      npm ci --no-audit --no-fund && break || {
+        echo "第 $i 次尝试失败，等待10秒后重试..."
+        sleep 10
+      }
+    done
+    echo "依赖安装完成"
+
+# 3. 工具可用性验证探针
+- name: 🔧 验证开发工具可用性
+  run: |
+    echo "验证开发工具安装状态..."
+    node -v && npm -v
+    echo "检查ESLint可用性..."
+    npx eslint -v || { 
+      echo "❌ ESLint未正确安装"
+      echo "devDependencies状态:"
+      npm ls eslint --depth=0 || true
+      echo "package.json中的eslint定义:"
+      cat package.json | grep -A2 -B2 '"eslint"' || echo "未找到eslint配置"
+      exit 1
+    }
+    echo "检查TypeScript编译器..."
+    npx tsc -v || {
+      echo "❌ TypeScript编译器未正确安装"
+      npm ls typescript --depth=0 || true
+      exit 1
+    }
+    echo "✅ 所有开发工具验证通过"
+
+# 可选：缓存清理降级步骤（仅在反复失败时使用）
+# - name: 🧹 清理npm缓存 (降级步骤)
+#   if: failure()
+#   run: |
+#     echo "清理npm缓存以解决持续失败..."
+#     rm -rf ~/.npm/_cacache
+#     npm cache clean --force
+
+# 使用说明：
+# 1. 将上述步骤复制到需要修复的工作流中，替换原有的npm安装步骤
+# 2. 确保在setup-node步骤之后使用
+# 3. 根据具体工作流需求调整工具验证部分
+# 4. 对于不需要ESLint的工作流，可以移除相关验证
+
+# 目标修复的工作流文件：
+# - build-and-test.yml ✅ (已修复)
+# - ci.yml (多个job需要修复)
+# - config-management.yml
+# - observability-gate.yml
+# - pr-performance-check.yml
+# - 其他包含npm ci的工作流

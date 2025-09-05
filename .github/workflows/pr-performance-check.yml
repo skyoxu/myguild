@@ -22,12 +22,12 @@ jobs:
   performance-check:
     name: Web Vitals & Bundle Size Check
     runs-on: ubuntu-latest
-    
+
     # job级别权限 - 仅在需要时提升写权限
     permissions:
       contents: read
-      pull-requests: write  # PR评论权限
-      issues: write        # PR评论权限（通过issues API）
+      pull-requests: write # PR评论权限
+      issues: write # PR评论权限（通过issues API）
 
     steps:
       - name: Checkout code
@@ -41,8 +41,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (Hardened)
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '18.x'
 
       - name: Build project
         run: npm run build
@@ -101,7 +103,7 @@ jobs:
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'
-        continue-on-error: true  # PR评论失败不应阻断性能检查流程
+        continue-on-error: true # PR评论失败不应阻断性能检查流程
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -116,7 +118,7 @@ jobs:
 
       - name: Post PR comment (manual trigger)
         if: github.event_name == 'workflow_dispatch'
-        continue-on-error: true  # PR评论失败不应阻断性能检查流程
+        continue-on-error: true # PR评论失败不应阻断性能检查流程
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -174,8 +176,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (Hardened)
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '18.x'
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium

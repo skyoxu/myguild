@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **安全合规**：仅防御安全；拒绝进攻性/潜在滥用代码请求
 - **代码与改动**：遵循项目现有约定；先看周边文件/依赖
 - **任务管理**：强制频繁使用 TodoWrite 规划/跟踪；逐项标记进行/完成，不要堆到最后
+- **github_gpt目录**此目录非项目相关文件，只因某些原因放在项目根目录下，对于这个文件夹及其所有文件在任何情况下都永远不扫描，不检查，不上传github，不删除，不作任何理会。
 
 ## 设计原则：
 
@@ -224,6 +225,7 @@ docs/
 > `IMPLEMENTATION_PLAN.md` is **optional** — create only for multi‑day, cross‑module, or migration/rollback‑risky work.
 
 - Template:
+
   ```markdown
   ## Stage N: [Name]
 
@@ -233,6 +235,7 @@ docs/
   **Risks/Mitigations**: [Known risks + rollback]
   **Status**: [Not Started|In Progress|Complete]
   ```
+
 - Tasks spawned from the plan **must** include `adrRefs` + `archRefs` and copy acceptance criteria from Overlay/PRD.
 
 ---

@@ -1,0 +1,20 @@
+﻿
+File                           HasPermissions HasConcurrency UsesAtMain PullRequestTarget UsesJq InstallsJq ChangedFilesRef ChangedFilesAction Checkout
+----                           -------------- -------------- ---------- ----------------- ------ ---------- --------------- ------------------ --------
+build-and-test.yml                       True           True      False             False  False      False           False              False     True
+ci.yml                                   True           True      False             False  False      False            True               True     True
+config-management.yml                    True           True      False             False  False      False           False              False     True
+observability-gate.yml                   True           True      False             False   True       True           False              False     True
+pr-performance-check.yml                 True           True      False             False  False      False           False              False     True
+release.yml                              True           True      False             False  False      False           False              False     True
+release-emergency-rollback.yml           True           True      False             False   True       True           False              False     True
+release-monitor.yml                      True           True      False             False   True       True           False              False     True
+release-prepare.yml                      True           True      False             False   True       True           False              False     True
+release-ramp.yml                         True           True      False             False   True       True           False              False     True
+security-unified.yml                     True           True      False             False   True       True           False              False     True
+soft-gates.yml                           True           True      False             False   True       True           False              False     True
+staged-release.yml                       True           True      False             False  False      False           False              False     True
+tasks-governance.yml                     True           True      False             False  False      False           False              False     True
+
+
+

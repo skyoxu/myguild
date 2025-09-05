@@ -42,8 +42,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: 安装依赖
-        run: npm ci
+      - name: 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '18.x'
 
       - name: 配置分层验证
         env:
@@ -133,8 +135,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: 安装依赖
-        run: npm ci
+      - name: 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '18.x'
 
       - name: 处理文档占位符
         env:

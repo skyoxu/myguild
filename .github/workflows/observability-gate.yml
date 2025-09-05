@@ -7,14 +7,14 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'config/**'
       - 'src/**'
       - 'electron/**'
       - 'scripts/observability-config-validation.js'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'config/**'
       - 'src/**'
@@ -44,8 +44,10 @@ jobs:
       - name: 安装jq工具
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: 安装依赖
-        run: npm ci
+      - name: 安装依赖（加固版）
+        uses: ./.github/actions/npm-install
+        with:
+          node-version: '18.x'
 
       - name: 确保日志目录存在
         run: mkdir -p logs
@@ -73,7 +75,7 @@ jobs:
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
           echo "## 🔍 可观测性配置验证结果" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -f "logs/observability-validation-report.json" ]; then
             # 提取关键信息
             status=$(jq -r '.status' logs/observability-validation-report.json)
@@ -160,23 +162,23 @@ jobs:
       - name: 验证Sentry集成配置
         run: |
           echo "🛡️ 验证Sentry集成配置..."
-          
+
           # 检查必要的环境变量配置示例
           if ! grep -q "SENTRY_DSN" config/development.json; then
             echo "⚠️ development.json中未找到SENTRY_DSN配置示例"
           fi
-          
+
           # 检查Release配置
           if ! grep -q "release" config/production.json; then
             echo "⚠️ production.json中未找到release配置"
           fi
-          
+
           echo "✅ Sentry集成配置检查完成"
 
       - name: 验证日志配置一致性
         run: |
           echo "📝 验证日志配置一致性..."
-          
+
           # 检查所有环境的日志级别设置
           for env in development staging production; do
             config_file="config/${env}.json"
@@ -185,7 +187,7 @@ jobs:
               echo "环境 $env 的日志级别: $log_level"
             fi
           done
-          
+
           echo "✅ 日志配置一致性检查完成"
 
   # Staging环境可观测性检查
@@ -211,7 +213,7 @@ jobs:
       - name: Staging环境配置检查
         run: |
           echo "🎭 验证Staging环境配置..."
-          
+
           # 检查staging配置文件
           if [ -f "config/staging.json" ]; then
             echo "✅ 找到staging配置文件"
@@ -220,7 +222,7 @@ jobs:
           else
             echo "⚠️ 未找到staging配置文件，使用默认配置"
           fi
-          
+
           echo "✅ Staging环境配置检查完成"
 
 # ==================== 并发控制 ====================
