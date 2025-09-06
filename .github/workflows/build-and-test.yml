@@ -73,7 +73,8 @@ jobs:
           echo "🔍 Windows环境信息诊断："
           node -v && npm -v
           echo "验证ESLint可用性（避免误判安装问题）："
-          export PATH="$(npm bin):$PATH"
+          PATH="$(npm bin):$PATH"
+          export PATH
           ./node_modules/.bin/eslint -v || npx --yes eslint -v
           echo "✅ 工具链设置验证完成"
 
@@ -98,13 +99,17 @@ jobs:
             echo "No relevant changed files for lint gate."
             exit 0
           fi
-          export PATH="$(npm bin):$PATH"
+          PATH="$(npm bin):$PATH"
+          export PATH
           echo "Lint on changed files:"
           cat changed.txt
-          # 0 warning 严格门禁（只针对改动文件）
-          npx eslint "$(cat changed.txt)" --max-warnings 0
-          # 同时做 Prettier 严格检查（不写入）
-          npx prettier --check "$(cat changed.txt)"
+          # 安全读取改动文件，避免未引用的命令替换引起分词/通配（ShellCheck SC2086）
+          files=()
+          while IFS= read -r f; do files+=("$f"); done < changed.txt
+          if [ "${#files[@]}" -gt 0 ]; then
+            npx eslint "${files[@]}" --max-warnings 0
+            npx prettier --check "${files[@]}"
+          fi
 
       - name: 🎨 Prettier 格式检查
         shell: bash
