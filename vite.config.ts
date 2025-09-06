@@ -78,7 +78,9 @@ export default defineConfig({
         },
       },
     },
-    reporters: ['default', 'html'],
+    reporters: process.env.GITHUB_ACTIONS
+      ? ['default', 'github-actions']
+      : ['default', 'html'],
     outputFile: {
       html: 'coverage/index.html',
       json: 'coverage/coverage.json',
