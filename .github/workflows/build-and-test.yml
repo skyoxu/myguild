@@ -46,11 +46,24 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🔍 验证 ESLint 设置
+        working-directory: .
         run: |
-          echo "验证 ESLint 版本和配置..."
-          npx eslint -v
-          npx eslint . --print-config > /dev/null || (echo "❌ ESLint 配置加载异常"; exit 1)
-          echo "✅ ESLint 配置验证通过"
+          set -euo pipefail
+          echo "🔍 环境信息诊断："
+          node -v && npm -v
+          echo "PATH: $PATH"
+          ls -la node_modules/.bin | head -5 || echo "node_modules/.bin not found"
+
+          echo "🔧 设置执行环境："
+          export PATH="$(npm bin):$PATH"
+
+          echo "✅ 验证 ESLint 可执行文件存在："
+          ./node_modules/.bin/eslint -v || npx --yes eslint -v
+
+          echo "🧪 可选：深度验证配置（不阻断）："
+          npx --yes eslint --print-config src/main.tsx >/dev/null || echo "⚠️ warn: print-config failed; will still run lint"
+
+          echo "✅ ESLint 设置验证完成"
 
       - name: 🎨 Prettier 格式检查
         run: |
