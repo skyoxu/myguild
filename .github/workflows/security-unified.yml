@@ -41,7 +41,7 @@ jobs:
   # 兼容性：保持与现有分支保护规则兼容的job名称
   security-scan:
     name: 📊 静态安全扫描（统一）
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -260,7 +260,7 @@ jobs:
   # 阶段3：统一安全门禁决策
   unified-security-gate:
     name: 🚦 统一安全门禁
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development

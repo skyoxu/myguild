@@ -1,206 +1,276 @@
- - 你仓库已具备清晰的 Base（arc42 01–07/09/10）、ADR（0001–0009），并有质量门/安全/可观测性脚本，但 CI 的“必需检查名不稳定（含矩阵与动态命名）+ 工作流分散重
-  复 + 覆盖率门未硬化”的组合，会让分支保护形同虚设或维护成本偏高。
-  - 你的 job 名里带动态插值（如“单元测试 (${{ matrix.os }}, Node ${{ matrix.node-version }})”），在 GitHub 保护规则里无法稳定勾选。解决方法是新增“稳定名”的核
-  心作业作为唯一必需检查，其余矩阵归入“扩展非必需”。
+npm warn config production Use `--omit=dev` instead.
+npm warn config cache-min This option has been deprecated in favor of `--prefer-offline`.
 
-  读取结论（CLAUDE.md / ADR / Base / PRD）
+> gamedev-vitegame@0.1.1 test:unit
+> vitest run
 
-  - ADR：0002（Electron 安全基线）、0003（Release Health）、0005（Quality Gates）已“Accepted”，阈值与安全口径明确（覆盖率全局 ≥ 90%、Electron 三开关、Release
-  Health 99% 阈值）。
-  - Base Clean：docs/architecture/base/* 完整；建议将 verify_base_clean.mjs 等纳入软门禁提醒，不阻断合并。
-  - PRD 分片：docs/prd_chunks/* 索引完备；对 CI 无硬依赖，仅用于文档治理类软门禁。
 
-  分支保护规则（建议）
+ RUN  v3.2.4 /home/runner/work/myguild/myguild
 
-  - 适用分支
-      - main：最严格；用于发布/候选。
-      - develop：次严格；允许部分检查为软门禁或仅核心检查。
-  - 通用设置
-      - 需要 Pull Request 才能合并：启用；最少批准 2；提交更新后驳回旧批准；必须解决所有 Review 评论；Require branches to be up to date before merging：启
-  用；禁止强推与删除；线性历史：启用。
-      - 管理员绕过：默认禁用；如需启用，要求附合规说明。
-      - 签名提交：若团队已统一，启用；否则暂缓。
-  - 必需状态检查（精确匹配 job 名；含“建议新增”的稳定名）
-      - Build and Test（build-and-test.yml）
-      - Electron Security Tests（build-and-test.yml）
-      - 质量门禁检查（ci.yml: quality-gates）
-      - Unit Tests (ubuntu-latest, Node 20)（建议新增：unit-tests-core）
-      - Coverage Gate（建议新增：coverage-gate）
-      - E2E安全测试（ci.yml: e2e-security-tests）
-      - 可观测性验证（ci.yml: observability-verification）
-      - 构建验证 (ubuntu-latest)（建议固定名：build-verification-core）
-      - Release Health Gate（建议新增：release-health-gate）
-  - 软门禁（不阻断，强提醒）
-      - Base Clean（verify_base_clean.mjs）、ADR Frontmatter 校验（adr-fm-validator.mjs）、文档评分（docs-scorer.mjs）。
+stdout | tests/unit/metrics.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  CI 改造与优化（逐项）
+stdout | tests/unit/repos.contract.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - 结构统一与稳定命名
-      - 新增稳定名核心作业（ci.yml）：
-      - unit-tests-core：ubuntu-latest + Node 20，运行 vitest 覆盖率（生成 coverage-summary.json）。
-      - coverage-gate：依赖 unit-tests-core，运行 node scripts/ci/coverage-gate.js（全 90% 硬门）。
-      - release-health-gate：PR 路径检配置；主干/release 路径执行 fail-on-below（prod 阈值按 ADR-0003：≥99.0%）；fork PR 无 secrets 时降级为告警不 fail。
-      - build-verification-core：ubuntu-latest 固定名，负责纯构建验证。
-  - 将原“单元测试矩阵”改名 unit-tests-extended（非必需检查）。
-  - 对 heavy job 添加 paths 过滤：仅变更 src/、electron/、scripts/**、package*.json 时触发；纯文档/配置变更走轻量工作流。
-  - 覆盖率门禁硬化（ADR-0005）
-      - CI 使用 npm run test:coverage:gate（已内置 scripts/ci/coverage-gate.js）；确保脚本以非零码 fail。
-      - scripts/ci/coverage-config.js：PR/CI 默认 production 模式（全 90%）；杜绝 dev=60% 在 CI 生效。
-  - 安全门禁（ADR-0002）
-      - PR 必需：依赖安全（npm audit 高危）、Electronegativity、preload 安全验证（validate-preload-security.mjs）、Electron 三开关与策略扫描
-  （scan_electron_safety.mjs）。
-      - E2E 安全冒烟：xvfb-run 执行 npm run test:e2e:security；artifact 化报告。
-  - 可观测性与 Release Health（ADR-0003）
-      - verify-observability.js 在 PR 路径检配置存在；release-health-gate.mjs 在 main/release 流程强制执行（Crash‑Free Sessions/Users < 阈值直接 fail）。
-      - 缺 secrets/fork 时降级告警，避免 CI 噪声。
-  - 并发与缓存
-      - 所有工作流统一 concurrency group（workflow-ref）；Playwright、npm cache 开启；artifact 统一保留期（建议 7–30 天）。
-  - 产物与忽略
-      - 禁止 reports/、coverage/、playwright-report/、test-results/ 入库；统一上传 artifact；.gitignore 已覆盖则保持，缺则补齐。
-  - 命名与可维护性
-      - 所有必需检查 job 名保持英文/稳定，避免动态插值；中文 job 可保留在非必需检查或 soft-gates。
-      - 阈值/政策变更必须通过 ADR（Proposed→Accepted）；CI 拦截缺少 ADR 链接的政策变更 PR（可用 scripts/pr-adr-validation.mjs）。
+stdout | tests/unit/risk.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  核心改造片段（YAML 文本，手动应用）
+ ✓ tests/unit/metrics.spec.ts (40 tests) 23ms
+ ✓ tests/unit/risk.spec.ts (29 tests) 30ms
+ ✓ tests/unit/repos.contract.spec.ts (33 tests) 48ms
+stdout | tests/unit/glossary.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  -
-  ci.yml：新增稳定名核心作业
-  -
-  请将以下片段插入到 jobs: 下，并据需要调整 needs 与顺序。
-  -
-  unit-tests-core
-      - name: Unit Tests (ubuntu-latest, Node 20)
-      - yaml:
-      - jobs:
-          unit-tests-core:
-            name: Unit Tests (ubuntu-latest, Node 20)
-            runs-on: ubuntu-latest
-            needs: quality-gates
-            timeout-minutes: 15
-            steps:
-              - uses: actions/checkout@v4
-              - uses: actions/setup-node@v4
-                with:
-                  node-version: '20.x'
-                  cache: 'npm'
-              - run: npm ci
-              - run: npm run test:coverage
-                env:
-                  NODE_ENV: test
-              - name: Upload coverage summary
-                uses: actions/upload-artifact@v4
-                if: always()
-                with:
-                  name: coverage-summary
-                  path: coverage/coverage-summary.json
-                  retention-days: 7
+stdout | src/shared/adapters/sqlite.bak/__tests__/config-manager.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - coverage-gate
-      - name: Coverage Gate
-      - yaml:
-          coverage-gate:
-            name: Coverage Gate
-            runs-on: ubuntu-latest
-            needs: unit-tests-core
-            timeout-minutes: 5
-            steps:
-              - uses: actions/checkout@v4
-              - uses: actions/setup-node@v4
-                with:
-                  node-version: '20.x'
-                  cache: 'npm'
-              - run: npm ci
-              - run: node scripts/ci/coverage-gate.js
+stdout | tests/unit/guild-manager-chunk-001.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - build-verification-core
-      - name: Build Verification (ubuntu-latest)
-      - yaml:
-          build-verification-core:
-            name: Build Verification (ubuntu-latest)
-            runs-on: ubuntu-latest
-            needs: unit-tests-core
-            timeout-minutes: 10
-            steps:
-              - uses: actions/checkout@v4
-              - uses: actions/setup-node@v4
-                with:
-                  node-version: '20.x'
-                  cache: 'npm'
-              - run: npm ci
-              - run: npm run build
-              - run: |
-                  ls -la dist/
-                  test -f dist/index.html
-                  test -d dist/assets/
+ ✓ tests/unit/glossary.spec.ts (40 tests) 39ms
+ ✓ src/shared/adapters/sqlite.bak/__tests__/config-manager.spec.ts (33 tests) 32ms
+ ✓ tests/unit/guild-manager-chunk-001.spec.ts (31 tests) 21ms
+stdout | tests/unit/guild-manager-chunk-002.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - release-health-gate（PR 为告警模式；main/release 为硬门）
-      - name: Release Health Gate
-      - yaml:
-          release-health-gate:
-            name: Release Health Gate
-            runs-on: ubuntu-latest
-            needs: [unit-tests-core, coverage-gate]
-            timeout-minutes: 5
-            steps:
-              - uses: actions/checkout@v4
-              - uses: actions/setup-node@v4
-                with:
-                  node-version: '20.x'
-                  cache: 'npm'
-              - run: npm ci
-              - name: Verify Release Health
-                run: node scripts/release-health-gate.mjs
-                env:
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || 'bc660-desktop' }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
-                  SENTRY_RELEASE: ${{ github.sha }}
-              - name: Degrade to warning on forks
-                if: ${{ github.event.pull_request.head.repo.fork && failure() }}
-                run: echo "Fork PR: skipping hard gate due to missing secrets" && exit 0
+stdout | tests/unit/guild-manager/guild-core.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - 将现有矩阵作业改为扩展非必需
-      - 重命名 unit-tests → unit-tests-extended（保留矩阵）
-      - 构建验证矩阵保留，但保护规则仅勾选 build-verification-core
-      - 构建验证矩阵保留，但保护规则仅勾选 build-verification-core
-  -
-  build-and-test.yml：保持稳定名
-      - Build and Test（必需）
-  - release 工作流（release.yml / staged-release.yml / release-ramp.yml）
-      - 在发布前新增 Release Health Gate 步骤（复用同名脚本），fail-on-below，阻断发布；artifact 化报告。
+stdout | tests/unit/release.feed.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  分支保护“必需检查”最终清单（复制到 GitHub 设置）
+ ✓ tests/unit/guild-manager/guild-core.spec.ts (32 tests) 28ms
+ ✓ tests/unit/guild-manager-chunk-002.spec.ts (17 tests) 384ms
+stdout | tests/unit/runtime.budget.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - Build and Test
-  - Electron Security Tests
-  - 质量门禁检查
-  - Unit Tests (ubuntu-latest, Node 20)
-  - Coverage Gate
-  - E2E安全测试
-  - 可观测性验证
-  - Build Verification (ubuntu-latest)
-  - Release Health Gate
+ ✓ tests/unit/runtime.budget.spec.ts (27 tests) 11ms
+ ✓ tests/unit/release.feed.spec.ts (13 tests) 1037ms
+stdout | src/shared/contracts/events.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  实施计划
+ ✓ src/shared/contracts/events.spec.ts (17 tests) 19ms
+stdout | src/shared/services/__tests__/event-bus.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  - Stage 1（命名与核心作业落地）
-      - 目标：新增 unit-tests-core / coverage-gate / build-verification-core / release-health-gate；矩阵改名 extended
-      - 验收：新作业出现在 PR 检查；main/develop 保护规则勾选后可稳定通过
-  - Stage 2（门禁硬化与路径过滤）
-      - 目标：覆盖率 90% 硬门、Electron 安全/E2E 冒烟纳入必需；heavy jobs 添加 paths 过滤
-      - 验收：文档类 PR 仅跑轻量；代码改动触发全链路
-  - Stage 3（Release Health 与夜间任务）
-      - 目标：发布工作流内强制 release-health-gate；夜间 security.yml/observability-gate.yml 保留定时巡检
-      - 验收：发布低于阈值自动 fail 并阻断；巡检产出 artifact 可追溯
-  - Stage 4（治理与软门禁）
-      - 目标：soft-gates 汇总 Base Clean/ADR/文档评分；PR 备注报告链接
-      - 验收：软门禁仅提醒不阻断；报告一致
+ ✓ src/shared/services/__tests__/event-bus.spec.ts (23 tests) 17ms
+stdout | tests/unit/contracts/cloudevents.spec.ts
+🧪 Vitest 测试环境已初始化
 
-  风险与止损
+ ✓ tests/unit/contracts/cloudevents.spec.ts (17 tests) 24ms
+stdout | src/game/__tests__/GameStateManager.test.ts
+🧪 Vitest 测试环境已初始化
 
-  - 动态 job 名迁移到稳定名期间，要同步更新“分支保护必需检查”；否则出现“看得见的检查未被保护”的空窗期。
-  - forks 缺 secrets 会导致 release health 误 fail：已加入降级逻辑；可在 CI 变量中识别 fork，避免误阻断。
-  - 不要同时删除旧工作流与引入新门禁；采用并行一段时间（至少 1–2 周）再切换保护规则。
-  - 检查名守护：在 CI 里加一条“自检步骤”，当检测到本次工作流的 job 名与保护规则不一致时主动 fail 并输出修复提示，防止误放行。
-  - 审批质量门：要求至少一名代码所有者审批，且要求“驳回旧审批”启用，防止“暂绿 PR”滑过保护。
+ ✓ src/game/__tests__/GameStateManager.test.ts (21 tests) 129ms
+stdout | tests/unit/middleware/cloudevents-validation.spec.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ tests/unit/middleware/cloudevents-validation.spec.ts (20 tests) 30ms
+stdout | tests/unit/gates.spec.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ tests/unit/gates.spec.ts (16 tests) 14ms
+stdout | tests/unit/db.checkpoint.spec.ts
+🧪 Vitest 测试环境已初始化
+
+stdout | src/tests/docs-scorer-performance.test.js
+🧪 Vitest 测试环境已初始化
+
+stdout | src/core/events/bus.test.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ tests/unit/db.checkpoint.spec.ts (7 tests | 1 skipped) 469ms
+ ✓ src/core/events/bus.test.ts (19 tests) 196ms
+ ✓ src/tests/docs-scorer-performance.test.js (6 tests) 492ms
+stdout | src/game/__tests__/GameEngineAdapter.test.ts
+🧪 Vitest 测试环境已初始化
+
+stdout | src/shared/middleware/__tests__/cloud-events-validator.spec.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ src/shared/middleware/__tests__/cloud-events-validator.spec.ts (19 tests) 12ms
+ ✓ src/game/__tests__/GameEngineAdapter.test.ts (14 tests) 168ms
+stdout | tests/unit/db.backup.spec.ts
+🧪 Vitest 测试环境已初始化
+
+{"timestamp":"2025-09-06T06:09:31.951Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+{"timestamp":"2025-09-06T06:09:32.026Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+ ❯ tests/unit/db.backup.spec.ts (6 tests | 5 failed) 524ms
+   × backup creates a valid sqlite file 72ms
+     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
+   × VACUUM INTO mode creates compressed backup 70ms
+     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
+   × backup handles concurrent access gracefully 187ms
+     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
+{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+   × checkpoint integration with backup workflow 58ms
+     → Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
+🔄 执行 WAL checkpoint (TRUNCATE 模式)...
+📁 数据库: test-data/test-app.db
+{
+  "ok": false,
+  "error": "file is not a database",
+  "timestamp": "2025-09-06T06:09:32.277Z",
+  "database": "test-data/test-app.db"
+}
+
+   ✓ backup error handling and validation 91ms
+   × backup script JSON output format 44ms
+     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
+{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+stdout | tests/unit/perf.budget.spec.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ tests/unit/perf.budget.spec.ts (17 tests) 14ms
+stdout | src/game/__tests__/SceneManager.test.ts
+🧪 Vitest 测试环境已初始化
+
+ ✓ src/game/__tests__/SceneManager.test.ts (18 tests) 216ms
+stdout | src/__tests__/p95-sampling-demo.test.ts
+🧪 Vitest 测试环境已初始化
+
+stdout | src/__tests__/performance-utils.test.ts
+🧪 Vitest 测试环境已初始化
+
+stdout | src/App.test.tsx
+🧪 Vitest 测试环境已初始化
+
+ ✓ src/App.test.tsx (6 tests) 225ms
+ ✓ src/__tests__/p95-sampling-demo.test.ts (4 tests) 6ms
+ ✓ src/__tests__/performance-utils.test.ts (8 tests) 147ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/db.backup.spec.ts > backup creates a valid sqlite file
+Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
+ ❯ tests/unit/db.backup.spec.ts:93:3
+     91| 
+     92| test.skipIf(!isSQLite3Available())('backup creates a valid sqlite file…
+     93|   execSync(
+       |   ^
+     94|     `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DIR}…
+     95|     { stdio: 'inherit', timeout: 30000 } // 数据库操作30s超时
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/unit/db.backup.spec.ts > VACUUM INTO mode creates compressed backup
+Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
+ ❯ tests/unit/db.backup.spec.ts:112:5
+    110|   () => {
+    111|     // 测试 VACUUM INTO 模式（适合“冷备/轻写”窗口）
+    112|     execSync(
+       |     ^
+    113|       `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DI…
+    114|       { stdio: 'inherit', timeout: 45000 } // VACUUM操作更慢，45s超时
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/unit/db.backup.spec.ts > backup handles concurrent access gracefully
+Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
+{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+ ❯ tests/unit/db.backup.spec.ts:147:13
+    145|         new Promise<void>((resolve, reject) => {
+    146|           try {
+    147|             execSync(
+       |             ^
+    148|               `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${concur…
+    149|               { stdio: 'pipe', timeout: 15000 } // 单个并发操作15s超时
+ ❯ tests/unit/db.backup.spec.ts:145:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/unit/db.backup.spec.ts > checkpoint integration with backup workflow
+Error: Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
+🔄 执行 WAL checkpoint (TRUNCATE 模式)...
+📁 数据库: test-data/test-app.db
+{
+  "ok": false,
+  "error": "file is not a database",
+  "timestamp": "2025-09-06T06:09:32.277Z",
+  "database": "test-data/test-app.db"
+}
+
+ ❯ tests/unit/db.backup.spec.ts:171:30
+    169| 
+    170|     // 1. 执行 checkpoint 操作
+    171|     const checkpointResult = execSync(
+       |                              ^
+    172|       `node scripts/db/checkpoint.mjs --database=${TEST_DB_PATH} --tru…
+    173|       { encoding: 'utf8', stdio: 'pipe' }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/unit/db.backup.spec.ts > backup script JSON output format
+Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
+{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+ ❯ tests/unit/db.backup.spec.ts:240:18
+    238| test.skipIf(!isSQLite3Available())('backup script JSON output format',…
+    239|   // 测试备份脚本的 JSON 输出格式（用于 CI 集成）
+    240|   const result = execSync(
+       |                  ^
+    241|     `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DIR}…
+    242|     { encoding: 'utf8', stdio: 'pipe' }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed | 26 passed (27)
+      Tests  5 failed | 527 passed | 1 skipped (533)
+   Start at  06:09:22
+   Duration  11.73s (transform 1.08s, setup 4.74s, collect 3.68s, tests 4.35s, environment 14.77s, prepare 2.88s)
+
+
+Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
+ ❯ tests/unit/db.backup.spec.ts:93:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 1, signal: null, output: [ null, null, null ], pid: 3417, stdout: null, stderr: null }
+
+
+Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
+ ❯ tests/unit/db.backup.spec.ts:112:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 1, signal: null, output: [ null, null, null ], pid: 3433, stdout: null, stderr: null }
+
+
+Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
+{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+ ❯ tests/unit/db.backup.spec.ts:147:13
+ ❯ tests/unit/db.backup.spec.ts:145:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 1, signal: null, output: [ null, '<Buffer(0) ...>', '<Buffer(331) ...>' ], pid: 3449, stdout: '<Buffer(0) ...>', stderr: '<Buffer(331) ...>' }
+
+
+Error: Error: Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
+🔄 执行 WAL checkpoint (TRUNCATE 模式)...
+📁 数据库: test-data/test-app.db
+{
+  "ok": false,
+  "error": "file is not a database",
+  "timestamp": "2025-09-06T06:09:32.277Z",
+  "database": "test-data/test-app.db"
+}
+
+ ❯ tests/unit/db.backup.spec.ts:171:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 1, signal: null, output: [ null, '', '🔄 执行 WAL checkpoint (TRUNCATE 模式)...\n📁 数据库: test-data/test-app.db\n{\n  "ok": false,\n  "error": "file is not a database",\n  "timestamp": "2025-09-06T06:09:32.277Z",\n  "database": "test-data/test-app.db"\n}\n' ], pid: 3493, stdout: '', stderr: '🔄 执行 WAL checkpoint (TRUNCATE 模式)...\n📁 数据库: test-data/test-app.db\n{\n  "ok": false,\n  "error": "file is not a database",\n  "timestamp": "2025-09-06T06:09:32.277Z",\n  "database": "test-data/test-app.db"\n}\n' }
+
+
+Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
+{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
+
+ ❯ tests/unit/db.backup.spec.ts:240:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 1, signal: null, output: [ null, '', '{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}\n' ], pid: 3537, stdout: '', stderr: '{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}\n' }
+
+Error: Process completed with exit code 1.

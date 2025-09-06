@@ -17,7 +17,10 @@
       "Bash(echo \"EXIT_CODE: $?\")",
       "Bash(git rm:*)",
       "Bash(npm run lint:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(npm test)",
+      "Bash(gh repo view:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],

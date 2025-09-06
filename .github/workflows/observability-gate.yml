@@ -28,7 +28,7 @@ jobs:
   # 兼容性：使用明确的job名称确保分支保护规则兼容
   observability-gate-development:
     name: 🔍 统一可观测性配置验证 (Development)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 10
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
@@ -143,7 +143,7 @@ jobs:
   # 条件依赖检查：仅在配置文件变更时运行额外验证
   observability-gate-production:
     name: 扩展配置验证
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
     needs: observability-gate-development
     timeout-minutes: 5
@@ -199,7 +199,7 @@ jobs:
   # Staging环境可观测性检查
   observability-gate-staging:
     name: 🔍 Staging环境可观测性验证
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: observability-gate-development
     timeout-minutes: 5
     # P0修复：job级别环境变量确保devDependencies正确安装

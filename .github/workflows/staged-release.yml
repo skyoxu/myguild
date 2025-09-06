@@ -62,7 +62,7 @@ jobs:
   # 1. 预检查：验证配置和依赖
   pre_check:
     name: 🔍 Pre-flight Check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -131,7 +131,7 @@ jobs:
   # 2. 健康度检查：检查当前版本的Sentry Health指标
   health_check:
     name: 🏥 Health Check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -208,7 +208,7 @@ jobs:
   # 3. 发布部署：更新latest.yml并部署
   deploy_release:
     name: 🚀 Deploy Release
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -295,7 +295,7 @@ jobs:
   # 4. 发布后监控：设置持续的健康监控
   post_deploy_monitoring:
     name: 📊 Post-Deploy Monitoring
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -370,7 +370,7 @@ jobs:
   # 5. 通知：发送发布状态通知
   notify:
     name: 📢 Notification
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development

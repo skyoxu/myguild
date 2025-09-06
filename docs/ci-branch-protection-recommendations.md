@@ -2,19 +2,23 @@
 
 ## 核心原则
 
-1. **稳定性优先**：使用稳定的英文作业ID作为必需状态检查，避免依赖显示名称
-2. **条件作业排除**：有条件执行（if条件）的作业不应设为必需检查
-3. **门禁去重**：避免重复的安全门禁造成分支保护混乱
+1. **Windows专注**：CI环境与Windows部署目标对齐，提高稳定性和调试效率
+2. **稳定性优先**：使用稳定的英文作业ID作为必需状态检查，避免依赖显示名称
+3. **条件作业排除**：有条件执行（if条件）的作业不应设为必需检查
+4. **门禁去重**：避免重复的安全门禁造成分支保护混乱
 
 ## 推荐的必需状态检查
 
-### 主CI流水线 (ci.yml)
+### 主CI流水线 (ci.yml) - Windows专注策略
 
 ```
+CI/CD Pipeline / 🛡️ Workflow Guardian Check           (workflow-guardian)
 CI/CD Pipeline / Quality Gates Check                    (quality-gates)
-CI/CD Pipeline / Unit Tests (ubuntu-latest, Node 20)   (unit-tests-core)
+CI/CD Pipeline / Unit Tests (windows-latest, Node 20)  (unit-tests-core)
 CI/CD Pipeline / Coverage Gate                          (coverage-gate)
+CI/CD Pipeline / Build Verification Core               (build-verification-core)
 CI/CD Pipeline / Release Health Gate                    (release-health-gate)
+CI/CD Pipeline / Electron Security Gate                 (electron-security-gate)
 ```
 
 ### 统一安全检查 (security-unified.yml)
@@ -23,7 +27,12 @@ CI/CD Pipeline / Release Health Gate                    (release-health-gate)
 Security Gate (Unified) / 🚦 统一安全门禁             (unified-security-gate)
 ```
 
-**注意**: `electron-security-gate`已从ci.yml中移除，避免与统一安全门禁重复。所有安全检查现在统一在security-unified.yml中进行。
+**Windows专注优势**:
+
+- CI环境与Windows部署环境完全一致
+- 消除Linux特定依赖问题（如optionalDependencies）
+- 简化故障排查和本地复现
+- 提高Electron和.NET技术栈兼容性
 
 ## 不建议设为必需检查的作业
 
@@ -59,9 +68,9 @@ Security Gate (Unified) / 🚦 统一安全门禁             (unified-security-
 
 ```yaml
 jobs:
-  # 好的示例 ✅
+  # 好的示例 ✅ - Windows专注
   unit-tests-core:
-    name: 'Unit Tests (ubuntu-latest, Node 20)'
+    name: 'Unit Tests (windows-latest, Node 20)'
 
   coverage-gate:
     name: 'Coverage Gate'
@@ -86,11 +95,13 @@ jobs:
 3. 在 "Require status checks to pass before merging" 中添加：
 
 ```
+✅ CI/CD Pipeline / 🛡️ Workflow Guardian Check
 ✅ CI/CD Pipeline / Quality Gates Check
-✅ CI/CD Pipeline / Unit Tests (ubuntu-latest, Node 20)
+✅ CI/CD Pipeline / Unit Tests (windows-latest, Node 20)
 ✅ CI/CD Pipeline / Coverage Gate
-✅ CI/CD Pipeline / Electron Security Gate
+✅ CI/CD Pipeline / Build Verification Core
 ✅ CI/CD Pipeline / Release Health Gate
+✅ CI/CD Pipeline / Electron Security Gate
 ✅ Security Gate (Unified) / 🚦 统一安全门禁
 ```
 

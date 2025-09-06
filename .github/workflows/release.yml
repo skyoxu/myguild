@@ -51,7 +51,7 @@ jobs:
   # 📋 环境检查和准备
   prepare:
     name: 🔍 环境准备和验证
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -116,7 +116,7 @@ jobs:
   # 🔨 构建和测试
   build:
     name: 🔨 构建应用
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -169,7 +169,7 @@ jobs:
   # E建议：E2E冒烟测试（Electron + Playwright）
   e2e-smoke:
     name: 🧪 E2E冒烟测试
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -221,7 +221,7 @@ jobs:
   # 🚀 创建Sentry Release
   create-release:
     name: 🚀 创建Sentry Release
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -283,7 +283,7 @@ jobs:
   # 🏥 Release Health检查
   health-check:
     name: 🏥 Release Health门槛检查
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -360,7 +360,7 @@ jobs:
   # 🚀 部署标记
   deploy:
     name: 🚀 标记部署完成
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -406,7 +406,7 @@ jobs:
   # 🔄 回滚处理
   rollback:
     name: 🔄 自动回滚处理
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -432,7 +432,7 @@ jobs:
   # 📊 发布总结
   summary:
     name: 📊 发布流程总结
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development

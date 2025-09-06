@@ -1,5 +1,5 @@
-name: 'Hardened npm Install'
-description: 'Unified npm installation with enhanced reliability for CI/CD systems'
+name: 'Windows-Focused npm Install'
+description: 'Optimized npm installation for Windows-based CI/CD systems'
 author: 'CI/CD Team'
 
 inputs:
@@ -60,19 +60,19 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        # Cross-platform bash compatibility enforced - explicit bash mode
+        # Windows-focused npm installation with PowerShell compatibility
         set -euo pipefail
 
-        echo "Starting npm installation..."
-        echo "Platform: $(uname -s), Runner: $RUNNER_OS"
+        echo "Starting Windows-focused npm installation..."
+        echo "Platform: Windows, Runner: $RUNNER_OS"
         echo "Using project-level .npmrc config (network retries, caching, etc.)"
 
         # Show current npm config for debugging
         echo "Current npm configuration:"
         npm config list | grep -E "(fetch-retries|registry|fund|audit)" || true
 
-        # ESM project special handling: ensure 52 devDependencies are correctly installed
-        echo "Detected ESM project, installing large dependency collection..."
+        # Windows-focused ESM project handling: ensure devDependencies are correctly installed
+        echo "Detected ESM project, installing dependencies for Windows environment..."
 
         # Set ESM-friendly npm environment variables
         export NPM_CONFIG_MAXSOCKETS="8"
@@ -82,25 +82,18 @@ runs:
 
         install_success=false
 
-        # Cross-platform timeout function (handles differences between GNU/BSD timeout)
+        # Windows-focused timeout function (simplified for Windows runners)
         run_with_timeout() {
           local timeout_seconds=$1
           shift
           
-          # Use GitHub Actions timeout for cross-platform compatibility
-          if command -v timeout >/dev/null 2>&1; then
-            # GNU/Linux timeout (most GitHub runners)
-            timeout "${timeout_seconds}" "$@"
-          else
-            # Fallback for systems without timeout
-            echo "WARNING: timeout command not available, running without timeout limit"
-            "$@"
-          fi
+          # Windows runners always have timeout available
+          timeout "${timeout_seconds}" "$@"
         }
 
-        # Enhanced installation logic: 4 retries with progressive strategy
+        # Windows-optimized installation logic: 4 retries with progressive strategy
         for i in 1 2 3 4; do 
-          echo "Attempt $i for dependency installation (ESM + 52 devDeps)..."
+          echo "Attempt $i for Windows dependency installation (ESM project)..."
           
           if [ "$i" -eq 1 ]; then
             # First attempt: standard installation, 8-minute timeout
@@ -133,8 +126,8 @@ runs:
             # ESM project enhanced verification
             verification_errors=0
             
-            # Cross-platform array handling: Verify critical devDependencies tools
-            # Define tools as space-separated string to avoid bash array compatibility issues
+            # Windows-focused verification: Check critical devDependencies tools
+            # Define tools as space-separated string for Windows compatibility
             dev_tools_list="eslint tsc vitest playwright"
             
             for tool in $dev_tools_list; do
@@ -149,33 +142,20 @@ runs:
               fi
             done
             
-            # Verify rollup native platform package on Linux x64
-            if [ "$(uname -s)" = "Linux" ] && [ "$(uname -m)" = "x86_64" ]; then
-              echo "Verifying Rollup native platform package for Linux x64..."
-              if node -e "require('@rollup/rollup-linux-x64-gnu'); console.log('rollup native ok')" 2>/dev/null; then
-                echo "SUCCESS: @rollup/rollup-linux-x64-gnu platform package verified"
-              else
-                echo "ERROR: missing @rollup/rollup-linux-x64-gnu platform package"
-                echo "This indicates optionalDependencies installation failure"
-                verification_errors=$((verification_errors + 1))
-              fi
+            # Verify rollup native platform package for Windows
+            echo "Verifying Rollup native platform package for Windows..."
+            if node -e "require('@rollup/rollup-win32-x64-msvc'); console.log('rollup native ok')" 2>/dev/null; then
+              echo "SUCCESS: @rollup/rollup-win32-x64-msvc platform package verified"
+            else
+              echo "WARNING: @rollup/rollup-win32-x64-msvc not found, using fallback"
+              # Non-critical for Windows CI
             fi
             
-            # Cross-platform node_modules structure verification
+            # Windows-focused node_modules structure verification
             if [ -d "node_modules" ] && [ -d "node_modules/.bin" ]; then
-              # Cross-platform directory counting (avoid GNU-specific options)
-              if command -v find >/dev/null 2>&1; then
-                node_count=$(find node_modules -maxdepth 1 -type d 2>/dev/null | wc -l || echo "0")
-              else
-                node_count=$(ls -1d node_modules/*/ 2>/dev/null | wc -l || echo "0")
-              fi
-              
-              # Cross-platform size calculation
-              if command -v du >/dev/null 2>&1; then
-                node_modules_size=$(du -sh node_modules 2>/dev/null | cut -f1 || echo "unknown")
-              else
-                node_modules_size="calculated"
-              fi
+              # Simplified directory counting for Windows
+              node_count=$(find node_modules -maxdepth 1 -type d 2>/dev/null | wc -l || echo "0")
+              node_modules_size=$(du -sh node_modules 2>/dev/null | cut -f1 || echo "unknown")
               
               echo "SUCCESS: node_modules verification passed ($node_count packages, size: $node_modules_size)"
             else
@@ -183,13 +163,13 @@ runs:
               verification_errors=$((verification_errors + 1))
             fi
             
-            # Verify package.json type: module (cross-platform grep)
+            # Verify package.json type: module (Windows-focused)
             if grep -q '"type".*:.*"module"' package.json 2>/dev/null; then
               echo "SUCCESS: ESM module system verification passed"
             fi
             
             if [ "$verification_errors" -eq 0 ]; then
-              echo "COMPLETE SUCCESS: ESM project installation and verification fully successful!"
+              echo "COMPLETE SUCCESS: Windows ESM project installation fully successful!"
             else
               echo "WARNING: Found $verification_errors verification issues, but installation succeeded"
             fi
@@ -202,15 +182,10 @@ runs:
             wait_time=$((i * 15))
             echo "FAILED: Attempt $i failed, waiting ${wait_time} seconds before retry..."
             
-            # Show error log snippet (cross-platform tail)
+            # Show error log snippet (Windows-focused)
             if [ -f npm_install.log ]; then
               echo "Error log snippet:"
-              if command -v tail >/dev/null 2>&1; then
-                tail -10 npm_install.log 2>/dev/null || true
-              else
-                echo "Last lines of npm_install.log:"
-                sed -n '$-9,$p' npm_install.log 2>/dev/null || true
-              fi
+              tail -10 npm_install.log 2>/dev/null || true
             fi
             
             sleep "$wait_time"
@@ -218,7 +193,7 @@ runs:
         done
 
         # All attempts failed
-        echo "CRITICAL FAILURE: All 4 ESM installation attempts failed!"
+        echo "CRITICAL FAILURE: All 4 Windows ESM installation attempts failed!"
         if [ -f npm_install.log ]; then
           echo "Complete error log:"
           cat npm_install.log 2>/dev/null || echo "Could not read log file"

@@ -46,7 +46,7 @@ concurrency:
 
 jobs:
   emergency_rollback:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development

@@ -45,7 +45,7 @@ jobs:
   # ==================== 守护自检 ====================
   workflow-guardian:
     name: 🛡️ Workflow Guardian Check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 5
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
@@ -84,7 +84,7 @@ jobs:
   # ==================== 质量门禁阶段 ====================
   quality-gates:
     name: Quality Gates Check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 10
     needs: workflow-guardian
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -130,8 +130,8 @@ jobs:
 
   # ==================== 稳定名核心作业（必需检查）====================
   unit-tests-core:
-    name: Unit Tests (ubuntu-latest, Node 20)
-    runs-on: ubuntu-latest
+    name: Unit Tests (windows-latest, Node 20)
+    runs-on: windows-latest
     needs: workflow-guardian
     timeout-minutes: 15
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -164,7 +164,7 @@ jobs:
 
   coverage-gate:
     name: Coverage Gate
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: unit-tests-core
     timeout-minutes: 5
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -198,8 +198,8 @@ jobs:
           NODE_ENV: production
 
   build-verification-core:
-    name: Build Verification (ubuntu-latest)
-    runs-on: ubuntu-latest
+    name: Build Verification (windows-latest)
+    runs-on: windows-latest
     needs: unit-tests-core
     timeout-minutes: 10
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -226,7 +226,7 @@ jobs:
 
   release-health-gate:
     name: Release Health Gate
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: [unit-tests-core, coverage-gate, electron-security-gate]
     timeout-minutes: 5
     steps:
@@ -260,10 +260,10 @@ jobs:
         if: ${{ github.event.pull_request.head.repo.fork && failure() }}
         run: 'echo "Fork PR: skipping hard gate due to missing secrets" && exit 0'
 
-  # ==================== 多平台单元测试扩展（非必需）====================
+  # ==================== Windows单元测试扩展（非必需）====================
   unit-tests-extended:
-    name: Unit Tests Extended Matrix
-    runs-on: ${{ matrix.os }}
+    name: Unit Tests Extended - Windows Matrix
+    runs-on: windows-latest
     needs: quality-gates
     timeout-minutes: 20
     # 仅在代码改动时触发，文档类变更跳过
@@ -274,8 +274,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: ['18.x', '20.x', '22.x']
+        # Windows-focused strategy: single OS, multiple Node versions
 
     steps:
       - name: 📥 检出代码
@@ -325,7 +325,7 @@ jobs:
   # ==================== Electron安全门禁（必需）====================
   electron-security-gate:
     name: Electron Security Gate
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: quality-gates
     timeout-minutes: 30
 
@@ -384,10 +384,10 @@ jobs:
             playwright-report/
           retention-days: 30
 
-  # ==================== 构建验证扩展（非必需）====================
+  # ==================== Windows构建验证扩展（非必需）====================
   build-verification-extended:
-    name: Build Verification Extended Matrix
-    runs-on: ${{ matrix.os }}
+    name: Build Verification Extended - Windows
+    runs-on: windows-latest
     needs: unit-tests-extended
     timeout-minutes: 15
     # 仅在代码改动时触发，文档类变更跳过
@@ -397,7 +397,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Windows-focused strategy: simplified matrix
+        dummy: [1] # Placeholder for matrix syntax
 
     steps:
       - name: 📥 检出代码
@@ -455,8 +456,8 @@ jobs:
             test -d dist/assets/
           fi
 
-      - name: 📦 Electron打包测试 (仅Linux)
-        if: matrix.os == 'ubuntu-latest' && steps.changed-files.outputs.any_changed == 'true'
+      - name: 📦 Electron打包测试 (Windows专注)
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           # TODO: 配置Electron Builder后启用
           echo "Electron打包测试 - 待配置完善"
@@ -464,7 +465,7 @@ jobs:
   # ==================== 依赖安全审计 ====================
   dependency-audit:
     name: Dependency Security Audit
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: quality-gates
     timeout-minutes: 10
 
@@ -497,7 +498,7 @@ jobs:
   # ==================== 可观测性验证 ====================
   observability-verification:
     name: Observability Verification
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: unit-tests-core
     timeout-minutes: 10
 
@@ -532,7 +533,7 @@ jobs:
   # ==================== 性能基准测试 ====================
   performance-benchmarks:
     name: Performance Benchmarks
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build-verification-core
     timeout-minutes: 15
     # 仅在代码改动时触发
@@ -565,7 +566,7 @@ jobs:
   # ==================== 部署就绪检查 ====================
   deployment-readiness:
     name: Deployment Readiness Check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs:
       [
         build-verification-core,

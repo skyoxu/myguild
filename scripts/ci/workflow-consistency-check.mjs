@@ -22,7 +22,7 @@ const CORE_GATES = ['unit-tests-core', 'coverage-gate'];
 // 推荐的分支保护必需检查项 (稳定英文名)
 const REQUIRED_STATUS_CHECKS = [
   'CI/CD Pipeline / Quality Gates Check',
-  'CI/CD Pipeline / Unit Tests (ubuntu-latest, Node 20)',
+  'CI/CD Pipeline / Unit Tests (windows-latest, Node 20)',
   'CI/CD Pipeline / Coverage Gate',
   'CI/CD Pipeline / Release Health Gate',
   'Security Gate (Unified) / 🚦 统一安全门禁',

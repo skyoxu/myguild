@@ -23,7 +23,7 @@ jobs:
   # ==================== 核心构建测试 ====================
   build-and-test:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 15
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
@@ -100,7 +100,7 @@ jobs:
   # ==================== Electron安全测试 ====================
   electron-security-tests:
     name: Electron Security Tests
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build-and-test
     timeout-minutes: 20
     # P0修复：job级别环境变量确保devDependencies正确安装

@@ -37,11 +37,11 @@ jobs:
 
   # 单元测试 - 稳定的核心测试
   unit-tests-core:
-    name: Unit Tests (ubuntu-latest, Node 20)
+    name: Unit Tests (windows-latest, Node 20)
 
   # 构建验证 - 核心构建检查
   build-verification-core:
-    name: Build Verification (ubuntu-latest)
+    name: Build Verification (windows-latest)
 
   # 安全门禁 - 必需的安全检查
   electron-security-gate:

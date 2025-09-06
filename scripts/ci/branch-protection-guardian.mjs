@@ -9,15 +9,19 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 
 /**
- * 关键工作流及其核心作业名映射
+ * 关键工作流及其核心作业名映射 - Windows专注策略
  * 这些是分支保护必须检查的 jobs
+ * 采用Windows专注CI策略，与部署环境对齐
  */
 const CRITICAL_JOBS = {
   'ci.yml': [
-    'quality-gates', // 质量门禁 - 必须通过
-    'unit-tests-core', // 核心单测 - 必须通过
-    'coverage-gate', // 覆盖率门禁 - 必须通过
-    'electron-security-gate', // Electron 安全检查 - 必须通过
+    'workflow-guardian',        // 工作流守护检查 - 必须通过
+    'quality-gates',           // 质量门禁 - 必须通过
+    'unit-tests-core',         // 核心单测 (Windows) - 必须通过
+    'coverage-gate',           // 覆盖率门禁 - 必须通过
+    'build-verification-core', // 构建验证核心 - 必须通过
+    'release-health-gate',     // 发布健康门禁 - 必须通过
+    'electron-security-gate',  // Electron安全检查 - 必须通过
   ],
   'soft-gates.yml': [
     // 软门禁是中性状态，不应该在 branch protection 中
@@ -200,8 +204,9 @@ function checkProtectionConsistency(protection, requiredChecks) {
  * 主函数
  */
 async function main() {
-  console.log('🛡️ 分支保护守护检查');
+  console.log('🛡️ 分支保护守护检查 - Windows专注策略');
   console.log('='.repeat(50));
+  console.log('🎯 策略: CI环境与Windows部署目标对齐，提高稳定性');
 
   try {
     // 提取关键作业
@@ -220,11 +225,12 @@ async function main() {
     } else {
       console.log('\n❌ 分支保护规则需要更新');
 
-      console.log('\n🔧 修复步骤:');
+      console.log('\n🔧 修复步骤 (Windows专注策略):');
       console.log('1. 前往 GitHub 仓库 Settings > Branches');
       console.log('2. 编辑 main 分支保护规则');
       console.log('3. 在 "Require status checks to pass" 中添加/移除相应检查');
-      console.log('4. 确保所有必需检查都已勾选');
+      console.log('4. 确保所有Windows核心检查都已勾选');
+      console.log('5. 注意: 更新后的检查基于windows-latest runner');
 
       // 在 CI 环境中失败
       if (process.env.CI === 'true') {

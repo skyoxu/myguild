@@ -30,7 +30,7 @@ concurrency:
 jobs:
   config-validation-and-docs:
     name: 配置验证与文档处理
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
@@ -124,7 +124,7 @@ jobs:
   documentation-build:
     name: 文档构建与发布准备
     needs: config-validation-and-docs
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
