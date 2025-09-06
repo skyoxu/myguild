@@ -110,7 +110,7 @@
 ### Actionlint 集成
 
 - **位置**: 每个工作流的第一步
-- **工具**: `rhysd/actionlint-action@v1`
+- **工具**: `raven-actions/actionlint@v2`
 - **失败策略**: 立即失败，阻断执行
 
 ### Needs 依赖校验

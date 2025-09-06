@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 1
 
       - name: Actionlint workflow syntax check
-        uses: rhysd/actionlint-action@v1.7.7
+        uses: raven-actions/actionlint@v2
         with:
           fail-on-error: true
         # Infrastructure-level error recovery: continue workflow even if actionlint fails
