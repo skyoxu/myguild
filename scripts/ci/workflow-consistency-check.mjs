@@ -231,7 +231,7 @@ function checkBranchProtectionAlignment(allWorkflows) {
 function checkWorkflows() {
   console.log('🔍 开始检查GitHub Actions工作流一致性...\n');
 
-  let allIssues = [];
+  const allIssues = [];
   let checkedFiles = 0;
   const allWorkflows = []; // 收集所有成功解析的工作流
 

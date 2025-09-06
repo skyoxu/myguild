@@ -181,6 +181,32 @@ export default tseslint.config([
       'prettier/prettier': 'off',
     },
   },
+  // 专门的.cjs文件规则 - 完全允许require()
+  {
+    files: ['**/*.cjs'],
+    extends: [tseslint.configs.recommended],
+    rules: {
+      // 完全允许require导入语句
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
+
+      // 允许console输出和其他CommonJS模式
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+
+      // 禁用Prettier冲突规则
+      'prettier/prettier': 'off',
+    },
+  },
   // E2E测试特定规则 - 防止架构反模式和flaky测试
   {
     files: ['**/tests/e2e/**/*.{ts,tsx,js,jsx}', '**/e2e/**/*.{ts,tsx,js,jsx}'],
