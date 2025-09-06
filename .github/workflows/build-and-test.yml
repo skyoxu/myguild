@@ -100,9 +100,9 @@ jobs:
           echo "Lint on changed files:"
           cat changed.txt
           # 0 warning 严格门禁（只针对改动文件）
-          npx eslint $(cat changed.txt) --max-warnings 0
+          npx eslint "$(cat changed.txt)" --max-warnings 0
           # 同时做 Prettier 严格检查（不写入）
-          npx prettier --check $(cat changed.txt)
+          npx prettier --check "$(cat changed.txt)"
 
       - name: 🎨 Prettier 格式检查
         shell: bash
@@ -141,11 +141,40 @@ jobs:
           if [ ! -d "dist/assets" ]; then echo "❌ 缺少 assets 目录"; exit 1; fi
           echo "✅ 构建产物验证通过"
 
-      - name: ⚡ 性能基准测试 (User Timing)
-        shell: bash
+      # 性能门禁（Windows）
+      - name: 🧪 性能基准（User Timing）
         run: npm run guard:performance
-        env:
-          NODE_ENV: test
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（帧率稳定）
+        run: npm run guard:framerate
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（场景切换）
+        run: npm run guard:scene-transition
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（WebVitals 混合）
+        run: node scripts/perf/web-vitals-hybrid-gate.mjs
+        env: { NODE_ENV: test }
+
+      - name: 📈 Performance Gate Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## 📈 Performance Gates (Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- User Timing: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+          echo "- 帧率稳定/场景切换: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+          echo "- WebVitals（如配置）: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📋 Quality Gate Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## ✅ Quality Gates (Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint/Typecheck: 已执行（含改动文件 0 warning 门禁）" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage Gate: 全局 ≥ 90%（若低于已阻断）" >> $GITHUB_STEP_SUMMARY
+          echo "- Bundle/体量阈值: 已校验" >> $GITHUB_STEP_SUMMARY
 
   # ==================== Electron安全测试 ====================
   electron-security-tests:

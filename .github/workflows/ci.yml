@@ -168,7 +168,7 @@ jobs:
         with:
           name: coverage-summary
           path: coverage/coverage-summary.json
-          retention-days: 7
+          retention-days: 14
 
   coverage-gate:
     name: Coverage Gate
