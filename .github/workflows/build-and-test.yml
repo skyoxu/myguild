@@ -45,25 +45,13 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 验证 ESLint 设置
-        working-directory: .
+      - name: 🔍 验证工具链设置
         run: |
-          set -euo pipefail
-          echo "🔍 环境信息诊断："
+          echo "🔍 Windows环境信息诊断："
           node -v && npm -v
-          echo "PATH: $PATH"
-          ls -la node_modules/.bin | head -5 || echo "node_modules/.bin not found"
-
-          echo "🔧 设置执行环境："
-          export PATH="$(npm bin):$PATH"
-
-          echo "✅ 验证 ESLint 可执行文件存在："
-          ./node_modules/.bin/eslint -v || npx --yes eslint -v
-
-          echo "🧪 可选：深度验证配置（不阻断）："
-          npx --yes eslint --print-config src/main.tsx >/dev/null || echo "⚠️ warn: print-config failed; will still run lint"
-
-          echo "✅ ESLint 设置验证完成"
+          echo "验证ESLint可用性："
+          npx eslint -v
+          echo "✅ 工具链设置验证完成"
 
       - name: 🎨 Prettier 格式检查
         run: |
@@ -86,11 +74,12 @@ jobs:
         run: npm run build
 
       - name: 🔍 验证构建产物
+        shell: cmd
         run: |
-          ls -la dist/
-          # 验证关键文件存在
-          test -f dist/index.html
-          test -d dist/assets/
+          dir dist
+          if not exist "dist\index.html" exit 1
+          if not exist "dist\assets" exit 1
+          echo ✅ 构建产物验证通过
 
       - name: ⚡ 性能基准测试 (User Timing)
         run: npm run guard:performance
@@ -121,15 +110,11 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
-      - name: 🖥️ 安装系统依赖 (Electron)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-
-      - name: 🛡️ 运行安全冒烟测试
-        run: xvfb-run -a npm run test:e2e:security
+      - name: 🛡️ 运行Electron安全冒烟测试（Windows）
+        run: npm run test:e2e:security
         env:
           CI: true
+          # Windows下无需xvfb，Electron可直接运行
 
       - name: 📋 上传安全测试报告
         if: always()

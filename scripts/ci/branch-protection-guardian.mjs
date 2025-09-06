@@ -15,13 +15,13 @@ import fs from 'fs';
  */
 const CRITICAL_JOBS = {
   'ci.yml': [
-    'workflow-guardian',        // 工作流守护检查 - 必须通过
-    'quality-gates',           // 质量门禁 - 必须通过
-    'unit-tests-core',         // 核心单测 (Windows) - 必须通过
-    'coverage-gate',           // 覆盖率门禁 - 必须通过
+    'workflow-guardian', // 工作流守护检查 - 必须通过
+    'quality-gates', // 质量门禁 - 必须通过
+    'unit-tests-core', // 核心单测 (Windows) - 必须通过
+    'coverage-gate', // 覆盖率门禁 - 必须通过
     'build-verification-core', // 构建验证核心 - 必须通过
-    'release-health-gate',     // 发布健康门禁 - 必须通过
-    'electron-security-gate',  // Electron安全检查 - 必须通过
+    'release-health-gate', // 发布健康门禁 - 必须通过
+    'electron-security-gate', // Electron安全检查 - 必须通过
   ],
   'soft-gates.yml': [
     // 软门禁是中性状态，不应该在 branch protection 中
