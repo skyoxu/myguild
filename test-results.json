@@ -1,5 +1,0 @@
-
-> gamedev-vitegame@0.1.1 test:unit
-> vitest run --run --reporter=json
-
-JSON report written to C:/buildgame/vitegame/coverage/coverage.json

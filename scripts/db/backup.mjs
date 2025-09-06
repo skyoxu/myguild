@@ -396,7 +396,7 @@ async function executeOnlineBackup(srcPath, backupPath) {
 /**
  * 备份完整性验证
  */
-function verifyBackupIntegrity(backupPath) {
+async function verifyBackupIntegrity(backupPath) {
   try {
     log('info', 'Verifying backup integrity', { backupPath });
 
@@ -414,10 +414,7 @@ function verifyBackupIntegrity(backupPath) {
 
       // 同步解压缩
       const { execSync } = await import('node:child_process');
-      execSync(
-        `gunzip -c "${backupPath}" > "${tempFile}"`,
-        { timeout: 60000 }
-      );
+      execSync(`gunzip -c "${backupPath}" > "${tempFile}"`, { timeout: 60000 });
 
       verificationPath = tempFile;
     }
