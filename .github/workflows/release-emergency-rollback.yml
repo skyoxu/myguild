@@ -310,7 +310,7 @@ jobs:
 ### 📊 批量回滚结果
 ```json
 MD
-            echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
             cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 ```
 MD
@@ -320,7 +320,7 @@ MD
 ### 📊 回滚结果
 ```json
 MD
-            echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
             cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 ```
 MD

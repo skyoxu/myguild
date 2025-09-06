@@ -394,13 +394,11 @@ jobs:
               echo ''
               echo '### ❌ 安全门禁硬失败'
               echo '**ADR-0002违反**: 静态安全扫描未通过基线要求'
-            } >> $GITHUB_STEP_SUMMARY
-            echo "- Critical安全问题: ${{ needs.security-scan.outputs.critical-count }}个（要求: 0个）" >> $GITHUB_STEP_SUMMARY
-            echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个（要求: ≤3个）" >> $GITHUB_STEP_SUMMARY
-            {
+              echo "- Critical安全问题: ${{ needs.security-scan.outputs.critical-count }}个（要求: 0个）"
+              echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个（要求: ≤3个）"
               echo ''
               echo '🚨 **此PR被硬性阻止合并，必须修复所有安全问题**'
-            } >> $GITHUB_STEP_SUMMARY
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           elif [ "${{ needs.e2e-security-test.outputs.e2e-status }}" = "failed" ]; then
             {
@@ -421,9 +419,9 @@ jobs:
               echo '### ✅ 安全门禁通过'
               echo '**ADR-0002合规**: 所有安全检查均已通过，符合严格安全基线要求'
               echo '- Critical安全问题: 0个 ✅'
-            } >> $GITHUB_STEP_SUMMARY
-            echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个 (≤3) ✅" >> $GITHUB_STEP_SUMMARY
-            echo "- E2E安全测试: 通过 ✅" >> $GITHUB_STEP_SUMMARY
+              echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个 (≤3) ✅"
+              echo "- E2E安全测试: 通过 ✅"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: 失败时创建Issue

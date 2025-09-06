@@ -116,8 +116,8 @@ jobs:
               {
                 echo ''
                 echo '### ❌ 发现的错误'
-              } >> $GITHUB_STEP_SUMMARY
-              jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+              } >> "$GITHUB_STEP_SUMMARY"
+              jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             fi
             
             # 如果有警告，显示警告详情
@@ -125,15 +125,15 @@ jobs:
               {
                 echo ''
                 echo '### ⚠️ 发现的警告'
-              } >> $GITHUB_STEP_SUMMARY
-              jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+              } >> "$GITHUB_STEP_SUMMARY"
+              jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             {
               echo '## 🔍 可观测性配置验证结果'
               echo ''
               echo '⚠️ 无法找到验证报告文件'
-            } >> $GITHUB_STEP_SUMMARY
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: 验证通过检查
