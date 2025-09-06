@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 1
 
       - name: 🔍 Actionlint 工作流语法检查
-        uses: rhysd/actionlint-action@v1
+        uses: rhysd/actionlint-action@v1.7.7
         with:
           fail-on-error: true
         # Infrastructure-level error recovery: continue workflow even if actionlint fails

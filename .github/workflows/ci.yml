@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔍 Actionlint 工作流语法检查
-        uses: rhysd/actionlint-action@v1
+        uses: rhysd/actionlint-action@v1.7.7
         with:
           fail-on-error: true
 
