@@ -306,7 +306,7 @@ jobs:
 
 | 配置项 | 值 |
 |--------|-----|
-EOF
+          EOF
           echo "| 发布阶段 | ${{ inputs.stage }}% |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| 应用版本 | \`$APP_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
@@ -315,7 +315,7 @@ EOF
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 📊 执行结果
-EOF
+          EOF
           echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> "$GITHUB_STEP_SUMMARY"
           echo "- **健康检查**: $health_icon $health_text" >> "$GITHUB_STEP_SUMMARY"
 
@@ -337,18 +337,18 @@ EOF
 
 ### 🏥 健康检查详情
 ```json
-EOF
+            EOF
             echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
-EOF
+            EOF
           fi
 
           # 下一步建议
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 🎯 下一步建议
-EOF
+          EOF
 
           if [ "$health_status" = "passed" ] && [ "${{ inputs.stage }}" != "100" ]; then
             case "${{ inputs.stage }}" in
@@ -363,13 +363,13 @@ EOF
 - 🚨 **健康检查失败，已执行自动回滚**
 - 请检查应用日志和错误报告，修复问题后重新发布
 - 考虑降级发布策略或增加更多测试覆盖
-EOF
+            EOF
           elif [ "${{ inputs.stage }}" = "100" ] && [ "$health_status" = "passed" ]; then
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 - 🎉 **渐进发布完成！** 应用已全量发布
 - 继续监控 Release Health 指标
 - 可考虑更新 `PREV_GA_VERSION` 环境变量为当前版本
-EOF
+            EOF
           fi
 
   # 后续工作流：通知、监控等

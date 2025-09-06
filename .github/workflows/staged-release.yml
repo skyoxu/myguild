@@ -412,7 +412,7 @@ jobs:
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 ## 📊 分阶段发布总结
 
-EOF
+          EOF
           echo "**版本**: ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**发布阶段**: ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY  
           echo "**状态**: ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
@@ -423,7 +423,7 @@ EOF
             cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 ### ✅ 发布进展
 - [x] 预检查通过
-EOF
+            EOF
             if [ "${{ inputs.skip_health_check }}" != "true" ] && [ "${{ env.STAGING_PERCENTAGE }}" != "5" ]; then
               echo "- [x] 健康检查通过" >> $GITHUB_STEP_SUMMARY
             fi
@@ -434,6 +434,6 @@ EOF
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 
 ### 🔗 相关链接
-EOF
+          EOF
           echo "- [Sentry Release](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)" >> $GITHUB_STEP_SUMMARY

@@ -109,14 +109,14 @@ jobs:
 | 环境数量 | $environments |
 | 错误数量 | $errors |
 | 警告数量 | $warnings |
-EOF
+            EOF
             
             # 如果有错误，显示错误详情
             if [ "$errors" -gt 0 ]; then
               cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 
 ### ❌ 发现的错误
-EOF
+              EOF
               jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
             
@@ -125,7 +125,7 @@ EOF
               cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 
 ### ⚠️ 发现的警告
-EOF
+              EOF
               jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
           else
@@ -133,7 +133,7 @@ EOF
 ## 🔍 可观测性配置验证结果
 
 ⚠️ 无法找到验证报告文件
-EOF
+            EOF
           fi
 
       - name: 验证通过检查

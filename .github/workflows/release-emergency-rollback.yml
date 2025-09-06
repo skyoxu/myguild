@@ -296,7 +296,7 @@ jobs:
 
 | 项目 | 值 |
 |------|-----|
-EOF
+          EOF
           echo "| 回滚原因 | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> $GITHUB_STEP_SUMMARY
@@ -309,21 +309,21 @@ EOF
 
 ### 📊 批量回滚结果
 ```json
-EOF
+            EOF
             echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> $GITHUB_STEP_SUMMARY
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
-EOF
+            EOF
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 📊 回滚结果
 ```json
-EOF
+            EOF
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
-EOF
+            EOF
           fi
 
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
@@ -334,11 +334,11 @@ EOF
 3. 📢 **通知团队** 回滚情况和影响范围
 4. 🔧 **修复问题** 在重新发布前解决根本原因
 5. 📝 **事后分析** 更新发布流程以防止类似问题
-EOF
+          EOF
 
           if [ "${{ inputs.triggered_by }}" = "monitor" ]; then
             cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ⚡ **注意**: 此回滚由自动监控系统触发
-EOF
+            EOF
           fi
