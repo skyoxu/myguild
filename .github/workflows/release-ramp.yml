@@ -306,7 +306,7 @@ jobs:
 
 | 配置项 | 值 |
 |--------|-----|
-          EOF
+EOF
           echo "| 发布阶段 | ${{ inputs.stage }}% |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| 应用版本 | \`$APP_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"

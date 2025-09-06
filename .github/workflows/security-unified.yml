@@ -384,7 +384,7 @@ jobs:
 ### 📊 检查摘要
 | 检查项目 | 状态 | 结果 |
 |---------|------|------|
-          EOF
+EOF
           echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
 

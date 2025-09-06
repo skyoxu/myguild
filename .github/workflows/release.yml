@@ -105,9 +105,9 @@ jobs:
         id: env
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" = "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             ENV="${{ github.event.inputs.environment }}"
-          elif [[ "${{ github.ref }}" = "refs/heads/main" ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             ENV="production"
           elif [[ "${{ github.ref }}" = "refs/heads/release/"* ]]; then
             ENV="staging"
@@ -491,7 +491,7 @@ jobs:
           echo ""
 
           # 总体状态判断
-          if [[ "${{ needs.deploy.result }}" = "success" ]]; then
+          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
             echo "✅ Release流程完成成功!"
           else
             echo "❌ Release流程存在问题，请检查失败的步骤"

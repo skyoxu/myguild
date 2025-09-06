@@ -296,7 +296,7 @@ jobs:
 
 | 项目 | 值 |
 |------|-----|
-          EOF
+EOF
           echo "| 回滚原因 | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> $GITHUB_STEP_SUMMARY

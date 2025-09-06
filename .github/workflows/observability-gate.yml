@@ -109,7 +109,7 @@ jobs:
 | 环境数量 | $environments |
 | 错误数量 | $errors |
 | 警告数量 | $warnings |
-            EOF
+EOF
             
             # 如果有错误，显示错误详情
             if [ "$errors" -gt 0 ]; then
