@@ -297,33 +297,29 @@ jobs:
           | 项目 | 值 |
           |------|-----|
           EOF
-          echo "| 回滚原因 | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 触发者 | ${{ inputs.triggered_by }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 执行时间 | $(date -u +%Y-%m-%dT%H:%M:%S.000Z) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 回滚原因 | ${{ inputs.reason }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 触发者 | ${{ inputs.triggered_by }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 执行时间 | $(date -u +%Y-%m-%dT%H:%M:%S.000Z) |" >> "$GITHUB_STEP_SUMMARY"
 
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
-            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
-
-### 📊 批量回滚结果
-```json
-MD
+            {
+              echo ''
+              echo '### 📊 批量回滚结果'
+              echo '```json'
+            } >> "$GITHUB_STEP_SUMMARY"
             echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
-```
-MD
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
-
-### 📊 回滚结果
-```json
-MD
+            {
+              echo ''
+              echo '### 📊 回滚结果'
+              echo '```json'
+            } >> "$GITHUB_STEP_SUMMARY"
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
-```
-MD
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'

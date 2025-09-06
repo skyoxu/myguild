@@ -271,9 +271,9 @@ jobs:
             -m "Run: ${{ github.run_number }}"
 
           echo "✅ 变更已提交: $commit_msg"
-          echo "committed=true" >> $GITHUB_OUTPUT
-          echo "commit_type=$commit_type" >> $GITHUB_OUTPUT
-          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+          echo "commit_type=$commit_type" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: '🚀 Push changes'
         if: steps.commit.outputs.committed == 'true'
@@ -333,15 +333,13 @@ jobs:
 
           # 添加健康检查详情（如果有）
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-
-### 🏥 健康检查详情
-```json
-EOF
+            {
+              echo ''
+              echo '### 🏥 健康检查详情'
+              echo '```json'
+            } >> "$GITHUB_STEP_SUMMARY"
             echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-```
-EOF
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # 下一步建议

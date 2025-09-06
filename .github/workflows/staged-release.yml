@@ -388,17 +388,17 @@ jobs:
         id: status
         run: |
           if [ "${{ needs.deploy_release.result }}" = "success" ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "message=✅ 发布成功完成" >> $GITHUB_OUTPUT
+            echo "status=success" >> "$GITHUB_OUTPUT"
+            echo "message=✅ 发布成功完成" >> "$GITHUB_OUTPUT"
           elif [ "${{ needs.health_check.result }}" = "failure" ]; then
-            echo "status=health_failed" >> $GITHUB_OUTPUT  
-            echo "message=❌ 健康检查失败，发布已阻止" >> $GITHUB_OUTPUT
+            echo "status=health_failed" >> "$GITHUB_OUTPUT"  
+            echo "message=❌ 健康检查失败，发布已阻止" >> "$GITHUB_OUTPUT"
           elif [ "${{ needs.pre_check.outputs.can_proceed }}" = "false" ]; then
-            echo "status=validation_failed" >> $GITHUB_OUTPUT
-            echo "message=⚠️ 发布验证失败" >> $GITHUB_OUTPUT
+            echo "status=validation_failed" >> "$GITHUB_OUTPUT"
+            echo "message=⚠️ 发布验证失败" >> "$GITHUB_OUTPUT"
           else
-            echo "status=unknown" >> $GITHUB_OUTPUT
-            echo "message=❓ 发布状态未知" >> $GITHUB_OUTPUT
+            echo "status=unknown" >> "$GITHUB_OUTPUT"
+            echo "message=❓ 发布状态未知" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Post summary

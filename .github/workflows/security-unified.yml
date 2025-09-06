@@ -378,15 +378,15 @@ jobs:
           export LC_ALL=C.UTF-8
 
           # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
           ## 🔒 统一安全门禁结果
 
           ### 📊 检查摘要
           | 检查项目 | 状态 | 结果 |
           |---------|------|------|
           EOF
-          echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> "$GITHUB_STEP_SUMMARY"
 
           # ADR-0002 强制硬失败决策（Critical=0, High≤3）
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
@@ -411,7 +411,7 @@ jobs:
               echo '- sandbox=true ✓'
               echo ''
               echo '🚨 **此PR被硬性阻止合并，必须修复Electron安全配置**'
-            } >> $GITHUB_STEP_SUMMARY
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           else
             {
