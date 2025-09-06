@@ -47,24 +47,24 @@ env:
   ACTIONS_STEP_DEBUG: false
 
 jobs:
-  # 软门禁守护自检
+  # Soft gate guardian self-check
   soft-gate-guardian:
-    name: 🛡️ 软门禁守护检查
+    name: Soft Gate Guardian Check
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0 fix: job-level environment variables ensure devDependencies are installed correctly
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 20
 
     steps:
-      - name: Checkout代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           # Infrastructure optimization: shallow clone for faster checkout
           fetch-depth: 1
 
-      - name: 🔍 Actionlint 工作流语法检查
+      - name: Actionlint workflow syntax check
         uses: rhysd/actionlint-action@v1.7.7
         with:
           fail-on-error: true
@@ -72,19 +72,19 @@ jobs:
         continue-on-error: false
 
   quality-gate-check:
-    name: 📊 软门禁质量检查
+    name: Quality Gate Check
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0 fix: job-level environment variables ensure devDependencies are installed correctly
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 20
     needs: soft-gate-guardian
 
-    # 软门禁job需要权限创建checks和PR评论
+    # Soft gate job needs permissions to create checks and PR comments
     permissions:
       checks: write
-      issues: write # PR评论需要issues权限
+      issues: write # PR comments need issues permission
       contents: read
 
     # Infrastructure-level optimization: retry strategy for flaky CI
@@ -93,17 +93,17 @@ jobs:
       matrix:
         retry_attempt: [1]
 
-    # 软门禁永远不应该失败（即使有问题也返回成功）
+    # Soft gate should never fail (return success even with issues)
     continue-on-error: false
 
     steps:
-      - name: Checkout代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           # Infrastructure optimization: shallow clone for faster checkout
           fetch-depth: 1
 
-      - name: 设置Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -113,7 +113,7 @@ jobs:
             package-lock.json
             package.json
 
-      - name: 安装jq工具
+      - name: Install jq tool
         shell: pwsh
         run: |
           # Infrastructure optimization: Windows-compatible package installation
@@ -129,49 +129,49 @@ jobs:
             Write-Host "jq already available"
           }
 
-      - name: 安装依赖 (使用强化npm-install action)
+      - name: Install dependencies (using enhanced npm-install action)
         uses: ./.github/actions/npm-install
         with:
           working-directory: '.'
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: 确保日志目录存在
+      - name: Ensure logs directory exists
         shell: pwsh
         run: |
           if (-not (Test-Path "logs")) {
             New-Item -ItemType Directory -Path "logs" -Force
           }
 
-      - name: 执行软门禁检查
+      - name: Execute soft gates check
         id: soft-gates
         run: |
-          echo "🚦 开始执行软门禁质量检查..."
+          echo "Starting soft gates quality check..."
 
-          # 执行软门禁脚本（永不失败）
+          # Execute soft gates script (never fails)
           node scripts/soft-gate-reporter.js || {
-            echo "⚠️ 软门禁脚本执行异常，但不阻塞流程"
+            echo "Soft gates script execution error, but not blocking the flow"
             echo "soft-gate-score=50" >> $GITHUB_OUTPUT
             echo "soft-gate-status=neutral" >> $GITHUB_OUTPUT
-            echo "soft-gate-title=软门禁执行异常" >> $GITHUB_OUTPUT
-            echo "soft-gate-summary=执行过程中遇到问题，请检查日志" >> $GITHUB_OUTPUT
+            echo "soft-gate-title=Soft gates execution error" >> $GITHUB_OUTPUT
+            echo "soft-gate-summary=Issues encountered during execution, please check logs" >> $GITHUB_OUTPUT
             exit 0
           }
 
-          echo "✅ 软门禁检查完成"
+          echo "Soft gates check completed"
 
-      - name: 读取软门禁输出
+      - name: Read soft gates output
         id: read-outputs
         run: |
-          # 如果GITHUB_OUTPUT中没有软门禁结果，设置默认值
+          # If no soft gates results in GITHUB_OUTPUT, set default values
           if ! grep -q "soft-gate-score=" $GITHUB_OUTPUT 2>/dev/null; then
             echo "soft-gate-score=75" >> $GITHUB_OUTPUT
             echo "soft-gate-status=neutral" >> $GITHUB_OUTPUT
-            echo "soft-gate-title=质量评分: 75/100" >> $GITHUB_OUTPUT
-            echo "soft-gate-summary=软门禁检查完成" >> $GITHUB_OUTPUT
-            echo "soft-gate-details=所有质量检查项已执行完成" >> $GITHUB_OUTPUT
+            echo "soft-gate-title=Quality Score: 75/100" >> $GITHUB_OUTPUT
+            echo "soft-gate-summary=Soft gates check completed" >> $GITHUB_OUTPUT
+            echo "soft-gate-details=All quality check items have been executed" >> $GITHUB_OUTPUT
           fi
 
-      - name: 上传软门禁报告
+      - name: Upload soft gates report
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -179,13 +179,13 @@ jobs:
           path: logs/soft-gate-report.json
           retention-days: 30
 
-      - name: 创建中性状态检查
+      - name: Create neutral status check
         uses: actions/github-script@v7
         if: always()
-        continue-on-error: true # 软门禁不应阻断，checks创建失败也要继续
+        continue-on-error: true # Soft gates should not block, continue even if checks creation fails
         with:
           script: |
-            // 读取软门禁结果
+            // Read soft gates results
             const fs = require('fs');
             let softGateData;
 
@@ -195,59 +195,59 @@ jobs:
                 softGateData = JSON.parse(reportContent);
               }
             } catch (error) {
-              console.log('无法读取软门禁报告，使用默认值');
+              console.log('Unable to read soft gates report, using default values');
             }
 
-            // 设置默认值
+            // Set default values
             const score = softGateData?.overallScore || 75;
-            const title = `质量评分: ${score}/100`;
+            const title = `Quality Score: ${score}/100`;
             const summary = softGateData ? 
-              `共执行${softGateData.summary?.totalGates || 0}项质量检查` : 
-              '软门禁检查完成';
+              `Executed ${softGateData.summary?.totalGates || 0} quality checks` : 
+              'Soft gates check completed';
 
-            // 构建详细描述
+            // Build detailed description
             let details = '';
             if (softGateData?.feedback) {
               details = softGateData.feedback.map(f => f.message).join('\n');
             }
             if (softGateData?.recommendations && softGateData.recommendations.length > 0) {
-              details += '\n\n**改进建议:**\n' + softGateData.recommendations.join('\n');
+              details += '\n\n**Improvement Suggestions:**\n' + softGateData.recommendations.join('\n');
             }
 
-            // 创建中性状态（软门禁特色：提供反馈但不阻塞）
+            // Create neutral status (soft gates feature: provide feedback but not blocking)
             const { data: checkRun } = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: 'Soft Gates Quality Check',
               head_sha: context.sha,
               status: 'completed',
-              conclusion: 'neutral', // 关键：始终为neutral，不阻塞合并
+              conclusion: 'neutral', // Key: always neutral, not blocking merge
               output: {
                 title: title,
                 summary: summary,
-                text: details || '质量检查完成，详细信息请查看报告。'
+                text: details || 'Quality check completed, please see report for details.'
               }
             });
 
-            console.log(`创建中性状态检查: ${checkRun.html_url}`);
+            console.log(`Created neutral status check: ${checkRun.html_url}`);
 
-            // 如果是PR，添加评论（容错处理API限流）
+            // If it's a PR, add comment (error handling for API rate limiting)
             if (context.payload.pull_request) {
               try {
                 const commentBody = `
-            ## 📊 软门禁质量评分报告
+            ## Soft Gates Quality Score Report
 
-            **总体评分**: ${score}/100 ⭐
+            **Overall Score**: ${score}/100
 
             ${summary}
 
-            ${details ? '### 详细反馈\n' + details : ''}
+            ${details ? '### Detailed Feedback\n' + details : ''}
 
             ---
 
-            > 💡 **说明**: 软门禁提供质量反馈但不阻塞合并。建议在合并前考虑改进建议。
+            > **Note**: Soft gates provide quality feedback but do not block merge. Consider improvement suggestions before merging.
             > 
-            > 📋 [查看详细报告](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
+            > [View Detailed Report](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
             `;
                 
                 await github.rest.issues.createComment({
@@ -256,94 +256,76 @@ jobs:
                   repo: context.repo.repo,
                   body: commentBody
                 });
-                console.log(`✅ PR评论创建成功: #${context.payload.pull_request.number}`);
+                console.log(`PR comment created successfully: #${context.payload.pull_request.number}`);
               } catch (error) {
-                console.log(`⚠️ PR评论创建失败（API限流或权限问题），但不影响软门禁流程: ${error.message}`);
-                // 软门禁：评论失败不应阻断流程
+                console.log(`PR comment creation failed (API rate limit or permission issue), but does not affect soft gates flow: ${error.message}`);
+                // Soft gates: comment failure should not block the flow
               }
             }
 
-      - name: 输出到GitHub Step Summary
+      - name: Output to GitHub Step Summary
         if: always()
         shell: bash
         run: |
-          # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
 
-          # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-## 📊 软门禁质量检查结果
-
-EOF
+          echo "## Soft Gates Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "logs/soft-gate-report.json" ]; then
-            # 提取关键信息
             overall_score=$(jq -r '.overallScore // 75' logs/soft-gate-report.json)
             total_gates=$(jq -r '.summary.totalGates // 0' logs/soft-gate-report.json)
             success_count=$(jq -r '.summary.successCount // 0' logs/soft-gate-report.json)
             warning_count=$(jq -r '.summary.warningCount // 0' logs/soft-gate-report.json)
             error_count=$(jq -r '.summary.errorCount // 0' logs/soft-gate-report.json)
             
-            echo "### 🎯 质量评分: ${overall_score}/100" >> $GITHUB_STEP_SUMMARY
+            echo "### Quality Score: ${overall_score}/100" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| 检查项目 | 数量 |" >> $GITHUB_STEP_SUMMARY
+            echo "| Check Item | Count |" >> $GITHUB_STEP_SUMMARY
             echo "|---------|------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 总检查数 | $total_gates |" >> $GITHUB_STEP_SUMMARY
-            echo "| 成功 | $success_count |" >> $GITHUB_STEP_SUMMARY
-            echo "| 警告 | $warning_count |" >> $GITHUB_STEP_SUMMARY
-            echo "| 错误 | $error_count |" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Checks | $total_gates |" >> $GITHUB_STEP_SUMMARY
+            echo "| Success | $success_count |" >> $GITHUB_STEP_SUMMARY
+            echo "| Warning | $warning_count |" >> $GITHUB_STEP_SUMMARY
+            echo "| Error | $error_count |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             
-            # 显示详细反馈
             if [ "$warning_count" -gt 0 ] || [ "$error_count" -gt 0 ]; then
-              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-### 📝 反馈详情
-
-EOF
-              
-              # 提取反馈信息
+              echo "### Feedback Details" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
               jq -r '.feedback[]?.message // empty' logs/soft-gate-report.json | while read -r feedback; do
                 echo "- $feedback" >> $GITHUB_STEP_SUMMARY
               done
+              echo "" >> $GITHUB_STEP_SUMMARY
             fi
             
-            # 显示改进建议
             recommendations=$(jq -r '.recommendations // [] | length' logs/soft-gate-report.json)
             if [ "$recommendations" -gt 0 ]; then
-              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-### 💡 改进建议
-
-EOF
-              
+              echo "### Improvement Suggestions" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
               jq -r '.recommendations[] // empty' logs/soft-gate-report.json | while read -r rec; do
                 echo "- $rec" >> $GITHUB_STEP_SUMMARY
               done
+              echo "" >> $GITHUB_STEP_SUMMARY
             fi
-            
           else
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-### ⚠️ 无法生成详细报告
-软门禁检查完成，但报告文件缺失。
-EOF
+            echo "### Unable to generate detailed report" >> $GITHUB_STEP_SUMMARY
+            echo "Soft gates check completed, but report file is missing." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Soft gates provide quality feedback but do not block merge - Based on ADR-0005 quality gates standards*" >> $GITHUB_STEP_SUMMARY
 
----
-*💡 软门禁提供质量反馈但不阻塞合并 - 基于ADR-0005质量门禁标准*
-EOF
-
-      - name: 软门禁永远成功
+      - name: Soft gates always succeed
         if: always()
         run: |
-          echo "✅ 软门禁检查完成"
-          echo "📊 质量评分已生成并通过中性状态反馈"
-          echo "🚀 软门禁不阻塞流程，构建继续"
+          echo "Soft gates check completed"
+          echo "Quality score generated and provided via neutral status feedback"
+          echo "Soft gates do not block process, build continues"
           exit 0
 
-# ==================== 并发控制 ====================
+# ==================== Concurrency Control ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
