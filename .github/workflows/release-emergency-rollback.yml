@@ -290,13 +290,13 @@ jobs:
 
           # 使用heredoc模式以确保Windows兼容UTF-8编码
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-## 🚨 紧急回滚执行报告
+          ## 🚨 紧急回滚执行报告
 
-**⚠️  这是一个紧急回滚操作**
+          **⚠️  这是一个紧急回滚操作**
 
-| 项目 | 值 |
-|------|-----|
-EOF
+          | 项目 | 值 |
+          |------|-----|
+          EOF
           echo "| 回滚原因 | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> $GITHUB_STEP_SUMMARY
