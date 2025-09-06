@@ -131,9 +131,10 @@ jobs:
           }
           EOF
             
-            # 合并到清单
+            # 合并到清单 - 安全读取JSON文件避免SC2086
+            data_content=$(cat temp_version.json)
             jq --arg version "${{ inputs.version }}" \
-               --argjson data "$(cat temp_version.json)" \
+               --argjson data "$data_content" \
                '.[$version] = $data' artifacts/manifest.json > temp_manifest.json
             mv temp_manifest.json artifacts/manifest.json
             rm temp_version.json
