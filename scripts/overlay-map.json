@@ -1,91 +1,207 @@
 {
   "metadata": {
-    "generated": "2025-09-04T04:59:55.065Z",
-    "totalFiles": 2,
-    "pattern": "docs/architecture/overlays/**/08/*.md",
-    "processedFiles": 2,
-    "totalKeywords": 15
+    "generatedAt": "2025-09-06T15:50:51.941Z"
   },
   "keywords": {
-    "prd-guild-manager": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
-      "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
-    ],
-    "guild-manager": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md",
-      "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
-    ],
-    "功": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "能": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "纵": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "切": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "功能纵切": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "公": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "会": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "管": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "理": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "器": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "公会管理器": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
-    ],
-    "acceptance": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
-    ],
-    "checklist": [
-      "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
-    ]
+    "公会管理器": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "功能纵切设计": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "prd-guild-manager": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "08-功能纵切-公会管理器.md": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "guild": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "公会": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "guild-manager": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "财务": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "finance": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "任务": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "权限": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "permission": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "角色": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "role": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "会长": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "guild-leader": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "副会长": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "vice-leader": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "长老": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "elder": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "管理员": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "admin": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "普通成员": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "regular-member": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "招募": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "recruit": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "审批": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "approve": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "踢出": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "kick": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "升职": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "promote": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "降职": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "demote": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "邀请": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "invite": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "申请": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "apply": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "退会": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "leave": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "转让": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "transfer": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "合并": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "merge": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "解散": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "disband": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "创建": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "create": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "活跃度": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "activity": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "贡献值": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "contribution": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "排行榜": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "ranking": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "历史": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "history": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "统计": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "stats": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "dashboard": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "仪表板": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "搜索": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "search": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "筛选": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "filter": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+    },
+    "acceptance_checklist.md": {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
+    }
   },
   "files": {
     "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md": {
-      "title": "08-功能纵切-公会管理器",
-      "prdId": "PRD-Guild-Manager",
-      "keywords": [
-        "prd-guild-manager",
-        "guild-manager",
-        "功",
-        "能",
-        "纵",
-        "切",
-        "功能纵切",
-        "公",
-        "会",
-        "管",
-        "理",
-        "器",
-        "公会管理器"
-      ],
       "frontMatter": {
-        "PRD-ID": "PRD-Guild-Manager",
-        "Title": "公会管理器 - 功能纵切设计",
-        "Status": "Active",
-        "Owner": "Architecture-Team",
-        "Created": "2024-12-01T00:00:00Z",
-        "Updated": "2025-08-26T00:00:00Z",
-        "Version": "v1.2.0",
-        "Priority": "High",
-        "Risk": "Medium",
-        "Depends-On": ["PRD-GM-BASE-ARCHITECTURE"],
-        "Arch-Refs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
         "ADRs": [
           "ADR-0001",
           "ADR-0002",
@@ -98,142 +214,28 @@
           "ADR-0009",
           "ADR-0010"
         ],
-        "Test-Refs": [
-          "tests/unit/guild-manager/guild-core.spec.ts",
-          "tests/unit/guild-manager/raid-system.spec.ts",
-          "tests/unit/guild-manager/member-management.spec.ts",
-          "tests/unit/guild-manager/world-generation.spec.ts",
-          "tests/e2e/guild-manager/full-workflow.spec.ts"
-        ],
-        "Monitors": [
-          "txn.guild-manager.primary",
-          "txn.guild-manager.raid-operations",
-          "txn.guild-manager.member-operations"
-        ],
-        "SLO-Refs": ["UI_P95_100ms", "EVENT_P95_50ms", "CRASH_FREE_99.5"],
-        "Release_Gates": {
-          "Quality_Gate": {
-            "enabled": true,
-            "threshold": "unit_test_coverage >= 80%",
-            "blockingFailures": ["test_failures", "coverage_below_threshold"],
-            "windowHours": 24
-          },
-          "Security_Gate": {
-            "enabled": true,
-            "threshold": "security_scan_passed == true",
-            "blockingFailures": [
-              "security_vulnerabilities",
-              "dependency_vulnerabilities"
-            ],
-            "windowHours": 12
-          },
-          "Performance_Gate": {
-            "enabled": true,
-            "threshold": "p95_response_time <= 100ms",
-            "blockingFailures": ["performance_regression", "memory_leaks"],
-            "windowHours": 6
-          },
-          "Acceptance_Gate": {
-            "enabled": true,
-            "threshold": "acceptance_criteria_met >= 95%",
-            "blockingFailures": [
-              "acceptance_test_failures",
-              "user_story_incomplete"
-            ],
-            "windowHours": 48
-          },
-          "API_Contract_Gate": {
-            "enabled": true,
-            "threshold": "api_contract_compliance >= 100%",
-            "blockingFailures": ["contract_violations", "breaking_changes"],
-            "windowHours": 12
-          },
-          "Sentry_Release_Health_Gate": {
-            "enabled": true,
-            "threshold": "crash_free_users >= 99.5% AND crash_free_sessions >= 99.9%",
-            "blockingFailures": [
-              "crash_free_threshold_violation",
-              "insufficient_adoption_data",
-              "release_health_regression"
-            ],
-            "windowHours": 24,
-            "params": {
-              "sloRef": "CRASH_FREE_99.5",
-              "thresholds": {
-                "crashFreeUsers": 99.5,
-                "crashFreeSessions": 99.9,
-                "minAdoptionPercent": 25,
-                "durationHours": 24
-              }
-            }
-          }
-        },
-        "Contract_Definitions": {
-          "types": [
-            "src/shared/contracts/guild/guild-core-types.ts",
-            "src/shared/contracts/guild/raid-system-types.ts",
-            "src/shared/contracts/guild/member-management-types.ts",
-            "src/shared/contracts/guild/world-generation-types.ts"
-          ],
-          "events": {
-            "specversion": "1.0",
-            "id": "guild-manager-core-events-4j8k9m2n",
-            "time": "2025-08-26T00:00:00.000Z",
-            "type": "com.guildmanager.core.event",
-            "source": "/guild-manager/core",
-            "subject": "guild-management-system",
-            "datacontenttype": "application/json",
-            "dataschema": "src/shared/contracts/guild/guild-manager-events.ts"
-          },
-          "interfaces": [
-            "src/shared/contracts/guild/guild-manager-interfaces.ts"
-          ],
-          "validation_rules": [
-            "src/shared/validation/guild-manager-validation.ts"
-          ]
-        },
-        "Security_Policies": {
-          "permissions": {
-            "read": ["guild-member", "guild-officer", "guild-master"],
-            "write": ["guild-officer", "guild-master"],
-            "admin": ["guild-master", "system-admin"]
-          },
-          "cspNotes": "Electron CSP: default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; connect-src 'self' https://api.${PRODUCT_DOMAIN}; style-src 'self' 'nonce-${NONCE_PLACEHOLDER}'; img-src 'self' data: https:; font-src 'self'"
-        },
-        "Traceability_Matrix": {
-          "requirementTags": [
-            "guild-management",
-            "user-experience",
-            "performance",
-            "game-mechanics"
-          ],
-          "acceptance": {
-            "functional": "功能需求100%实现",
-            "performance": "性能指标达到SLO要求",
-            "security": "安全要求完全满足",
-            "usability": "用户体验达到设计标准"
-          },
-          "evidence": {
-            "implementation": "源代码实现",
-            "testing": "自动化测试覆盖",
-            "documentation": "技术文档完备",
-            "validation": "用户验收确认"
-          }
-        }
+        "Arch-Refs": ["CH01", "CH03", "CH04", "CH05", "CH06"],
+        "PRD-ID": "PRD-Guild-Manager"
       },
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md"
+      "prdId": "PRD-Guild-Manager",
+      "accept": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md",
+      "anchors": {
+        "ui": "## 8.2 UI层设计",
+        "events": "## 8.3 事件系统设计",
+        "domain": "## 8.4 领域模型设计",
+        "persistence": "## 8.5 持久化层设计",
+        "acceptance": "## 8.7 验收标准"
+      }
     },
     "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md": {
-      "title": "ACCEPTANCE_CHECKLIST",
-      "prdId": "PRD-Guild-Manager",
-      "keywords": [
-        "prd-guild-manager",
-        "guild-manager",
-        "acceptance",
-        "checklist"
-      ],
-      "frontMatter": {},
-      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md"
+      "frontMatter": {
+        "ADRs": [],
+        "Arch-Refs": [],
+        "PRD-ID": ""
+      },
+      "prdId": "",
+      "accept": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md",
+      "anchors": {}
     }
   }
 }
