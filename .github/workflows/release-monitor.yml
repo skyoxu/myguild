@@ -87,7 +87,7 @@ jobs:
           if [ "$current_hour" -lt 6 ] || [ "$current_hour" -gt 22 ]; then
             if [ "${{ inputs.force_check }}" != "true" ]; then
               echo "🌙 非工作时间，跳过监控（设置 force_check=true 可强制执行）"
-              echo "should_monitor=false" >> $GITHUB_OUTPUT
+              echo "should_monitor=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
           fi
@@ -95,7 +95,7 @@ jobs:
           # 检查是否有活跃的渐进发布
           if [ ! -f "dist/latest.yml" ]; then
             echo "📄 Feed 文件不存在，跳过监控"
-            echo "should_monitor=false" >> $GITHUB_OUTPUT
+            echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -103,13 +103,13 @@ jobs:
           staging_pct=$(grep -E '^stagingPercentage:' dist/latest.yml | sed 's/stagingPercentage: *//' || echo "0")
           if [ "$staging_pct" = "0" ] || [ "$staging_pct" = "100" ]; then
             echo "📊 当前分阶段发布为 ${staging_pct}%，跳过监控"
-            echo "should_monitor=false" >> $GITHUB_OUTPUT
+            echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "✅ 满足监控条件，开始健康检查"
-          echo "should_monitor=true" >> $GITHUB_OUTPUT
-          echo "staging_percentage=$staging_pct" >> $GITHUB_OUTPUT
+          echo "should_monitor=true" >> "$GITHUB_OUTPUT"
+          echo "staging_percentage=$staging_pct" >> "$GITHUB_OUTPUT"
 
       - name: '🏥 Continuous health monitoring'
         id: health_monitor
@@ -119,7 +119,7 @@ jobs:
         run: |
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "⚠️  SENTRY_AUTH_TOKEN 未配置，跳过健康监控"
-            echo "monitor_status=skipped" >> $GITHUB_OUTPUT
+            echo "monitor_status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -132,8 +132,8 @@ jobs:
           health_exit_code=$?
           set -e
 
-          echo "health_result=$health_result" >> $GITHUB_OUTPUT
-          echo "health_exit_code=$health_exit_code" >> $GITHUB_OUTPUT
+          echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
+          echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
 
           echo "📊 健康监控结果:"
           echo "$health_result" | jq '.'
@@ -141,11 +141,11 @@ jobs:
           case $health_exit_code in
             0)
               echo "✅ 持续健康监控：指标正常"
-              echo "monitor_status=healthy" >> $GITHUB_OUTPUT
+              echo "monitor_status=healthy" >> "$GITHUB_OUTPUT"
               ;;
             42)
               echo "🚨 持续健康监控：检测到健康问题"
-              echo "monitor_status=unhealthy" >> $GITHUB_OUTPUT
+              echo "monitor_status=unhealthy" >> "$GITHUB_OUTPUT"
               
               # 触发紧急回滚工作流
               echo "🚨 触发紧急回滚..."
@@ -163,7 +163,7 @@ jobs:
               ;;
             *)
               echo "⚠️  健康监控遇到错误 (退出码: $health_exit_code)"
-              echo "monitor_status=error" >> $GITHUB_OUTPUT
+              echo "monitor_status=error" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -240,13 +240,15 @@ jobs:
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 📊 发布监控报告" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**监控时间**: $(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_STEP_SUMMARY
-          echo "**应用版本**: \`$APP_VERSION\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 📊 发布监控报告"
+            echo ""
+            echo "**监控时间**: $(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+            echo "**应用版本**: \`$APP_VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.conditions.outputs.should_monitor }}" = "true" ]; then
-            echo "**分阶段发布**: ${{ steps.conditions.outputs.staging_percentage }}%" >> $GITHUB_STEP_SUMMARY
+            echo "**分阶段发布**: ${{ steps.conditions.outputs.staging_percentage }}%" >> "$GITHUB_STEP_SUMMARY"
             
             status="${{ steps.health_monitor.outputs.monitor_status }}"
             case "$status" in
@@ -257,18 +259,22 @@ jobs:
               *) status_icon="❓"; status_text="未知" ;;
             esac
             
-            echo "**健康状态**: $status_icon $status_text" >> $GITHUB_STEP_SUMMARY
+            echo "**健康状态**: $status_icon $status_text" >> "$GITHUB_STEP_SUMMARY"
             
             if [ -n "${{ steps.health_monitor.outputs.health_result }}" ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "### 📊 健康数据" >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-              echo '${{ steps.health_monitor.outputs.health_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              {
+                echo ""
+                echo "### 📊 健康数据"
+                echo "\`\`\`json"
+                echo '${{ steps.health_monitor.outputs.health_result }}' | jq '.'
+                echo "\`\`\`"
+              } >> "$GITHUB_STEP_SUMMARY"
             fi
           else
-            echo "**监控状态**: ⏭️ 跳过 (条件不满足)" >> $GITHUB_STEP_SUMMARY
+            echo "**监控状态**: ⏭️ 跳过 (条件不满足)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**下次检查**: $(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo ""
+            echo "**下次检查**: $(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -99,7 +99,7 @@ jobs:
             warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
             
             # 使用heredoc模式以确保Windows兼容UTF-8编码
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 ## 🔍 可观测性配置验证结果
 
 ### 📈 验证摘要

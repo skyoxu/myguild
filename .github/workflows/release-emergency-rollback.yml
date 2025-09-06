@@ -289,7 +289,7 @@ jobs:
           export LC_ALL=C.UTF-8
 
           # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ## 🚨 紧急回滚执行报告
 
 **⚠️  这是一个紧急回滚操作**
@@ -305,28 +305,28 @@ EOF
 
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 📊 批量回滚结果
 ```json
 EOF
             echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
 EOF
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 📊 回滚结果
 ```json
 EOF
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
 EOF
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 🎯 后续操作建议
 1. 🔍 **立即调查** 导致回滚的根本原因
@@ -337,7 +337,7 @@ EOF
 EOF
 
           if [ "${{ inputs.triggered_by }}" = "monitor" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ⚡ **注意**: 此回滚由自动监控系统触发
 EOF

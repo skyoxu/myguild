@@ -57,7 +57,7 @@ jobs:
       - name: 🎯 Windows CI状态聚合成功
         shell: bash
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
           ## 🛡️ PR守门员检查完成
 
           ### ✅ Windows CI核心作业状态
