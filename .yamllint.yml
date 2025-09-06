@@ -1,0 +1,50 @@
+# YAML Lint配置文件 - P2优化工作流验证支持
+
+extends: default
+
+# 针对GitHub Actions工作流的优化规则
+rules:
+  # 行长度适配GitHub Actions较长的表达式
+  line-length:
+    max: 120
+    level: warning
+
+  # 缩进规则适配GitHub Actions YAML结构
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # 允许重复键（GitHub Actions中常见）
+  key-duplicates:
+    forbid-duplicated-merge-keys: true
+
+  # 注释规则放宽（便于中文注释）
+  comments:
+    min-spaces-from-content: 1
+
+  # 文档开始标记不强制要求
+  document-start: disable
+
+  # 空行规则适配GitHub Actions格式
+  empty-lines:
+    max: 2
+    max-start: 1
+    max-end: 1
+
+  # 字符串引号规则（GitHub Actions表达式需要双引号）
+  quoted-strings:
+    quote-type: any
+    required: only-when-needed
+
+  # 真值规则适配GitHub Actions
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+    check-keys: false # GitHub Actions键名可能包含true/false
+
+# 忽略特定文件/目录
+ignore: |
+  node_modules/
+  .git/
+  dist/
+  build/

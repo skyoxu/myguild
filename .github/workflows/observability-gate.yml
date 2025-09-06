@@ -72,6 +72,7 @@ jobs:
 
       - name: 输出验证摘要
         if: always()
+        shell: bash
         run: |
           # 确保UTF-8编码输出
           export LANG=C.UTF-8

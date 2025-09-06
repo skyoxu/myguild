@@ -1,0 +1,89 @@
+name: PR Status Gatekeeper - Windows CI守护
+
+# 专注Windows CI环境的分支保护守门员
+# 聚合所有关键作业状态，简化分支保护规则管理
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+env:
+  # 守门员轻量级运行环境
+  GATEKEEPER_TIMEOUT: 5
+
+permissions:
+  contents: read
+  actions: read
+
+# ==================== 并发控制 ====================
+concurrency:
+  group: gatekeeper-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==================== 状态检查聚合器 ====================
+  # 此工作流作为"守门员"，等待其他工作流中的关键作业完成
+  # GitHub Actions会自动检测同一PR触发的其他工作流状态
+
+  windows-ci-gatekeeper:
+    name: Windows CI Status Check
+    runs-on: ubuntu-latest # 轻量级检查使用便宜runner
+    timeout-minutes: 30 # 给其他工作流充足完成时间
+
+    # 跳过草稿PR以优化性能
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 检出代码（用于状态检查）
+        uses: actions/checkout@v4
+
+      - name: ⏳ 等待关键Windows CI工作流完成
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: Build and Test # build-and-test.yml中的作业名
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
+      - name: ⏳ 等待安全统一检查完成
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: security-gate # security-unified.yml中的作业名
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
+      - name: 🎯 Windows CI状态聚合成功
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 🛡️ PR守门员检查完成
+
+          ### ✅ Windows CI核心作业状态
+          - **构建测试**: ✅ 通过 (build-and-test.yml)
+          - **安全统一**: ✅ 通过 (security-unified.yml)
+
+          ### 📊 检查摘要
+          - **环境**: Windows-focused CI
+          - **状态**: 所有关键检查已通过
+          - **时间**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **优化**: P2阶段 - 分支保护规则简化
+
+          ---
+          *此检查聚合了所有必需的Windows CI作业状态，可作为分支保护的单一检查点*
+          EOF
+
+  # ==================== 可选增强检查 ====================
+  workflow-health-check:
+    name: Workflow Health Check
+    runs-on: ubuntu-latest # 轻量级检查可用更便宜的runner
+    timeout-minutes: 2
+
+    steps:
+      - name: 📋 守门员健康检查
+        run: |
+          echo "## 🔍 Gatekeeper健康状态" >> $GITHUB_STEP_SUMMARY
+          echo "- 工作流版本: v1.0" >> $GITHUB_STEP_SUMMARY
+          echo "- 检查时间: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- 优化状态: P2阶段完成" >> $GITHUB_STEP_SUMMARY

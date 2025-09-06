@@ -20,7 +20,9 @@
       "Bash(npm run test:*)",
       "Bash(npm test)",
       "Bash(gh repo view:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__zen-mcp-server__chat",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": [],

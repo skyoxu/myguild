@@ -4,6 +4,19 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main, master, develop]
+    # P2优化：只在影响性能的代码变更时触发
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pr-performance-check.yml'
+    # 排除纯文档变更
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/validate-workflows.yml'
 
   # 允许手动触发
   workflow_dispatch:
@@ -141,12 +154,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: performance-data
+          name: performance-data-${{ github.run_number }}
           path: |
             data/web-vitals/
             logs/performance/
             dist/
-          retention-days: 30
+          # P2优化：性能数据短期保留，节省存储成本
+          retention-days: 7
 
       - name: Performance gate check
         run: |
@@ -206,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: web-vitals-results
+          name: web-vitals-results-${{ github.run_number }}
           path: data/web-vitals/
           retention-days: 7
 
