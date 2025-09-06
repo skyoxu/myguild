@@ -258,6 +258,7 @@ jobs:
 
       - name: ⚠️ Release Health Gate跳过（缺少secrets）
         if: ${{ !secrets.SENTRY_AUTH_TOKEN }}
+        shell: bash
         run: |
           echo "⚠️ SENTRY_AUTH_TOKEN未配置，跳过发布健康度检查"
           echo "💡 在生产环境中请配置Sentry认证令牌以启用完整的发布健康度验证"
@@ -458,6 +459,7 @@ jobs:
 
       - name: 🔍 验证构建产物
         if: steps.changed-files.outputs.any_changed == 'true'
+        shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
             dir dist\
@@ -471,6 +473,7 @@ jobs:
 
       - name: 📦 Electron打包测试 (Windows专注)
         if: steps.changed-files.outputs.any_changed == 'true'
+        shell: bash
         run: |
           # TODO: 配置Electron Builder后启用
           echo "Electron打包测试 - 待配置完善"
@@ -504,6 +507,7 @@ jobs:
           args: --severity-threshold=high
 
       - name: 📊 License合规检查
+        shell: bash
         run: |
           npx license-checker --summary
           # TODO: 配置许可证白名单检查
@@ -571,11 +575,13 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: ⚡ 事件循环延迟基准
+        shell: bash
         run: |
           node scripts/benchmarks/event-loop-latency.ts
           # TODO: 配置性能回归阈值检查
 
       - name: 📊 性能指标收集
+        shell: bash
         run: |
           # TODO: 集成性能监控指标收集
           echo "性能指标收集 - 待完善"
@@ -598,6 +604,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: ✅ 所有检查通过
+        shell: bash
         run: |
           echo "🎉 所有质量门禁检查通过！"
           echo "✅ 代码质量检查: 通过"
@@ -610,6 +617,7 @@ jobs:
           echo "🚀 项目已就绪，可以部署！"
 
       - name: 📊 生成部署清单
+        shell: bash
         run: |
           echo "部署清单 - $(date)" > deployment-checklist.md
           echo "- [x] 代码质量检查" >> deployment-checklist.md
