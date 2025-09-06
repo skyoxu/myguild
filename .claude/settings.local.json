@@ -27,7 +27,9 @@
       "Bash(do echo \"=== $file ===\")",
       "Bash(grep:*)",
       "Bash(done)",
-      "Read(//c//**)"
+      "Read(//c//**)",
+      "Bash(git checkout:*)",
+      "Bash(npm run format:*)"
     ],
     "deny": [],
     "ask": [],
