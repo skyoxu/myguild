@@ -104,27 +104,25 @@ runs:
           
           if [ "$i" -eq 1 ]; then
             # First attempt: standard installation, 8-minute timeout
-            if run_with_timeout 480 npm ci --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 480 npm ci 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           elif [ "$i" -eq 2 ]; then
             # Second attempt: increased timeout and network optimization
             echo "Increasing timeout for large dependency packages..."
-            if run_with_timeout 720 npm ci --maxsockets=5 --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 720 npm ci --maxsockets=5 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           elif [ "$i" -eq 3 ]; then
             # Third attempt: serial installation mode
             echo "Using serial installation mode (prevent network congestion)..."
-            if run_with_timeout 900 npm ci --maxsockets=1 --no-optional 2>&1 | tee npm_install.log; then
+            if run_with_timeout 900 npm ci --maxsockets=1 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           else
-            # Final attempt: complete reinstallation
-            echo "Cleaning all caches and files, reinstalling..."
-            rm -rf node_modules package-lock.json 2>/dev/null || true
-            npm cache clean --force 2>/dev/null || true
-            if run_with_timeout 900 npm install --no-optional 2>&1 | tee npm_install.log; then
+            # Final attempt: extended timeout (npm ci, no lock changes)
+            echo "Final attempt with extended timeout (npm ci, no lock changes)..."
+            if run_with_timeout 900 npm ci 2>&1 | tee npm_install.log; then
               install_success=true
             fi
           fi
@@ -150,6 +148,18 @@ runs:
                 verification_errors=$((verification_errors + 1))
               fi
             done
+            
+            # Verify rollup native platform package on Linux x64
+            if [ "$(uname -s)" = "Linux" ] && [ "$(uname -m)" = "x86_64" ]; then
+              echo "Verifying Rollup native platform package for Linux x64..."
+              if node -e "require('@rollup/rollup-linux-x64-gnu'); console.log('rollup native ok')" 2>/dev/null; then
+                echo "SUCCESS: @rollup/rollup-linux-x64-gnu platform package verified"
+              else
+                echo "ERROR: missing @rollup/rollup-linux-x64-gnu platform package"
+                echo "This indicates optionalDependencies installation failure"
+                verification_errors=$((verification_errors + 1))
+              fi
+            fi
             
             # Cross-platform node_modules structure verification
             if [ -d "node_modules" ] && [ -d "node_modules/.bin" ]; then
