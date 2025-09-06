@@ -66,8 +66,13 @@ jobs:
       # 若 overlay-map 可自动生成，先重建并强制“已提交一致”
       - run: node scripts/build-overlay-map.mjs
       - name: ensure overlay-map committed
+        shell: bash
         run: |
-          git diff --exit-code scripts/overlay-map.json || (echo "overlay-map.json changed; please commit." && exit 1)
+          set -euo pipefail
+          git diff --exit-code scripts/overlay-map.json || {
+            echo "overlay-map.json changed; please commit."
+            exit 1
+          }
 
       # 富化任务 & 结构/引用校验（Ajv + 自定义校验）
       - run: node scripts/enrich-tasks.mjs --tasks .taskmaster/tasks/tasks.json --map scripts/overlay-map.json
