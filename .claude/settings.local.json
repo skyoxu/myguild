@@ -29,12 +29,17 @@
       "Bash(done)",
       "Read(//c//**)",
       "Bash(git checkout:*)",
-      "Bash(npm run format:*)"
+      "Bash(npm run format:*)",
+      "Bash(gh api:*)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["C:\\c\\buildgame"]
+    "additionalDirectories": [
+      "C:\\c\\buildgame"
+    ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["zen"]
+  "enabledMcpjsonServers": [
+    "zen"
+  ]
 }

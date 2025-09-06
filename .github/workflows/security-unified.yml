@@ -12,18 +12,22 @@ on:
     paths:
       - 'src/**'
       - 'electron/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'scripts/security-gate-wrapper.js'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
       - '.github/workflows/security-unified.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'src/**'
       - 'electron/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'scripts/security-gate-wrapper.js'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
 
   # 支持手动触发
   workflow_dispatch:

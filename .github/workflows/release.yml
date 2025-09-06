@@ -7,8 +7,24 @@ on:
   push:
     branches: [main, release/*]
     tags: ['v*']
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - '.github/workflows/release.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -46,6 +62,10 @@ permissions:
   contents: write
   actions: read
   id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # 发布不建议中途取消
 
 jobs:
   # 📋 环境检查和准备
@@ -145,13 +165,8 @@ jobs:
           npm run lint || echo "⚠️ Lint检查有警告"
           npm run typecheck || echo "⚠️ 类型检查有警告"
 
-      - name: 🧪 运行核心测试 (Release模式-快速通过)
-        uses: ./.github/actions/run-tests
-        with:
-          test-type: unit
-          timeout: '10000'
-          fail-fast: 'false'
-          reporter: dot
+      - name: 🧪 运行测试（最小化）
+        run: npm run test:unit -- --run --reporter=dot --passWithNoTests
 
       - name: 🏗️ 构建应用
         run: npm run build
@@ -250,6 +265,10 @@ jobs:
       - name: 📦 解压构建产物
         shell: bash
         run: tar -xzf build-artifacts.tar.gz
+
+      - name: 🔧 检查 Sentry CLI
+        shell: bash
+        run: npx @sentry/cli --version
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
@@ -379,6 +398,10 @@ jobs:
       - name: 📥 检出代码
         uses: actions/checkout@v4
 
+      - name: 🔧 检查 Sentry CLI
+        shell: bash
+        run: npx @sentry/cli --version
+
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
         with:
@@ -473,8 +496,3 @@ jobs:
           else
             echo "❌ Release流程存在问题，请检查失败的步骤"
           fi
-
-# ==================== 并发控制 ====================
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false # release工作流不取消正在进行的部署

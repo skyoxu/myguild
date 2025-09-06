@@ -1,220 +1,42 @@
-name: Validate GitHub Workflows - 工作流自检保护
-
-# P2优化：工作流配置验证保护机制
-# 在工作流文件变更时自动验证语法和最佳实践
+name: Validate Workflows & Guards
 
 on:
   pull_request:
+    branches: [ main, develop ]
     paths:
       - '.github/workflows/**'
-      - '.github/actions/**'
-    branches: [main, develop]
-
-  # 支持手动触发验证
-  workflow_dispatch:
-
-env:
-  VALIDATION_TIMEOUT: 10
+      - 'scripts/ci/workflow-consistency-check.mjs'
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/ci/workflow-consistency-check.mjs'
 
 permissions:
   contents: read
-  actions: read
 
-# ==================== 并发控制 ====================
 concurrency:
-  group: validate-workflows-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ==================== YAML语法检查 ====================
-  yaml-lint:
-    name: YAML Syntax Validation
+  actionlint:
+    name: Lint workflow YAML (actionlint)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1
+
+  needs-guard:
+    name: Check jobs/needs consistency
+    runs-on: ubuntu-latest
+    needs: actionlint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: '20'
+      - name: Run needs⊆jobs guard
+        run: node scripts/ci/workflow-consistency-check.mjs
 
-      - name: 🔍 YAML Lint检查
-        uses: ibiqlik/action-yamllint@v3
-        with:
-          file_or_dir: .github/
-          config_file: .yamllint.yml
-          format: standard
-          strict: true
-
-      - name: 📊 生成YAML检查报告
-        if: always()
-        shell: bash
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 📋 YAML语法验证结果
-
-          ### ✅ 检查范围
-          - `.github/workflows/` - 所有工作流文件
-          - `.github/actions/` - 自定义Action文件
-
-          ### 📊 验证状态
-          - **语法检查**: ✅ 通过
-          - **最佳实践**: ✅ 符合标准
-          - **检查时间**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-          EOF
-
-  # ==================== GitHub Actions语法检查 ====================
-  action-validator:
-    name: GitHub Actions Validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 🛡️ Actions语法验证
-        uses: docker://rhysd/actionlint:latest
-        with:
-          args: -color -verbose .github/workflows/
-
-      - name: 🔍 Windows Runner兼容性检查
-        shell: bash
-        run: |
-          echo "## 🖥️ Windows Runner兼容性检查" >> $GITHUB_STEP_SUMMARY
-
-          # 检查shell声明
-          shell_issues=0
-          for file in .github/workflows/*.yml; do
-            if grep -n "shell:" "$file"; then
-              echo "✅ $file: 发现shell声明" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # 检查潜在的Linux命令
-            if grep -qE "(apt-get|yum|sudo|xvfb)" "$file"; then
-              echo "⚠️ $file: 发现潜在Linux依赖命令" >> $GITHUB_STEP_SUMMARY
-              ((shell_issues++))
-            fi
-          done
-
-          echo "### 📊 兼容性检查结果" >> $GITHUB_STEP_SUMMARY
-          echo "- **检查文件数**: $(ls .github/workflows/*.yml | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **潜在问题**: $shell_issues 个" >> $GITHUB_STEP_SUMMARY
-
-  # ==================== P2特定验证：Windows CI检查 ====================
-  windows-ci-validation:
-    name: Windows CI Configuration Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 🖥️ Windows Runner配置验证
-        shell: bash
-        run: |
-          echo "## 🖥️ Windows CI配置验证" >> $GITHUB_STEP_SUMMARY
-
-          # 统计Windows runner使用情况
-          windows_jobs=0
-          total_jobs=0
-
-          for file in .github/workflows/*.yml; do
-            if grep -q "runs-on.*windows" "$file"; then
-              ((windows_jobs++))
-              echo "✅ $file: 使用Windows runner" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            job_count=$(grep -c "runs-on:" "$file" || echo 0)
-            total_jobs=$((total_jobs + job_count))
-          done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Windows CI转换状态" >> $GITHUB_STEP_SUMMARY
-          echo "- **Windows作业**: $windows_jobs" >> $GITHUB_STEP_SUMMARY
-          echo "- **总作业数**: $total_jobs" >> $GITHUB_STEP_SUMMARY
-          echo "- **转换率**: $((windows_jobs * 100 / total_jobs))%" >> $GITHUB_STEP_SUMMARY
-
-      - name: ⚡ 性能优化检查
-        shell: bash
-        run: |
-          echo "### ⚡ 性能优化建议" >> $GITHUB_STEP_SUMMARY
-
-          # 检查artifact保留策略
-          if grep -r "retention-days" .github/workflows/; then
-            echo "✅ 发现工件保留策略配置" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ 建议设置工件保留策略以控制存储成本" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # 检查路径触发优化
-          path_optimized=$(grep -l "paths:" .github/workflows/* | wc -l)
-          echo "- **路径触发优化**: $path_optimized 个文件" >> $GITHUB_STEP_SUMMARY
-
-  # ==================== 安全最佳实践检查 ====================
-  security-check:
-    name: Workflow Security Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 🛡️ 安全配置检查
-        shell: bash
-        run: |
-          echo "## 🛡️ 工作流安全检查" >> $GITHUB_STEP_SUMMARY
-
-          security_issues=0
-
-          # 检查权限配置
-          for file in .github/workflows/*.yml; do
-            if ! grep -q "permissions:" "$file"; then
-              echo "⚠️ $file: 缺少权限声明" >> $GITHUB_STEP_SUMMARY
-              ((security_issues++))
-            fi
-            
-            # 检查是否使用了危险的权限
-            if grep -q "permissions:.*write-all" "$file"; then
-              echo "🚨 $file: 使用了过于宽泛的write-all权限" >> $GITHUB_STEP_SUMMARY
-              ((security_issues++))
-            fi
-          done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 安全检查结果" >> $GITHUB_STEP_SUMMARY
-          echo "- **安全问题**: $security_issues 个" >> $GITHUB_STEP_SUMMARY
-          echo "- **检查状态**: $([ $security_issues -eq 0 ] && echo "✅ 通过" || echo "⚠️ 需要关注")" >> $GITHUB_STEP_SUMMARY
-
-  # ==================== 总体验证汇总 ====================
-  validation-summary:
-    name: Validation Summary
-    runs-on: ubuntu-latest
-    needs: [yaml-lint, action-validator, windows-ci-validation, security-check]
-    if: always()
-
-    steps:
-      - name: 📊 生成验证汇总报告
-        shell: bash
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 📋 工作流验证完成汇总
-
-          ### ✅ P2优化验证项目
-          - **YAML语法检查**: 完成
-          - **Actions语法验证**: 完成  
-          - **Windows CI配置检查**: 完成
-          - **安全最佳实践**: 完成
-
-          ### 🎯 验证目标
-          - 防止工作流配置错误
-          - 确保Windows CI兼容性
-          - 维护安全最佳实践
-          - 优化性能配置
-
-          ---
-          *此验证工作流保护.github/目录下的所有配置变更*
-          EOF

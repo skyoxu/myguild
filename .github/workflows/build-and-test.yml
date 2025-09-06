@@ -7,9 +7,10 @@ on:
       - 'src/**'
       - 'electron/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
       - 'vite.config.ts'
       - '.github/workflows/build-and-test.yml'
       - '.github/actions/**'
@@ -19,9 +20,10 @@ on:
       - 'src/**'
       - 'electron/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
       - 'vite.config.ts'
       - '.github/workflows/build-and-test.yml'
       - '.github/actions/**'
@@ -75,6 +77,33 @@ jobs:
           ./node_modules/.bin/eslint -v || npx --yes eslint -v
           echo "✅ 工具链设置验证完成"
 
+      # 仅对改动文件执行 0 warning 门禁（禁止新增告警）
+      - name: 📁 获取改动文件
+        id: changed
+        uses: tj-actions/changed-files@v45
+        with:
+          separator: ' '
+
+      - name: 🚫 改动文件门禁 (0 warnings)
+        if: ${{ steps.changed.outputs.any_changed == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 过滤出受影响的源码/脚本文件
+          echo "${{ steps.changed.outputs.all_changed_files }}" | tr ' ' '\n' \
+            | grep -E '\.(ts|tsx|js|jsx)$' > changed.txt || true
+          if [ ! -s changed.txt ]; then
+            echo "No relevant changed files for lint gate."
+            exit 0
+          fi
+          export PATH="$(npm bin):$PATH"
+          echo "Lint on changed files:"
+          cat changed.txt
+          # 0 warning 严格门禁（只针对改动文件）
+          npx eslint $(cat changed.txt) --max-warnings 0
+          # 同时做 Prettier 严格检查（不写入）
+          npx prettier --check $(cat changed.txt)
+
       - name: 🎨 Prettier 格式检查
         shell: bash
         run: |
@@ -84,6 +113,11 @@ jobs:
 
       - name: 🔍 ESLint 检查
         run: npm run lint
+
+      - name: 🚨 ESLint 基线门禁
+        run: npm run lint:baseline
+        env:
+          ESLINT_MAX_WARNINGS: 50
 
       - name: 🏗️ TypeScript 编译检查
         run: npx tsc --noEmit
@@ -153,5 +187,5 @@ jobs:
           path: |
             test-results/
             playwright-report/
-          # P2优化：PR构建使用短保留期，release构建使用长保留期
-          retention-days: ${{ github.event_name == 'pull_request' && 5 || 14 }}
+          # P2标准化：测试报告常规保留期7天，PR构建5天
+          retention-days: ${{ github.event_name == 'pull_request' && 7 || 14 }}

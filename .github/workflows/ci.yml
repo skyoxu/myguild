@@ -41,6 +41,10 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ==================== 守护自检 ====================
   workflow-guardian:
@@ -549,7 +553,7 @@ jobs:
         with:
           name: observability-report
           path: reports/
-          retention-days: 7
+          retention-days: 14
 
   # ==================== 性能基准测试 ====================
   performance-benchmarks:
@@ -630,9 +634,4 @@ jobs:
         with:
           name: deployment-checklist
           path: deployment-checklist.md
-          retention-days: 90
-
-# ==================== 并发控制 ====================
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+          retention-days: 30
