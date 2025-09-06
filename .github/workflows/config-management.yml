@@ -163,7 +163,7 @@ jobs:
 
           # 4. 验证替换结果
           echo "✅ 验证文档处理结果..."
-          find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while read file; do
+          find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while IFS= read -r file; do
             echo "⚠️ $file 仍包含未处理占位符:"
             grep -n "\${" "$file" || true
           done

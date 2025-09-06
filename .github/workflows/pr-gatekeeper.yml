@@ -84,7 +84,9 @@ jobs:
       - name: 📋 守门员健康检查
         shell: bash
         run: |
-          echo "## 🔍 Gatekeeper健康状态" >> $GITHUB_STEP_SUMMARY
-          echo "- 工作流版本: v1.0" >> $GITHUB_STEP_SUMMARY
-          echo "- 检查时间: $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- 优化状态: P2阶段完成" >> $GITHUB_STEP_SUMMARY
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ## 🔍 Gatekeeper健康状态
+          - 工作流版本: v1.0
+          - 检查时间: $(date -u)
+          - 优化状态: P2阶段完成
+          EOF

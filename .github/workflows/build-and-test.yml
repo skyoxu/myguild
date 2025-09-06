@@ -169,7 +169,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
           ## 📈 Performance Gates (Windows)
           - User Timing: 已执行并门禁化
           - 帧率稳定/场景切换: 已执行并门禁化
@@ -180,7 +180,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
           ## ✅ Quality Gates (Windows)
           - Lint/Typecheck: 已执行（含改动文件 0 warning 门禁）
           - Coverage Gate: 全局 ≥ 90%（若低于已阻断）

@@ -207,33 +207,40 @@ jobs:
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 📦 发布准备完成" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| 版本 | \`${{ inputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 应用文件 | \`${{ inputs.artifact_path }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 创建 Feed 文件 | ${{ inputs.create_feeds && '✅ 是' || '❌ 否' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 📦 发布准备完成"
+            echo ""
+            echo "| 项目 | 值 |"
+            echo "|------|-----|"
+            echo "| 版本 | \`${{ inputs.version }}\` |"
+            echo "| 应用文件 | \`${{ inputs.artifact_path }}\` |"
+            echo "| 创建 Feed 文件 | ${{ inputs.create_feeds && '✅ 是' || '❌ 否' }} |"
+            echo ""
+            echo "### 📋 版本清单状态"
+            echo "\`\`\`json"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "### 📋 版本清单状态" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          node scripts/release/manage-manifest.mjs list | jq '.' >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          node scripts/release/manage-manifest.mjs list | jq '.' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 📄 创建的 Feed 文件" >> $GITHUB_STEP_SUMMARY
-            echo "- \`dist/latest.yml\` (Windows)" >> $GITHUB_STEP_SUMMARY
-            echo "- \`dist/latest-mac.yml\` (macOS)" >> $GITHUB_STEP_SUMMARY  
-            echo "- \`dist/latest-linux.yml\` (Linux)" >> $GITHUB_STEP_SUMMARY
+            {
+              echo ""
+              echo "### 📄 创建的 Feed 文件"
+              echo "- \`dist/latest.yml\` (Windows)"
+              echo "- \`dist/latest-mac.yml\` (macOS)"  
+              echo "- \`dist/latest-linux.yml\` (Linux)"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 下一步" >> $GITHUB_STEP_SUMMARY
-          echo "1. 运行 **Release Ramp** 工作流开始渐进发布" >> $GITHUB_STEP_SUMMARY
-          echo "2. 从 5% → 25% → 50% → 100% 逐步放量" >> $GITHUB_STEP_SUMMARY
-          echo "3. 每个阶段都会自动进行健康度检查" >> $GITHUB_STEP_SUMMARY
+          {
+            echo ""
+            echo "### 🎯 下一步"
+            echo "1. 运行 **Release Ramp** 工作流开始渐进发布"
+            echo "2. 从 5% → 25% → 50% → 100% 逐步放量"
+            echo "3. 每个阶段都会自动进行健康度检查"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: '💾 Commit changes'
         run: |

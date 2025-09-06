@@ -12,11 +12,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/pr-performance-check.yml'
-    # 排除纯文档变更
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.github/workflows/validate-workflows.yml'
+      - '!docs/**'
+      - '!**.md'
+      - '!.github/workflows/validate-workflows.yml'
 
   # 允许手动触发
   workflow_dispatch:
