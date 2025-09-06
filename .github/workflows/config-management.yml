@@ -141,6 +141,7 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 处理文档占位符
+        shell: bash
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -168,6 +169,7 @@ jobs:
           done
 
       - name: 构建产物检查
+        shell: bash
         run: |
           echo "🔍 检查构建产物..."
           ls -la dist/ || echo "dist/ 目录不存在"
