@@ -67,7 +67,20 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 安装jq工具
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: 安装静态安全扫描工具
         run: |
@@ -354,43 +367,61 @@ jobs:
           retention-days: 30
 
       - name: 安全门禁结果摘要
+        shell: bash
         run: |
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 🔒 统一安全门禁结果" >> $GITHUB_STEP_SUMMARY
 
-          echo "### 📊 检查摘要" >> $GITHUB_STEP_SUMMARY
-          echo "| 检查项目 | 状态 | 结果 |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|------|------|" >> $GITHUB_STEP_SUMMARY
+          # 使用heredoc模式以确保Windows兼容UTF-8编码
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+## 🔒 统一安全门禁结果
+
+### 📊 检查摘要
+| 检查项目 | 状态 | 结果 |
+|---------|------|------|
+EOF
           echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${{ needs.security-scan.outputs.critical-count }}, High: ${{ needs.security-scan.outputs.high-count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E安全测试 | ${{ needs.e2e-security-test.outputs.e2e-status }} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |" >> $GITHUB_STEP_SUMMARY
 
           # ADR-0002 强制硬失败决策（Critical=0, High≤3）
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
-            echo "### ❌ 安全门禁硬失败" >> $GITHUB_STEP_SUMMARY
-            echo "**ADR-0002违反**: 静态安全扫描未通过基线要求" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### ❌ 安全门禁硬失败
+**ADR-0002违反**: 静态安全扫描未通过基线要求
+EOF
             echo "- Critical安全问题: ${{ needs.security-scan.outputs.critical-count }}个（要求: 0个）" >> $GITHUB_STEP_SUMMARY
             echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个（要求: ≤3个）" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🚨 **此PR被硬性阻止合并，必须修复所有安全问题**" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+🚨 **此PR被硬性阻止合并，必须修复所有安全问题**
+EOF
             exit 1
           elif [ "${{ needs.e2e-security-test.outputs.e2e-status }}" = "failed" ]; then
-            echo "### ❌ 安全门禁硬失败" >> $GITHUB_STEP_SUMMARY
-            echo "**ADR-0002违反**: E2E安全测试失败" >> $GITHUB_STEP_SUMMARY
-            echo "请检查Electron安全配置：" >> $GITHUB_STEP_SUMMARY
-            echo "- nodeIntegration=false ✓" >> $GITHUB_STEP_SUMMARY
-            echo "- contextIsolation=true ✓" >> $GITHUB_STEP_SUMMARY
-            echo "- sandbox=true ✓" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🚨 **此PR被硬性阻止合并，必须修复Electron安全配置**" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### ❌ 安全门禁硬失败
+**ADR-0002违反**: E2E安全测试失败
+请检查Electron安全配置：
+- nodeIntegration=false ✓
+- contextIsolation=true ✓
+- sandbox=true ✓
+
+🚨 **此PR被硬性阻止合并，必须修复Electron安全配置**
+EOF
             exit 1
           else
-            echo "### ✅ 安全门禁通过" >> $GITHUB_STEP_SUMMARY
-            echo "**ADR-0002合规**: 所有安全检查均已通过，符合严格安全基线要求" >> $GITHUB_STEP_SUMMARY
-            echo "- Critical安全问题: 0个 ✅" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### ✅ 安全门禁通过
+**ADR-0002合规**: 所有安全检查均已通过，符合严格安全基线要求
+- Critical安全问题: 0个 ✅
+EOF
             echo "- High安全问题: ${{ needs.security-scan.outputs.high-count }}个 (≤3) ✅" >> $GITHUB_STEP_SUMMARY
-            echo "- E2E安全测试: 通过 ✅" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+- E2E安全测试: 通过 ✅
+EOF
           fi
 
       - name: 失败时创建Issue

@@ -1,276 +1,178 @@
-npm warn config production Use `--omit=dev` instead.
-npm warn config cache-min This option has been deprecated in favor of `--prefer-offline`.
-
-> gamedev-vitegame@0.1.1 test:unit
-> vitest run
-
-
- RUN  v3.2.4 /home/runner/work/myguild/myguild
-
-stdout | tests/unit/metrics.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | tests/unit/repos.contract.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | tests/unit/risk.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/metrics.spec.ts (40 tests) 23ms
- ✓ tests/unit/risk.spec.ts (29 tests) 30ms
- ✓ tests/unit/repos.contract.spec.ts (33 tests) 48ms
-stdout | tests/unit/glossary.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | src/shared/adapters/sqlite.bak/__tests__/config-manager.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | tests/unit/guild-manager-chunk-001.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/glossary.spec.ts (40 tests) 39ms
- ✓ src/shared/adapters/sqlite.bak/__tests__/config-manager.spec.ts (33 tests) 32ms
- ✓ tests/unit/guild-manager-chunk-001.spec.ts (31 tests) 21ms
-stdout | tests/unit/guild-manager-chunk-002.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | tests/unit/guild-manager/guild-core.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | tests/unit/release.feed.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/guild-manager/guild-core.spec.ts (32 tests) 28ms
- ✓ tests/unit/guild-manager-chunk-002.spec.ts (17 tests) 384ms
-stdout | tests/unit/runtime.budget.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/runtime.budget.spec.ts (27 tests) 11ms
- ✓ tests/unit/release.feed.spec.ts (13 tests) 1037ms
-stdout | src/shared/contracts/events.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ src/shared/contracts/events.spec.ts (17 tests) 19ms
-stdout | src/shared/services/__tests__/event-bus.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ src/shared/services/__tests__/event-bus.spec.ts (23 tests) 17ms
-stdout | tests/unit/contracts/cloudevents.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/contracts/cloudevents.spec.ts (17 tests) 24ms
-stdout | src/game/__tests__/GameStateManager.test.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ src/game/__tests__/GameStateManager.test.ts (21 tests) 129ms
-stdout | tests/unit/middleware/cloudevents-validation.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/middleware/cloudevents-validation.spec.ts (20 tests) 30ms
-stdout | tests/unit/gates.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/gates.spec.ts (16 tests) 14ms
-stdout | tests/unit/db.checkpoint.spec.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | src/tests/docs-scorer-performance.test.js
-🧪 Vitest 测试环境已初始化
-
-stdout | src/core/events/bus.test.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/db.checkpoint.spec.ts (7 tests | 1 skipped) 469ms
- ✓ src/core/events/bus.test.ts (19 tests) 196ms
- ✓ src/tests/docs-scorer-performance.test.js (6 tests) 492ms
-stdout | src/game/__tests__/GameEngineAdapter.test.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | src/shared/middleware/__tests__/cloud-events-validator.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ src/shared/middleware/__tests__/cloud-events-validator.spec.ts (19 tests) 12ms
- ✓ src/game/__tests__/GameEngineAdapter.test.ts (14 tests) 168ms
-stdout | tests/unit/db.backup.spec.ts
-🧪 Vitest 测试环境已初始化
-
-{"timestamp":"2025-09-06T06:09:31.951Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-{"timestamp":"2025-09-06T06:09:32.026Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
- ❯ tests/unit/db.backup.spec.ts (6 tests | 5 failed) 524ms
-   × backup creates a valid sqlite file 72ms
-     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
-   × VACUUM INTO mode creates compressed backup 70ms
-     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
-   × backup handles concurrent access gracefully 187ms
-     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
-{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
-   × checkpoint integration with backup workflow 58ms
-     → Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
-🔄 执行 WAL checkpoint (TRUNCATE 模式)...
-📁 数据库: test-data/test-app.db
-{
-  "ok": false,
-  "error": "file is not a database",
-  "timestamp": "2025-09-06T06:09:32.277Z",
-  "database": "test-data/test-app.db"
-}
-
-   ✓ backup error handling and validation 91ms
-   × backup script JSON output format 44ms
-     → Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
-{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
-stdout | tests/unit/perf.budget.spec.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ tests/unit/perf.budget.spec.ts (17 tests) 14ms
-stdout | src/game/__tests__/SceneManager.test.ts
-🧪 Vitest 测试环境已初始化
-
- ✓ src/game/__tests__/SceneManager.test.ts (18 tests) 216ms
-stdout | src/__tests__/p95-sampling-demo.test.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | src/__tests__/performance-utils.test.ts
-🧪 Vitest 测试环境已初始化
-
-stdout | src/App.test.tsx
-🧪 Vitest 测试环境已初始化
-
- ✓ src/App.test.tsx (6 tests) 225ms
- ✓ src/__tests__/p95-sampling-demo.test.ts (4 tests) 6ms
- ✓ src/__tests__/performance-utils.test.ts (8 tests) 147ms
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  tests/unit/db.backup.spec.ts > backup creates a valid sqlite file
-Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
- ❯ tests/unit/db.backup.spec.ts:93:3
-     91| 
-     92| test.skipIf(!isSQLite3Available())('backup creates a valid sqlite file…
-     93|   execSync(
-       |   ^
-     94|     `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DIR}…
-     95|     { stdio: 'inherit', timeout: 30000 } // 数据库操作30s超时
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
-
- FAIL  tests/unit/db.backup.spec.ts > VACUUM INTO mode creates compressed backup
-Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
- ❯ tests/unit/db.backup.spec.ts:112:5
-    110|   () => {
-    111|     // 测试 VACUUM INTO 模式（适合“冷备/轻写”窗口）
-    112|     execSync(
-       |     ^
-    113|       `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DI…
-    114|       { stdio: 'inherit', timeout: 45000 } // VACUUM操作更慢，45s超时
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
-
- FAIL  tests/unit/db.backup.spec.ts > backup handles concurrent access gracefully
-Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
-{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
- ❯ tests/unit/db.backup.spec.ts:147:13
-    145|         new Promise<void>((resolve, reject) => {
-    146|           try {
-    147|             execSync(
-       |             ^
-    148|               `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${concur…
-    149|               { stdio: 'pipe', timeout: 15000 } // 单个并发操作15s超时
- ❯ tests/unit/db.backup.spec.ts:145:9
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
-
- FAIL  tests/unit/db.backup.spec.ts > checkpoint integration with backup workflow
-Error: Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
-🔄 执行 WAL checkpoint (TRUNCATE 模式)...
-📁 数据库: test-data/test-app.db
-{
-  "ok": false,
-  "error": "file is not a database",
-  "timestamp": "2025-09-06T06:09:32.277Z",
-  "database": "test-data/test-app.db"
-}
-
- ❯ tests/unit/db.backup.spec.ts:171:30
-    169| 
-    170|     // 1. 执行 checkpoint 操作
-    171|     const checkpointResult = execSync(
-       |                              ^
-    172|       `node scripts/db/checkpoint.mjs --database=${TEST_DB_PATH} --tru…
-    173|       { encoding: 'utf8', stdio: 'pipe' }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
-
- FAIL  tests/unit/db.backup.spec.ts > backup script JSON output format
-Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
-{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
- ❯ tests/unit/db.backup.spec.ts:240:18
-    238| test.skipIf(!isSQLite3Available())('backup script JSON output format',…
-    239|   // 测试备份脚本的 JSON 输出格式（用于 CI 集成）
-    240|   const result = execSync(
-       |                  ^
-    241|     `node scripts/db/backup-cli.mjs ${TEST_DB_PATH} ${TEST_BACKUP_DIR}…
-    242|     { encoding: 'utf8', stdio: 'pipe' }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
-
-
- Test Files  1 failed | 26 passed (27)
-      Tests  5 failed | 527 passed | 1 skipped (533)
-   Start at  06:09:22
-   Duration  11.73s (transform 1.08s, setup 4.74s, collect 3.68s, tests 4.35s, environment 14.77s, prepare 2.88s)
-
-
-Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup
- ❯ tests/unit/db.backup.spec.ts:93:3
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { status: 1, signal: null, output: [ null, null, null ], pid: 3417, stdout: null, stderr: null }
-
-
-Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=vacuum
- ❯ tests/unit/db.backup.spec.ts:112:5
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { status: 1, signal: null, output: [ null, null, null ], pid: 3433, stdout: null, stderr: null }
-
-
-Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups-0 --mode=backup
-{"timestamp":"2025-09-06T06:09:32.102Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
- ❯ tests/unit/db.backup.spec.ts:147:13
- ❯ tests/unit/db.backup.spec.ts:145:9
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { status: 1, signal: null, output: [ null, '<Buffer(0) ...>', '<Buffer(331) ...>' ], pid: 3449, stdout: '<Buffer(0) ...>', stderr: '<Buffer(331) ...>' }
-
-
-Error: Error: Command failed: node scripts/db/checkpoint.mjs --database=test-data/test-app.db --truncate --verbose
-🔄 执行 WAL checkpoint (TRUNCATE 模式)...
-📁 数据库: test-data/test-app.db
-{
-  "ok": false,
-  "error": "file is not a database",
-  "timestamp": "2025-09-06T06:09:32.277Z",
-  "database": "test-data/test-app.db"
-}
-
- ❯ tests/unit/db.backup.spec.ts:171:30
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { status: 1, signal: null, output: [ null, '', '🔄 执行 WAL checkpoint (TRUNCATE 模式)...\n📁 数据库: test-data/test-app.db\n{\n  "ok": false,\n  "error": "file is not a database",\n  "timestamp": "2025-09-06T06:09:32.277Z",\n  "database": "test-data/test-app.db"\n}\n' ], pid: 3493, stdout: '', stderr: '🔄 执行 WAL checkpoint (TRUNCATE 模式)...\n📁 数据库: test-data/test-app.db\n{\n  "ok": false,\n  "error": "file is not a database",\n  "timestamp": "2025-09-06T06:09:32.277Z",\n  "database": "test-data/test-app.db"\n}\n' }
-
-
-Error: Error: Command failed: node scripts/db/backup-cli.mjs test-data/test-app.db ./test-backups --mode=backup --json
-{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}
-
- ❯ tests/unit/db.backup.spec.ts:240:18
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { status: 1, signal: null, output: [ null, '', '{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}\n' ], pid: 3537, stdout: '', stderr: '{"timestamp":"2025-09-06T06:09:32.411Z","level":"error","message":"SQLite3 command line tool not found. Please install sqlite3.","meta":{"error":"Command failed: \"/home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe\" --version\n/bin/sh: 1: /home/runner/work/myguild/myguild/tools/sqlite/sqlite3.exe: Permission denied\n"}}\n' }
-
-Error: Process completed with exit code 1.
+Diff 1 — .github/workflows/build-and-test.yml（切换到 Windows，并加 ESLint 探针）
+
+  - 作用：把核心链路迁到 Windows；删除 Linux 专属步骤（xvfb/apt-get）；在 lint 前只验证可执行存在，避免误判为安装问题。
+  --- a/.github/workflows/build-and-test.yml
+  +++ b/.github/workflows/build-and-test.yml
+  @@
+   jobs:
+     build-and-test:
+       name: Build and Test
+  -    runs-on: ubuntu-latest
+  +    runs-on: windows-latest
+       timeout-minutes: 15
+  @@
+         - name: 🔧 安装依赖（加固版）
+           uses: ./.github/actions/npm-install
+  +
+  +      - name: Verify ESLint setup
+  +        shell: bash
+  +        run: |
+  +          export PATH="$(npm bin):$PATH"
+  +          ./node_modules/.bin/eslint -v || npx --yes eslint -v
+  @@
+     electron-security-tests:
+       name: Electron Security Tests
+  -    runs-on: ubuntu-latest
+  +    runs-on: windows-latest
+       needs: build-and-test
+       timeout-minutes: 20
+  @@
+  -      - name: 🖥️ 安装系统依赖 (Electron)
+  -        run: |
+  -          sudo apt-get update
+  -          sudo apt-get install -y xvfb
+  -
+  -      - name: 🛡️ 运行安全冒烟测试
+  -        run: xvfb-run -a npm run test:e2e:security
+  +      - name: 🛡️ 运行安全冒烟测试
+  +        run: npm run test:e2e:security
+           env:
+             CI: true
+  Diff 2 — .github/actions/npm-install/action.yml（去 optional/去改锁，统一 npm ci）
+
+  - 作用：避免 Rollup 平台包被跳过；保证锁定安装一致性；不动依赖链之外逻辑。
+  --- a/.github/actions/npm-install/action.yml
+  +++ b/.github/actions/npm-install/action.yml
+  @@
+  -        for i in 1 2 3 4; do
+  +        for i in 1 2 3 4; do
+             echo "Attempt $i for dependency installation (ESM + 52 devDeps)..."
+
+             if [ "$i" -eq 1 ]; then
+  -            if run_with_timeout 480 npm ci --no-optional 2>&1 | tee npm_install.log; then
+  +            if run_with_timeout 480 npm ci 2>&1 | tee npm_install.log; then
+                 install_success=true
+               fi
+             elif [ "$i" -eq 2 ]; then
+               echo "Increasing timeout for large dependency packages..."
+  -            if run_with_timeout 720 npm ci --maxsockets=5 --no-optional 2>&1 | tee npm_install.log; then
+  +            if run_with_timeout 720 npm ci --maxsockets=5 2>&1 | tee npm_install.log; then
+                 install_success=true
+               fi
+             elif [ "$i" -eq 3 ]; then
+               echo "Using serial installation mode (prevent network congestion)..."
+  -            if run_with_timeout 900 npm ci --maxsockets=1 --no-optional 2>&1 | tee npm_install.log; then
+  +            if run_with_timeout 900 npm ci --maxsockets=1 2>&1 | tee npm_install.log; then
+                 install_success=true
+               fi
+             else
+  -            # Final attempt: complete reinstallation
+  -            echo "Cleaning all caches and files, reinstalling..."
+  -            rm -rf node_modules package-lock.json 2>/dev/null || true
+  -            npm cache clean --force 2>/dev/null || true
+  -            if run_with_timeout 900 npm install --no-optional 2>&1 | tee npm_install.log; then
+  -              install_success=true
+  -            fi
+  +            # Final attempt: extended timeout (no lockfile changes)
+  +            echo "Final attempt with extended timeout (npm ci, lock preserved)..."
+  +            if run_with_timeout 900 npm ci 2>&1 | tee npm_install.log; then
+  +              install_success=true
+  +            fi
+             fi
+  @@
+  -            dev_tools_list="eslint tsc vitest playwright"
+  +            dev_tools_list="eslint tsc vitest playwright"
+  @@
+  +            # Optional: verify rollup native on Linux x64 (avoid omitted optional deps)
+  +            if [ "$(uname -s)" = "Linux" ] && [ "$(uname -m)" = "x86_64" ]; then
+  +              node -e "require('@rollup/rollup-linux-x64-gnu'); console.log('rollup native ok')" || {
+  +                echo "ERROR: missing @rollup/rollup-linux-x64-gnu (do not omit optionalDependencies)"; exit 1;
+  +              }
+  +            fi
+  Diff 3 — .github/workflows/release.yml（Sentry CLI 与测试收敛，不动安装链）
+
+  - 作用：用 npx 调用 sentry-cli；发布前最小化测试；为 sourcemaps 上传铺路。
+  --- a/.github/workflows/release.yml
+  +++ b/.github/workflows/release.yml
+  @@
+     build:
+       name: 🔨 构建应用
+       runs-on: ubuntu-latest
+  @@
+  -      - name: 🧪 运行测试
+  -        run: npm test
+  +      - name: 🧪 运行测试（最小化）
+  +        run: npm run test:unit -- --run --reporter=dot --passWithNoTests
+  @@
+     create-release:
+  @@
+  -      - name: 🔧 设置Sentry CLI
+  -        run: |
+  -          echo "使用npm安装的Sentry CLI"
+  +      - name: 🔧 检查 Sentry CLI
+  +        run: npx @sentry/cli --version
+  @@
+  -      - name: 🚀 创建Sentry Release
+  +      - name: 🚀 创建Sentry Release
+           run: |
+             RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+             echo "🚀 创建Release: $RELEASE_NAME"
+  -          sentry-cli releases new "$RELEASE_NAME"
+  -          sentry-cli releases set-commits "$RELEASE_NAME" --auto
+  +          npx sentry-cli releases new "$RELEASE_NAME"
+  +          npx sentry-cli releases set-commits "$RELEASE_NAME" --auto
+           env:
+             SENTRY_ORG: ${{ env.SENTRY_ORG }}
+             SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+             SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+  @@
+  -      - name: 📤 上传Source Maps
+  +      - name: 📤 上传Source Maps
+           run: |
+             RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+             echo "📤 上传Source Maps for $RELEASE_NAME"
+  -          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
+  +          npx sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
+               --validate \
+               --url-prefix "~/\" \
+               --strip-common-prefix
+           env:
+             SENTRY_ORG: ${{ env.SENTRY_ORG }}
+             SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+             SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+  @@
+     deploy:
+  @@
+  -      - name: 🚀 标记Sentry部署
+  +      - name: 🚀 标记Sentry部署
+           run: |
+             RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+             ENVIRONMENT="${{ needs.prepare.outputs.environment }}"
+             echo "🚀 标记部署: $RELEASE_NAME @ $ENVIRONMENT"
+  -          sentry-cli releases deploys "$RELEASE_NAME" new \
+  +          npx sentry-cli releases deploys "$RELEASE_NAME" new \
+               --env "$ENVIRONMENT" \
+               --name "GitHub Actions Deploy" \
+               --time "$(date -u +%Y-%m-%dT%H:%M:%S%z)"
+  -          sentry-cli releases finalize "$RELEASE_NAME"
+  +          npx sentry-cli releases finalize "$RELEASE_NAME"
+           env:
+             SENTRY_ORG: ${{ env.SENTRY_ORG }}
+             SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+             SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+  可选（仅发布构建需上传 sourcemaps 时）
+
+  - 在 vite.config.ts 的 build 中按生产开启 sourcemap（不影响开发）：
+  --- a/vite.config.ts
+  +++ b/vite.config.ts
+  @@
+     build: {
+       outDir: 'dist',
+       emptyOutDir: true,
+  +    sourcemap: process.env.NODE_ENV === 'production',
+     },
+  验证与分级小结
+
+  - P0：运行平台切到 Windows；安装动作去 optional/去改锁；Bash steps 声明 shell；Sentry 用 npx。
+  - P1：ESLint 快速收敛 + 分层降噪 + 基线门禁；发布流测试最小化；（如保留 Linux 夜间）sqlite3 平台分流。
+  - P2：只保留 Windows 核心作业为必需检查；Linux/macOS 作业降级到 nightly；入口加 actionlint/needs 自检；重任务 paths 触发。

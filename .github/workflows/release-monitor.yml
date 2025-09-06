@@ -63,7 +63,20 @@ jobs:
           NPM_CONFIG_PRODUCTION: 'true'
 
       - name: '🛠️ Install system tools'
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: '⏰ Check monitoring conditions'
         id: conditions

@@ -86,7 +86,20 @@ jobs:
           NPM_CONFIG_PRODUCTION: 'true'
 
       - name: '🛠️ Install system tools'
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: '🔍 Pre-rollback validation'
         run: |
@@ -273,42 +286,59 @@ jobs:
         run: |
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8  
-          echo "## 🚨 紧急回滚执行报告" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**⚠️  这是一个紧急回滚操作**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          export LC_ALL=C.UTF-8
+
+          # 使用heredoc模式以确保Windows兼容UTF-8编码
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+## 🚨 紧急回滚执行报告
+
+**⚠️  这是一个紧急回滚操作**
+
+| 项目 | 值 |
+|------|-----|
+EOF
           echo "| 回滚原因 | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 触发者 | ${{ inputs.triggered_by }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 执行时间 | $(date -u +%Y-%m-%dT%H:%M:%S.000Z) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
 
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
-            echo "### 📊 批量回滚结果" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 📊 批量回滚结果
+```json
+EOF
             echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+```
+EOF
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            echo "### 📊 回滚结果" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 📊 回滚结果
+```json
+EOF
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+```
+EOF
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 后续操作建议" >> $GITHUB_STEP_SUMMARY
-          echo "1. 🔍 **立即调查** 导致回滚的根本原因" >> $GITHUB_STEP_SUMMARY
-          echo "2. 📊 **监控指标** 确认回滚后系统稳定性" >> $GITHUB_STEP_SUMMARY
-          echo "3. 📢 **通知团队** 回滚情况和影响范围" >> $GITHUB_STEP_SUMMARY
-          echo "4. 🔧 **修复问题** 在重新发布前解决根本原因" >> $GITHUB_STEP_SUMMARY
-          echo "5. 📝 **事后分析** 更新发布流程以防止类似问题" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 🎯 后续操作建议
+1. 🔍 **立即调查** 导致回滚的根本原因
+2. 📊 **监控指标** 确认回滚后系统稳定性
+3. 📢 **通知团队** 回滚情况和影响范围
+4. 🔧 **修复问题** 在重新发布前解决根本原因
+5. 📝 **事后分析** 更新发布流程以防止类似问题
+EOF
 
           if [ "${{ inputs.triggered_by }}" = "monitor" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚡ **注意**: 此回滚由自动监控系统触发" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+⚡ **注意**: 此回滚由自动监控系统触发
+EOF
           fi

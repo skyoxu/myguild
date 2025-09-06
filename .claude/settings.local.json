@@ -22,7 +22,12 @@
       "Bash(gh repo view:*)",
       "Bash(find:*)",
       "mcp__zen-mcp-server__chat",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(grep:*)",
+      "Bash(done)",
+      "Read(//c//**)"
     ],
     "deny": [],
     "ask": [],

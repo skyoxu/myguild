@@ -69,9 +69,11 @@ jobs:
         continue-on-error: true
 
       - name: Create performance data directories
+        shell: pwsh
         run: |
-          mkdir -p data/web-vitals
-          mkdir -p logs/performance
+          # P0修复：Windows runner使用PowerShell目录创建替代Linux mkdir -p
+          New-Item -ItemType Directory -Path "data/web-vitals" -Force
+          New-Item -ItemType Directory -Path "logs/performance" -Force
 
       - name: Generate baseline performance data (if missing)
         shell: bash
@@ -115,6 +117,7 @@ jobs:
         continue-on-error: true
 
       - name: Run bundle size check
+        shell: bash
         run: |
           npm run build 2>/dev/null || echo "Build completed with warnings"
           node scripts/bundle-size-check.mjs
@@ -123,6 +126,7 @@ jobs:
       - name: Post PR comment
         if: github.event_name == 'pull_request'
         continue-on-error: true # PR评论失败不应阻断性能检查流程
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -138,6 +142,7 @@ jobs:
       - name: Post PR comment (manual trigger)
         if: github.event_name == 'workflow_dispatch'
         continue-on-error: true # PR评论失败不应阻断性能检查流程
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

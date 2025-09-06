@@ -46,7 +46,20 @@ jobs:
           cache: 'npm'
 
       - name: 安装jq工具
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: 安装依赖（加固版）
         uses: ./.github/actions/npm-install
@@ -77,7 +90,6 @@ jobs:
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 🔍 可观测性配置验证结果" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "logs/observability-validation-report.json" ]; then
             # 提取关键信息
@@ -86,27 +98,42 @@ jobs:
             errors=$(jq -r '.summary.errors' logs/observability-validation-report.json)
             warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
             
-            echo "### 📈 验证摘要" >> $GITHUB_STEP_SUMMARY
-            echo "| 指标 | 值 |" >> $GITHUB_STEP_SUMMARY
-            echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
-            echo "| 状态 | $status |" >> $GITHUB_STEP_SUMMARY
-            echo "| 环境数量 | $environments |" >> $GITHUB_STEP_SUMMARY
-            echo "| 错误数量 | $errors |" >> $GITHUB_STEP_SUMMARY
-            echo "| 警告数量 | $warnings |" >> $GITHUB_STEP_SUMMARY
+            # 使用heredoc模式以确保Windows兼容UTF-8编码
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+## 🔍 可观测性配置验证结果
+
+### 📈 验证摘要
+| 指标 | 值 |
+|------|-----|
+| 状态 | $status |
+| 环境数量 | $environments |
+| 错误数量 | $errors |
+| 警告数量 | $warnings |
+EOF
             
             # 如果有错误，显示错误详情
             if [ "$errors" -gt 0 ]; then
-              echo "### ❌ 发现的错误" >> $GITHUB_STEP_SUMMARY
+              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### ❌ 发现的错误
+EOF
               jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
             
             # 如果有警告，显示警告详情
             if [ "$warnings" -gt 0 ]; then
-              echo "### ⚠️ 发现的警告" >> $GITHUB_STEP_SUMMARY
+              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### ⚠️ 发现的警告
+EOF
               jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "⚠️ 无法找到验证报告文件" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+## 🔍 可观测性配置验证结果
+
+⚠️ 无法找到验证报告文件
+EOF
           fi
 
       - name: 验证通过检查
@@ -164,7 +191,20 @@ jobs:
           cache: 'npm'
 
       - name: 安装jq工具
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: 验证Sentry集成配置
         run: |
@@ -219,7 +259,20 @@ jobs:
           cache: 'npm'
 
       - name: 安装jq工具
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: Staging环境配置检查
         run: |

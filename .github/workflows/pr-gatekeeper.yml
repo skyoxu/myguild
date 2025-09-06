@@ -50,7 +50,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.ref }}
-          check-name: security-gate # security-unified.yml中的作业名
+          check-name: 🚦 统一安全门禁 # security-unified.yml中的作业名
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
 
@@ -61,8 +61,8 @@ jobs:
           ## 🛡️ PR守门员检查完成
 
           ### ✅ Windows CI核心作业状态
-          - **构建测试**: ✅ 通过 (build-and-test.yml)
-          - **安全统一**: ✅ 通过 (security-unified.yml)
+          - **构建测试**: ✅ 通过 (Build and Test)
+          - **安全统一**: ✅ 通过 (🚦 统一安全门禁)
 
           ### 📊 检查摘要
           - **环境**: Windows-focused CI
@@ -82,6 +82,7 @@ jobs:
 
     steps:
       - name: 📋 守门员健康检查
+        shell: bash
         run: |
           echo "## 🔍 Gatekeeper健康状态" >> $GITHUB_STEP_SUMMARY
           echo "- 工作流版本: v1.0" >> $GITHUB_STEP_SUMMARY

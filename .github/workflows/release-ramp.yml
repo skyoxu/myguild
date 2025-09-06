@@ -82,7 +82,16 @@ jobs:
           NPM_CONFIG_PRODUCTION: 'true'
 
       - name: '🛠️ Install system tools'
-        run: sudo apt-get update && sudo apt-get install -y jq
+        shell: pwsh
+        run: |
+          # Windows runner 已预装 jq，检查可用性
+          if (Get-Command jq -ErrorAction SilentlyContinue) {
+            Write-Host "✅ jq 已可用"
+            jq --version
+          } else {
+            Write-Host "⚠️ jq 不可用，使用 chocolatey 安装"
+            choco install jq -y
+          }
 
       - name: '📋 Validate prerequisites'
         run: |
@@ -278,15 +287,6 @@ jobs:
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 🎯 渐进发布执行报告" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 配置项 | 值 |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| 发布阶段 | ${{ inputs.stage }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 应用版本 | \`$APP_VERSION\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
 
           # 健康检查状态
           health_status="${{ steps.health_check.outputs.health_status || 'skipped' }}"
@@ -298,8 +298,22 @@ jobs:
             *) health_icon="❓"; health_text="未知" ;;
           esac
 
-          echo "### 📊 执行结果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          # 使用heredoc模式以确保Windows兼容UTF-8编码
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+## 🎯 渐进发布执行报告
+
+| 配置项 | 值 |
+|--------|-----|
+EOF
+          echo "| 发布阶段 | ${{ inputs.stage }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 应用版本 | \`$APP_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 📊 执行结果
+EOF
           echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> $GITHUB_STEP_SUMMARY
           echo "- **健康检查**: $health_icon $health_text" >> $GITHUB_STEP_SUMMARY
 
@@ -317,16 +331,22 @@ jobs:
 
           # 添加健康检查详情（如果有）
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🏥 健康检查详情" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 🏥 健康检查详情
+```json
+EOF
             echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+```
+EOF
           fi
 
           # 下一步建议
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 下一步建议" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 🎯 下一步建议
+EOF
 
           if [ "$health_status" = "passed" ] && [ "${{ inputs.stage }}" != "100" ]; then
             case "${{ inputs.stage }}" in
@@ -337,13 +357,17 @@ jobs:
             echo "- ✅ 当前阶段健康度良好，可考虑继续到 **${next_stage}%** 阶段" >> $GITHUB_STEP_SUMMARY
             echo "- 建议等待 10-15 分钟观察指标稳定后再进行下一阶段" >> $GITHUB_STEP_SUMMARY
           elif [ "$health_status" = "failed" ]; then
-            echo "- 🚨 **健康检查失败，已执行自动回滚**" >> $GITHUB_STEP_SUMMARY
-            echo "- 请检查应用日志和错误报告，修复问题后重新发布" >> $GITHUB_STEP_SUMMARY
-            echo "- 考虑降级发布策略或增加更多测试覆盖" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+- 🚨 **健康检查失败，已执行自动回滚**
+- 请检查应用日志和错误报告，修复问题后重新发布
+- 考虑降级发布策略或增加更多测试覆盖
+EOF
           elif [ "${{ inputs.stage }}" = "100" ] && [ "$health_status" = "passed" ]; then
-            echo "- 🎉 **渐进发布完成！** 应用已全量发布" >> $GITHUB_STEP_SUMMARY
-            echo "- 继续监控 Release Health 指标" >> $GITHUB_STEP_SUMMARY
-            echo "- 可考虑更新 \`PREV_GA_VERSION\` 环境变量为当前版本" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+- 🎉 **渐进发布完成！** 应用已全量发布
+- 继续监控 Release Health 指标
+- 可考虑更新 `PREV_GA_VERSION` 环境变量为当前版本
+EOF
           fi
 
   # 后续工作流：通知、监控等

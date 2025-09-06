@@ -114,14 +114,20 @@ jobs:
             package.json
 
       - name: 安装jq工具
+        shell: pwsh
         run: |
-          # Infrastructure optimization: cache-friendly package installation
-          if ! command -v jq &> /dev/null; then
-            echo "Installing jq tool..."
-            sudo apt-get update -qq && sudo apt-get install -y jq
-          else
-            echo "jq already available"
-          fi
+          # Infrastructure optimization: Windows-compatible package installation
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
 
       - name: 安装依赖 (使用强化npm-install action)
         uses: ./.github/actions/npm-install
@@ -130,7 +136,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: 确保日志目录存在
-        run: mkdir -p logs
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "logs")) {
+            New-Item -ItemType Directory -Path "logs" -Force
+          }
 
       - name: 执行软门禁检查
         id: soft-gates
@@ -260,7 +270,12 @@ jobs:
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          echo "## 📊 软门禁质量检查结果" >> $GITHUB_STEP_SUMMARY
+
+          # 使用heredoc模式以确保Windows兼容UTF-8编码
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+## 📊 软门禁质量检查结果
+
+EOF
 
           if [ -f "logs/soft-gate-report.json" ]; then
             # 提取关键信息
@@ -281,9 +296,11 @@ jobs:
             
             # 显示详细反馈
             if [ "$warning_count" -gt 0 ] || [ "$error_count" -gt 0 ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "### 📝 反馈详情" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
+              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 📝 反馈详情
+
+EOF
               
               # 提取反馈信息
               jq -r '.feedback[]?.message // empty' logs/soft-gate-report.json | while read -r feedback; do
@@ -294,9 +311,11 @@ jobs:
             # 显示改进建议
             recommendations=$(jq -r '.recommendations // [] | length' logs/soft-gate-report.json)
             if [ "$recommendations" -gt 0 ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "### 💡 改进建议" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
+              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+### 💡 改进建议
+
+EOF
               
               jq -r '.recommendations[] // empty' logs/soft-gate-report.json | while read -r rec; do
                 echo "- $rec" >> $GITHUB_STEP_SUMMARY
@@ -304,13 +323,17 @@ jobs:
             fi
             
           else
-            echo "### ⚠️ 无法生成详细报告" >> $GITHUB_STEP_SUMMARY
-            echo "软门禁检查完成，但报告文件缺失。" >> $GITHUB_STEP_SUMMARY
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+### ⚠️ 无法生成详细报告
+软门禁检查完成，但报告文件缺失。
+EOF
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*💡 软门禁提供质量反馈但不阻塞合并 - 基于ADR-0005质量门禁标准*" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+---
+*💡 软门禁提供质量反馈但不阻塞合并 - 基于ADR-0005质量门禁标准*
+EOF
 
       - name: 软门禁永远成功
         if: always()
