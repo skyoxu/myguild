@@ -61,6 +61,7 @@ jobs:
           mkdir -p logs/performance
 
       - name: Generate baseline performance data (if missing)
+        shell: bash
         run: |
           if [ ! -f "data/web-vitals/baseline.json" ]; then
             echo "Creating baseline performance data..."
@@ -77,9 +78,9 @@ jobs:
           }
           EOF
           fi
-        shell: bash
 
       - name: Run performance analysis
+        shell: bash
         run: |
           # 模拟当前性能数据（实际项目中应该从真实测试获取）
           cat > data/web-vitals/current.json << 'EOF'

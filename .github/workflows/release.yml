@@ -154,7 +154,8 @@ jobs:
           NODE_ENV: ${{ needs.prepare.outputs.environment }}
           SENTRY_RELEASE: ${{ needs.prepare.outputs.release_name }}
 
-      - name: 📦 打包构建产物
+      - name: 📦 打包构建产物（Windows兼容）
+        shell: bash
         run: |
           tar -czf build-artifacts.tar.gz dist/
           echo "📦 构建产物已打包"
@@ -375,6 +376,7 @@ jobs:
           echo "✅ Sentry CLI 验证完成"
 
       - name: 🚀 标记Sentry部署
+        shell: bash
         run: |
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
           ENVIRONMENT="${{ needs.prepare.outputs.environment }}"

@@ -319,6 +319,7 @@ jobs:
           path: artifacts
 
       - name: 生成统一安全报告
+        shell: bash
         run: |
           echo "📊 生成统一安全门禁报告..."
 

@@ -45,15 +45,18 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 验证工具链设置
+      - name: 🔍 验证工具链设置（Windows专注）
+        shell: bash
         run: |
           echo "🔍 Windows环境信息诊断："
           node -v && npm -v
-          echo "验证ESLint可用性："
-          npx eslint -v
+          echo "验证ESLint可用性（避免误判安装问题）："
+          export PATH="$(npm bin):$PATH"
+          ./node_modules/.bin/eslint -v || npx --yes eslint -v
           echo "✅ 工具链设置验证完成"
 
       - name: 🎨 Prettier 格式检查
+        shell: bash
         run: |
           echo "检查代码格式..."
           npx prettier . --check || (echo "❌ 代码格式不符合要求，请运行 'npm run format' 修复"; exit 1)
@@ -73,15 +76,17 @@ jobs:
       - name: 🏗️ 构建应用
         run: npm run build
 
-      - name: 🔍 验证构建产物
-        shell: cmd
+      - name: 🔍 验证构建产物（Windows原生）
+        shell: bash
         run: |
-          dir dist
-          if not exist "dist\index.html" exit 1
-          if not exist "dist\assets" exit 1
-          echo ✅ 构建产物验证通过
+          echo "验证Windows构建产物结构："
+          ls -la dist/
+          if [ ! -f "dist/index.html" ]; then echo "❌ 缺少 index.html"; exit 1; fi
+          if [ ! -d "dist/assets" ]; then echo "❌ 缺少 assets 目录"; exit 1; fi
+          echo "✅ 构建产物验证通过"
 
       - name: ⚡ 性能基准测试 (User Timing)
+        shell: bash
         run: npm run guard:performance
         env:
           NODE_ENV: test

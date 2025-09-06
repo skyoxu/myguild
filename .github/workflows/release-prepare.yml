@@ -75,6 +75,7 @@ jobs:
 
       - name: '📋 Add version to manifest'
         id: manifest
+        shell: bash
         run: |
           artifact_path="${{ inputs.artifact_path }}"
 

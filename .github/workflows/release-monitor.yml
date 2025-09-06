@@ -67,6 +67,7 @@ jobs:
 
       - name: '⏰ Check monitoring conditions'
         id: conditions
+        shell: bash
         run: |
           # 检查是否在工作时间（UTC 6:00 - 22:00，大致对应各时区的工作时间）
           current_hour=$(date -u +%H)
@@ -155,6 +156,7 @@ jobs:
 
       - name: '📊 Update monitoring dashboard'
         if: steps.conditions.outputs.should_monitor == 'true'
+        shell: bash
         run: |
           # 创建或更新监控状态文件
           mkdir -p .github/monitoring
@@ -220,6 +222,7 @@ jobs:
 
       - name: '📋 Monitoring summary'
         if: always()
+        shell: bash
         run: |
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
