@@ -89,7 +89,9 @@ jobs:
         run: npx tsc --noEmit
 
       - name: 🧪 运行单元测试
-        run: npm run test:unit
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: unit
         env:
           NODE_ENV: test
 
@@ -136,7 +138,9 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🛡️ 运行Electron安全冒烟测试（Windows）
-        run: npm run test:e2e:security
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: security
         env:
           CI: true
           # Windows下无需xvfb，Electron可直接运行

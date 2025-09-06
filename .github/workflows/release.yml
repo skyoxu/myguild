@@ -75,6 +75,7 @@ jobs:
 
       - name: 🔍 获取版本信息
         id: version
+        shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -82,6 +83,7 @@ jobs:
 
       - name: 🏷️ 确定发布环境
         id: env
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             ENV="${{ github.event.inputs.environment }}"
@@ -99,13 +101,15 @@ jobs:
 
       - name: 🖥️ 确定平台信息
         id: platform
+        shell: bash
         run: |
-          PLATFORM="linux"
+          PLATFORM="windows"
           echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
           echo "💻 构建平台: $PLATFORM"
 
       - name: 🎯 生成Release名称
         id: release
+        shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           PLATFORM="${{ steps.platform.outputs.platform }}"
@@ -136,22 +140,24 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🔍 运行代码检查
+        shell: bash
         run: |
           npm run lint || echo "⚠️ Lint检查有警告"
           npm run typecheck || echo "⚠️ 类型检查有警告"
 
       - name: 🧪 运行核心测试 (Release模式-快速通过)
-        run: |
-          echo "🧪 Release模式：运行核心稳定测试..."
-          # 只运行核心稳定测试，避免flaky测试阻塞release
-          npm run test:unit -- --run --reporter=dot --passWithNoTests --timeout=10000 || echo "⚠️ 部分测试失败，但不阻塞Release"
-          echo "✅ 测试阶段完成"
-        continue-on-error: true
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: unit
+          timeout: '10000'
+          fail-fast: 'false'
+          reporter: dot
 
       - name: 🏗️ 构建应用
         run: npm run build
         env:
           NODE_ENV: ${{ needs.prepare.outputs.environment }}
+          GENERATE_SOURCEMAP: 'true'
           SENTRY_RELEASE: ${{ needs.prepare.outputs.release_name }}
 
       - name: 📦 打包构建产物（Windows兼容）
@@ -195,18 +201,19 @@ jobs:
           name: build-artifacts
 
       - name: 📦 解压构建产物
+        shell: bash
         run: tar -xzf build-artifacts.tar.gz
 
       - name: 🎭 安装Playwright
+        shell: bash
         run: npx playwright install --with-deps
 
       - name: 🧪 运行E2E冒烟测试 (Release模式-快速验证)
-        run: |
-          echo "🧪 Release模式：运行关键E2E冒烟测试..."
-          # E建议：测试Sentry初始化和Event Loop监控 (Release模式-容错)
-          npm run test:e2e:smoke --timeout=60000 || echo "⚠️ E2E测试有问题，但不阻塞Release"
-          echo "✅ E2E冒烟测试完成"
-        continue-on-error: true
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: smoke
+          timeout: '60000'
+          fail-fast: 'false'
         env:
           SENTRY_DSN: ${{ env.SENTRY_DSN_STAGING }}
           NODE_ENV: 'test'
@@ -241,13 +248,13 @@ jobs:
           name: build-artifacts
 
       - name: 📦 解压构建产物
+        shell: bash
         run: tar -xzf build-artifacts.tar.gz
 
-      - name: 🔧 验证 Sentry CLI
-        run: |
-          echo "🔍 使用 npx 验证 Sentry CLI 可用性..."
-          npx @sentry/cli --version
-          echo "✅ Sentry CLI 验证完成"
+      - name: 🔧 安装Release工具
+        uses: ./.github/actions/setup-release-tools
+        with:
+          sentry-token: ${{ env.SENTRY_TOKEN }}
 
       - name: 🚀 创建Sentry Release
         run: |
@@ -369,11 +376,13 @@ jobs:
     needs: [prepare, create-release, health-check]
     if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
     steps:
-      - name: 🔧 验证 Sentry CLI
-        run: |
-          echo "🔍 使用 npx 验证 Sentry CLI 可用性..."
-          npx @sentry/cli --version
-          echo "✅ Sentry CLI 验证完成"
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 安装Release工具
+        uses: ./.github/actions/setup-release-tools
+        with:
+          sentry-token: ${{ env.SENTRY_TOKEN }}
 
       - name: 🚀 标记Sentry部署
         shell: bash

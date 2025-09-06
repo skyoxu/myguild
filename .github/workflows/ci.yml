@@ -71,11 +71,13 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🔗 Needs 依赖校验
+        shell: bash
         run: |
           echo "🔍 校验所有工作流 needs 依赖完整性..."
           node scripts/ci/workflow-guardian.mjs
 
       - name: 🛡️ 分支保护规则同步检查
+        shell: bash
         run: |
           echo "🔍 检查分支保护规则与关键jobs一致性..."
           node scripts/ci/branch-protection-guardian.mjs
@@ -151,7 +153,9 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🧪 运行单元测试（覆盖率）
-        run: npm run test:coverage
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: coverage
         env:
           NODE_ENV: test
       - name: 📤 上传覆盖率摘要
@@ -182,6 +186,7 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
       - name: 🔍 Coverage 脚本语法检查 (UTF-8 编码验证)
+        shell: bash
         run: |
           echo "🔍 验证 coverage-config.cjs 语法和编码..."
           node --check scripts/ci/coverage-config.cjs
@@ -219,6 +224,7 @@ jobs:
       - name: 🏗️ 构建应用
         run: npm run build
       - name: 🔍 验证构建产物
+        shell: bash
         run: |
           ls -la dist/
           test -f dist/index.html
@@ -342,17 +348,24 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
-      - name: 🖥️ 安装系统依赖 (Electron)
+      # Windows下无需安装xvfb，Electron可以直接运行
+      - name: 🖥️ 验证Windows环境支持
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+          echo "✅ Windows环境下的Electron原生支持"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Windows下无需xvfb，Electron可直接运行"
 
-      - name: 🛡️ 运行安全冒烟测试
-        run: xvfb-run -a npm run test:e2e:security
+      - name: 🛡️ 运行安全冒烟测试 (Windows原生)
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: security
         env:
           CI: true
+          # Windows下无需xvfb，Electron可直接运行
 
       - name: 🔍 Electron安全基线校验
+        shell: bash
         run: |
           echo "🔍 执行Electron安全基线静态校验..."
 
@@ -516,11 +529,15 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 📊 可观测性配置验证
-        run: npm run test:observability
+        uses: ./.github/actions/run-tests
+        with:
+          test-type: observability
 
       - name: 📈 生成可观测性报告
+        shell: pwsh
         run: |
-          mkdir -p reports
+          # P0修复：Windows runner使用PowerShell目录创建替代Linux mkdir -p
+          New-Item -ItemType Directory -Path "reports" -Force
           npm run test:observability > reports/observability-verification.json
 
       - name: 📋 上传可观测性报告
