@@ -408,11 +408,11 @@ jobs:
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
 
-          # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-## 📊 分阶段发布总结
-
-EOF
+          # 输出发布总结到 Job Summary
+          {
+            echo '## 📊 分阶段发布总结'
+            echo ''
+          } >> $GITHUB_STEP_SUMMARY
           echo "**版本**: ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**发布阶段**: ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY  
           echo "**状态**: ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
@@ -420,10 +420,10 @@ EOF
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ steps.status.outputs.status }}" = "success" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-### ✅ 发布进展
-- [x] 预检查通过
-            EOF
+            {
+              echo '### ✅ 发布进展'
+              echo '- [x] 预检查通过'
+            } >> $GITHUB_STEP_SUMMARY
             if [ "${{ inputs.skip_health_check }}" != "true" ] && [ "${{ env.STAGING_PERCENTAGE }}" != "5" ]; then
               echo "- [x] 健康检查通过" >> $GITHUB_STEP_SUMMARY
             fi

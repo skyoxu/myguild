@@ -300,22 +300,22 @@ jobs:
             *) health_icon="❓"; health_text="未知" ;;
           esac
 
-          # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## 🎯 渐进发布执行报告
-
-          | 配置项 | 值 |
-          |--------|-----|
-          EOF
+          # 输出报告到 Job Summary
+          {
+            echo '## 🎯 渐进发布执行报告'
+            echo ''
+            echo '| 配置项 | 值 |'
+            echo '|--------|-----|'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "| 发布阶段 | ${{ inputs.stage }}% |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| 应用版本 | \`$APP_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
 
-          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-
-### 📊 执行结果
-          EOF
+          {
+            echo ''
+            echo '### 📊 执行结果'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> "$GITHUB_STEP_SUMMARY"
           echo "- **健康检查**: $health_icon $health_text" >> "$GITHUB_STEP_SUMMARY"
 

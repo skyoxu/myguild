@@ -98,42 +98,42 @@ jobs:
             errors=$(jq -r '.summary.errors' logs/observability-validation-report.json)
             warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
             
-            # 使用heredoc模式以确保Windows兼容UTF-8编码
-            cat >> "$GITHUB_STEP_SUMMARY" << EOF
-          ## 🔍 可观测性配置验证结果
-
-          ### 📈 验证摘要
-          | 指标 | 值 |
-          |------|-----|
-          | 状态 | $status |
-          | 环境数量 | $environments |
-          | 错误数量 | $errors |
-          | 警告数量 | $warnings |
-          EOF
+            # 输出验证摘要到 Job Summary
+            {
+              echo '## 🔍 可观测性配置验证结果'
+              echo ''
+              echo '### 📈 验证摘要'
+              echo '| 指标 | 值 |'
+              echo '|------|-----|'
+              echo "| 状态 | $status |"
+              echo "| 环境数量 | $environments |"
+              echo "| 错误数量 | $errors |"
+              echo "| 警告数量 | $warnings |"
+            } >> "$GITHUB_STEP_SUMMARY"
             
             # 如果有错误，显示错误详情
             if [ "$errors" -gt 0 ]; then
-              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-### ❌ 发现的错误
-              EOF
+              {
+                echo ''
+                echo '### ❌ 发现的错误'
+              } >> $GITHUB_STEP_SUMMARY
               jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
             
             # 如果有警告，显示警告详情
             if [ "$warnings" -gt 0 ]; then
-              cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-### ⚠️ 发现的警告
-              EOF
+              {
+                echo ''
+                echo '### ⚠️ 发现的警告'
+              } >> $GITHUB_STEP_SUMMARY
               jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
             fi
           else
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-## 🔍 可观测性配置验证结果
-
-⚠️ 无法找到验证报告文件
-            EOF
+            {
+              echo '## 🔍 可观测性配置验证结果'
+              echo ''
+              echo '⚠️ 无法找到验证报告文件'
+            } >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: 验证通过检查

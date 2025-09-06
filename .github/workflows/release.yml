@@ -105,13 +105,17 @@ jobs:
         id: env
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          # 由 Actions 先展开成字面，再传给 Bash
+          EVENT_NAME="${{ github.event_name }}"
+          BRANCH_REF="${{ github.ref }}"
+          
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             ENV="${{ github.event.inputs.environment }}"
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          elif [[ "$BRANCH_REF" == "refs/heads/main" ]]; then
             ENV="production"
-          elif [[ "${{ github.ref }}" = "refs/heads/release/"* ]]; then
+          elif [[ "$BRANCH_REF" == refs/heads/release/* ]]; then
             ENV="staging"
-          elif [[ "${{ github.ref }}" = "refs/tags/v"* ]]; then
+          elif [[ "$BRANCH_REF" == refs/tags/v* ]]; then
             ENV="production"
           else
             ENV="development"

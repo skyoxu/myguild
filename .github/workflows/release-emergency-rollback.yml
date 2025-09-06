@@ -305,25 +305,25 @@ jobs:
 
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 
 ### 📊 批量回滚结果
 ```json
-            EOF
+MD
             echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 ```
-            EOF
+MD
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 
 ### 📊 回滚结果
 ```json
-            EOF
+MD
             echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'MD'
 ```
-            EOF
+MD
           fi
 
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
