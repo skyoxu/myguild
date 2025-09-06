@@ -2,12 +2,12 @@ name: Validate Workflows & Guards
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - '.github/workflows/**'
       - 'scripts/ci/workflow-consistency-check.mjs'
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - '.github/workflows/**'
       - 'scripts/ci/workflow-consistency-check.mjs'
@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint
-        uses: rhysd/actionlint@v1.7.7
+        uses: raven-actions/actionlint@v2
 
   needs-guard:
     name: Check jobs/needs consistency
@@ -39,4 +39,3 @@ jobs:
           node-version: '20'
       - name: Run needs⊆jobs guard
         run: node scripts/ci/workflow-consistency-check.mjs
-
