@@ -468,9 +468,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            dir dist\
-            if not exist "dist\index.html" exit 1
-            if not exist "dist\assets\" exit 1
+            ls -la dist/
+            test -f dist/index.html
+            test -d dist/assets/
           else
             ls -la dist/
             test -f dist/index.html

@@ -19,7 +19,9 @@ on:
         required: false
         type: choice
         options:
-          ['dist/latest.yml', 'dist/latest-mac.yml', 'dist/latest-linux.yml']
+          - 'dist/latest.yml'
+          - 'dist/latest-mac.yml'
+          - 'dist/latest-linux.yml'
         default: 'dist/latest.yml'
       skip_health_check:
         description: '跳过健康度检查 (仅用于测试)'
@@ -299,51 +301,51 @@ jobs:
           esac
 
           # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ## 🎯 渐进发布执行报告
 
 | 配置项 | 值 |
 |--------|-----|
 EOF
-          echo "| 发布阶段 | ${{ inputs.stage }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 应用版本 | \`$APP_VERSION\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 发布阶段 | ${{ inputs.stage }}% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 应用版本 | \`$APP_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 📊 执行结果
 EOF
-          echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> $GITHUB_STEP_SUMMARY
-          echo "- **健康检查**: $health_icon $health_text" >> $GITHUB_STEP_SUMMARY
+          echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **健康检查**: $health_icon $health_text" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
-            echo "- **自动回滚**: ✅ 已执行回滚到 \`$PREV_GA_VERSION\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **自动回滚**: ✅ 已执行回滚到 \`$PREV_GA_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "- **自动回滚**: ⏭️ 未触发" >> $GITHUB_STEP_SUMMARY
+            echo "- **自动回滚**: ⏭️ 未触发" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           if [ "${{ steps.commit.outputs.committed }}" = "true" ]; then
-            echo "- **Git 提交**: ✅ 变更已提交并推送 (\`${{ steps.commit.outputs.commit_sha }}\`)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Git 提交**: ✅ 变更已提交并推送 (\`${{ steps.commit.outputs.commit_sha }}\`)" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "- **Git 提交**: ⏭️ 无变更需要提交" >> $GITHUB_STEP_SUMMARY
+            echo "- **Git 提交**: ⏭️ 无变更需要提交" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # 添加健康检查详情（如果有）
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 🏥 健康检查详情
 ```json
 EOF
-            echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> $GITHUB_STEP_SUMMARY
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 ```
 EOF
           fi
 
           # 下一步建议
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 
 ### 🎯 下一步建议
 EOF
@@ -354,16 +356,16 @@ EOF
               "25") next_stage="50" ;;
               "50") next_stage="100" ;;
             esac
-            echo "- ✅ 当前阶段健康度良好，可考虑继续到 **${next_stage}%** 阶段" >> $GITHUB_STEP_SUMMARY
-            echo "- 建议等待 10-15 分钟观察指标稳定后再进行下一阶段" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ 当前阶段健康度良好，可考虑继续到 **${next_stage}%** 阶段" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 建议等待 10-15 分钟观察指标稳定后再进行下一阶段" >> "$GITHUB_STEP_SUMMARY"
           elif [ "$health_status" = "failed" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 - 🚨 **健康检查失败，已执行自动回滚**
 - 请检查应用日志和错误报告，修复问题后重新发布
 - 考虑降级发布策略或增加更多测试覆盖
 EOF
           elif [ "${{ inputs.stage }}" = "100" ] && [ "$health_status" = "passed" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 - 🎉 **渐进发布完成！** 应用已全量发布
 - 继续监控 Release Health 指标
 - 可考虑更新 `PREV_GA_VERSION` 环境变量为当前版本

@@ -30,7 +30,14 @@
       "Read(//c//**)",
       "Bash(git checkout:*)",
       "Bash(npm run format:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(cat:*)",
+      "Bash(Select-String:*)",
+      "Bash(powershell:*)",
+      "Bash(sed:*)",
+      "mcp__zen-mcp-server__debug",
+      "Bash(gh run list:*)",
+      "Bash(actionlint:*)"
     ],
     "deny": [],
     "ask": [],

@@ -1,0 +1,136 @@
+- 这些报错来自 actionlint 集成的 ShellCheck 与 YAML 语法校验，均可通过“最小且安全”的改法修复：对 Bash 步骤做变量安全引用、把 export 拆分、用 heredoc 写多
+  行、在 if 表达式换用 env 上下文替代 secrets、去掉 pull_request 同时使用 paths 与 paths-ignore 的冲突。
+  - 不改依赖安装链，不动业务逻辑。
+
+  精准修复建议（逐条对位你日志中的错误）
+
+  - .github/workflows/build-and-test.yml:171/182 SC2086
+      - 原因: 未引用的命令替换与文件列表导致分词/通配
+      - 修复（用数组读 changed.txt；引用变量；export 拆分避免 SC2155）
+      - 替换 Lint Gate 片段:
+      - shell: bash
+      - run:
+        - set -euo pipefail
+        - echo "${{ steps.changed.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '\.(ts|tsx|js|jsx)$' > changed.txt || true
+        - if [ ! -s changed.txt ]; then echo "No relevant changed files for lint gate."; exit 0; fi
+        - PATH="$(npm bin):$PATH"; export PATH
+        - files=(); while IFS= read -r f; do files+=("$f"); done < changed.txt
+        - npx eslint "${files[@]}" --max-warnings 0
+        - npx prettier --check "${files[@]}"
+
+  - .github/workflows/ci.yml:253/264 “context secrets is not allowed here”
+      - 原因: 在该位置 if 不允许直接用 secrets 上下文（actionlint 校规）
+      - 修复: 先把 secret 注入 step env，再从 env 读取判断（env 上下文允许）
+      - 修改示例:
+      - name: Sentry step that needs secret
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
+        run: npx @sentry/cli --version
+
+      - 对 “取反”判断:
+        if: ${{ env.SENTRY_AUTH_TOKEN == '' }}
+
+  - .github/workflows/ci.yml:266/625 SC2086 / SC2129
+      - SC2086: 所有变量与文件名双引号，如 "$GITHUB_STEP_SUMMARY"、"$ARTIFACT_PATH"
+      - SC2129: 多次 >> 重定向改为一次性块重定向:
+      - { echo "行1"; echo "行2"; } >> "$GITHUB_STEP_SUMMARY"
+      - 或 heredoc:
+        - cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+        - …多行内容…
+        - EOF
+
+  - .github/workflows/ci.yml:467 SC1009/SC1073/SC1072 “双引号字符串解析失败”
+      - 原因: 在 run: | 的脚本内，双引号/反引号/反斜杠等未正确转义
+      - 修复: 用 heredoc 写多行 JSON/Markdown/脚本文本（并用单引号标定 EOF，禁止内插）
+      - 示例:
+      - run: |
+          cat > logs/unified-security-report.json << 'EOF'
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+  - .github/workflows/config-management.yml:150 SC2162 “read without -r”
+      - 原因: read 未加 -r 可能破坏反斜杠
+      - 修复: read -r line；如在 while read 循环中，统一改 “while IFS= read -r line; do … done”
+      - 修复: read -r line；如在 while read 循环中，统一改 “while IFS= read -r line; do … done”
+  -
+  .github/workflows/observability-gate.yml:106 YAML 解析失败
+      - 原因: 该行以 “| 指标 | …” 开头，落在 YAML 顶层（而非 run 脚本里）
+      - 修复: 把这类 Markdown 表格写进 run: | 中的 echo 或 heredoc；顶层不要裸放管道字符
+      - 示例:
+      - run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          | 指标 | 值 |
+          | ---- | -- |
+          | 状态 | OK |
+          EOF
+
+  - .github/workflows/pr-gatekeeper.yml:16 pull_request 同时有 paths 与 paths-ignore
+      - 原因: GitHub 事件同一分支的 pull_request 不允许同时使用 paths 与 paths-ignore
+      - 修复: 仅保留 paths；若要“排除”，用 !pattern 语法放在 paths 列表中
+      - 修复: 仅保留 paths；若要“排除”，用 !pattern 语法放在 paths 列表中
+  -
+  .github/workflows/release-emergency-rollback.yml:295 YAML 解析失败（中文文本）
+      - 原因: 顶层裸放非 YAML 语法行
+      - 修复: 将说明文本写成注释（#），或写进 run: | 的 echo/heredoc
+      - 示例: 在 run 脚本里：
+      - echo "⚠️ 这是一个紧急回滚操作说明"
+
+  - .github/workflows/release-monitor.yml / soft-gates.yml 多个 SC2086/SC2129
+      - 处理方式与 ci.yml 相同：所有变量/文件名加双引号；多次 >> 汇总为 { … } >> file 或 heredoc 块；对由 echo/printf 构成的大段 Markdown 总结统一用 heredoc
+      - 处理方式与 ci.yml 相同：所有变量/文件名加双引号；多次 >> 汇总为 { … } >> file 或 heredoc 块；对由 echo/printf 构成的大段 Markdown 总结统一用 heredoc
+  -
+  .github/workflows/staged-release.yml:415 ‘EOF’ 解析失败
+      - 原因: heredoc 结束标记位置/缩进不正确
+      - 修复: EOF 结尾必须顶格，与 run: | 的脚本同层缩进；建议用单引号的 EOF 禁止内插
+      - 示例:
+      - run: |
+          cat > logs/report.md << 'EOF'
+          …内容…
+          EOF
+
+  可直接替换的片段（两处高频）
+
+  - Secrets if 判断（ci.yml 两处）
+      - Before:
+      - if: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - if: ${{ !secrets.SENTRY_AUTH_TOKEN }}
+  - After:
+      - env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
+      - env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: ${{ env.SENTRY_AUTH_TOKEN == '' }}
+
+  - Step Summary 多行输出（任何 workflow）
+      - Before:
+      - echo "### 标题" >> $GITHUB_STEP_SUMMARY
+      - echo "| a | b |" >> $GITHUB_STEP_SUMMARY
+      - echo "|-|-|" >> $GITHUB_STEP_SUMMARY
+  - After（任意一个）:
+      - { echo "### 标题"; echo "| a | b |"; echo "|-|-|"; } >> "$GITHUB_STEP_SUMMARY"
+      - 或
+        - cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ### 标题
+          | a | b |
+          | - | - |
+          EOF
+
+  一次性验证（本地）
+
+  - 运行 actionlint（与你 CI 一致）：
+      - gh api rate_limit >/dev/null（可选）
+      - docker run --rm -v $PWD:/repo -w /repo rhysd/actionlint:latest -color
+      - 或在你的 validate-workflows.yml 里手动重跑 “Lint workflow YAML (actionlint)”
+
+  为什么是这些改法
+
+  - ShellCheck 规则意图：
+      - SC2086 双引号保护：防止路径带空格/星号导致分词/通配
+      - SC2155 export+赋值分开：避免掩盖命令返回值/可读性差
+      - SC2129 聚合重定向：减少条件竞争，提高效率
+      - SC1009/1073/1072：heredoc 是最稳多行写法
+  - actionlint 对 secrets 的限制：在某些 if 上下文 secrets 不可用；改为 env 上下文即可通过（env 在步骤/作业可用）

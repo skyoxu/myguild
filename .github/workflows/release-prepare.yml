@@ -101,7 +101,7 @@ jobs:
               --path="$artifact_path" \
               --manifest="artifacts/manifest.json")
             
-            echo "manifest_result=$result" >> $GITHUB_OUTPUT
+            echo "manifest_result=$result" >> "$GITHUB_OUTPUT"
             echo "✅ 版本已添加到清单"
             echo "$result" | jq '.'
           else
@@ -139,7 +139,7 @@ jobs:
             mv temp_manifest.json artifacts/manifest.json
             rm temp_version.json
             
-            echo "manifest_result={\"ok\":true,\"version\":\"${{ inputs.version }}\",\"test_mode\":true}" >> $GITHUB_OUTPUT
+            echo "manifest_result={\"ok\":true,\"version\":\"${{ inputs.version }}\",\"test_mode\":true}" >> "$GITHUB_OUTPUT"
             echo "✅ 占位版本条目已创建"
           fi
 

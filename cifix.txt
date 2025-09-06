@@ -1,160 +1,307 @@
-- 下面是完善 P2 的精确 diff：为三大工作流补顶层并发控制、PR 路径过滤，以及统一部分 artifacts 保留期；并为“工作流校验”本身补上并发控制。均为最小变更，不触碰
-  依赖安装链或业务逻辑。
+﻿
+================= 性能监控 × 质量门禁 ≥90% — 完整方案/意义/精确 Diff（Windows 专注） =================
 
-  Diff 1 — .github/workflows/build-and-test.yml（并发控制 + PR 路径过滤）
-  --- a/.github/workflows/build-and-test.yml
-  +++ b/.github/workflows/build-and-test.yml
-  @@
-   on:
-     push:
-       branches: [main, develop]
-     pull_request:
-       branches: [main, develop]
-  +    paths:
-  +      - 'src/**'
-  +      - 'electron/**'
-  +      - 'scripts/**'
-  +      - 'tests/**'
-  +      - 'package*.json'
-  +      - 'tsconfig*.json'
-  +      - 'vite.config.ts'
-  +      - '.github/workflows/build-and-test.yml'
-  @@
-   permissions:
-     contents: read
-     actions: read
-  +
-  +concurrency:
-  +  group: ${{ github.workflow }}-${{ github.ref }}
-  +  cancel-in-progress: true
-  Diff 2 — .github/workflows/ci.yml（并发控制 + PR/Push 路径过滤 + 统一 artifacts 保留期）
-  --- a/.github/workflows/ci.yml
-  +++ b/.github/workflows/ci.yml
-  @@
-   on:
-     push:
-  -    branches: [main, develop]
-  +    branches: [main, develop]
-  +    paths:
-  +      - 'src/**'
-  +      - 'electron/**'
-  +      - 'scripts/**'
-  +      - 'tests/**'
-  +      - 'package*.json'
-  +      - 'tsconfig*.json'
-  +      - 'vite.config.ts'
-  +      - '.github/workflows/ci.yml'
-     pull_request:
-  -    branches: [main, develop]
-  +    branches: [main, develop]
-  +    paths:
-  +      - 'src/**'
-  +      - 'electron/**'
-  +      - 'scripts/**'
-  +      - 'tests/**'
-  +      - 'package*.json'
-  +      - 'tsconfig*.json'
-  +      - 'vite.config.ts'
-  +      - '.github/workflows/ci.yml'
-  @@
-   permissions:
-     contents: read
-     actions: read
-  -  pull-requests: write
-  +
-  +concurrency:
-  +  group: ${{ github.workflow }}-${{ github.ref }}
-  +  cancel-in-progress: true
-  @@
-     observability-verification:
-  @@
-  -      - name: 📤 上传可观测性报告
-  +      - name: 📤 上传可观测性报告
-           uses: actions/upload-artifact@v4
-           with:
-             name: observability-report
-             path: reports/
-  -          retention-days: 7
-  +          retention-days: 14
-  @@
-     deployment-readiness:
-  @@
-  -      - name: 📋 上传部署清单
-  +      - name: 📋 上传部署清单
-           uses: actions/upload-artifact@v4
-           with:
-             name: deployment-checklist
-             path: deployment-checklist.md
-  -          retention-days: 90
-  +          retention-days: 30
-  Diff 3 — .github/workflows/release.yml（并发控制 + PR/Push 路径过滤）
-  --- a/.github/workflows/release.yml
-  +++ b/.github/workflows/release.yml
-  @@
-   on:
-     push:
-  -    branches: [main, release/*]
-  -    tags: ['v*']
-  +    branches: [main, release/*]
-  +    tags: ['v*']
-  +    paths:
-  +      - 'src/**'
-  +      - 'electron/**'
-  +      - 'scripts/**'
-  +      - 'package*.json'
-  +      - 'tsconfig*.json'
-  +      - 'vite.config.ts'
-  +      - '.github/workflows/release.yml'
-     pull_request:
-  -    branches: [main]
-  +    branches: [main]
-  +    paths:
-  +      - 'src/**'
-  +      - 'electron/**'
-  +      - 'scripts/**'
-  +      - 'package*.json'
-  +      - 'tsconfig*.json'
-  +      - 'vite.config.ts'
-  +      - '.github/workflows/release.yml'
-  @@
-   permissions:
-     contents: write
-     actions: read
-     id-token: write
-  +
-  +concurrency:
-  +  group: ${{ github.workflow }}-${{ github.ref }}
-  +  cancel-in-progress: false
-  Diff 4 — .github/workflows/validate-workflows.yml（并发控制）
-  --- a/.github/workflows/validate-workflows.yml
-  +++ b/.github/workflows/validate-workflows.yml
-  @@
-   permissions:
-     contents: read
+一、目标与范围（仅 Windows 平台）
+- 目标：把“性能监控（Performance Gates）”与“质量门禁（Quality Gates）”拉升并稳定在 ≥90%，并将“看报表”升级为“可阻断”的硬门禁；仅在 Windows runner 上生效（不涉及 macOS/Linux）。
+- 范围：PR（轻量门禁）、主分支（全量门禁）、发布流水线（最相关门禁）。不改依赖安装链，不引入平台外部依赖。
 
-  -concurrency:
-  -  group: ${{ github.workflow }}-${{ github.ref }}
-  -  cancel-in-progress: true
-  +concurrency:
-  +  group: ${{ github.workflow }}-${{ github.ref }}
-  +  cancel-in-progress: true
-  （若该文件已存在 concurrency，可忽略此变更；保持与其它工作流一致即可。）
+二、落地意义（不会过严的关键）
+- 阻止“新增退化”：改动文件 0 warning ＋ 90% 覆盖率 Gate，把新增问题当场拦下；存量用基线逐步减少。
+- 与发布健康闭环：发布前≥90% 质量/性能，发布后（Sentry Release Health）≥99% 稳定；前后呼应。
+- 友好体验：硬门禁集中在 Windows 主链和主/发布分支；PR 跑“轻量门禁 + 改动文件门禁”；重任务夜间或按需触发。
 
-  可选（仅发布开启 sourcemap，一致性更好）
+三、实施要点（Windows 专注）
+1) 质量门禁（≥90）
+   - 改动文件 0 warning：`eslint --max-warnings 0` + `prettier --check` 仅对 diff 文件执行。
+   - 全量 Guard：`npm run guard:quality`（涵盖 lint/typecheck/覆盖率/Bundle 等），覆盖率 Gate 全局保持 90%。
+   - 覆盖率 Delta（可选）：改动文件覆盖率 ≥80% 或不降低全局（后续迭代可加入）。
 
-  - 如你想进一步统一 SourceMaps 触发时机，建议在 vite.config.ts 改为“仅生产发布启用”：
-  --- a/vite.config.ts
-  +++ b/vite.config.ts
-  @@
-     build: {
-       outDir: 'dist',
-       emptyOutDir: true,
-  -    sourcemap: true,
-  +    sourcemap: process.env.NODE_ENV === 'production',
-     },
-  执行后预期
+2) 性能门禁（≥90）
+   - PR：User Timing + 1–2 个快速 Gate（帧率稳定/场景切换/WebVitals 混合），阈值带 5–10% 缓冲；Windows runner 执行。
+   - 主分支：全量 Gate 严阈值；Step Summary 汇总。
+   - 发布：只跑“最相关 Gate”，避免 Flaky 阻断。
 
-  - 并发：同分支重复推送会自动取消前一轮，减少排队与资源浪费。
-  - 路径过滤：文档类改动不再触发重任务；CI 更聚焦在代码/构建相关变更。
-  - 产物：保留期一致，日常 14 天、发布/安全 30 天，便于清理与追溯。
-  - 守护：validate-workflows.yml + needs 自检已就位；后续 job 改名/依赖漂移能被及时发现。
+3) 守护（不触碰依赖链）
+   - 并发控制：concurrency（重工作流 build-and-test/ci/release 顶部加 group/cancel-in-progress）。
+   - PR 路径过滤：仅在代码变更触发重任务；文档改动不触发。
+   - Artifacts：常规 14 天，发布/安全 30 天；Step Summary 统一 UTF‑8/ASCII。
+   - 发布 SourceMaps：仅生产/发布开启（Sentry 上传更稳）。
+
+四、精确 Diff（直接应用）
+
+【Diff 1】.github/workflows/build-and-test.yml — 新增“改动文件 0 warning”与“性能门禁（Windows）”
+----------------------------------------------------------------
+--- a/.github/workflows/build-and-test.yml
++++ b/.github/workflows/build-and-test.yml
+@@
+       - name: Verify ESLint setup
+         shell: bash
+         run: |
+           export PATH="$(npm bin):$PATH"
+           ./node_modules/.bin/eslint -v || npx --yes eslint -v
+
+      # 改动文件 0 warning 门禁（禁止新增告警）
+      - name: Get changed files
+        id: changed
+        uses: tj-actions/changed-files@v45
+        with:
+          separator: ' '
+
+      - name: Lint Gate (changed files = 0 warnings)
+        if: ${{ steps.changed.outputs.any_changed == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ steps.changed.outputs.all_changed_files }}" | tr ' ' '\n' \
+            | grep -E '\\.(ts|tsx|js|jsx)$' > changed.txt || true
+          if [ ! -s changed.txt ]; then
+            echo "No relevant changed files for lint gate."; exit 0
+          fi
+          export PATH="$(npm bin):$PATH"
+          echo "Lint on changed files:"; cat changed.txt
+          npx eslint $(cat changed.txt) --max-warnings 0
+          npx prettier --check $(cat changed.txt)
+@@
+      # 性能门禁（Windows）
+      - name: 🧪 性能基准（User Timing）
+        run: npm run guard:performance
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（帧率稳定）
+        run: npm run guard:framerate
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（场景切换）
+        run: npm run guard:scene-transition
+        env: { NODE_ENV: test }
+
+      - name: 🧪 性能门禁（WebVitals 混合）
+        run: node scripts/perf/web-vitals-hybrid-gate.mjs
+        env: { NODE_ENV: test }
+
+      - name: 📈 Performance Gate Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## 📈 Performance Gates (Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- User Timing: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+          echo "- 帧率稳定/场景切换: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+          echo "- WebVitals（如配置）: 已执行并门禁化" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📋 Quality Gate Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## ✅ Quality Gates (Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint/Typecheck: 已执行（含改动文件 0 warning 门禁）" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage Gate: 全局 ≥ 90%（若低于已阻断）" >> $GITHUB_STEP_SUMMARY
+          echo "- Bundle/体量阈值: 已校验" >> $GITHUB_STEP_SUMMARY
+
+
+【Diff 2】.github/workflows/release.yml — sentry-cli 版本探针（更快定位工具问题）
+----------------------------------------------------------------
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@
+   create-release:
+@@
+      - name: 🔧 检查 Sentry CLI
+        shell: bash
+        run: npx @sentry/cli --version
+@@
+       - name: 🚀 创建Sentry Release
+         run: |
+           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+           echo "🚀 创建Release: $RELEASE_NAME"
+           npx sentry-cli releases new "$RELEASE_NAME"
+           npx sentry-cli releases set-commits "$RELEASE_NAME" --auto
+@@
+   deploy:
+@@
+      - name: 🔧 检查 Sentry CLI
+        shell: bash
+        run: npx @sentry/cli --version
+@@
+       - name: 🚀 标记Sentry部署
+         run: |
+           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
+           ENVIRONMENT="${{ needs.prepare.outputs.environment }}"
+           echo "🚀 标记部署: $RELEASE_NAME @ $ENVIRONMENT"
+           npx sentry-cli releases deploys "$RELEASE_NAME" new \
+             --env "$ENVIRONMENT" \
+             --name "GitHub Actions Deploy" \
+             --time "$(date -u +%Y-%m-%dT%H:%M:%S%z)"
+           npx sentry-cli releases finalize "$RELEASE_NAME"
+
+
+【可选 Diff 3】vite.config.ts — 仅发布构建启用 SourceMaps（便于 Sentry 上传）
+----------------------------------------------------------------
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@
+   build: {
+     outDir: 'dist',
+     emptyOutDir: true,
+-    sourcemap: true,
++    sourcemap: process.env.NODE_ENV === 'production',
+   },
+
+
+五、验证清单（通过标准）
+- 质量门禁：
+  - 改动文件 0 warning 门禁命中（ESLint/Prettier 对 diff 执行；新增告警=0）。
+  - Coverage Gate 全局 ≥90%（若低于，CI 阻断）。
+  - Step Summary 展示 Quality Gates 摘要。
+- 性能门禁：
+  - User Timing +（帧率/场景切换/WebVitals 混合）在 Windows 成功执行并具门禁；门槛不达标时 CI 阻断。
+  - Step Summary 展示 Performance Gates 摘要。
+- 发布：
+  - `npx @sentry/cli --version` 探针执行成功；SourceMaps（仅生产）上传成功；Release/Deploy 标记成功。
+
+六、FAQs（不会导致“开发阶段过严”的原因）
+- PR 仅对“改动文件”施加 0 warning 和轻量性能基线，不背存量；重门禁放在主分支/发布分支或夜间，兼顾效率与稳定。
+- 并发与路径过滤减少无谓重跑；Artifacts 保留期统一，有利清理与追溯。
+
+【P2 收尾 Diff 合集】并发控制 + PR 路径过滤 + Artifacts 保留期（Windows 专注）
+----------------------------------------------------------------
+
+[Diff A] .github/workflows/build-and-test.yml — 并发控制 + PR 路径过滤
+--- a/.github/workflows/build-and-test.yml
++++ b/.github/workflows/build-and-test.yml
+@@
+ on:
+   push:
+     branches: [main, develop]
+   pull_request:
+     branches: [main, develop]
++    paths:
++      - 'src/**'
++      - 'electron/**'
++      - 'scripts/**'
++      - 'tests/**'
++      - 'package*.json'
++      - 'tsconfig*.json'
++      - 'vite.config.ts'
++      - '.github/workflows/build-and-test.yml'
+@@
+ permissions:
+   contents: read
+   actions: read
++
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
+
+
+[Diff B] .github/workflows/ci.yml — 并发控制 + PR/Push 路径过滤 + 保留期统一
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@
+ on:
+   push:
+-    branches: [main, develop]
++    branches: [main, develop]
++    paths:
++      - 'src/**'
++      - 'electron/**'
++      - 'scripts/**'
++      - 'tests/**'
++      - 'package*.json'
++      - 'tsconfig*.json'
++      - 'vite.config.ts'
++      - '.github/workflows/ci.yml'
+   pull_request:
+-    branches: [main, develop]
++    branches: [main, develop]
++    paths:
++      - 'src/**'
++      - 'electron/**'
++      - 'scripts/**'
++      - 'tests/**'
++      - 'package*.json'
++      - 'tsconfig*.json'
++      - 'vite.config.ts'
++      - '.github/workflows/ci.yml'
+@@
+ permissions:
+   contents: read
+   actions: read
+-  pull-requests: write
++
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
+@@
+   observability-verification:
+@@
+-      - name: 📤 上传可观测性报告
++      - name: 📤 上传可观测性报告
+         uses: actions/upload-artifact@v4
+         with:
+           name: observability-report
+           path: reports/
+-          retention-days: 7
++          retention-days: 14
+@@
+   deployment-readiness:
+@@
+-      - name: 📋 上传部署清单
++      - name: 📋 上传部署清单
+         uses: actions/upload-artifact@v4
+         with:
+           name: deployment-checklist
+           path: deployment-checklist.md
+-          retention-days: 90
++          retention-days: 30
+
+
+[Diff C] .github/workflows/release.yml — 并发控制 + PR/Push 路径过滤
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@
+ on:
+   push:
+-    branches: [main, release/*]
+-    tags: ['v*']
++    branches: [main, release/*]
++    tags: ['v*']
++    paths:
++      - 'src/**'
++      - 'electron/**'
++      - 'scripts/**'
++      - 'package*.json'
++      - 'tsconfig*.json'
++      - 'vite.config.ts'
++      - '.github/workflows/release.yml'
+   pull_request:
+-    branches: [main]
++    branches: [main]
++    paths:
++      - 'src/**'
++      - 'electron/**'
++      - 'scripts/**'
++      - 'package*.json'
++      - 'tsconfig*.json'
++      - 'vite.config.ts'
++      - '.github/workflows/release.yml'
+@@
+ permissions:
+   contents: write
+   actions: read
+   id-token: write
++
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: false
+
+
+[Diff D（可选）] vite.config.ts — 仅发布构建开启 SourceMaps（便于 Sentry 上传）
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@
+   build: {
+     outDir: 'dist',
+     emptyOutDir: true,
+-    sourcemap: true,
++    sourcemap: process.env.NODE_ENV === 'production',
+   },

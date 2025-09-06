@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "📋 应用版本: $VERSION"
 
       - name: 🏷️ 确定发布环境
@@ -109,14 +109,14 @@ jobs:
             ENV="${{ github.event.inputs.environment }}"
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             ENV="production"
-          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/release/"* ]]; then
             ENV="staging"
-          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          elif [[ "${{ github.ref }}" == "refs/tags/v"* ]]; then
             ENV="production"
           else
             ENV="development"
           fi
-          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
           echo "🌍 目标环境: $ENV"
 
       - name: 🖥️ 确定平台信息
@@ -124,7 +124,7 @@ jobs:
         shell: bash
         run: |
           PLATFORM="windows"
-          echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "platform=$PLATFORM" >> "$GITHUB_OUTPUT"
           echo "💻 构建平台: $PLATFORM"
 
       - name: 🎯 生成Release名称
@@ -134,7 +134,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           PLATFORM="${{ steps.platform.outputs.platform }}"
           RELEASE_NAME="${RELEASE_PREFIX}@${VERSION}+${PLATFORM}"
-          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           echo "🏷️ Release名称: $RELEASE_NAME"
 
   # 🔨 构建和测试
