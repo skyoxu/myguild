@@ -129,7 +129,7 @@ jobs:
   unit-tests-core:
     name: Unit Tests (ubuntu-latest, Node 20)
     runs-on: ubuntu-latest
-    needs: quality-gates
+    needs: workflow-guardian
     timeout-minutes: 15
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
