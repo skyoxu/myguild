@@ -294,7 +294,7 @@ function sortKeys(x, topLevel = false) {
     const keys = Object.keys(x).sort((a, b) => {
       const ia = order.indexOf(a), ib = order.indexOf(b);
       if (ia !== -1 || ib !== -1) return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
-      return a.localeCompare(b);
+      return a < b ? -1 : a > b ? 1 : 0; // 使用代码点序，避免locale依赖
     });
     const o = {};
     for (const k of keys) o[k] = sortKeys(x[k]);
