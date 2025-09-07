@@ -280,6 +280,7 @@ jobs:
           sentry-token: ${{ env.SENTRY_TOKEN }}
 
       - name: 🚀 创建Sentry Release
+        shell: bash
         run: |
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
           echo "🚀 创建Release: $RELEASE_NAME"

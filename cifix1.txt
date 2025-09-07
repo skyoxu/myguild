@@ -1,147 +1,139 @@
-1) 构建应用：ReferenceError: window is not defined
-
-根因：这组性能测试文件现在是 ESM（.mjs）并在 Node 环境里跑；但你的全局 src/test-setup.ts 在加载时无条件触碰了 window.matchMedia，Node 环境没有 window，因此直接抛错。Vitest 支持文件级指定环境，以及按 glob 选择不同环境；也可以在 setup 里用 typeof window !== 'undefined' 做“环境感知”保护。
-vitest.dev
+我看了你这次 CI 的报错文件，失败点集中在**“guard:performance（User Timing 基准）整套门禁全红”**：5 个场景的 P95/P99 超过你设定阈值（例如 App Startup P95≈3749ms>3000ms；Game Scene Load P95≈1879ms>1500ms 等），最终以 exit code 1 终止流水线。下面给你一个“先保上线、再稳长期”的两段式修复方案：先让 CI 变绿（不放弃预警），再系统性把指标拉回到阈值以内。
+MDN Web Docs
 +1
 
-修法一（最小改动，推荐）
+A. 先让 CI 变绿，但继续给出“有牙齿”的预警
 
-仅让这份性能测试在 Node 环境跑，并让 test-setup.ts 在 有 window 才执行补丁。
-
-A. 给该测试文件头部加指令：
-
-// src/tests/docs-scorer-performance.test.mjs
-// @vitest-environment node
-// （其余不变）
-
-
-Vitest 的 @vitest-environment 控制注释能对单个文件指定环境。
-vitest.dev
-
-B. 修改 src/test-setup.ts，只在存在 window 时才 mock：
-
-// src/test-setup.ts
-import { vi } from 'vitest';
-
-const g: any = globalThis;
-if (typeof g.window !== 'undefined') {
-  Object.defineProperty(g.window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation((query: string) => ({
-      matches: false, media: query,
-      addListener: vi.fn(), removeListener: vi.fn(),
-      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
-    })),
-  });
-}
-
-修法二（如果该测试确实需要 DOM）
-
-把它切到 jsdom 环境（仅这份文件）：
-
-// @vitest-environment jsdom
-
-
-或在 vitest.config.ts 为不同文件模式指定环境（例如 DOM 测试走 jsdom，性能/Node 工具测试走 node）：
-
-import { defineConfig } from 'vitest/config';
-export default defineConfig({
-  test: {
-    setupFiles: ['src/test-setup.ts'],
-    // 针对不同测试文件的环境匹配（Vitest 官方提供）
-    environmentMatchGlobs: [
-      ['**/*.dom.test.*', 'jsdom'],
-      ['**/*.browser.test.*', 'jsdom'],
-      ['**/*.performance.test.*', 'node'],
-    ],
-  },
-});
-
-
-（文件级指令与 environmentMatchGlobs 均为 Vitest 官方支持；配置项写在 Vitest/Vite config 的 test 下。）
-vitest.dev
+共享型 Windows Runner 的性能抖动明显（2 vCPU / 7GB RAM 的按需 VM），将绝对阈值作为硬门禁很容易误伤正常提交；建议把当前基准降为软门禁（不中断合并），或改成相对回归门禁（相对主分支基线）。
+GitHub Docs
 +1
 
-2) 标记部署完成：Release not found
+把 job 改成“不中断，但要评审”（软门禁）
 
-根因：你直接执行了“标记部署”，但对应的 Release 尚未创建/可见，或 Release 名称不一致（例如运行时 SDK 用 app@0.1.1+windows，而 CLI 的 new 步骤用的不是同一个字符串），或者 CLI 没拿到 SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN。Sentry 的标准流程是：先创建并（可选）finalize release →（可选）关联 commits / 上传 sourcemaps → 再创建 deploy。文档明确 deploy 命令为 sentry-cli deploys new --release "$VERSION" -e ENV（新版 CLI），并可用 -t <秒数> 传持续时间。
-docs.sentry.io
+- name: Run performance guard
+  id: perf
+  run: npm run guard:performance
+  continue-on-error: true   # 不阻断合并
 
-一次跑通的最小步骤（Bash；Windows 机也可 shell: bash）
-# 0) 环境变量（GitHub Actions 里通常来自 secrets）
-export SENTRY_AUTH_TOKEN="${{ secrets.SENTRY_AUTH_TOKEN }}"
-export SENTRY_ORG="your-org"
-export SENTRY_PROJECT="your-project"
-
-VERSION="app@0.1.1+windows"  # 必须与 SDK runtime release 一致
-
-# 1) 创建 Release（必要）
-sentry-cli releases new "$VERSION" -p "$SENTRY_PROJECT"
-
-# 2) 关联 commits（推荐）
-sentry-cli releases set-commits "$VERSION" --auto
-
-# 3) 上传 sourcemaps（如果前端/Electron 渲染进程需要）
-sentry-cli sourcemaps upload --release "$VERSION" --dist windows "dist"
-
-# 4) Finalize（可选，但常用）
-sentry-cli releases finalize "$VERSION"
-
-# 5) 创建 Deploy（新版推荐语法）
-start=$(date -u +%s)
-# ... 你的部署动作 ...
-end=$(date -u +%s)
-sentry-cli deploys new --release "$VERSION" -e production -t $((end-start))
+# 失败就把结论写到 Job Summary / PR 评论（但不 fail）
+- name: Summarize perf guard
+  if: failure() && steps.perf.outcome == 'failure'
+  shell: bash
+  run: |
+    {
+      echo "## ⚠️ 性能门禁预警（未阻断）"
+      echo "- 本次 P95/P99 超阈；请在合并前复核对照基线"
+    } >> "$GITHUB_STEP_SUMMARY"
 
 
-要点：
+GitHub 的受保护分支可以把性能检查设为非 Required，失败时也不阻断合并；在你的主干保护上我们之前已建议把性能/包体积迁到软门禁，就是为了避免这类“噪声阻塞”。
+web.dev
 
-releases new/set-commits/sourcemaps upload/releases finalize/deploys new 的顺序与用法均见官方文档（包含 -t 传秒数、-e 传环境）。
-docs.sentry.io
+或改为“相对回归门禁”（更科学）
 
-Sentry CLI 需要 SENTRY_AUTH_TOKEN、SENTRY_ORG、SENTRY_PROJECT 才能正确关联到你的项目/组织。
-docs.sentry.io
+做 3～5 次重复取中位数做代表值（Lighthouse CI 的典型做法），把相对基线（最近 10 次 main 的中位数）+ 允许回归幅度（如 +20%）作为门禁标准；超过则fail，否则通过。
+web.dev
+DEV Community
+Max Rozen
 
-如果你必须在 PowerShell 下跑（Windows 默认 shell）
-$env:SENTRY_AUTH_TOKEN = "${{ secrets.SENTRY_AUTH_TOKEN }}"
-$env:SENTRY_ORG = "your-org"
-$env:SENTRY_PROJECT = "your-project"
-$VERSION = "app@0.1.1+windows"
+这比“绝对阈值”更抗噪声，也能真实抓住回归。
 
-sentry-cli releases new $VERSION -p $env:SENTRY_PROJECT
-sentry-cli releases set-commits $VERSION --auto
-sentry-cli sourcemaps upload --release $VERSION --dist windows "dist"
-sentry-cli releases finalize $VERSION
+B. 系统性把数值拉回（技术 + 统计 + 运行环境三线齐进）
+1) 统计与脚本层（立即见效）
 
-$start = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
-$end = $start  # 或部署完成后再取一次
-sentry-cli deploys new --release $VERSION -e production -t ($end - $start)
+升采样 + 预热：每个场景跑 30 次（至少 20 次），前 3 次丢掉当预热；以 P50/Median of Medians 和 P95 判定，重尾分布避免被极端值带偏。Lighthouse CI 也用“多次取中位数”降低抖动。
+web.dev
+Medium
 
+将 User Timing 用法更规范：确保每个量度都是 performance.mark() + performance.measure() 的闭环，并且在同一上下文读取；浏览器侧参看 MDN User Timing，Node 侧用 perf_hooks 的 performance.mark/measure 对齐规范。
+MDN Web Docs
++1
+nodejs.org
 
-小提醒：Sentry 推荐在部署前通知（create/finalize）Release；若未提前创建，首次上报事件也会自动创建一个 release，但这常与 CI 命名不匹配，容易出现“找不到 release”的报错。
-docs.sentry.io
+输出结构化报告 + 稳定阈值：把每轮原始测量、分位数、IQR 一起产出到 JSON 里，门禁只读 P95/P99 与 IQR；避免“只看平均值”的误判（你日志已在看 P95/P99，这是对的）。
 
-你可以直接落地到 CI 的最小改动
+分离“Build 压力”和“Perf 量测”：性能测试跑在release 构建产物上（NODE_ENV=production），并且放在专门 job，避免与并发打包/上传抢 IO、CPU。
 
-测试（Vitest）
+2) 运行环境层（把误差源降到最低）
 
-在 docs-scorer-performance.test.mjs 顶部加 // @vitest-environment node；
-
-把 src/test-setup.ts 改为“只有存在 window 才 mock”的写法（上面给了片段）；
-
-（可选）在 vitest.config.ts 用 environmentMatchGlobs 按 glob 指定环境，或全局 environment: 'node' + 给 DOM 测试文件加 // @vitest-environment jsdom。
-vitest.dev
+Runner 规格与稳定性：共享 Windows Runner 为 2 核/7GB，抖动较大。若你要把“性能门禁”设为硬门禁，建议：
+a) 切到 Larger Runner（更高配的托管机型），或
+b) 用 自托管 Runner（固定硬件/独占 CPU）。
+官方文档明确 runner 规格与“更大机型”的选项。
+GitHub Docs
 +1
 
-Sentry（Release→Deploy）
+浏览器/引擎一致性：若用浏览器测量（Electron/Chromium），固定版本与启动参数，避免后台更新导致差异；Playwright/Chromium 版本也建议锁定。
 
-在“标记部署完成”之前插入四步：releases new → set-commits → sourcemaps upload → releases finalize；
+3) 代码与场景层（针对你 5 个失败场景）
 
-改用 sentry-cli deploys new --release "$VERSION" -e production -t <秒数>（不要传 ISO 时间串）；并确保 VERSION 与 SDK runtime 一致；环境变量三件套已注入。
-docs.sentry.io
+App Startup（P95≈3.75s，>3s）
 
-这些修改应用后，当前两处都会转绿：
+减少同步 require() 链、把重模块延迟加载/按需加载；“同步 require 在启动期是最大瓶颈”是 Electron 圈子里反复验证的经验（优先用 bundler / Vite 的代码拆分，避免主进程的 require 堆栈）。
+Palette
+Takuya Matsuyama
 
-测试不再在 Node 环境访问 window；
+参考 Electron 官方性能指引：只做最小化启动工作、等 ready-to-show 再展示窗口、避免阻塞主进程（I/O、CPU 密集），必要时把重计算挪到 Worker/子进程。
+electronjs.org
 
-Sentry 会先有同名 Release，再去创建 Deploy，不会“Release not found”。
+Game Scene Load（P95≈1.88s，>1.5s）
+
+资源按需加载与预取（纹理、音频分批、使用压缩纹理），并把一次性对象改为对象池（减少 Scene 切换时的分配/回收）。Phaser 官方/社区都有使用 Group 做对象池的实践。
+Ourcade Blog
+phaser.io
+
+UI Modal Open（P95≈281ms，>200ms）
+
+预渲染/懒挂载 Modal 内部重组件，打开时只做显隐与少量测量；避免同步布局抖动（read→write→read 交错）。
+
+若在浏览器环境量测，确保持久化 measure() 的起止标记只围绕必要代码段。
+MDN Web Docs
+
+Game Turn Process（P95≈968ms，>500ms；P99≈975ms，>800ms）
+
+把大 O(n) 的 AI/寻路/规则评估移出主线程（Web Worker/Node Worker）；对频繁生成/销毁的实体使用对象池；调小帧内工作量（把部分逻辑拆分成多帧）。Phaser 的 TimeStep 基于 rAF，目标 60 FPS ≈16.7ms/帧，回合内工作必须“切片化”。
+docs.phaser.io
+
+Data Save（P95≈1.33s，>800ms；P99≈1.49s，>1200ms）
+
+持久化路径（本地文件/IndexedDB）：异步批量写代替同步串行；把序列化与压缩移到 Worker；写入合并/去抖。Node 侧 perf_hooks 能帮助你把序列化、压缩、IO 分别打点定位瓶颈。
+nodejs.org
+
+C. 你可以直接落地的改动清单（最小化改造）
+
+把性能门禁从“绝对阈值=硬阻断”切到“软门禁/相对回归”（上文 YAML 即插即用）。
+
+在 scripts/benchmarks/user-timing-benchmark.mjs：
+
+每个场景跑 30 次，丢 3 次预热；
+
+输出 p50/p95/p99 与原始样本数组到 JSON；
+
+新增“对照 main 最近 10 次中位数”的回归判断（>+20% 连续 2 次才失败）。
+（这一套与 Lighthouse CI “多次运行取中位数 + budgets/回归”相吻合，稳定性显著提升。）
+web.dev
+DEV Community
+
+App 启动/Scene Load 的代码侧：
+
+把主进程/渲染进程的大依赖延迟加载，确认 bundler 做了代码拆分；
+
+针对 Phaser 的实体/子弹等高频对象启用对象池；
+
+把重计算放 Worker；
+
+参考 Electron 官方性能页逐条排查主进程同步耗时。
+electronjs.org
+Ourcade Blog
+
+Runner 稳定性（若仍需硬门禁）：把该 job 迁到更大规格 Runner或自托管 Runner。
+GitHub Docs
++1
+
+你这份日志里最“值回票价”的两个突破口
+
+启动时同步加载链：把“非首屏”依赖统统推迟（import()/动态 chunk），缩短首屏关键路径（Electron 官方 + 社区经验都强调“少 require、多按需”）。
+Palette
+electronjs.org
+
+Phaser 对象池 + 资源分批：Scene 切换与回合处理中的分配回收最容易形成 P95 长尾；对象池思路是 Phaser 官方/社区公认的“立竿见影”。
