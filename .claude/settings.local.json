@@ -48,7 +48,8 @@
       "Bash(git config:*)",
       "Bash(npm config:*)",
       "Bash(git reset:*)",
-      "Bash(.actionlint.exe .github/workflows/release-emergency-rollback.yml)"
+      "Bash(.actionlint.exe .github/workflows/release-emergency-rollback.yml)",
+      "Bash(./actionlint.exe:*)"
     ],
     "deny": [],
     "ask": [],
