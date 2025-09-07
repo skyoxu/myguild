@@ -7,7 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import matter from 'gray-matter';
 import fg from 'fast-glob';
-import stringify from 'json-stable-stringify';
+import stringify from 'json-stringify-pretty-compact';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, cur, i, arr) => {
@@ -285,6 +285,23 @@ for (const file of mdFiles) {
   files[rel] = { frontMatter: fmOut, prdId, accept, anchors };
 }
 
+// 递归"排序"对象键（顶层按指定顺序，其它按字典序）
+function sortKeys(x, topLevel = false) {
+  if (Array.isArray(x)) return x.map(v => sortKeys(v));
+  if (x && typeof x === 'object') {
+    const order = topLevel ? ['metadata', 'keywords', 'files'] : []; // 固定顶层顺序
+    const keys = Object.keys(x).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
+      return a.localeCompare(b);
+    });
+    const o = {};
+    for (const k of keys) o[k] = sortKeys(x[k]);
+    return o;
+  }
+  return x;
+}
+
 // 读取旧文件（若存在）
 let old = null;
 try {
@@ -294,27 +311,24 @@ try {
   // 文件不存在或解析失败，继续使用新数据
 }
 
-// 计算"语义内容"的稳定哈希（不含 generatedAt）
-const payload = { keywords, files };
+// 1) 先规范化"语义内容"（排除 metadata 可变字段）
+const semantic = sortKeys({ keywords, files }, true);
+
+// 2) 计算稳定哈希（用于判断是否真的变更）
 const contentHash = crypto
   .createHash('sha256')
-  .update(stringify(payload))
+  .update(JSON.stringify(semantic))
   .digest('hex');
 
-// 只有内容变更时才更新时间戳；否则沿用旧值
-const generatedAt =
-  old && old.metadata && old.metadata.contentHash === contentHash
-    ? old.metadata.generatedAt
-    : new Date().toISOString();
+// 3) metadata：只有内容变更时才刷新 generatedAt
+const prevHash = old?.metadata?.contentHash;
+const generatedAt = prevHash === contentHash ? old.metadata.generatedAt : new Date().toISOString();
 
-// 组装最终对象（包含稳定的 contentHash）
-const out = {
-  metadata: { generatedAt, contentHash },
-  ...payload,
-};
+// 4) 合成最终对象（再次规范化，确保顶层顺序一致）
+const finalObj = sortKeys({ metadata: { contentHash, generatedAt }, ...semantic }, true);
 
-// 稳定序列化 + 固定缩进 + 末尾换行
-const json = stringify(out, { space: 2 }) + '\n';
+// 5) 紧凑稳定输出（行宽120）
+const json = stringify(finalObj, { indent: 2, maxLength: 120 }) + '\n';
 
 await fs.mkdir(path.dirname(OUT), { recursive: true });
 await fs.writeFile(OUT, json, 'utf8');
