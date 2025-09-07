@@ -92,7 +92,9 @@ class PerformanceBenchmark {
     const results = [];
     const warmupRounds = 3; // 预热轮数
 
-    console.log(`📊 运行性能测试: ${name} (${iterations}次，前${warmupRounds}次预热)`);
+    console.log(
+      `📊 运行性能测试: ${name} (${iterations}次，前${warmupRounds}次预热)`
+    );
 
     for (let i = 0; i < iterations; i++) {
       const startMark = `${name}.${i}.start`;
@@ -109,12 +111,14 @@ class PerformanceBenchmark {
           startMark,
           endMark
         );
-        
+
         // 跳过预热轮次的数据
         if (i >= warmupRounds) {
           results.push(measurement.duration);
         } else {
-          console.log(`   预热轮次 ${i + 1}/${warmupRounds}: ${measurement.duration.toFixed(2)}ms (跳过)`);
+          console.log(
+            `   预热轮次 ${i + 1}/${warmupRounds}: ${measurement.duration.toFixed(2)}ms (跳过)`
+          );
         }
 
         // 显示进度
@@ -146,7 +150,7 @@ class PerformanceBenchmark {
     const p75 = sorted[Math.floor(count * 0.75)];
     const p95 = sorted[Math.ceil(count * 0.95) - 1];
     const p99 = sorted[Math.ceil(count * 0.99) - 1];
-    
+
     // 计算四分位数间距（IQR）
     const iqr = p75 - p25;
 
