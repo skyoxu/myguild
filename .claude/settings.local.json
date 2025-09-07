@@ -37,16 +37,17 @@
       "Bash(sed:*)",
       "mcp__zen-mcp-server__debug",
       "Bash(gh run list:*)",
-      "Bash(actionlint:*)"
+      "Bash(actionlint:*)",
+      "Bash(rg:*)",
+      "Bash(curl:*)",
+      "Bash(go install:*)",
+      "Bash(py -m pip list:*)",
+      "Bash(py:*)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "C:\\c\\buildgame"
-    ]
+    "additionalDirectories": ["C:\\c\\buildgame"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "zen"
-  ]
+  "enabledMcpjsonServers": ["zen"]
 }

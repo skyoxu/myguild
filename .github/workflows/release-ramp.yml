@@ -282,51 +282,16 @@ jobs:
           git push origin ${{ github.ref }}
           echo "变更已推送"
 
-      - name: '📊 Summary report'
-        if: always()
+      - name: Ramp summary
         shell: bash
         run: |
-          # 确保UTF-8编码输出
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-
-          # 健康检查状态
-          health_status="${{ steps.health_check.outputs.health_status || 'skipped' }}"
-          case "$health_status" in
-            "passed") health_icon="✅"; health_text="通过" ;;
-            "failed") health_icon="❌"; health_text="失败" ;;
-            "error") health_icon="⚠️"; health_text="错误" ;;
-            "skipped") health_icon="⏭️"; health_text="跳过" ;;
-            *) health_icon="❓"; health_text="未知" ;;
-          esac
-
-          # 输出报告到 Job Summary
-          rollback_status="⏭️ 未触发"
-          if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
-            rollback_status="✅ 已执行回滚到 \`$PREV_GA_VERSION\`"
-          fi
-          
-          commit_status="⏭️ 无变更需要提交"
-          if [ "${{ steps.commit.outputs.committed }}" = "true" ]; then
-            commit_status="✅ 变更已提交并推送 (\`${{ steps.commit.outputs.commit_sha }}\`)"
-          fi
-          
+          summary_file="${GITHUB_STEP_SUMMARY}"
           {
-            echo '## 🎯 渐进发布执行报告'
-            echo ''
-            echo '| 配置项 | 值 |'
-            echo '|--------|-----|'
-            echo "| 发布阶段 | ${{ inputs.stage }}% |"
-            echo "| Feed 文件 | \`${{ inputs.feed_file }}\` |"
-            echo "| 应用版本 | \`$APP_VERSION\` |"
-            echo "| 上一稳定版本 | \`$PREV_GA_VERSION\` |"
-            echo ''
-            echo '### 📊 执行结果'
-            echo "- **分阶段发布**: ✅ 成功设置为 ${{ inputs.stage }}%"
-            echo "- **健康检查**: $health_icon $health_text"
-            echo "- **自动回滚**: $rollback_status"
-            echo "- **Git 提交**: $commit_status"
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "## 分阶段发布结果"
+            echo ""
+            echo "- **目标阶段**: ${{ inputs.stage }}%"
+            echo "- **触发人**: ${{ github.actor }}"
+          } >> "${summary_file}"
 
           # 添加健康检查详情（如果有）
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then

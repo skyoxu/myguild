@@ -401,39 +401,23 @@ jobs:
             echo "message=❓ 发布状态未知" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Post summary
+      - name: Generate staged plan & attach summary
         shell: bash
         run: |
-          # 确保UTF-8编码输出
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
+          summary_file="${GITHUB_STEP_SUMMARY}"
 
-          # 输出发布总结到 Job Summary
-          {
-            echo '## 📊 分阶段发布总结'
-            echo ''
-          } >> $GITHUB_STEP_SUMMARY
-          echo "**版本**: ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**发布阶段**: ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY  
-          echo "**状态**: ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
-          echo "**触发者**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ steps.status.outputs.status }}" = "success" ]; then
-            {
-              echo '### ✅ 发布进展'
-              echo '- [x] 预检查通过'
-            } >> $GITHUB_STEP_SUMMARY
-            if [ "${{ inputs.skip_health_check }}" != "true" ] && [ "${{ env.STAGING_PERCENTAGE }}" != "5" ]; then
-              echo "- [x] 健康检查通过" >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "- [x] 发布配置更新到 ${{ env.STAGING_PERCENTAGE }}%" >> $GITHUB_STEP_SUMMARY
-            echo "- [x] 监控设置完成" >> $GITHUB_STEP_SUMMARY
-          fi
+          # 生成发布计划文件（示例）
+          cat <<'PLAN' > release-plan.md
+          | 阶段 | 流量 | 条件 |
+          |---|---|---|
+          | 10% | 10min | 无告警 |
+          | 25% | 20min | 无告警 |
+          | 50% | 30min | 无告警 |
+          PLAN
 
           {
+            echo "## 分阶段发布计划"
+            cat "release-plan.md"
             echo ""
-            echo "### 🔗 相关链接"
-            echo "- [Sentry Release](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)"
-            echo "- [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)"
-          } >> $GITHUB_STEP_SUMMARY
+            echo "> 触发人: ${{ github.actor }} | 运行: ${{ github.run_id }}"
+          } >> "${summary_file}"

@@ -280,28 +280,22 @@ jobs:
           git push origin ${{ github.ref }}
           echo "✅ 紧急回滚完成并已推送"
 
-      - name: '📋 Emergency rollback summary'
+      - name: Rollback summary
         if: always()
         shell: bash
         run: |
-          # 确保UTF-8编码输出
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-
-          # 使用heredoc模式以确保Windows兼容UTF-8编码
-          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## 🚨 紧急回滚执行报告
-
-          **⚠️  这是一个紧急回滚操作**
-
-          | 项目 | 值 |
-          |------|-----|
-          EOF
-          echo "| 回滚原因 | ${{ inputs.reason }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 目标版本 | \`$PREV_GA_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Feed 文件 | ${{ inputs.feed_files }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 触发者 | ${{ inputs.triggered_by }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 执行时间 | $(date -u +%Y-%m-%dT%H:%M:%S.000Z) |" >> "$GITHUB_STEP_SUMMARY"
+          summary_file="${GITHUB_STEP_SUMMARY}"
+          {
+            echo "## 回滚结果总结"
+            echo ""
+            echo "- **目标版本**: ${{ inputs.target_version || env.PREV_GA_VERSION }}"
+            echo "- **触发人**: ${{ github.actor }}"
+            echo ""
+            echo "### 后续动作清单"
+            echo "1. 🔍 立即调查根因"
+            echo "2. 🧪 补充回归用例"
+            echo "3. 📝 输出复盘记录"
+          } >> "${summary_file}"
 
           # 回滚结果
           if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
