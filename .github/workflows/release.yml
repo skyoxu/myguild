@@ -431,7 +431,6 @@ jobs:
           echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
           # C建议：按cifix1.txt严格执行 - 只标记deploy (release已finalized)
-          START_TIME=$(date -u +%s)
           npx @sentry/cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
 
           echo "✅ 部署标记完成"
