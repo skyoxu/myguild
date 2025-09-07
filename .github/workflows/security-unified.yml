@@ -144,10 +144,34 @@ jobs:
             echo "snyk-status=skipped" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 检查秘钥泄露
-        uses: trufflesecurity/trufflehog@v3.90.6
-        with:
-          extra_args: --results=verified,unknown
+      - name: 安装TruffleHog工具（Windows原生）
+        shell: pwsh
+        run: |
+          Write-Host "Installing TruffleHog via Chocolatey..."
+          choco install trufflehog -y --no-progress
+          trufflehog --version
+          Write-Host "✅ TruffleHog安装完成"
+
+      - name: 检查秘钥泄露（Windows原生）
+        shell: pwsh
+        run: |
+          Write-Host "🔍 运行TruffleHog秘钥扫描..."
+          # 扫描整个文件系统，输出到JSON文件
+          trufflehog filesystem . --results=verified,unknown --fail --json | Out-File -FilePath "trufflehog-scan.json" -Encoding UTF8
+          
+          if (Test-Path "trufflehog-scan.json") {
+            Write-Host "✅ TruffleHog扫描完成"
+            # 检查是否有发现的秘钥
+            $content = Get-Content "trufflehog-scan.json" -Raw
+            if ($content -and $content.Trim() -ne "") {
+              Write-Host "⚠️ 发现潜在秘钥泄露，请检查报告"
+            } else {
+              Write-Host "✅ 未发现秘钥泄露"
+            }
+          } else {
+            Write-Host "❌ TruffleHog扫描失败"
+            exit 1
+          }
 
       - name: 汇总静态扫描结果
         id: static-scan
@@ -219,6 +243,7 @@ jobs:
             electronegativity-scan.csv
             npm-audit-results.json
             snyk-results.json
+            trufflehog-scan.json
           retention-days: 30
 
   # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）
