@@ -90,8 +90,9 @@ class PerformanceBenchmark {
 
   async measureFunction(name, fn, iterations = 10) {
     const results = [];
+    const warmupRounds = 3; // 预热轮数
 
-    console.log(`📊 运行性能测试: ${name} (${iterations}次)`);
+    console.log(`📊 运行性能测试: ${name} (${iterations}次，前${warmupRounds}次预热)`);
 
     for (let i = 0; i < iterations; i++) {
       const startMark = `${name}.${i}.start`;
@@ -108,7 +109,13 @@ class PerformanceBenchmark {
           startMark,
           endMark
         );
-        results.push(measurement.duration);
+        
+        // 跳过预热轮次的数据
+        if (i >= warmupRounds) {
+          results.push(measurement.duration);
+        } else {
+          console.log(`   预热轮次 ${i + 1}/${warmupRounds}: ${measurement.duration.toFixed(2)}ms (跳过)`);
+        }
 
         // 显示进度
         if ((i + 1) % Math.max(1, Math.floor(iterations / 10)) === 0) {
@@ -134,18 +141,27 @@ class PerformanceBenchmark {
     const avg = measurements.reduce((a, b) => a + b, 0) / count;
     const min = sorted[0];
     const max = sorted[count - 1];
+    const p25 = sorted[Math.floor(count * 0.25)];
     const p50 = sorted[Math.floor(count * 0.5)];
+    const p75 = sorted[Math.floor(count * 0.75)];
     const p95 = sorted[Math.ceil(count * 0.95) - 1];
     const p99 = sorted[Math.ceil(count * 0.99) - 1];
+    
+    // 计算四分位数间距（IQR）
+    const iqr = p75 - p25;
 
     return {
       count,
       avg: parseFloat(avg.toFixed(2)),
       min: parseFloat(min.toFixed(2)),
       max: parseFloat(max.toFixed(2)),
+      p25: parseFloat(p25.toFixed(2)),
       p50: parseFloat(p50.toFixed(2)),
+      p75: parseFloat(p75.toFixed(2)),
       p95: parseFloat(p95.toFixed(2)),
       p99: parseFloat(p99.toFixed(2)),
+      iqr: parseFloat(iqr.toFixed(2)),
+      rawSamples: measurements, // 保留原始样本用于分析
     };
   }
 
@@ -184,8 +200,8 @@ async function runBenchmarks() {
     console.log(`\n=== ${testConfig.name} ===`);
 
     try {
-      // 运行测试
-      await benchmark.measureFunction(testKey, testConfig.test, 20);
+      // 运行测试 (30次采样，前3次预热)
+      await benchmark.measureFunction(testKey, testConfig.test, 30);
 
       // 计算统计数据
       const stats = benchmark.calculateStatistics(testKey);
@@ -209,9 +225,11 @@ async function runBenchmarks() {
       };
 
       // 打印结果
-      console.log(`📈 统计结果:`);
+      console.log(`📈 统计结果 (${stats.count}个有效样本):`);
       console.log(`   平均值: ${stats.avg}ms`);
-      console.log(`   P50: ${stats.p50}ms`);
+      console.log(`   中位数(P50): ${stats.p50}ms`);
+      console.log(`   四分位数: P25=${stats.p25}ms, P75=${stats.p75}ms`);
+      console.log(`   IQR (稳定性指标): ${stats.iqr}ms`);
       console.log(
         `   P95: ${stats.p95}ms (阈值: ${testConfig.p95Threshold}ms)`
       );
