@@ -109,20 +109,22 @@ jobs:
 
       - name: 执行npm audit
         id: npm-audit
+        shell: bash
         run: |
           echo "🔍 运行npm audit..."
           npm audit --audit-level high --json > npm-audit-results.json || true
 
           if [ -f npm-audit-results.json ]; then
             echo "✅ npm audit完成"
-            echo "npm-audit-status=success" >> $GITHUB_OUTPUT
+            echo "npm-audit-status=success" >> "$GITHUB_OUTPUT"
           else
             echo "❌ npm audit失败"
-            echo "npm-audit-status=failed" >> $GITHUB_OUTPUT
+            echo "npm-audit-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 执行Snyk扫描（如果有Token）
         id: snyk-scan
+        shell: bash
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
@@ -146,6 +148,7 @@ jobs:
 
       - name: 汇总静态扫描结果
         id: static-scan
+        shell: bash
         continue-on-error: false
         run: |
           echo "📊 汇总静态安全扫描结果..."
@@ -185,22 +188,22 @@ jobs:
           echo "  High总计: $HIGH_COUNT"
 
           # 输出结果
-          echo "critical-count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
-          echo "high-count=$HIGH_COUNT" >> $GITHUB_OUTPUT
+          echo "critical-count=$CRITICAL_COUNT" >> "$GITHUB_OUTPUT"
+          echo "high-count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
 
           # ADR-0002 硬失败逻辑：Critical=0, High≤3
           if [ $CRITICAL_COUNT -gt 0 ]; then
-            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "status=failed" >> "$GITHUB_OUTPUT"
             echo "❌ [硬失败] 发现 $CRITICAL_COUNT 个Critical级别安全问题，根据ADR-0002必须为0"
             echo "🚨 门禁将强制失败，禁止合并"
             exit 1
           elif [ $HIGH_COUNT -gt 3 ]; then
-            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "status=failed" >> "$GITHUB_OUTPUT"
             echo "❌ [硬失败] 发现 $HIGH_COUNT 个High级别安全问题，根据ADR-0002最大允许3个"
             echo "🚨 门禁将强制失败，禁止合并"
             exit 1
           else
-            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "status=pass" >> "$GITHUB_OUTPUT"
             echo "✅ 静态安全扫描通过ADR-0002基线要求"
           fi
 
@@ -253,14 +256,15 @@ jobs:
 
       - name: 执行E2E安全测试
         id: e2e-test
+        shell: bash
         run: |
           echo "🧪 开始E2E安全测试..."
           if npm run test:e2e:security; then
             echo "✅ E2E安全测试通过"
-            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "status=pass" >> "$GITHUB_OUTPUT"
           else
             echo "❌ E2E安全测试失败"
-            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "status=failed" >> "$GITHUB_OUTPUT"
           fi
         env:
           CI: true
@@ -306,6 +310,7 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 确保日志目录存在
+        shell: bash
         run: mkdir -p logs
 
       - name: 执行统一安全门禁检查
