@@ -284,11 +284,22 @@ jobs:
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
           echo "🚀 创建Release: $RELEASE_NAME"
 
-          # C建议：创建release并自动关联commits (使用npx)
-          npx @sentry/cli releases new "$RELEASE_NAME"
+          # C建议：按cifix1.txt严格执行完整Sentry Release流程
+          # 1) 创建release 
+          npx @sentry/cli releases new "$RELEASE_NAME" -p "$SENTRY_PROJECT"
+          
+          # 2) 关联commits
           npx @sentry/cli releases set-commits "$RELEASE_NAME" --auto
+          
+          # 3) 上传sourcemaps (如果存在dist目录)
+          if [ -d "dist" ]; then
+            npx @sentry/cli sourcemaps upload --release "$RELEASE_NAME" --dist windows "dist"
+          fi
+          
+          # 4) Finalize release (必须在deploy之前)
+          npx @sentry/cli releases finalize "$RELEASE_NAME"
 
-          echo "✅ Release创建成功: $RELEASE_NAME"
+          echo "✅ Release创建并finalize完成: $RELEASE_NAME"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
@@ -419,16 +430,9 @@ jobs:
 
           echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
-          # C建议：标记deploy (使用npx) - 使用Unix时间戳格式
+          # C建议：按cifix1.txt严格执行 - 只标记deploy (release已finalized)
           START_TIME=$(date -u +%s)
-          npx @sentry/cli releases deploys "$RELEASE_NAME" new \
-            --env "$ENVIRONMENT" \
-            --name "GitHub Actions Deploy" \
-            --started "$START_TIME" \
-            --finished "$START_TIME"
-
-          # 完成release (使用npx)
-          npx @sentry/cli releases finalize "$RELEASE_NAME"
+          npx @sentry/cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
 
           echo "✅ 部署标记完成"
         env:
