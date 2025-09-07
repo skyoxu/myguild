@@ -63,16 +63,24 @@ jobs:
           working-directory: '.'
           node-version: ${{ env.NODE_VERSION }}
 
-      # 若 overlay-map 可自动生成，先重建并强制“已提交一致”
+      # 若 overlay-map 可自动生成，先重建并强制"已提交一致"
+      # 确保Windows环境按LF归一化
+      - if: startsWith(runner.os, 'Windows')
+        run: git config --global core.autocrlf input
       - run: node scripts/build-overlay-map.mjs
       - name: ensure overlay-map committed
         shell: bash
         run: |
           set -euo pipefail
-          git diff --exit-code scripts/overlay-map.json || {
-            echo "overlay-map.json changed; please commit."
+          echo "Checking overlay-map.json for changes..."
+          if git diff --exit-code scripts/overlay-map.json; then
+            echo "✅ overlay-map.json is up to date"
+          else
+            echo "❌ overlay-map.json has changes:"
+            git diff scripts/overlay-map.json
+            echo "Please commit the updated overlay-map.json"
             exit 1
-          }
+          fi
 
       # 富化任务 & 结构/引用校验（Ajv + 自定义校验）
       - run: node scripts/enrich-tasks.mjs --tasks .taskmaster/tasks/tasks.json --map scripts/overlay-map.json
