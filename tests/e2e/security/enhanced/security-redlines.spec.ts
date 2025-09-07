@@ -29,9 +29,18 @@ test.beforeAll(async () => {
   });
 
   mainWindow = await electronApp.firstWindow();
-  await mainWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
-  console.log('[RedLine] Electron应用启动完成，开始红线测试');
+  // 使用更健壮的等待策略
+  await mainWindow.waitForFunction(
+    () => ['interactive', 'complete'].includes(document.readyState),
+    { timeout: 15000 }
+  );
+
+  // 确保页面不是chrome-error://
+  const url = mainWindow.url();
+  expect(url.startsWith('chrome-error://')).toBeFalsy();
+
+  console.log(`[RedLine] Electron应用启动完成，页面: ${url}`);
 });
 
 test.afterAll(async () => {

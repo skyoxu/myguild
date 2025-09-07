@@ -1,9 +1,26 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session, protocol } from 'electron';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { securityPolicyManager } from './security/permissions';
 import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
+
+const APP_SCHEME = 'app';
+
+// 注册自定义安全协议 - 必须在app ready之前
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: APP_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true, // 需要跨源资源时打开
+      bypassCSP: false,
+    },
+  },
+]);
 
 // 安全配置常量（用于测试验证）
 export const SECURITY_PREFERENCES = {
@@ -14,10 +31,10 @@ export const SECURITY_PREFERENCES = {
 } as const;
 
 function createSecureBrowserWindow(): BrowserWindow {
-  return new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
+  const win = new BrowserWindow({
+    width: 1024,
+    height: 768,
+    show: true,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload.js'),
@@ -27,6 +44,42 @@ function createSecureBrowserWindow(): BrowserWindow {
       webSecurity: true,
     },
   });
+
+  // ===== 1) 彻底阻断外部导航（双层拦截）=====
+  const ses = win.webContents.session;
+
+  // 1a) 最早阶段cancel（不会真正导航→不会销上下文）
+  ses.webRequest.onBeforeRequest(
+    { urls: ['http://*/*', 'https://*/*'] },
+    (details, cb) => {
+      // 允许清单（如 Sentry 接入、本地服务）
+      const isAllowed =
+        details.url.includes('localhost') ||
+        details.url.includes('127.0.0.1') ||
+        details.url.includes('sentry.io') ||
+        details.url.startsWith('https://o.sentry.io');
+
+      if (!isAllowed) {
+        console.log(`🚫 [onBeforeRequest] 阻止外部请求: ${details.url}`);
+      }
+      cb({ cancel: !isAllowed });
+    }
+  );
+
+  // 1b) 二道闸：即使溜过，也在将要导航时拦下
+  win.webContents.on('will-navigate', (event, url) => {
+    console.log(`🔄 [will-navigate] 尝试导航到: ${url}`);
+    event.preventDefault(); // 官方安全指引推荐
+    // 如需放行少量可信URL，可在此白名单处理
+  });
+
+  // 新窗口一律拒绝
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    console.log(`🚫 [setWindowOpenHandler] 阻止新窗口: ${url}`);
+    return { action: 'deny' };
+  });
+
+  return win;
 }
 
 function configureTestMode(window: BrowserWindow): void {
@@ -97,8 +150,60 @@ function createWindow(): void {
     mainWindow.show();
   }
 
+  // ===== 2) 生产用响应头下发 CSP / COOP / COEP / CORP / Permissions-Policy =====
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, cb) => {
+    const headers = details.responseHeaders ?? {};
+    const set = (k: string, v: string) => {
+      headers[k] = [v];
+    };
+
+    // 最小可用 CSP（按需扩展 connect-src 等）
+    set(
+      'Content-Security-Policy',
+      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
+        "img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+        "script-src 'self'; connect-src 'self' https://o.sentry.io"
+    );
+
+    // 相邻安全头
+    set('Cross-Origin-Opener-Policy', 'same-origin');
+    set('Cross-Origin-Embedder-Policy', 'require-corp');
+    set('Cross-Origin-Resource-Policy', 'same-origin');
+    set(
+      'Permissions-Policy',
+      'geolocation=(), microphone=(), camera=(), notifications=(), ' +
+        'fullscreen=(self)'
+    );
+
+    cb({ responseHeaders: headers });
+  });
+
+  // ===== 3) 权限默认拒绝（Request + Check 双保险）=====
+  ses.setPermissionRequestHandler((_wc, _permission, callback) => {
+    console.log(`🚫 [setPermissionRequestHandler] 拒绝权限: ${_permission}`);
+    callback(false);
+  });
+  ses.setPermissionCheckHandler((_wc, _permission) => {
+    console.log(`🚫 [setPermissionCheckHandler] 拒绝权限检查: ${_permission}`);
+    return false;
+  });
+
+  // ===== 4) 健壮加载 + 错误自愈 =====
+  const indexUrl =
+    is.dev && process.env['ELECTRON_RENDERER_URL']
+      ? process.env['ELECTRON_RENDERER_URL']
+      : pathToFileURL(join(__dirname, '../renderer/index.html')).toString();
+
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.warn('[did-fail-load]', code, desc, url);
+    if (!mainWindow.isDestroyed() && !url.includes('chrome-error://')) {
+      console.log('🔄 重新加载首页以恢复...');
+      mainWindow.loadURL(indexUrl);
+    }
+  });
+
   // 应用统一安全策略（包含权限控制、导航限制、窗口打开处理）
-  securityPolicyManager.applySecurityPolicies(mainWindow);
+  // securityPolicyManager.applySecurityPolicies(mainWindow); // 暂时禁用以避免冲突
 
   // CSP策略：开发环境使用webRequest注入，生产环境依赖index.html meta标签
   if (is.dev) {
@@ -127,15 +232,18 @@ function createWindow(): void {
 
   configureTestMode(mainWindow);
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
+  console.log(`📂 加载页面: ${indexUrl}`);
+  mainWindow.loadURL(indexUrl);
 }
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron');
+
+  // 注册app://协议映射（如使用自定义协议）
+  // protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
+  //   const url = request.url.replace(`${APP_SCHEME}://-`, '');
+  //   cb({ path: join(__dirname, '../renderer', url) });
+  // });
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);

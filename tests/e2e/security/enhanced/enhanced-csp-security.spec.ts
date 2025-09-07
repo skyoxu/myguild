@@ -20,9 +20,21 @@ test.describe('CSP策略安全验证', () => {
     electronApp = await electron.launch({
       args: ['.'],
       recordVideo: process.env.CI ? { dir: 'test-results/videos' } : undefined,
+      timeout: 30000,
     });
     page = await electronApp.firstWindow();
-    await page.waitForLoadState('domcontentloaded');
+
+    // 使用更健壮的等待策略
+    await page.waitForFunction(
+      () => ['interactive', 'complete'].includes(document.readyState),
+      { timeout: 15000 }
+    );
+
+    // 确保页面不是chrome-error://
+    const url = page.url();
+    expect(url.startsWith('chrome-error://')).toBeFalsy();
+
+    console.log(`✅ CSP测试页面加载完成: ${url}`);
   });
 
   test.afterAll(async () => {
@@ -70,9 +82,27 @@ test.describe('CSP策略安全验证', () => {
     expect(true).toBe(true);
   });
 
-  // TODO: CSP策略完整性检查测试 - 需要实现
-  test('CSP策略完整性检查', async () => {
-    test.skipIf(true, '测试用例需要实现');
-    expect(true).toBe(true);
+  test('CSP 以响应头或<meta>其一存在即可', async () => {
+    // 1) 检查是否有meta CSP标签
+    const hasMeta = await page.$('meta[http-equiv="Content-Security-Policy"]');
+    const metaOk = !!hasMeta;
+
+    // 2) 通过功能性断言验证CSP生效（内联脚本应被阻止）
+    const inlineAllowed = await page.evaluate(() => {
+      try {
+        const s = document.createElement('script');
+        s.textContent = 'window.__x=1';
+        document.head.appendChild(s);
+        return !!(window as any).__x;
+      } catch {
+        return false;
+      }
+    });
+
+    // 3) CSP有效：要么有meta标签，要么内联脚本被阻止
+    const cspEffective = metaOk || !inlineAllowed;
+
+    console.log(`CSP状态: meta=${metaOk}, 内联脚本被阻止=${!inlineAllowed}`);
+    expect(cspEffective).toBeTruthy();
   });
 });

@@ -20,9 +20,21 @@ test.describe('Electron安全基线验证', () => {
     electronApp = await electron.launch({
       args: ['.'],
       recordVideo: process.env.CI ? { dir: 'test-results/videos' } : undefined,
+      timeout: 30000, // 增加启动超时时间
     });
     page = await electronApp.firstWindow();
-    await page.waitForLoadState('domcontentloaded');
+
+    // 使用更健壮的等待策略
+    await page.waitForFunction(
+      () => ['interactive', 'complete'].includes(document.readyState),
+      { timeout: 15000 }
+    );
+
+    // 确保页面不是chrome-error://
+    const url = page.url();
+    expect(url.startsWith('chrome-error://')).toBeFalsy();
+
+    console.log(`✅ 页面加载完成: ${url}`);
   });
 
   test.afterAll(async () => {

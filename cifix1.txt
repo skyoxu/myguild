@@ -1,139 +1,261 @@
-我看了你这次 CI 的报错文件，失败点集中在**“guard:performance（User Timing 基准）整套门禁全红”**：5 个场景的 P95/P99 超过你设定阈值（例如 App Startup P95≈3749ms>3000ms；Game Scene Load P95≈1879ms>1500ms 等），最终以 exit code 1 终止流水线。下面给你一个“先保上线、再稳长期”的两段式修复方案：先让 CI 变绿（不放弃预警），再系统性把指标拉回到阈值以内。
-MDN Web Docs
+你这组 Electron 安全冒烟 / 红线测试（Windows）里，失败集中在三类症状，我把它们各自溯因→给出最小修复补丁（含 TypeScript 片段 + 测试侧调整）：
+
+問题与根因速览
+
+大量 page.waitForLoadState('domcontentloaded') 超时 & Execution context was destroyed
+日志里多次出现 window.location.href 为 chrome-error://chromewebdata/，并在外部导航用例里反复报 “执行环境被销毁”。这基本指向发生了真实导航/加载失败（比如外链尝试或路径不合法），而不是被“拦截后留在原页”。要避免渲染上下文被丢弃，必须在导航触发之前就取消（onBeforeRequest），且在 will-navigate 上二次兜底；如果任其发起再失败，就会落到 chrome-error://chromewebdata/ 并导致上下文销毁。Electron 官方安全指引明确推荐在 will-navigate 阶段 event.preventDefault()，并建议配合 URL 白名单判断；更早的 webRequest.onBeforeRequest 则可直接 cancel 掉外部请求（无真实导航，自然不会销上下文）。
+electronjs.org
 +1
+MDN网络文档
 
-A. 先让 CI 变绿，但继续给出“有牙齿”的预警
+此外，chrome-error://chromewebdata/ 是 Chromium 在加载失败时的占位错误页，这与“无效 URL / 加载失败 / 外部导航被错误处理”一致。
+Stack Overflow
+安卓权威
 
-共享型 Windows Runner 的性能抖动明显（2 vCPU / 7GB RAM 的按需 VM），将绝对阈值作为硬门禁很容易误伤正常提交；建议把当前基准降为软门禁（不中断合并），或改成相对回归门禁（相对主分支基线）。
-GitHub Docs
-+1
-
-把 job 改成“不中断，但要评审”（软门禁）
-
-- name: Run performance guard
-  id: perf
-  run: npm run guard:performance
-  continue-on-error: true   # 不阻断合并
-
-# 失败就把结论写到 Job Summary / PR 评论（但不 fail）
-- name: Summarize perf guard
-  if: failure() && steps.perf.outcome == 'failure'
-  shell: bash
-  run: |
-    {
-      echo "## ⚠️ 性能门禁预警（未阻断）"
-      echo "- 本次 P95/P99 超阈；请在合并前复核对照基线"
-    } >> "$GITHUB_STEP_SUMMARY"
-
-
-GitHub 的受保护分支可以把性能检查设为非 Required，失败时也不阻断合并；在你的主干保护上我们之前已建议把性能/包体积迁到软门禁，就是为了避免这类“噪声阻塞”。
-web.dev
-
-或改为“相对回归门禁”（更科学）
-
-做 3～5 次重复取中位数做代表值（Lighthouse CI 的典型做法），把相对基线（最近 10 次 main 的中位数）+ 允许回归幅度（如 +20%）作为门禁标准；超过则fail，否则通过。
-web.dev
-DEV Community
-Max Rozen
-
-这比“绝对阈值”更抗噪声，也能真实抓住回归。
-
-B. 系统性把数值拉回（技术 + 统计 + 运行环境三线齐进）
-1) 统计与脚本层（立即见效）
-
-升采样 + 预热：每个场景跑 30 次（至少 20 次），前 3 次丢掉当预热；以 P50/Median of Medians 和 P95 判定，重尾分布避免被极端值带偏。Lighthouse CI 也用“多次取中位数”降低抖动。
-web.dev
-Medium
-
-将 User Timing 用法更规范：确保每个量度都是 performance.mark() + performance.measure() 的闭环，并且在同一上下文读取；浏览器侧参看 MDN User Timing，Node 侧用 perf_hooks 的 performance.mark/measure 对齐规范。
-MDN Web Docs
-+1
-nodejs.org
-
-输出结构化报告 + 稳定阈值：把每轮原始测量、分位数、IQR 一起产出到 JSON 里，门禁只读 P95/P99 与 IQR；避免“只看平均值”的误判（你日志已在看 P95/P99，这是对的）。
-
-分离“Build 压力”和“Perf 量测”：性能测试跑在release 构建产物上（NODE_ENV=production），并且放在专门 job，避免与并发打包/上传抢 IO、CPU。
-
-2) 运行环境层（把误差源降到最低）
-
-Runner 规格与稳定性：共享 Windows Runner 为 2 核/7GB，抖动较大。若你要把“性能门禁”设为硬门禁，建议：
-a) 切到 Larger Runner（更高配的托管机型），或
-b) 用 自托管 Runner（固定硬件/独占 CPU）。
-官方文档明确 runner 规格与“更大机型”的选项。
-GitHub Docs
-+1
-
-浏览器/引擎一致性：若用浏览器测量（Electron/Chromium），固定版本与启动参数，避免后台更新导致差异；Playwright/Chromium 版本也建议锁定。
-
-3) 代码与场景层（针对你 5 个失败场景）
-
-App Startup（P95≈3.75s，>3s）
-
-减少同步 require() 链、把重模块延迟加载/按需加载；“同步 require 在启动期是最大瓶颈”是 Electron 圈子里反复验证的经验（优先用 bundler / Vite 的代码拆分，避免主进程的 require 堆栈）。
-Palette
-Takuya Matsuyama
-
-参考 Electron 官方性能指引：只做最小化启动工作、等 ready-to-show 再展示窗口、避免阻塞主进程（I/O、CPU 密集），必要时把重计算挪到 Worker/子进程。
+electron.launch 超时（30s）
+Playwright 已经“附加调试器”，但 firstWindow()/首窗没在时间内进入可用状态。常见诱因：主进程创建了窗口但初始 URL 加载失败（又回到了 chrome-error://chromewebdata/），或路径构造/协议注册在 Windows 上不稳。官方建议用 Electron 的 自定义安全协议（例如 app://）+ 注册为 standard + secure，再加载 app://index.html，既能配合 CSP 走 响应头，又能避免 file:// 在 headers/CSP 上的限制。
 electronjs.org
 
-Game Scene Load（P95≈1.88s，>1.5s）
+Playwright 的 Electron 启动与取首窗流程参考文档如下。
+Playwright
 
-资源按需加载与预取（纹理、音频分批、使用压缩纹理），并把一次性对象改为对象池（减少 Scene 切换时的分配/回收）。Phaser 官方/社区都有使用 Group 做对象池的实践。
-Ourcade Blog
-phaser.io
+CSP 冒烟测试失败：meta[http-equiv=Content-Security-Policy] 取到 undefined
+说明当前页面没有 <meta http-equiv="Content-Security-Policy" ...>。在 Electron 中设置 CSP有两种：
 
-UI Modal Open（P95≈281ms，>200ms）
+响应头（生产最推荐，配合自定义协议或本地服务）
 
-预渲染/懒挂载 Modal 内部重组件，打开时只做显隐与少量测量；避免同步布局抖动（read→write→read 交错）。
+<meta> 标签（file:// 无法加响应头时的退路）
+安全工具（如 electronegativity）也明确了这两种途径。你的测试现在只认 <meta>，建议在 测试/开发注入 <meta>，在 生产通过响应头强制 CSP。
+GitHub
+Stack Overflow
 
-若在浏览器环境量测，确保持久化 measure() 的起止标记只围绕必要代码段。
-MDN Web Docs
+补充：权限相关的用例（地理位置/通知）超时或状态异常，和 Electron 默认自动批准权限的行为差异有关（不同版本里 navigator.permissions 还曾有“总是返回 granted”的已知问题）。需要同时配置 setPermissionRequestHandler 与 setPermissionCheckHandler 双轨拒绝，确保在 Windows CI 上表现稳定。
+blog.doyensec.com
+GitHub
 
-Game Turn Process（P95≈968ms，>500ms；P99≈975ms，>800ms）
+一次到位的主进程修复补丁（TypeScript）
 
-把大 O(n) 的 AI/寻路/规则评估移出主线程（Web Worker/Node Worker）；对频繁生成/销毁的实体使用对象池；调小帧内工作量（把部分逻辑拆分成多帧）。Phaser 的 TimeStep 基于 rAF，目标 60 FPS ≈16.7ms/帧，回合内工作必须“切片化”。
-docs.phaser.io
+目标：永不发生真实外部导航（上下文不销毁）、首窗始终可加载、CSP/COOP/COEP/CORP/Permissions-Policy 走响应头，并默认拒绝所有敏感权限。符合你 ADR-0002 的基线。
 
-Data Save（P95≈1.33s，>800ms；P99≈1.49s，>1200ms）
+// electron/main.ts
+import { app, BrowserWindow, session, shell, protocol } from 'electron';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-持久化路径（本地文件/IndexedDB）：异步批量写代替同步串行；把序列化与压缩移到 Worker；写入合并/去抖。Node 侧 perf_hooks 能帮助你把序列化、压缩、IO 分别打点定位瓶颈。
-nodejs.org
+const APP_SCHEME = 'app';
 
-C. 你可以直接落地的改动清单（最小化改造）
+protocol.registerSchemesAsPrivileged([{
+  scheme: APP_SCHEME,
+  privileges: {
+    standard: true, secure: true, supportFetchAPI: true,
+    corsEnabled: true, // 需要跨源资源时打开
+    bypassCSP: false
+  }
+}]); // 自定义安全协议，便于用响应头下发 CSP/COOP/COEP/CORP。:contentReference[oaicite:6]{index=6}
 
-把性能门禁从“绝对阈值=硬阻断”切到“软门禁/相对回归”（上文 YAML 即插即用）。
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1024, height: 768, show: true,
+    webPreferences: {
+      preload: join(__dirname, 'preload.js'),
+      nodeIntegration: false, contextIsolation: true, sandbox: true
+    }
+  });
 
-在 scripts/benchmarks/user-timing-benchmark.mjs：
+  // —— 1) 彻底阻断外部导航（两层：beforeRequest + will-navigate） ——
+  const ses = win.webContents.session;
 
-每个场景跑 30 次，丢 3 次预热；
+  // 1a) 最早阶段 cancel（不会真正导航→不会销上下文）
+  ses.webRequest.onBeforeRequest(
+    { urls: ['http://*/*', 'https://*/*'] },
+    (details, cb) => {
+      // 允许清单（如 Sentry 接入页、你自管域），否则 cancel
+      const allow = false; // 这里按需白名单
+      cb({ cancel: !allow });
+    }
+  ); // 官方 WebRequest 文档：可在该阶段取消请求。:contentReference[oaicite:7]{index=7}
 
-输出 p50/p95/p99 与原始样本数组到 JSON；
+  // 1b) 二道闸：即使溜过，也在将要导航时拦下
+  win.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault(); // 官方安全指引推荐。:contentReference[oaicite:8]{index=8}
+    // 如需放行少量可信 URL，可在此白名单 + shell.openExternal(url)
+  });
 
-新增“对照 main 最近 10 次中位数”的回归判断（>+20% 连续 2 次才失败）。
-（这一套与 Lighthouse CI “多次运行取中位数 + budgets/回归”相吻合，稳定性显著提升。）
-web.dev
-DEV Community
+  // 新窗口一律拒绝或外部打开（防劫持）
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    // 可选：shell.openExternal(url);
+    return { action: 'deny' };
+  }); // 官方文档：返回 {action:'deny'} 取消新窗。:contentReference[oaicite:9]{index=9}
 
-App 启动/Scene Load 的代码侧：
+  // —— 2) 生产用响应头下发 CSP / COOP / COEP / CORP / Permissions-Policy ——
+  ses.webRequest.onHeadersReceived((details, cb) => {
+    const headers = details.responseHeaders ?? {};
+    const set = (k: string, v: string) => {
+      headers[k] = [v];
+    };
 
-把主进程/渲染进程的大依赖延迟加载，确认 bundler 做了代码拆分；
+    // 最小可用 CSP（按需扩展 connect-src 等）
+    set('Content-Security-Policy',
+      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
+      "img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+      "script-src 'self'; connect-src 'self' https://o.sentry.io");
 
-针对 Phaser 的实体/子弹等高频对象启用对象池；
+    // 相邻安全头
+    set('Cross-Origin-Opener-Policy', 'same-origin');
+    set('Cross-Origin-Embedder-Policy', 'require-corp');
+    set('Cross-Origin-Resource-Policy', 'same-origin');
+    set('Permissions-Policy',
+      'geolocation=(), microphone=(), camera=(), notifications=(), ' +
+      'fullscreen=(self)'); // 例子：全部拒绝，仅 fullscreen 自来源允许
 
-把重计算放 Worker；
+    cb({ responseHeaders: headers });
+  }); // Electron 支持在 onHeadersReceived 中修改/注入响应头。:contentReference[oaicite:10]{index=10}
 
-参考 Electron 官方性能页逐条排查主进程同步耗时。
+  // —— 3) 权限默认拒绝（Request + Check 双保险） ——
+  ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  ses.setPermissionCheckHandler((_wc, _permission) => false);
+  // 覆盖 geolocation / notifications / media 等权限类型。:contentReference[oaicite:11]{index=11}
+
+  // —— 4) 健壮加载 + 错误自愈 —— 
+  // 使用 app:// 协议（若你已经有静态服务，也可用 http://localhost）
+  // 若你仍用 file://，建议至少把 URL 用 pathToFileURL 构造，避免 Windows 路径分隔问题。
+  const indexUrl = `${APP_SCHEME}://- /index.html`; // 你在 protocol.registerFileProtocol 里映射
+  // 如果暂未实现自定义协议，可退回：
+  // const indexUrl = pathToFileURL(join(__dirname, '../renderer/index.html')).toString();
+
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    // 避免停在 chrome-error://，回退到本地首页
+    console.warn('[did-fail-load]', code, desc, url);
+    if (!win.isDestroyed()) win.loadURL(indexUrl);
+  }); // did-fail-load 是 load 失败时触发的事件。:contentReference[oaicite:12]{index=12}
+
+  win.loadURL(indexUrl);
+}
+
+// 这里注册 app:// 映射（若使用自定义协议）
+app.whenReady().then(() => {
+  protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
+    // 简单的静态文件映射示例（根据你的构建产物路径调整）
+    const url = request.url.replace(`${APP_SCHEME}://-`, '');
+    cb({ path: join(__dirname, '../renderer', url) });
+  });
+  createWindow();
+});
+
+
+说明：
+
+为何双层拦截？ onBeforeRequest 在最早阶段取消请求，避免“真导航→销上下文”；will-navigate 则是官方安全建议的兜底（即使放过早期拦截，仍可阻断）。
 electronjs.org
-Ourcade Blog
-
-Runner 稳定性（若仍需硬门禁）：把该 job 迁到更大规格 Runner或自托管 Runner。
-GitHub Docs
 +1
 
-你这份日志里最“值回票价”的两个突破口
+为何响应头 CSP？ 生产环境用响应头最稳；但测试可继续保留 <meta> 以适配你现有断言（见下）。
+GitHub
 
-启动时同步加载链：把“非首屏”依赖统统推迟（import()/动态 chunk），缩短首屏关键路径（Electron 官方 + 社区经验都强调“少 require、多按需”）。
-Palette
+为何权限双处理？ Electron 缺省会“自动批准”权限；加上 setPermissionRequestHandler 与 setPermissionCheckHandler 后，CI 上地理位置/通知等用例能稳定呈现“拒绝”。
+blog.doyensec.com
+
+渲染页 / 测试侧微调
+A. 在测试/开发环境额外加 meta CSP（兼容你现有 smoke 断言）
+<!-- renderer/index.html - 仅 dev/test 注入；生产以响应头为准 -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; object-src 'none';
+               img-src 'self' data:; style-src 'self' 'unsafe-inline';
+               script-src 'self'; connect-src 'self'">
+
+
+为什么两套都保留：file:// 下无法用响应头下发 CSP（这也是许多项目测试时用 <meta> 的原因）；生产切到自定义协议/本地服务+响应头即可。
+Stack Overflow
+
+B. Playwright 等待策略与断言收敛
+
+首窗 wait 策略：把 domcontentloaded 改成“readyState 判定 + URL 非 chrome-error://”，避免死等：
+
+const page = await electronApp.firstWindow();
+await page.waitForFunction(() =>
+  ['interactive', 'complete'].includes(document.readyState), { timeout: 15000 });
+
+const url = page.url();
+expect(url.startsWith('chrome-error://')).toBeFalsy();
+
+
+失败时可附加截图/trace，便于定位是哪一步落到错误页（现在日志已有 trace.zip）。
+
+外链拦截测试：在 evaluate 里包一层 try/catch，并在行为层断言“URL 未变 & 无新窗”。有了 onBeforeRequest(cancel)，不会发生真导航，Execution context 也不再销毁。
+官方建议的拦截方式见 setWindowOpenHandler 与 will-navigate。
+electronjs.org
++1
+
+通知/地理位置：把断言从 permissions.query（部分版本异常）换成行为断言（比如触发权限 API→预期抛错/拒绝）或检查 Notification.permission !== 'granted'。Electron 权限默认批准、以及 permissions.query 异常的讨论见：
+blog.doyensec.com
+GitHub
+
+你关心的 9 个失败点，对应“改完后”的效果
+
+CSP（增强）两条用例等待超时 → 初始 URL 将不再落到 chrome-error，readyState 等待可通过；内联脚本被 CSP 阻止（响应头或 <meta>），用例恢复。
+GitHub
+
+Electron 基线：渲染进程无法访问 Node API → 不变（nodeIntegration:false + contextIsolation:true + sandbox:true）。
+
+红线 1：权限请求（地理位置） → Request/Check 双拒绝后，稳定拒绝；不再 electron.launch 超时。
+Stack Overflow
+
+红线 1：window.location / 链接点击 → 通过 onBeforeRequest(cancel) 避免真实导航 → 不再 “execution context destroyed”。
 electronjs.org
 
-Phaser 对象池 + 资源分批：Scene 切换与回合处理中的分配回收最容易形成 P95 长尾；对象池思路是 Phaser 官方/社区公认的“立竿见影”。
+红线 3：通知权限拒绝 → 通过 Permission 双处理保证拒绝分支稳定。
+Stack Overflow
+
+综合稳定性 / 持久性 → 上述拦截与权限、CSP 都是会话级设置（session.defaultSession），在单实例多轮验证中保持一致。
+electronjs.org
+
+安全冒烟（CSP & 禁用 Node） → 加 <meta> 后 csp 不再是 undefined；生产仍由响应头兜底。
+Stack Overflow
+
+小型就地验收（Vitest/Playwright 占位）
+// tests/e2e/security/smoke-csp-header-or-meta.spec.ts
+import { test, expect, _electron as electron } from '@playwright/test';
+
+test('CSP 以 响应头 或 <meta> 其一存在即可', async () => {
+  const app = await electron.launch({ args: ['./electron/main.js'] });
+  const page = await app.firstWindow();
+
+  // 1) readyState 守护 + 非 chrome-error
+  await page.waitForFunction(() =>
+    ['interactive','complete'].includes(document.readyState));
+  expect(page.url().startsWith('chrome-error://')).toBeFalsy();
+
+  // 2) dev/test: 允许 <meta> 作为满足条件之一
+  const hasMeta = await page.$("meta[http-equiv='Content-Security-Policy']");
+  const metaOk = !!hasMeta;
+
+  // 3) 生产: 通过功能性断言验证 CSP 生效（内联脚本应被阻止）
+  const inlineAllowed = await page.evaluate(() => {
+    try { const s = document.createElement('script'); s.textContent = 'window.__x=1'; document.head.appendChild(s); return !!(window as any).__x; }
+    catch { return false; }
+  });
+
+  expect(metaOk || !inlineAllowed).toBeTruthy();
+
+  await app.close();
+});
+
+落地顺序建议
+
+合入主进程补丁（导航双闸、响应头 CSP/COOP/COEP/CORP/Permissions-Policy、权限双处理、did-fail-load 自愈、app:// 协议）；
+
+渲染页在 dev/test 注入 <meta>，生产不注入；
+
+测试等待策略/断言微调（首窗 readyState、外链不真导航、权限行为断言）；
+
+回归跑一轮 Electron 安全测试。
+
+这样改完后：
+
+不会再出现 chrome-error://chromewebdata/ 导致的上下文销毁；
+
+红线用例稳定，不依赖网络/外部域；
+
+CSP 在 CI（Windows）与生产均有兜底路径；
+
+行为与 ADR-0002 的**“导航/权限双拦截 + 严格 CSP + 相邻安全头”**保持一致。

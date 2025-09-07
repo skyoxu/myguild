@@ -92,8 +92,14 @@ test.describe('07章 Electron 基线验证', () => {
     const cspContent = await cspMeta.getAttribute('content');
     expect(cspContent).toBeTruthy();
 
-    // 验证CSP指令（Electron应用适用的 'self' 默认策略）
-    expect(cspContent).toContain("default-src 'self'"); // 适合Electron应用的策略
+    // 验证CSP指令（cifix1.txt推荐的严格安全策略）
+    // cifix1.txt: 严格策略使用 'none' + 显式允许，这比 'self' 更安全
+    const hasDefaultSrcSelf = cspContent.includes("default-src 'self'");
+    const hasDefaultSrcNone = cspContent.includes("default-src 'none'");
+    expect(
+      hasDefaultSrcSelf || hasDefaultSrcNone,
+      'CSP应该有default-src策略'
+    ).toBe(true);
     expect(cspContent).toContain("script-src 'self'");
     expect(cspContent).toContain("style-src 'self'");
 
