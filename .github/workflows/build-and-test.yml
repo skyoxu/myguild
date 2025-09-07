@@ -73,9 +73,8 @@ jobs:
           echo "🔍 Windows环境信息诊断："
           node -v && npm -v
           echo "验证ESLint可用性（避免误判安装问题）："
-          PATH="$(npm bin):$PATH"
-          export PATH
-          ./node_modules/.bin/eslint -v || npx --yes eslint -v
+          # 使用 npx 替代已弃用的 npm bin 命令
+          npx --yes eslint -v
           echo "✅ 工具链设置验证完成"
 
       # 仅对改动文件执行 0 warning 门禁（禁止新增告警）
@@ -99,8 +98,7 @@ jobs:
             echo "No relevant changed files for lint gate."
             exit 0
           fi
-          PATH="$(npm bin):$PATH"
-          export PATH
+          # 使用 npx 替代已弃用的 npm bin 命令 - 改动文件门禁段落
           echo "Lint on changed files:"
           cat changed.txt
           # 安全读取改动文件，避免未引用的命令替换引起分词/通配（ShellCheck SC2086）
