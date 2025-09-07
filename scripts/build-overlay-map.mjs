@@ -292,8 +292,10 @@ function sortKeys(x, topLevel = false) {
   if (x && typeof x === 'object') {
     const order = topLevel ? ['metadata', 'keywords', 'files'] : []; // 固定顶层顺序
     const keys = Object.keys(x).sort((a, b) => {
-      const ia = order.indexOf(a), ib = order.indexOf(b);
-      if (ia !== -1 || ib !== -1) return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
+      const ia = order.indexOf(a),
+        ib = order.indexOf(b);
+      if (ia !== -1 || ib !== -1)
+        return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
       return a < b ? -1 : a > b ? 1 : 0; // 使用代码点序，避免locale依赖
     });
     const o = {};
@@ -318,15 +320,21 @@ const semantic = sortKeys({ keywords, files }, true);
 // 2) 稳定哈希（与键顺序无关，用确定性序列化）
 const contentHash = crypto
   .createHash('sha256')
-  .update(stable(semantic))  // 关键：用 json-stable-stringify
+  .update(stable(semantic)) // 关键：用 json-stable-stringify
   .digest('hex');
 
 // 3) metadata：只有内容变更时才刷新 generatedAt
 const prevHash = old?.metadata?.contentHash;
-const generatedAt = prevHash === contentHash ? old.metadata.generatedAt : new Date().toISOString();
+const generatedAt =
+  prevHash === contentHash
+    ? old.metadata.generatedAt
+    : new Date().toISOString();
 
 // 4) 合成最终对象（再次规范化，确保顶层顺序一致）
-const finalObj = sortKeys({ metadata: { contentHash, generatedAt }, ...semantic }, true);
+const finalObj = sortKeys(
+  { metadata: { contentHash, generatedAt }, ...semantic },
+  true
+);
 
 // 5) 紧凑稳定输出（行宽120）
 const json = stringify(finalObj, { indent: 2, maxLength: 120 }) + '\n';

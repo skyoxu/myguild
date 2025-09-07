@@ -5,7 +5,7 @@
 ✅ **已完成** - 分支保护：仅 Windows 核心作业设为必需  
 ✅ **已完成** - 入口守护：actionlint + needs 自检（已加）  
 ✅ **已完成** - 触发：重任务统一 on.pull_request.paths  
-✅ **已完成** - 产物与 Step Summary：标准化保留期与UTF-8/ASCII输出  
+✅ **已完成** - 产物与 Step Summary：标准化保留期与UTF-8/ASCII输出
 
 ---
 
@@ -14,14 +14,16 @@
 ### 1. 分支保护配置（✅ 已验证）
 
 **推荐Windows核心作业（必需状态检查）：**
+
 - `Build and Test` (build-and-test.yml)
-- `Electron Security Tests` (build-and-test.yml) 
+- `Electron Security Tests` (build-and-test.yml)
 - `📊 静态安全扫描（统一）` (security-unified.yml)
 - `🛡️ Workflow Guardian Check` (ci.yml)
 - `Lint workflow YAML (actionlint)` (validate-workflows.yml)
 - `Check jobs/needs consistency` (validate-workflows.yml)
 
 **可选状态检查（Linux/macOS nightly）：**
+
 - 性能检查 (pr-performance-check.yml)
 - 跨平台兼容性检查
 - 其他nightly测试
@@ -35,6 +37,7 @@
 ### 3. 触发路径统一（✅ 已标准化）
 
 **统一标准路径配置** (已应用到主要工作流):
+
 ```yaml
 on:
   pull_request:
@@ -50,6 +53,7 @@ on:
 ```
 
 **已更新的工作流：**
+
 - ✅ build-and-test.yml
 - ✅ security-unified.yml
 - ✅ ci.yml (原本已符合)
@@ -57,11 +61,13 @@ on:
 ### 4. 产物保留期标准化（✅ 已实现）
 
 **常规产物（7-14天）：**
+
 - 测试报告：7-14天
 - 构建产物：14天
 - 性能分析结果：7天
 
 **发布/安全产物（30天）：**
+
 - ✅ 安全扫描报告：30天 (security-unified.yml)
 - ✅ 发布构建：30天 (release.yml相关)
 - ✅ Electron打包产物：30天
@@ -69,6 +75,7 @@ on:
 ### 5. Step Summary UTF-8/ASCII 标准化（✅ 已实现）
 
 **标准化要素：**
+
 - ✅ UTF-8编码设置：`export LANG=C.UTF-8; export LC_ALL=C.UTF-8`
 - ✅ ASCII兼容字符集：使用标准ASCII符号 (✅❌⚠️🔄)
 - ✅ 标准化格式：表格结构 + 时间戳 + 工作流链接
@@ -88,10 +95,12 @@ $ node scripts/ci/workflow-consistency-check.mjs
 ## 🚀 后续建议
 
 ### 分支保护配置建议
+
 建议在GitHub仓库设置中配置以下必需状态检查：
+
 ```
 Build and Test
-Electron Security Tests  
+Electron Security Tests
 📊 静态安全扫描（统一）
 🛡️ Workflow Guardian Check
 Lint workflow YAML (actionlint)
@@ -99,6 +108,7 @@ Check jobs/needs consistency
 ```
 
 ### 监控与维护
+
 - 定期检查工作流一致性：`npm run guard:ci`
 - 监控产物存储成本
 - 验证Step Summary输出格式

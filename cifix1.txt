@@ -1,147 +1,147 @@
-这 3 处都是“可定位→可复现→可一次性修好”的问题。下面给你直接可替换的修复方案，并标注为什么这样改。
+1) 构建应用：ReferenceError: window is not defined
 
-1) 构建应用：docs-scorer-performance.test.js 动态 import() 报 SyntaxError: Invalid or unexpected token
-
-根因
-测试环境把 import() 当成非法语法（解析阶段就挂了），通常是：
-
-测试框架未按 ESM 方式处理该测试文件，或
-
-你的 bundler/transform 未为测试启用 ESM 解析。
-
-Node 本身在 CJS 里支持动态 import()（同步 require() 不支持 ESM；需改成 import()），这一点是官方文档明确说明的。
-nodejs.org
+根因：这组性能测试文件现在是 ESM（.mjs）并在 Node 环境里跑；但你的全局 src/test-setup.ts 在加载时无条件触碰了 window.matchMedia，Node 环境没有 window，因此直接抛错。Vitest 支持文件级指定环境，以及按 glob 选择不同环境；也可以在 setup 里用 typeof window !== 'undefined' 做“环境感知”保护。
+vitest.dev
 +1
 
-解决路径（任选其一，按你实际框架）
+修法一（最小改动，推荐）
 
-A.（Vitest 项目）
+仅让这份性能测试在 Node 环境跑，并让 test-setup.ts 在 有 window 才执行补丁。
 
-在 vite.config.[tj]s 中明确让 Vitest 以 Node 环境跑（避免 jsdom 对 Node-ESM 的干扰）：
+A. 给该测试文件头部加指令：
 
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
+// src/tests/docs-scorer-performance.test.mjs
+// @vitest-environment node
+// （其余不变）
 
+
+Vitest 的 @vitest-environment 控制注释能对单个文件指定环境。
+vitest.dev
+
+B. 修改 src/test-setup.ts，只在存在 window 时才 mock：
+
+// src/test-setup.ts
+import { vi } from 'vitest';
+
+const g: any = globalThis;
+if (typeof g.window !== 'undefined') {
+  Object.defineProperty(g.window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false, media: query,
+      addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
+修法二（如果该测试确实需要 DOM）
+
+把它切到 jsdom 环境（仅这份文件）：
+
+// @vitest-environment jsdom
+
+
+或在 vitest.config.ts 为不同文件模式指定环境（例如 DOM 测试走 jsdom，性能/Node 工具测试走 node）：
+
+import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
-    environment: 'node',
+    setupFiles: ['src/test-setup.ts'],
+    // 针对不同测试文件的环境匹配（Vitest 官方提供）
+    environmentMatchGlobs: [
+      ['**/*.dom.test.*', 'jsdom'],
+      ['**/*.browser.test.*', 'jsdom'],
+      ['**/*.performance.test.*', 'node'],
+    ],
   },
-})
+});
 
 
-Vitest 默认支持 ESM；在 Node 环境下，await import() 可直接工作。
+（文件级指令与 environmentMatchGlobs 均为 Vitest 官方支持；配置项写在 Vitest/Vite config 的 test 下。）
 vitest.dev
 +1
 
-若测试文件本身需要当作 ESM 解析（例如用到 import.meta.url 等），可把该测试文件改为 *.mjs；.mjs 在 Node 中总是 ESM。
-nodejs.org
+2) 标记部署完成：Release not found
 
-B.（Jest 项目）
-
-启用 ESM 支持，并把需要按 ESM 解析的扩展名加入 extensionsToTreatAsEsm：
-
-// jest.config.js
-/** @type {import('jest').Config} */
-module.exports = {
-  testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.mjs', '.ts'],
-  transform: {}, // 如无 Babel，可先置空避免把 .mjs 转成 CJS
-};
-
-
-Jest 对 ESM 的支持是“实验性”，但对 .mjs / type: module 有官方配置口径。
-jestjs.io
-+1
-
-如果你仍用 Babel 转换测试，记得包含 @babel/plugin-syntax-dynamic-import 以让解析器识别 import() 语法（不做降级，只加语法）。这类 “Unexpected token import”/“unexpected token” 在 Jest/Babel 组合里很常见。
-GitHub
-DEV Community
-
-小结：Node/ESM 侧是支持的，问题在测试工具链。把测试以 ESM 解析（.mjs 或 Jest 的 extensionsToTreatAsEsm），或在 Vitest 指明 environment: 'node'，即可恢复 await import()。
-nodejs.org
-vitest.dev
-
-2) 标记部署完成：sentry-cli releases deploys … --time 参数报错
-
-报错：invalid value '2025-09-07T07:18:55+0000' for '--time <SECONDS>'
-
-根因
-sentry-cli releases deploys <VERSION> new 的 --time 参数接收的是秒数（int），不是 ISO 时间串。你传入了 2025-09-07T07:18:55+0000 这种 ISO8601 字符串，自然解析失败。官方用法：
-
---time <SECONDS>：部署耗时（秒）；
-
-或者用 --started <UNIX_TS> / --finished <UNIX_TS> 分别传入Unix 秒级时间戳。
-GitHub
-
-Linux/macOS 示例（Bash）
-
-# 方案1：只给耗时
-sentry-cli releases deploys "$RELEASE_NAME" new --env production --time "$DEPLOY_SECONDS"
-
-# 方案2：给开始/结束的 Unix 时间戳（秒）
-START=$(date -u +%s)
-# ... do deploy ...
-END=$(date -u +%s)
-sentry-cli releases deploys "$RELEASE_NAME" new --env production --started "$START" --finished "$END"
-
-
-Windows（PowerShell）
-
-$start = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
-# ... do deploy ...
-$end = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
-sentry-cli releases deploys "$env:RELEASE_NAME" new --env production --started $start --finished $end
-
-
-另外：你输出里还有 npm warn config production Use --omit=dev，这只是 npm 配置告警，与 Sentry 无关；如果这步需要 dev 工具（例如某些打包/上传），确保在该 Job 用 npm ci 包含 dev（不要设置 NODE_ENV=production 或 --omit=dev）。
+根因：你直接执行了“标记部署”，但对应的 Release 尚未创建/可见，或 Release 名称不一致（例如运行时 SDK 用 app@0.1.1+windows，而 CLI 的 new 步骤用的不是同一个字符串），或者 CLI 没拿到 SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN。Sentry 的标准流程是：先创建并（可选）finalize release →（可选）关联 commits / 上传 sourcemaps → 再创建 deploy。文档明确 deploy 命令为 sentry-cli deploys new --release "$VERSION" -e ENV（新版 CLI），并可用 -t <秒数> 传持续时间。
 docs.sentry.io
 
-3) 发布流程总结：Windows 步骤里用了 Bash 语法
+一次跑通的最小步骤（Bash；Windows 机也可 shell: bash）
+# 0) 环境变量（GitHub Actions 里通常来自 secrets）
+export SENTRY_AUTH_TOKEN="${{ secrets.SENTRY_AUTH_TOKEN }}"
+export SENTRY_ORG="your-org"
+export SENTRY_PROJECT="your-project"
 
-报错：PowerShell 提示 Missing '(' after 'if'，因为你在 Windows runner 上默认 shell 是 PowerShell，而你写了 if [[ ... ]] 的 Bash 语法。
-The GitHub Blog
+VERSION="app@0.1.1+windows"  # 必须与 SDK runtime release 一致
 
-两种改法，选其一：
+# 1) 创建 Release（必要）
+sentry-cli releases new "$VERSION" -p "$SENTRY_PROJECT"
 
-A. 强制该步骤用 Bash（推荐统一风格）
+# 2) 关联 commits（推荐）
+sentry-cli releases set-commits "$VERSION" --auto
 
-- name: Release summary (Bash on Windows)
-  shell: bash
-  run: |
-    if [[ "${{ job.status }}" == "success" ]]; then
-      echo "### ✅ Release 成功" >> "$GITHUB_STEP_SUMMARY"
-    else
-      echo "### ❌ Release 失败" >> "$GITHUB_STEP_SUMMARY"
-    fi
+# 3) 上传 sourcemaps（如果前端/Electron 渲染进程需要）
+sentry-cli sourcemaps upload --release "$VERSION" --dist windows "dist"
+
+# 4) Finalize（可选，但常用）
+sentry-cli releases finalize "$VERSION"
+
+# 5) 创建 Deploy（新版推荐语法）
+start=$(date -u +%s)
+# ... 你的部署动作 ...
+end=$(date -u +%s)
+sentry-cli deploys new --release "$VERSION" -e production -t $((end-start))
 
 
-Windows 机上指定 shell: bash 会调用 Git for Windows 自带的 Bash；也可以在 defaults.run.shell: bash 里全局指定。
-GitHub Docs
+要点：
+
+releases new/set-commits/sourcemaps upload/releases finalize/deploys new 的顺序与用法均见官方文档（包含 -t 传秒数、-e 传环境）。
+docs.sentry.io
+
+Sentry CLI 需要 SENTRY_AUTH_TOKEN、SENTRY_ORG、SENTRY_PROJECT 才能正确关联到你的项目/组织。
+docs.sentry.io
+
+如果你必须在 PowerShell 下跑（Windows 默认 shell）
+$env:SENTRY_AUTH_TOKEN = "${{ secrets.SENTRY_AUTH_TOKEN }}"
+$env:SENTRY_ORG = "your-org"
+$env:SENTRY_PROJECT = "your-project"
+$VERSION = "app@0.1.1+windows"
+
+sentry-cli releases new $VERSION -p $env:SENTRY_PROJECT
+sentry-cli releases set-commits $VERSION --auto
+sentry-cli sourcemaps upload --release $VERSION --dist windows "dist"
+sentry-cli releases finalize $VERSION
+
+$start = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
+$end = $start  # 或部署完成后再取一次
+sentry-cli deploys new --release $VERSION -e production -t ($end - $start)
+
+
+小提醒：Sentry 推荐在部署前通知（create/finalize）Release；若未提前创建，首次上报事件也会自动创建一个 release，但这常与 CI 命名不匹配，容易出现“找不到 release”的报错。
+docs.sentry.io
+
+你可以直接落地到 CI 的最小改动
+
+测试（Vitest）
+
+在 docs-scorer-performance.test.mjs 顶部加 // @vitest-environment node；
+
+把 src/test-setup.ts 改为“只有存在 window 才 mock”的写法（上面给了片段）；
+
+（可选）在 vitest.config.ts 用 environmentMatchGlobs 按 glob 指定环境，或全局 environment: 'node' + 给 DOM 测试文件加 // @vitest-environment jsdom。
+vitest.dev
 +1
 
-B. 保持 PowerShell 语法
+Sentry（Release→Deploy）
 
-- name: Release summary (PowerShell)
-  shell: pwsh
-  run: |
-    if ($env:STATE -eq 'success') {
-      "### ✅ Release 成功" >> $env:GITHUB_STEP_SUMMARY
-    } else {
-      "### ❌ Release 失败" >> $env:GITHUB_STEP_SUMMARY
-    }
+在“标记部署完成”之前插入四步：releases new → set-commits → sourcemaps upload → releases finalize；
 
+改用 sentry-cli deploys new --release "$VERSION" -e production -t <秒数>（不要传 ISO 时间串）；并确保 VERSION 与 SDK runtime 一致；环境变量三件套已注入。
+docs.sentry.io
 
-不论 Bash 还是 PowerShell，GitHub 官方建议把发布结果写入 Job Summary（$GITHUB_STEP_SUMMARY），可直接渲染 GFM Markdown。上例两种写法都符合官方文档。
-GitHub Docs
-The GitHub Blog
+这些修改应用后，当前两处都会转绿：
 
-一次性“防回归”清单
+测试不再在 Node 环境访问 window；
 
-（测试）Vitest：environment: 'node'；需要时把含 import() 的测试/被测文件改为 *.mjs 或启用 ESM 解析。Jest：用 extensionsToTreatAsEsm/Babel 语法插件。
-vitest.dev
-jestjs.io
-
-（Sentry）--time 仅接受秒数；或用 --started/--finished 传秒级 Unix 时间戳。
-GitHub
-
-（Windows Shell）在需要 Bash 语法的 step/job 上显式 shell: bash，否则 Windows 默认是 PowerShell；也可用 defaults.run.shell: bash 统一。Job Summary 用 $GITHUB_STEP_SUMMARY 写结果。
+Sentry 会先有同名 Release，再去创建 Deploy，不会“Release not found”。
