@@ -101,10 +101,10 @@ jobs:
 
           if [ -f electronegativity-scan.csv ]; then
             echo "✅ Electronegativity扫描完成"
-            echo "electronegativity-status=success" >> $GITHUB_OUTPUT
+            echo "electronegativity-status=success" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Electronegativity扫描失败"
-            echo "electronegativity-status=failed" >> $GITHUB_OUTPUT
+            echo "electronegativity-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 执行npm audit

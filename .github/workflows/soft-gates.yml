@@ -165,11 +165,13 @@ jobs:
         run: |
           # If no soft gates results in GITHUB_OUTPUT, set default values
           if ! grep -q "soft-gate-score=" "$GITHUB_OUTPUT" 2>/dev/null; then
-            echo "soft-gate-score=75" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-status=neutral" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-title=Quality Score: 75/100" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-summary=Soft gates check completed" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-details=All quality check items have been executed" >> "$GITHUB_OUTPUT"
+            {
+              echo "soft-gate-score=75"
+              echo "soft-gate-status=neutral"
+              echo "soft-gate-title=Quality Score: 75/100"
+              echo "soft-gate-summary=Soft gates check completed"
+              echo "soft-gate-details=All quality check items have been executed"
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload soft gates report
