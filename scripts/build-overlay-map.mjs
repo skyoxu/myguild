@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import matter from 'gray-matter';
 import fg from 'fast-glob';
 import stringify from 'json-stringify-pretty-compact';
+import stable from 'json-stable-stringify'; // 确定性序列化（键按字典序）
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, cur, i, arr) => {
@@ -314,10 +315,10 @@ try {
 // 1) 先规范化"语义内容"（排除 metadata 可变字段）
 const semantic = sortKeys({ keywords, files }, true);
 
-// 2) 计算稳定哈希（用于判断是否真的变更）
+// 2) 稳定哈希（与键顺序无关，用确定性序列化）
 const contentHash = crypto
   .createHash('sha256')
-  .update(JSON.stringify(semantic))
+  .update(stable(semantic))  // 关键：用 json-stable-stringify
   .digest('hex');
 
 // 3) metadata：只有内容变更时才刷新 generatedAt
