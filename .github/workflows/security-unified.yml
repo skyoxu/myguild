@@ -140,11 +140,22 @@ jobs:
           fi
 
       - name: 检查秘钥泄露
-        uses: trufflesecurity/trufflehog@v3.90.6
-        with:
-          path: ./
-          base: main
-          head: HEAD
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          # Handle initial push where BASE_SHA is '0000000...'
+          if [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            echo "Initial push detected. Scanning entire repository history."
+            trufflehog git file://. --fail
+          else
+            echo "Scanning for secrets between $BASE_SHA and ${{ github.sha }}"
+            trufflehog git file://. --since-commit "$BASE_SHA" --fail
+          fi
 
       - name: 汇总静态扫描结果
         id: static-scan
@@ -156,10 +167,10 @@ jobs:
           CRITICAL_COUNT=0
           HIGH_COUNT=0
 
-          # 处理Electronegativity结果
+          # 处理Electronegativity结果（修正：第2列是severity，处理引号）
           if [ -f electronegativity-scan.csv ]; then
-            ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && tolower($3) == "critical" {count++} END {print count+0}' electronegativity-scan.csv)
-            ELECTRO_HIGH=$(awk -F',' 'NR>1 && tolower($3) == "high" {count++} END {print count+0}' electronegativity-scan.csv)
+            ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && $2=="\"CRITICAL\"" {count++} END {print count+0}' electronegativity-scan.csv)
+            ELECTRO_HIGH=$(awk -F',' 'NR>1 && $2=="\"HIGH\"" {count++} END {print count+0}' electronegativity-scan.csv)
             CRITICAL_COUNT=$((CRITICAL_COUNT + ELECTRO_CRITICAL))
             HIGH_COUNT=$((HIGH_COUNT + ELECTRO_HIGH))
             echo "Electronegativity - Critical: $ELECTRO_CRITICAL, High: $ELECTRO_HIGH"
