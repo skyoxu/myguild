@@ -42,7 +42,13 @@
       "Bash(curl:*)",
       "Bash(go install:*)",
       "Bash(py -m pip list:*)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(npm run overlay:gen:*)",
+      "Bash(npm run overlay:check:*)",
+      "Bash(git config:*)",
+      "Bash(npm config:*)",
+      "Bash(git reset:*)",
+      "Bash(.actionlint.exe .github/workflows/release-emergency-rollback.yml)"
     ],
     "deny": [],
     "ask": [],

@@ -305,7 +305,7 @@ jobs:
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
             {
-              echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.'
+              echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq .
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
@@ -315,7 +315,7 @@ jobs:
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
             {
-              echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.'
+              echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq .
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi

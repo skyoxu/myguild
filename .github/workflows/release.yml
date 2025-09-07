@@ -419,11 +419,13 @@ jobs:
 
           echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
-          # C建议：标记deploy (使用npx)
+          # C建议：标记deploy (使用npx) - 使用Unix时间戳格式
+          START_TIME=$(date -u +%s)
           npx @sentry/cli releases deploys "$RELEASE_NAME" new \
             --env "$ENVIRONMENT" \
             --name "GitHub Actions Deploy" \
-            --time "$(date -u +%Y-%m-%dT%H:%M:%S%z)"
+            --started "$START_TIME" \
+            --finished "$START_TIME"
 
           # 完成release (使用npx)
           npx @sentry/cli releases finalize "$RELEASE_NAME"
@@ -479,6 +481,7 @@ jobs:
     if: always()
     steps:
       - name: 📊 生成发布报告
+        shell: bash
         run: |
           echo "📊 === Release Pipeline 总结 ==="
           echo "🏷️ Release: ${{ needs.prepare.outputs.release_name }}"

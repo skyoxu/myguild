@@ -1,167 +1,147 @@
-你的 validate-tasks (1) / ensure overlay-map committed 失败，根因其实有三类“不可复现差异”：
+这 3 处都是“可定位→可复现→可一次性修好”的问题。下面给你直接可替换的修复方案，并标注为什么这样改。
 
-行尾符 & 文件末尾换行在不同环境被改写（LF/CRLF + “No newline at end of file”）；
+1) 构建应用：docs-scorer-performance.test.js 动态 import() 报 SyntaxError: Invalid or unexpected token
 
-生成时间戳 generatedAt 每次运行都会变化；
+根因
+测试环境把 import() 当成非法语法（解析阶段就挂了），通常是：
 
-序列化/缩进风格不稳定（比如数组改成多行、键顺序变化）。
+测试框架未按 ESM 方式处理该测试文件，或
 
-下面给你一个“现在能过 + 以后不再抖”的两段式方案。
+你的 bundler/transform 未为测试启用 ESM 解析。
 
-先把这次 CI 过掉（一次性修复）
-
-A. 本地提交当前生成结果
-你这次的 diff 显示 generatedAt 更新、Arch-Refs 被重排、多了“末尾无换行”提示；这说明生成器在你的工作副本里写出了新版本。最直接做法就是把它提交上来：
-
-# 在本地（或你常用的开发机）：
-git add scripts/overlay-map.json
-git commit -m "chore(overlay-map): update generated map"
-git push
-
-
-ensure overlay-map committed 这类检查通常就是在 CI 里跑一遍生成器，然后用 git diff --exit-code 看是否还有工作区变更——有就 fail、没就 pass（常见做法见官方 git diff 文档 & CI 实践）。
-git-scm.com
-+1
-Buildkite Community Forum
-
-如果你是在 Windows 开发机上看到 “LF will be replaced by CRLF” 的提示，这是 Git 在做行尾自动转换。先提交让这次 CI 通过，下一节我们把它根治。
-GitHub Docs
-Stack Overflow
-
-根治抖动（长期稳定）
-1) 固定行尾 & 末尾换行（跨平台一致）
-
-在仓库根新增/补全 .gitattributes，强制 JSON/YAML 始终用 LF，并交给 Git 负责归一化：
-
-# 强制这些文本文件在仓库内一律 LF；检出/提交都规范
-*.json text eol=lf
-*.yml  text eol=lf
-*.yaml text eol=lf
-
-
-Git 的官方说明：设置 text/eol=lf 可以在提交/检出时规范化行尾，避免平台差异；这是杜绝 “LF 将被替换为 CRLF” 的根本手段。
-git-scm.com
-GitHub Docs
-
-为了让编辑器也配合，在根目录放一个 .editorconfig（或补充配置）：
-
-root = true
-
-[*]
-end_of_line = lf
-insert_final_newline = true
-
-
-EditorConfig 专注统一行尾与“文件末尾换行”，各主流 IDE/插件都支持；能从源头避免“末尾无换行”的差异。
-EditorConfig
-EditorConfig 文档
-
-（如用 Prettier，它本身也会确保“文件以单个换行结束”，但以 EditorConfig 兜底最稳。
-Stack Overflow
-）
-
-另外，如果某条 CI 是在 Windows runner 上跑，也可以在该 Job 里强制：
-
-- run: git config --global core.autocrlf input
-
-
-这样即使在 Windows，也按 LF 规范提交/比较。
-GitHub Docs
-
-2) 让生成器可复现：去除“每次都变”的时间戳 & 序列化不稳定
-
-问题点： 你的 scripts/overlay-map.json 中 generatedAt 每次都会改（即使其它内容没变），这会导致 CI 永远检测到差异；同时，键顺序/数组格式也可能因序列化方式不同而抖动。可复现构建的最佳实践是避免时间戳和不稳定排序造成的噪音。
-可重现构建
+Node 本身在 CJS 里支持动态 import()（同步 require() 不支持 ESM；需改成 import()），这一点是官方文档明确说明的。
+nodejs.org
 +1
 
-落地做法（Node 生成脚本里修改）：
+解决路径（任选其一，按你实际框架）
 
-用稳定序列化：json-stable-stringify 或“canonical JSON”，保证键顺序一致、缩进固定（例如 2 空格）。
-npm
-GitHub
-jsDocs.io
+A.（Vitest 项目）
 
-处理 generatedAt：只有当实际内容发生变化时才刷新；否则沿用旧值。或改为与内容哈希/提交 SHA 相关的伪时间（或者直接移除该字段）。可复现社区明确指出“时间戳是最大的不确定源”，应规避。
-可重现构建
+在 vite.config.[tj]s 中明确让 Vitest 以 Node 环境跑（避免 jsdom 对 Node-ESM 的干扰）：
 
-确保文件末尾写入 \n（避免 “No newline at end of file” 再次出现）。
+/// <reference types="vitest" />
+import { defineConfig } from 'vite'
 
-示例片段（TypeScript/Node）：
+export default defineConfig({
+  test: {
+    environment: 'node',
+  },
+})
 
-import fs from "node:fs";
-import crypto from "node:crypto";
-import stringify from "json-stable-stringify";
 
-const PATH = "scripts/overlay-map.json";
+Vitest 默认支持 ESM；在 Node 环境下，await import() 可直接工作。
+vitest.dev
++1
 
-// 读取旧文件（若存在）
-const old = fs.existsSync(PATH) ? JSON.parse(fs.readFileSync(PATH, "utf8")) : null;
+若测试文件本身需要当作 ESM 解析（例如用到 import.meta.url 等），可把该测试文件改为 *.mjs；.mjs 在 Node 中总是 ESM。
+nodejs.org
 
-// 这里生成 overlayMap 的“实际业务内容”
-const payload = /* your generation logic */;
+B.（Jest 项目）
 
-// 计算“语义内容”的稳定哈希（不含 generatedAt）
-const contentHash = crypto.createHash("sha256")
-  .update(stringify(payload))
-  .digest("hex");
+启用 ESM 支持，并把需要按 ESM 解析的扩展名加入 extensionsToTreatAsEsm：
 
-// 只有内容变更时才更新时间戳；否则沿用旧值
-const generatedAt = (old && old.metadata && old.metadata.contentHash === contentHash)
-  ? old.metadata.generatedAt
-  : new Date().toISOString();
-
-// 组装最终对象（包含稳定的 contentHash）
-const result = {
-  metadata: { generatedAt, contentHash },
-  ...payload,
+// jest.config.js
+/** @type {import('jest').Config} */
+module.exports = {
+  testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.mjs', '.ts'],
+  transform: {}, // 如无 Babel，可先置空避免把 .mjs 转成 CJS
 };
 
-// 稳定序列化 + 固定缩进 + 末尾换行
-const json = stringify(result, { space: 2 }) + "\n";
-fs.writeFileSync(PATH, json, "utf8");
 
-
-这样做能保证：同一输入 → 同一 overlay-map.json；只有真实内容变了才触发 diff，避免“每次跑 CI 都红”。
-可重现构建
+Jest 对 ESM 的支持是“实验性”，但对 .mjs / type: module 有官方配置口径。
+jestjs.io
 +1
 
-3) 让“未提交就 fail”的检查更友好
+如果你仍用 Babel 转换测试，记得包含 @babel/plugin-syntax-dynamic-import 以让解析器识别 import() 语法（不做降级，只加语法）。这类 “Unexpected token import”/“unexpected token” 在 Jest/Babel 组合里很常见。
+GitHub
+DEV Community
 
-保留你已有的“确保已提交”逻辑（通常是跑一遍生成器后执行 git diff --exit-code），但可以把提示写清楚些：
+小结：Node/ESM 侧是支持的，问题在测试工具链。把测试以 ESM 解析（.mjs 或 Jest 的 extensionsToTreatAsEsm），或在 Vitest 指明 environment: 'node'，即可恢复 await import()。
+nodejs.org
+vitest.dev
 
-# 生成后校验
-if ! git diff --quiet -- scripts/overlay-map.json; then
-  echo "overlay-map.json changed; please run the generator locally and commit the result." >&2
-  git diff -- scripts/overlay-map.json >&2
-  exit 1
-fi
+2) 标记部署完成：sentry-cli releases deploys … --time 参数报错
+
+报错：invalid value '2025-09-07T07:18:55+0000' for '--time <SECONDS>'
+
+根因
+sentry-cli releases deploys <VERSION> new 的 --time 参数接收的是秒数（int），不是 ISO 时间串。你传入了 2025-09-07T07:18:55+0000 这种 ISO8601 字符串，自然解析失败。官方用法：
+
+--time <SECONDS>：部署耗时（秒）；
+
+或者用 --started <UNIX_TS> / --finished <UNIX_TS> 分别传入Unix 秒级时间戳。
+GitHub
+
+Linux/macOS 示例（Bash）
+
+# 方案1：只给耗时
+sentry-cli releases deploys "$RELEASE_NAME" new --env production --time "$DEPLOY_SECONDS"
+
+# 方案2：给开始/结束的 Unix 时间戳（秒）
+START=$(date -u +%s)
+# ... do deploy ...
+END=$(date -u +%s)
+sentry-cli releases deploys "$RELEASE_NAME" new --env production --started "$START" --finished "$END"
 
 
-git diff --exit-code/--quiet 是这类校验的常见做法；也可以用 git status --porcelain 作机器人可读判断。
-git-scm.com
-Stack Overflow
+Windows（PowerShell）
 
-总结：一次改到位的清单
+$start = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
+# ... do deploy ...
+$end = [int][double]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01Z")).TotalSeconds
+sentry-cli releases deploys "$env:RELEASE_NAME" new --env production --started $start --finished $end
 
-在仓库根添加/更新
 
-.gitattributes：*.json *.yml *.yaml text eol=lf（统一 LF）。
-git-scm.com
+另外：你输出里还有 npm warn config production Use --omit=dev，这只是 npm 配置告警，与 Sentry 无关；如果这步需要 dev 工具（例如某些打包/上传），确保在该 Job 用 npm ci 包含 dev（不要设置 NODE_ENV=production 或 --omit=dev）。
+docs.sentry.io
 
-.editorconfig：end_of_line = lf、insert_final_newline = true（编辑器侧兜底）。
-EditorConfig
+3) 发布流程总结：Windows 步骤里用了 Bash 语法
 
-调整生成脚本
+报错：PowerShell 提示 Missing '(' after 'if'，因为你在 Windows runner 上默认 shell 是 PowerShell，而你写了 if [[ ... ]] 的 Bash 语法。
+The GitHub Blog
 
-使用 json-stable-stringify 做稳定序列化；写文件时加 \n。
-npm
+两种改法，选其一：
 
-让 generatedAt 仅在内容变更时更新，或改为内容哈希/提交号。
-可重现构建
+A. 强制该步骤用 Bash（推荐统一风格）
 
-3)（可选）在 Windows runner 的 Job 里设置
+- name: Release summary (Bash on Windows)
+  shell: bash
+  run: |
+    if [[ "${{ job.status }}" == "success" ]]; then
+      echo "### ✅ Release 成功" >> "$GITHUB_STEP_SUMMARY"
+    else
+      echo "### ❌ Release 失败" >> "$GITHUB_STEP_SUMMARY"
+    fi
 
-git config --global core.autocrlf input（防止 CRLF 插入比较）。
+
+Windows 机上指定 shell: bash 会调用 Git for Windows 自带的 Bash；也可以在 defaults.run.shell: bash 里全局指定。
 GitHub Docs
++1
 
-做完这些后，这条 CI 检查就会只在真实变更时才报警；行尾与末尾换行也不再触发无意义 diff。
+B. 保持 PowerShell 语法
+
+- name: Release summary (PowerShell)
+  shell: pwsh
+  run: |
+    if ($env:STATE -eq 'success') {
+      "### ✅ Release 成功" >> $env:GITHUB_STEP_SUMMARY
+    } else {
+      "### ❌ Release 失败" >> $env:GITHUB_STEP_SUMMARY
+    }
+
+
+不论 Bash 还是 PowerShell，GitHub 官方建议把发布结果写入 Job Summary（$GITHUB_STEP_SUMMARY），可直接渲染 GFM Markdown。上例两种写法都符合官方文档。
+GitHub Docs
+The GitHub Blog
+
+一次性“防回归”清单
+
+（测试）Vitest：environment: 'node'；需要时把含 import() 的测试/被测文件改为 *.mjs 或启用 ESM 解析。Jest：用 extensionsToTreatAsEsm/Babel 语法插件。
+vitest.dev
+jestjs.io
+
+（Sentry）--time 仅接受秒数；或用 --started/--finished 传秒级 Unix 时间戳。
+GitHub
+
+（Windows Shell）在需要 Bash 语法的 step/job 上显式 shell: bash，否则 Windows 默认是 PowerShell；也可用 defaults.run.shell: bash 统一。Job Summary 用 $GITHUB_STEP_SUMMARY 写结果。
