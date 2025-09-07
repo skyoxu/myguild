@@ -161,6 +161,7 @@ jobs:
 
       - name: Read soft gates output
         id: read-outputs
+        shell: bash
         run: |
           # If no soft gates results in GITHUB_OUTPUT, set default values
           if ! grep -q "soft-gate-score=" "$GITHUB_OUTPUT" 2>/dev/null; then
