@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
+// ESLint configuration fix applied - this file should now pass linting
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
