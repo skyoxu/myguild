@@ -11,15 +11,17 @@ import {
   Page,
 } from '@playwright/test';
 import { test, expect } from '@playwright/test';
+import { join } from 'node:path';
 import { ELECTRON_SECURITY_BASELINE } from '../../src/shared/contracts/build';
 
 let app: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // 启动构建后的 Electron 应用
+  // 启动构建后的 Electron 应用 - 使用绝对路径(cifix1.txt要求)
+  const main = join(process.cwd(), 'dist-electron', 'main.js');
   app = await electron.launch({
-    args: ['./dist-electron/main.js'],
+    args: [main], // 绝对路径入口(cifix1.txt第137行)
     env: {
       NODE_ENV: 'test',
       CI: 'true',

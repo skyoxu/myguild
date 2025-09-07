@@ -5,6 +5,9 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  pull-requests: write
+  issues: write
+  id-token: write
 
 on:
   push:
@@ -60,6 +63,8 @@ jobs:
     steps:
       - name: Checkout代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 设置Node.js
         uses: actions/setup-node@v4
@@ -140,12 +145,9 @@ jobs:
           fi
 
       - name: 检查秘钥泄露
-        uses: trufflesecurity/trufflehog-actions@main
+        uses: trufflesecurity/trufflehog@v3.90.6
         with:
-          path: ./
-          base: ${{ github.event.pull_request.base.sha || github.event.before }}
-          head: ${{ github.sha }}
-          extra_args: --only-verified --fail
+          extra_args: --results=verified,unknown
 
       - name: 汇总静态扫描结果
         id: static-scan
@@ -237,6 +239,8 @@ jobs:
     steps:
       - name: Checkout代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 设置Node.js
         uses: actions/setup-node@v4
@@ -300,6 +304,8 @@ jobs:
     steps:
       - name: Checkout代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 设置Node.js
         uses: actions/setup-node@v4

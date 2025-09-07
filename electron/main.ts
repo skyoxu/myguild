@@ -188,16 +188,14 @@ function createWindow(): void {
     return false;
   });
 
-  // ===== 4) 健壮加载 + 错误自愈 =====
-  const indexUrl =
-    is.dev && process.env['ELECTRON_RENDERER_URL']
-      ? process.env['ELECTRON_RENDERER_URL']
-      : pathToFileURL(join(__dirname, '../renderer/index.html')).toString();
+  // ===== 4) 导航兜底：即使溜过，也阻断（cifix1.txt要求）=====
+  mainWindow.webContents.on('will-navigate', e => e.preventDefault()); // 官方建议
 
-  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
-    console.warn('[did-fail-load]', code, desc, url);
-    if (!mainWindow.isDestroyed() && !url.includes('chrome-error://')) {
-      console.log('🔄 重新加载首页以恢复...');
+  // ===== 5) 失败自愈：避免停在 chrome-error 页（cifix1.txt要求）=====
+  const indexUrl = 'app://index.html';
+  mainWindow.webContents.on('did-fail-load', () => {
+    if (!mainWindow.isDestroyed()) {
+      console.log('🔄 [did-fail-load] 重新加载首页以恢复...');
       mainWindow.loadURL(indexUrl);
     }
   });
@@ -232,6 +230,7 @@ function createWindow(): void {
 
   configureTestMode(mainWindow);
 
+  // 使用app://协议加载首页（cifix1.txt要求）
   console.log(`📂 加载页面: ${indexUrl}`);
   mainWindow.loadURL(indexUrl);
 }
@@ -239,11 +238,47 @@ function createWindow(): void {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron');
 
-  // 注册app://协议映射（如使用自定义协议）
-  // protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
-  //   const url = request.url.replace(`${APP_SCHEME}://-`, '');
-  //   cb({ path: join(__dirname, '../renderer', url) });
-  // });
+  // 1) 注册app://协议映射（cifix1.txt要求）
+  protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
+    const url = request.url.replace('app://', '');
+    cb({ path: join(__dirname, '../renderer', url) });
+  });
+
+  // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"（cifix1.txt要求）
+  const ses = session.defaultSession;
+  ses.webRequest.onBeforeRequest(
+    { urls: ['http://*/*', 'https://*/*'] },
+    (d, cb) => {
+      // 白名单（Sentry监控等必要域名）
+      const isAllowed =
+        d.url.includes('localhost') ||
+        d.url.includes('127.0.0.1') ||
+        d.url.includes('sentry.io') ||
+        d.url.startsWith('https://o.sentry.io');
+
+      if (!isAllowed) {
+        console.log(`🚫 [defaultSession] 阻断外部导航: ${d.url}`);
+      }
+      cb({ cancel: !isAllowed }); // 阻断真实导航，避免上下文销毁
+    }
+  );
+
+  // 3) 响应头安全合集（生产）（cifix1.txt要求）
+  ses.webRequest.onHeadersReceived((details, cb) => {
+    const h = details.responseHeaders ?? {};
+    h['Content-Security-Policy'] = [
+      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
+        "img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; " +
+        "connect-src 'self' https://o.sentry.io",
+    ];
+    h['Cross-Origin-Opener-Policy'] = ['same-origin'];
+    h['Cross-Origin-Embedder-Policy'] = ['require-corp'];
+    h['Cross-Origin-Resource-Policy'] = ['same-origin'];
+    h['Permissions-Policy'] = [
+      'geolocation=(), microphone=(), camera=(), notifications=()',
+    ];
+    cb({ responseHeaders: h }); // 通过 onHeadersReceived 注入响应头
+  });
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
