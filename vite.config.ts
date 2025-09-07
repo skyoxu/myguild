@@ -39,11 +39,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    // 为使用动态import()的Node.js专用测试指定环境
-    environmentMatchGlobs: [
-      ['**/*.node.test.{js,ts}', 'node'],
-      ['**/*-performance.test.mjs', 'node'], // 性能测试需要Node环境
-    ],
     // 超时配置 - 为慢测试设置合理超时
     testTimeout: 30_000, // 默认 5s -> 30s （允许execSync脚本测试）
     hookTimeout: 15_000, // 钩子默认 10s -> 15s
