@@ -133,10 +133,10 @@ jobs:
             snyk test --json > snyk-results.json || true
             snyk monitor || true
             echo "✅ Snyk扫描完成"
-            echo "snyk-status=success" >> $GITHUB_OUTPUT
+            echo "snyk-status=success" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️ 跳过Snyk扫描（无SNYK_TOKEN）"
-            echo "snyk-status=skipped" >> $GITHUB_OUTPUT
+            echo "snyk-status=skipped" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 检查秘钥泄露
@@ -153,7 +153,7 @@ jobs:
             echo "Initial push detected. Scanning entire repository history."
             trufflehog git file://. --fail
           else
-            echo "Scanning for secrets between $BASE_SHA and ${{ github.sha }}"
+            echo "Scanning for secrets between \"$BASE_SHA\" and ${{ github.sha }}"
             trufflehog git file://. --since-commit "$BASE_SHA" --fail
           fi
 

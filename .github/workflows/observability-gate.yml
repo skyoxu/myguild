@@ -275,6 +275,7 @@ jobs:
           }
 
       - name: Staging环境配置检查
+        shell: bash
         run: |
           echo "🎭 验证Staging环境配置..."
 
