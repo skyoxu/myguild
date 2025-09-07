@@ -94,6 +94,7 @@ jobs:
 
       - name: 执行Electronegativity扫描
         id: electronegativity
+        shell: bash
         run: |
           echo "🔍 运行Electronegativity安全扫描..."
           electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ 扫描完成但有警告"
@@ -309,6 +310,7 @@ jobs:
 
       - name: 执行统一安全门禁检查
         continue-on-error: false
+        shell: bash
         run: |
           echo "🔒 开始执行统一安全门禁检查..."
 
