@@ -1,0 +1,4 @@
+# 强制这些文本文件在仓库内一律 LF；检出/提交都规范
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

@@ -1,113 +1,167 @@
-这批报错都是 ShellCheck 的风格/稳健性提醒（不是 YAML 语法了），解决思路很集中：
+你的 validate-tasks (1) / ensure overlay-map committed 失败，根因其实有三类“不可复现差异”：
 
-SC2129：多次 >> file 追加 → 用 一次重定向的分组：{ cmd1; cmd2; } >> "$file"（效率更好，也更“actionlint 友好”）
-shellcheck.net
-Stack Overflow
-Ask Ubuntu
+行尾符 & 文件末尾换行在不同环境被改写（LF/CRLF + “No newline at end of file”）；
 
-SC2086：所有变量都 加双引号，防止通配/拆词（globbing & word splitting）
-shellcheck.net
+生成时间戳 generatedAt 每次运行都会变化；
 
-向运行摘要输出 Markdown：统一写到 $GITHUB_STEP_SUMMARY，并把多条输出放进一次分组里（可搭配 heredoc）
-GitHub Docs
-The GitHub Blog
+序列化/缩进风格不稳定（比如数组改成多行、键顺序变化）。
 
-下面给你三处“可直接替换”的 run 块模板（把原来的多次 echo >> "$GITHUB_STEP_SUMMARY" 换掉即可），并顺手把 SC2086 一起消了。
-1) .github/workflows/release-emergency-rollback.yml（行 286 的 step）
-- name: Rollback summary
-  if: always()
-  shell: bash
-  run: |
-    summary_file="${GITHUB_STEP_SUMMARY}"
-    {
-      echo "## 回滚结果总结"
-      echo ""
-      echo "- **目标版本**: ${{ inputs.rollback_to }}"
-      echo "- **回滚窗口**: ${{ inputs.window }}"
-      echo "- **触发人**: ${{ github.actor }}"
-      echo ""
-      echo "### 后续动作清单"
-      echo "1. 🔍 立即调查根因"
-      echo "2. 🧪 补充回归用例"
-      echo "3. 📝 输出复盘记录"
-    } >> "${summary_file}"
+下面给你一个“现在能过 + 以后不再抖”的两段式方案。
+
+先把这次 CI 过掉（一次性修复）
+
+A. 本地提交当前生成结果
+你这次的 diff 显示 generatedAt 更新、Arch-Refs 被重排、多了“末尾无换行”提示；这说明生成器在你的工作副本里写出了新版本。最直接做法就是把它提交上来：
+
+# 在本地（或你常用的开发机）：
+git add scripts/overlay-map.json
+git commit -m "chore(overlay-map): update generated map"
+git push
 
 
-说明：把 多次追加合并成一次 { …; } >> file，ShellCheck 就不会再报 SC2129；所有变量均已双引号包裹，避免 SC2086。$GITHUB_STEP_SUMMARY 是官方支持的 Job Summary 文件，原生渲染 Markdown。
-shellcheck.net
+ensure overlay-map committed 这类检查通常就是在 CI 里跑一遍生成器，然后用 git diff --exit-code 看是否还有工作区变更——有就 fail、没就 pass（常见做法见官方 git diff 文档 & CI 实践）。
+git-scm.com
 +1
+Buildkite Community Forum
+
+如果你是在 Windows 开发机上看到 “LF will be replaced by CRLF” 的提示，这是 Git 在做行尾自动转换。先提交让这次 CI 通过，下一节我们把它根治。
 GitHub Docs
-
-2) .github/workflows/release-ramp.yml（行 288 的 step）
-- name: Ramp summary
-  shell: bash
-  run: |
-    summary_file="${GITHUB_STEP_SUMMARY}"
-    {
-      echo "## 分阶段发布结果"
-      echo ""
-      echo "- **目标阶段**: ${{ inputs.stage }}%"
-      echo "- **变更窗口**: ${{ inputs.window }}"
-      echo "- **触发人**: ${{ github.actor }}"
-    } >> "${summary_file}"
-
-
-说明：同样用 分组一次重定向 代替多次 >>；表达式由 Actions 先展开，再作为字面传给 Bash，是官方推荐的用法。
-GitHub Docs
-
-3) .github/workflows/staged-release.yml（行 406 的 step）
-
-你这里既有 SC2129 又有多处 SC2086。用 heredoc + 一次性重定向最干净：
-
-- name: Generate staged plan & attach summary
-  shell: bash
-  run: |
-    summary_file="${GITHUB_STEP_SUMMARY}"
-
-    # 生成发布计划文件（示例）
-    cat <<'PLAN' > release-plan.md
-    | 阶段 | 流量 | 条件 |
-    |---|---|---|
-    | 10% | 10min | 无告警 |
-    | 25% | 20min | 无告警 |
-    | 50% | 30min | 无告警 |
-    PLAN
-
-    {
-      echo "## 分阶段发布计划"
-      cat "release-plan.md"
-      echo ""
-      echo "> 触发人: ${{ github.actor }} | 运行: ${{ github.run_id }}"
-    } >> "${summary_file}"
-
-
-关键点：
-
-heredoc 开始/结束标记同列，整段在 run: | 中；这样 YAML 与 Shell 都正确。
-
-所有变量（包括 summary_file、文件名等）一律加双引号，清空 SC2086。
-
-用 { …; } >> "${summary_file}" 一次重定向清空 SC2129。
-
-Job Summary 的使用是官方支持的最佳实践。
-GitHub Docs
-+1
-
-为什么这就能一次过？
-
-SC2129 官方解释：与其每行都 >> file，把命令分组后一次性重定向，开销更低也更清晰；此规则属风格级，可修可忽略，但修掉最省心。
-shellcheck.net
-
-SC2086 官方解释：双引号可避免通配与拆词；若你确实需要有意拆词，请用数组或显式 read -ra。
-shellcheck.net
 Stack Overflow
 
-Job Summary：GitHub 原生支持，将 Markdown 追加到 "$GITHUB_STEP_SUMMARY" 即可在运行摘要页渲染；多步可反复追加。
+根治抖动（长期稳定）
+1) 固定行尾 & 末尾换行（跨平台一致）
+
+在仓库根新增/补全 .gitattributes，强制 JSON/YAML 始终用 LF，并交给 Git 负责归一化：
+
+# 强制这些文本文件在仓库内一律 LF；检出/提交都规范
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+
+Git 的官方说明：设置 text/eol=lf 可以在提交/检出时规范化行尾，避免平台差异；这是杜绝 “LF 将被替换为 CRLF” 的根本手段。
+git-scm.com
 GitHub Docs
-TIL
 
-小贴士（可选增强）
+为了让编辑器也配合，在根目录放一个 .editorconfig（或补充配置）：
 
-在这些 step 的开头加一行：set -Eeuo pipefail 提升脚本稳健性（若这样做，注意空变量需要默认值或提前赋值）。
+root = true
 
-如果你仍有 其他 step 在一行一行 >> "$GITHUB_STEP_SUMMARY"，同样改成 { …; } >> "$GITHUB_STEP_SUMMARY" 即可一网打尽 SC2129
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+
+EditorConfig 专注统一行尾与“文件末尾换行”，各主流 IDE/插件都支持；能从源头避免“末尾无换行”的差异。
+EditorConfig
+EditorConfig 文档
+
+（如用 Prettier，它本身也会确保“文件以单个换行结束”，但以 EditorConfig 兜底最稳。
+Stack Overflow
+）
+
+另外，如果某条 CI 是在 Windows runner 上跑，也可以在该 Job 里强制：
+
+- run: git config --global core.autocrlf input
+
+
+这样即使在 Windows，也按 LF 规范提交/比较。
+GitHub Docs
+
+2) 让生成器可复现：去除“每次都变”的时间戳 & 序列化不稳定
+
+问题点： 你的 scripts/overlay-map.json 中 generatedAt 每次都会改（即使其它内容没变），这会导致 CI 永远检测到差异；同时，键顺序/数组格式也可能因序列化方式不同而抖动。可复现构建的最佳实践是避免时间戳和不稳定排序造成的噪音。
+可重现构建
++1
+
+落地做法（Node 生成脚本里修改）：
+
+用稳定序列化：json-stable-stringify 或“canonical JSON”，保证键顺序一致、缩进固定（例如 2 空格）。
+npm
+GitHub
+jsDocs.io
+
+处理 generatedAt：只有当实际内容发生变化时才刷新；否则沿用旧值。或改为与内容哈希/提交 SHA 相关的伪时间（或者直接移除该字段）。可复现社区明确指出“时间戳是最大的不确定源”，应规避。
+可重现构建
+
+确保文件末尾写入 \n（避免 “No newline at end of file” 再次出现）。
+
+示例片段（TypeScript/Node）：
+
+import fs from "node:fs";
+import crypto from "node:crypto";
+import stringify from "json-stable-stringify";
+
+const PATH = "scripts/overlay-map.json";
+
+// 读取旧文件（若存在）
+const old = fs.existsSync(PATH) ? JSON.parse(fs.readFileSync(PATH, "utf8")) : null;
+
+// 这里生成 overlayMap 的“实际业务内容”
+const payload = /* your generation logic */;
+
+// 计算“语义内容”的稳定哈希（不含 generatedAt）
+const contentHash = crypto.createHash("sha256")
+  .update(stringify(payload))
+  .digest("hex");
+
+// 只有内容变更时才更新时间戳；否则沿用旧值
+const generatedAt = (old && old.metadata && old.metadata.contentHash === contentHash)
+  ? old.metadata.generatedAt
+  : new Date().toISOString();
+
+// 组装最终对象（包含稳定的 contentHash）
+const result = {
+  metadata: { generatedAt, contentHash },
+  ...payload,
+};
+
+// 稳定序列化 + 固定缩进 + 末尾换行
+const json = stringify(result, { space: 2 }) + "\n";
+fs.writeFileSync(PATH, json, "utf8");
+
+
+这样做能保证：同一输入 → 同一 overlay-map.json；只有真实内容变了才触发 diff，避免“每次跑 CI 都红”。
+可重现构建
++1
+
+3) 让“未提交就 fail”的检查更友好
+
+保留你已有的“确保已提交”逻辑（通常是跑一遍生成器后执行 git diff --exit-code），但可以把提示写清楚些：
+
+# 生成后校验
+if ! git diff --quiet -- scripts/overlay-map.json; then
+  echo "overlay-map.json changed; please run the generator locally and commit the result." >&2
+  git diff -- scripts/overlay-map.json >&2
+  exit 1
+fi
+
+
+git diff --exit-code/--quiet 是这类校验的常见做法；也可以用 git status --porcelain 作机器人可读判断。
+git-scm.com
+Stack Overflow
+
+总结：一次改到位的清单
+
+在仓库根添加/更新
+
+.gitattributes：*.json *.yml *.yaml text eol=lf（统一 LF）。
+git-scm.com
+
+.editorconfig：end_of_line = lf、insert_final_newline = true（编辑器侧兜底）。
+EditorConfig
+
+调整生成脚本
+
+使用 json-stable-stringify 做稳定序列化；写文件时加 \n。
+npm
+
+让 generatedAt 仅在内容变更时更新，或改为内容哈希/提交号。
+可重现构建
+
+3)（可选）在 Windows runner 的 Job 里设置
+
+git config --global core.autocrlf input（防止 CRLF 插入比较）。
+GitHub Docs
+
+做完这些后，这条 CI 检查就会只在真实变更时才报警；行尾与末尾换行也不再触发无意义 diff。

@@ -4,8 +4,10 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import matter from 'gray-matter';
 import fg from 'fast-glob';
+import stringify from 'json-stable-stringify';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, cur, i, arr) => {
@@ -283,14 +285,39 @@ for (const file of mdFiles) {
   files[rel] = { frontMatter: fmOut, prdId, accept, anchors };
 }
 
+// 读取旧文件（若存在）
+let old = null;
+try {
+  const oldData = await fs.readFile(OUT, 'utf8');
+  old = JSON.parse(oldData);
+} catch {
+  // 文件不存在或解析失败，继续使用新数据
+}
+
+// 计算"语义内容"的稳定哈希（不含 generatedAt）
+const payload = { keywords, files };
+const contentHash = crypto
+  .createHash('sha256')
+  .update(stringify(payload))
+  .digest('hex');
+
+// 只有内容变更时才更新时间戳；否则沿用旧值
+const generatedAt =
+  old && old.metadata && old.metadata.contentHash === contentHash
+    ? old.metadata.generatedAt
+    : new Date().toISOString();
+
+// 组装最终对象（包含稳定的 contentHash）
 const out = {
-  metadata: { generatedAt: new Date().toISOString() },
-  keywords,
-  files,
+  metadata: { generatedAt, contentHash },
+  ...payload,
 };
 
+// 稳定序列化 + 固定缩进 + 末尾换行
+const json = stringify(out, { space: 2 }) + '\n';
+
 await fs.mkdir(path.dirname(OUT), { recursive: true });
-await fs.writeFile(OUT, JSON.stringify(out, null, 2), 'utf8');
+await fs.writeFile(OUT, json, 'utf8');
 console.log(
-  `✅ overlay-map written: ${OUT} (files=${Object.keys(files).length}, keywords=${Object.keys(keywords).length})`
+  `✅ overlay-map written: ${OUT} (files=${Object.keys(files).length}, keywords=${Object.keys(keywords).length}, hash=${contentHash.slice(0, 8)})`
 );
