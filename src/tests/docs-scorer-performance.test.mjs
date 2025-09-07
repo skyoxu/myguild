@@ -1,6 +1,8 @@
+// @vitest-environment node
 /**
  * docs-scorer.mjs 性能测试
  * 验证大文档AST解析性能和缓存机制
+ * C建议：按cifix1.txt严格执行 - 指定Node环境避免window访问错误
  */
 
 import { performance } from 'node:perf_hooks';

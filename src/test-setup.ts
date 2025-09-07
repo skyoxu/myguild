@@ -12,30 +12,33 @@ afterEach(() => {
   cleanup();
 });
 
-// 全局模拟配置
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
+// C建议：按cifix1.txt严格执行 - 只在存在 window 时才 mock
+const g: any = globalThis;
+if (typeof g.window !== 'undefined') {
+  // 全局模拟配置
+  Object.defineProperty(g.window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
 
-// Electron 环境模拟
-Object.defineProperty(window, 'electronAPI', {
-  value: {
-    platform: 'test',
-    invoke: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-  },
-});
+  // Electron 环境模拟
+  Object.defineProperty(g.window, 'electronAPI', {
+    value: {
+      platform: 'test',
+      invoke: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    },
+  });
+}
 
 // ResizeObserver 模拟 (某些UI组件需要)
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
