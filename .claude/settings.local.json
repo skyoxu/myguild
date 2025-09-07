@@ -50,7 +50,14 @@
       "Bash(git reset:*)",
       "Bash(.actionlint.exe .github/workflows/release-emergency-rollback.yml)",
       "Bash(./actionlint.exe:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(git diff:*)",
+      "Bash(__NEW_LINE__ echo \"测试 lint:src 命令（严格检查src目录）：\")",
+      "Bash(echo:*)",
+      "Bash(__NEW_LINE__ echo \"测试 lint:tests 命令（放宽检查tests目录）：\")",
+      "Bash(__NEW_LINE__ echo \"测试完整 lint 命令（组合检查）：\")",
+      "Bash(awk:*)",
+      "Bash(ESLINT_MAX_WARNINGS=50 node scripts/eslint-baseline-gate.mjs)"
     ],
     "deny": [],
     "ask": [],

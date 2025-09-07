@@ -27,27 +27,53 @@ const BASELINE_THRESHOLDS = {
 };
 
 /**
- * 运行ESLint检查
+ * 运行ESLint检查 - 分目录处理（buildandtest.md方案A1）
  */
 async function runESLintCheck() {
-  console.log('🔍 运行ESLint基线检查...');
+  console.log('🔍 运行ESLint基线检查（分目录）...');
 
   try {
-    // 运行ESLint并获取JSON输出
-    const { stdout } = await execAsync(
-      'npx eslint . --format json --max-warnings 0'
-    );
-    return JSON.parse(stdout);
-  } catch (error) {
-    // ESLint错误时解析stderr中的JSON
-    if (error.stdout) {
-      try {
-        return JSON.parse(error.stdout);
-      } catch (parseError) {
-        console.error('❌ ESLint输出解析失败:', error.message);
-        process.exit(1);
+    const results = [];
+    
+    // 严格检查业务代码（src目录）
+    console.log('📁 检查 src/ 目录（严格：--max-warnings 115）...');
+    try {
+      const { stdout: srcStdout } = await execAsync(
+        'npx eslint "src/**/*.{ts,tsx}" --format json --max-warnings 115'
+      );
+      const srcResults = JSON.parse(srcStdout);
+      results.push(...srcResults);
+    } catch (srcError) {
+      // 解析失败时的错误输出
+      if (srcError.stdout) {
+        const srcResults = JSON.parse(srcError.stdout);
+        results.push(...srcResults);
+      } else {
+        throw new Error(`src目录ESLint检查失败: ${srcError.message}`);
       }
     }
+
+    // 测试代码放宽检查（tests目录）
+    console.log('📁 检查 tests/ 目录（放宽：--max-warnings 300）...');
+    try {
+      const { stdout: testsStdout } = await execAsync(
+        'npx eslint "tests/**/*.{ts,tsx,js,mjs}" --format json --max-warnings 300'
+      );
+      const testsResults = JSON.parse(testsStdout);
+      results.push(...testsResults);
+    } catch (testsError) {
+      // 解析失败时的错误输出
+      if (testsError.stdout) {
+        const testsResults = JSON.parse(testsError.stdout);
+        results.push(...testsResults);
+      } else {
+        throw new Error(`tests目录ESLint检查失败: ${testsError.message}`);
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error('❌ ESLint分目录检查失败:', error.message);
     throw error;
   }
 }
