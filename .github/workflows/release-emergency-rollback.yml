@@ -304,16 +304,20 @@ jobs:
               echo '### 📊 批量回滚结果'
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq '.'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
             {
               echo ''
               echo '### 📊 回滚结果'
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq '.'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           {

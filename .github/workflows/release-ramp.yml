@@ -300,8 +300,10 @@ jobs:
               echo '### 🏥 健康检查详情'
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.health_check.outputs.health_result }}' | jq '.' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo '${{ steps.health_check.outputs.health_result }}' | jq '.'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # 下一步建议

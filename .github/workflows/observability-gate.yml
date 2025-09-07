@@ -116,8 +116,8 @@ jobs:
               {
                 echo ''
                 echo '### ❌ 发现的错误'
+                jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /'
               } >> "$GITHUB_STEP_SUMMARY"
-              jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             fi
             
             # 如果有警告，显示警告详情
@@ -125,8 +125,8 @@ jobs:
               {
                 echo ''
                 echo '### ⚠️ 发现的警告'
+                jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /'
               } >> "$GITHUB_STEP_SUMMARY"
-              jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             {
