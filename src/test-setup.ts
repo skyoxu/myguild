@@ -48,6 +48,31 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
+// HTMLCanvasElement 模拟 (Phaser 3游戏引擎需要)
+global.HTMLCanvasElement = vi.fn().mockImplementation(() => ({
+  getContext: vi.fn(() => ({
+    fillRect: vi.fn(),
+    clearRect: vi.fn(),
+    fillStyle: '',
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    arc: vi.fn(),
+    drawImage: vi.fn(),
+    canvas: { width: 800, height: 600 },
+  })),
+  width: 800,
+  height: 600,
+  style: {},
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+}));
+
+// Canvas context 类型模拟
+global.CanvasRenderingContext2D = vi.fn().mockImplementation(() => ({}));
+
 // 扩展 expect 匹配器
 expect.extend({
   toBeWithinThreshold(

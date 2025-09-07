@@ -103,19 +103,21 @@ global.cancelAnimationFrame = vi.fn(id => {
   clearTimeout(id);
 });
 
-// 模拟 performance API
-Object.defineProperty(window, 'performance', {
-  value: {
-    now: vi.fn(() => Date.now()),
-    mark: vi.fn(),
-    measure: vi.fn(),
-    getEntriesByName: vi.fn(() => []),
-    getEntriesByType: vi.fn(() => []),
-    clearMarks: vi.fn(),
-    clearMeasures: vi.fn(),
-  },
-  writable: true,
-});
+// 模拟 performance API (添加环境保护)
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'performance', {
+    value: {
+      now: vi.fn(() => Date.now()),
+      mark: vi.fn(),
+      measure: vi.fn(),
+      getEntriesByName: vi.fn(() => []),
+      getEntriesByType: vi.fn(() => []),
+      clearMarks: vi.fn(),
+      clearMeasures: vi.fn(),
+    },
+    writable: true,
+  });
+}
 
 // 模拟 ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
