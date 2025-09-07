@@ -31,10 +31,6 @@ jobs:
   validate-tasks:
     runs-on: windows-latest
     timeout-minutes: 15
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
 
     # Infrastructure-level optimization: retry strategy
     strategy:
@@ -57,11 +53,29 @@ jobs:
             package-lock.json
             package.json
 
-      - name: 安装依赖 (使用强化npm-install action)
-        uses: ./.github/actions/npm-install
-        with:
-          working-directory: '.'
-          node-version: ${{ env.NODE_VERSION }}
+      # 矫正 npm 配置（只影响当前 CI 机）
+      - name: Normalize npm config on Windows
+        shell: bash
+        run: |
+          # 避免"生产模式"误伤 devDependencies
+          npm config delete production || true
+          # 替换已废弃的 cache-min
+          npm config delete cache-min || true
+          npm config set prefer-offline true
+        # 若你仓库 .npmrc 硬写了 production=true，也能被下面 env 覆盖
+
+      # 安装依赖（务必包含 dev）
+      - name: Install deps (include dev)
+        shell: bash
+        env:
+          NPM_CONFIG_PRODUCTION: "false"  # 覆盖任何 production=true
+          NODE_ENV: "development"         # 避免 NODE_ENV=production 触发省略 dev
+        run: npm ci --no-audit --no-fund
+
+      # 验证 ESLint（现在应该能找到）
+      - name: Verify ESLint availability
+        shell: bash
+        run: npx -y eslint --version
 
       # 若 overlay-map 可自动生成，先重建并强制"已提交一致"
       # 确保Windows环境按LF归一化
