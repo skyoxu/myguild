@@ -431,9 +431,9 @@ jobs:
             echo "- [x] 监控设置完成" >> $GITHUB_STEP_SUMMARY
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-### 🔗 相关链接
-          EOF
-          echo "- [Sentry Release](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo ""
+            echo "### 🔗 相关链接"
+            echo "- [Sentry Release](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/)"
+            echo "- [Release Health](https://sentry.io/${{ env.SENTRY_ORG }}/${{ env.SENTRY_PROJECT }}/releases/${{ env.APP_VERSION }}/health/)"
+          } >> $GITHUB_STEP_SUMMARY
