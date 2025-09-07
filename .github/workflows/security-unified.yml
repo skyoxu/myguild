@@ -156,13 +156,30 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "🔍 运行TruffleHog秘钥扫描..."
-          # 扫描整个文件系统，输出到JSON文件
-          trufflehog filesystem . --results=verified,unknown --fail --json | Out-File -FilePath "trufflehog-scan.json" -Encoding UTF8
           
-          if (Test-Path "trufflehog-scan.json") {
+          # PR场景：使用git增量扫描（更快更准）
+          if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
+            Write-Host "PR模式：执行增量git扫描（base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }}）"
+            # 使用PowerShell调用bash来执行git命令（避免Windows路径问题）
+            bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified,unknown --fail-verified --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
+            $scanFile = "trufflehog-pr.json"
+          } else {
+            Write-Host "主分支模式：执行全量filesystem扫描"
+            # 1) 降噪：跳过二进制文件，使用排除列表
+            # 2) 正确失败条件：只因已验证密钥而失败，未验证密钥仅作告警
+            trufflehog filesystem . `
+              --skip-binaries `
+              --excludepathsfile .trufflehog-exclude.txt `
+              --results=verified,unknown `
+              --fail-verified `
+              --json | Out-File -FilePath "trufflehog-scan.json" -Encoding UTF8
+            $scanFile = "trufflehog-scan.json"
+          }
+          
+          if (Test-Path $scanFile) {
             Write-Host "✅ TruffleHog扫描完成"
             # 检查是否有发现的秘钥
-            $content = Get-Content "trufflehog-scan.json" -Raw
+            $content = Get-Content $scanFile -Raw
             if ($content -and $content.Trim() -ne "") {
               Write-Host "⚠️ 发现潜在秘钥泄露，请检查报告"
             } else {
@@ -244,6 +261,7 @@ jobs:
             npm-audit-results.json
             snyk-results.json
             trufflehog-scan.json
+            trufflehog-pr.json
           retention-days: 30
 
   # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）

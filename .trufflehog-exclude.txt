@@ -1,0 +1,7 @@
+^node_modules/
+^dist/
+^build/
+^coverage/
+^\.git/
+^node_modules/app-builder-bin/
+\.(zip|tar|gz|bz2|7z|dmg|exe|dll|so|dylib|pkg|deb|rpm|msi|iso)$
