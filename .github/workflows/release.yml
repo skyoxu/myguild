@@ -354,7 +354,7 @@ jobs:
         if: steps.sentry_check.outputs.token_present == 'true'
         uses: ./.github/actions/setup-release-tools
         with:
-          sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
+          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 创建Sentry Release
         if: steps.sentry_check.outputs.token_present == 'true'
@@ -380,9 +380,9 @@ jobs:
 
           Write-Host "✅ Release创建并finalize完成: $RELEASE_NAME"
         env:
-          SENTRY_ORG: ${{ env.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 📤 上传Source Maps
         if: steps.sentry_check.outputs.token_present == 'true'
@@ -396,9 +396,9 @@ jobs:
 
           Write-Host "✅ Source Maps上传成功"
         env:
-          SENTRY_ORG: ${{ env.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   # 🏥 Release Health检查
   health-check:
@@ -428,9 +428,9 @@ jobs:
           echo "🏥 开始Release Health门槛检查..."
           node scripts/release-health-check.mjs --release="${{ needs.prepare.outputs.release_name }}" --check-thresholds
         env:
-          SENTRY_ORG: ${{ env.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           CRASH_FREE_SESSION_THRESHOLD: ${{ env.CRASH_FREE_SESSION_THRESHOLD }}
           CRASH_FREE_USER_THRESHOLD: ${{ env.CRASH_FREE_USER_THRESHOLD }}
         timeout-minutes: 5
@@ -473,7 +473,7 @@ jobs:
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
         with:
-          sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
+          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 标记Sentry部署
         shell: pwsh
@@ -488,9 +488,9 @@ jobs:
 
           Write-Host "✅ 部署标记完成"
         env:
-          SENTRY_ORG: ${{ env.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 🎉 部署成功通知
         run: |
@@ -521,9 +521,9 @@ jobs:
 
           echo "⚠️ 请手动检查Release健康状态并决定是否回滚"
         env:
-          SENTRY_ORG: ${{ env.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   # 📊 发布总结
   summary:
