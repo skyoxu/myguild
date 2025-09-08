@@ -426,49 +426,7 @@ jobs:
       - name: 🏥 执行健康门槛检查
         run: |
           echo "🏥 开始Release Health门槛检查..."
-
-          # C建议：健康门槛检查
-          node -e "
-          const https = require('https');
-          const release = '${{ needs.prepare.outputs.release_name }}';
-          const org = process.env.SENTRY_ORG;
-          const project = process.env.SENTRY_PROJECT;
-          const token = process.env.SENTRY_AUTH_TOKEN;
-
-          console.log('🔍 检查Release健康状态:', release);
-
-          // 模拟健康检查API调用
-          const checkHealth = async () => {
-            // 这里应该调用Sentry API获取实际的健康指标
-            const mockMetrics = {
-              crashFreeSessionsRate: 99.7,
-              crashFreeUsersRate: 99.9,
-              adoptionRate: 45.2
-            };
-            
-            console.log('📊 健康指标:', mockMetrics);
-            
-            // C建议：检查健康门槛
-            const sessionThreshold = parseFloat(process.env.CRASH_FREE_SESSION_THRESHOLD);
-            const userThreshold = parseFloat(process.env.CRASH_FREE_USER_THRESHOLD);
-            
-            if (mockMetrics.crashFreeSessionsRate < sessionThreshold) {
-              throw new Error(\`崩溃会话率不达标: \${mockMetrics.crashFreeSessionsRate}% < \${sessionThreshold}%\`);
-            }
-            
-            if (mockMetrics.crashFreeUsersRate < userThreshold) {
-              throw new Error(\`崩溃用户率不达标: \${mockMetrics.crashFreeUsersRate}% < \${userThreshold}%\`);
-            }
-            
-            console.log('✅ 所有健康门槛检查通过');
-            return true;
-          };
-
-          checkHealth().catch(error => {
-            console.error('❌ 健康检查失败:', error.message);
-            process.exit(1);
-          });
-          "
+          node scripts/release-health-check.mjs --release="${{ needs.prepare.outputs.release_name }}" --check-thresholds
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
