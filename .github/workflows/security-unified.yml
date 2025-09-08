@@ -305,7 +305,8 @@ jobs:
       - name: 构建Electron应用
         run: |
           npm run build
-          npm run build:electron
+          npx tsc -p electron
+          npx electron-builder --dir
 
       - name: 执行E2E安全测试
         id: e2e-test
