@@ -251,9 +251,11 @@ jobs:
         uses: ./.github/actions/npm-install
       - name: 🔑 Check for Sentry token
         id: sentry_check
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         shell: bash
         run: |
-          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
+          if [ -n "$SENTRY_AUTH_TOKEN" ]; then
             echo "token_present=true" >> "$GITHUB_OUTPUT"
           else
             echo "token_present=false" >> "$GITHUB_OUTPUT"
