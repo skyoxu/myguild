@@ -253,7 +253,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-      # Sentry CI配置（三件套）
+      # Sentry CI配置（三件套）- 按照cifix1.txt方案A实施修复
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -287,7 +287,8 @@ jobs:
           # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
           echo "🔍 Sentry配置自检..."
-          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 非敏感信息验证
+          export SENTRY_LOG_LEVEL=info
+          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 仅打印非敏感项
           sentry-cli info
           echo "✅ Sentry配置验证完成"
 
