@@ -15,10 +15,10 @@ let app: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // 启动构建后的 Electron 应用 - 使用绝对路径(cifix1.txt要求)
+  // 启动构建后的 Electron 应用 - 使用绝对路径
   const main = join(process.cwd(), 'dist-electron', 'main.js');
   app = await electron.launch({
-    args: [main], // 绝对路径入口(cifix1.txt第137行)
+    args: [main], // 绝对路径入口
     env: {
       NODE_ENV: 'test',
       CI: 'true',
@@ -91,8 +91,8 @@ test.describe('07章 Electron 基线验证', () => {
     const cspContent = await cspMeta.getAttribute('content');
     expect(cspContent).toBeTruthy();
 
-    // 验证CSP指令（cifix1.txt推荐的严格安全策略）
-    // cifix1.txt: 严格策略使用 'none' + 显式允许，这比 'self' 更安全
+    // 验证CSP指令（严格安全策略）
+    // 严格策略使用 'none' + 显式允许，这比 'self' 更安全
     const hasDefaultSrcSelf = cspContent.includes("default-src 'self'");
     const hasDefaultSrcNone = cspContent.includes("default-src 'none'");
     expect(

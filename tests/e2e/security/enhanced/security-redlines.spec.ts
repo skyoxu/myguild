@@ -17,7 +17,7 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[RedLine] 启动Electron应用进行红线安全测试...');
 
-  // 使用统一启动器（cifix1.txt要求）
+  // 使用统一启动器
   const { app, page } = await launchApp();
   electronApp = app;
   mainWindow = page;

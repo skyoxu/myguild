@@ -1,7 +1,7 @@
 /*
  * Vitest 全局测试配置
  * 支持 TDD 开发模式
- * 已修复: ReferenceError window is not defined (按cifix1.txt执行)
+ * 已修复: ReferenceError window is not defined
  */
 
 import '@testing-library/jest-dom';
@@ -13,7 +13,7 @@ afterEach(() => {
   cleanup();
 });
 
-// C建议：按cifix1.txt严格执行 - 只在存在 window 时才 mock
+// 只在存在 window 时才 mock
 const g: any = globalThis;
 if (typeof g.window !== 'undefined') {
   // 全局模拟配置

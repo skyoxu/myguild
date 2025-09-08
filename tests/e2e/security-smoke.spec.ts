@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
 
 test('安全护栏生效（CSP & 禁用 Node）', async () => {
-  // 使用统一启动器（cifix1.txt要求）
+  // 使用统一启动器
   const { app, page: win } = await launchApp();
 
   // 渲染层不应暴露 Node 能力

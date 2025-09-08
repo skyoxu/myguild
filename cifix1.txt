@@ -1,130 +1,161 @@
-没问题！基于你现在的产物路径 dist-electron/main.js（而不是 .cjs），我把上次的最小 diff 全部修成 JS 版，并继续保留两件“让 E2E 更稳”的关键点：
+看日志里你打印出来是 ORG=、PROJECT=（空），sentry-cli info 随后 401：说明 CI 里根本没拿到三件套环境变量（SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT）。这通常有 4 种根因：
 
-Playwright 的 Electron 启动参数 args: [<主进程入口>]，统一指向构建后的 dist-electron/main.js；随后用 firstWindow() 等待首窗就绪。
-playwright.dev
+仓库/组织里没创建对应的 Secrets，或名字不匹配（比如你建的是 SENTRY_ORG_SLUG，workflow 却读取 SENTRY_ORG）。GitHub 官方要求通过 secrets 上下文把机密注入 env 才能被步骤读取。
+GitHub Docs
+
+你把机密放在Environment Secrets里，但 job 没有 environment: 指向该环境，或该环境需要审核尚未通过——这种情况下secrets 对该 job 不可见。
+GitHub Docs
 +1
 
-在测试环境（PW_TEST=1）里，主进程总是建一个最小窗口，并在加载失败触发 did-fail-load 时回到首页，避免停在 chrome-error://chromewebdata/ 导致就绪超时。
-zeke.github.io
+用了可复用工作流（workflow_call），但没有显式传递 secrets（或少了 secrets: inherit），被调用工作流因此拿不到机密。
+GitHub Docs
++1
 
-下面就是可以直接粘贴的 最小 diff（四处改动）。
+变量值不是 slug（你填了显示名），或是自托管实例却没设 SENTRY_URL。Sentry CLI 配置明确要求用 SENTRY_ORG、SENTRY_PROJECT、SENTRY_AUTH_TOKEN（可选 SENTRY_URL）。
+docs.sentry.io
++1
 
-1) package.json — 主进程入口指向构建产物
---- a/package.json
-+++ b/package.json
-@@
- {
--  "main": "electron/main.ts",
-+  "main": "dist-electron/main.js",
-   "scripts": {
-     "build": "vite build",
-     "build:electron": "tsc -p electron/tsconfig.json",
+下面给你最小修复，完全不依赖任何临时文件（你提到的 cifix1.txt 直接移除）。
 
-2) electron/main.ts — 仅在测试时“保底建窗 + 失败自愈”
+✅ 方案一：普通工作流（非复用，Secrets 放在仓库级）
+jobs:
+  sentry_smoke:
+    runs-on: windows-latest
+    # 如果 Secrets 放在“环境”里，这里要加 environment 才能访问到（见方案二）
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}   # 组织/仓库 Secret
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}          # 必须是 org “slug”
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}      # 必须是 project “slug”
+      # 如为自托管 Sentry，再加：SENTRY_URL: https://your.sentry.host
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sentry CLI config check
+        shell: pwsh
+        run: |
+          $env:SENTRY_LOG_LEVEL = "info"
+          sentry-cli --version
+          Write-Host "🔍 Sentry配置自检..."
+          # 仅打印非敏感项做预检
+          Write-Host "ORG=$env:SENTRY_ORG PROJECT=$env:SENTRY_PROJECT"
+          sentry-cli info
+          # 可选二次连通性校验（需要项目可见权限）
+          sentry-cli releases list -p "$env:SENTRY_PROJECT"
 
-不影响生产逻辑；只在 PW_TEST=1 时生效。did-fail-load 能在加载失败时重新回到首页。
-zeke.github.io
 
---- a/electron/main.ts
-+++ b/electron/main.ts
-@@
--import { app, BrowserWindow } from 'electron';
-+import { app, BrowserWindow } from 'electron';
-+import { join } from 'node:path';
-+import { pathToFileURL } from 'node:url';
-@@
- // ...你原有的生产初始化逻辑...
- 
-+// --- Test fallback: 在 PW_TEST=1 时保证一定创建首窗，避免 E2E 启动超时 ---
-+if (process.env.PW_TEST === '1') {
-+  app.whenReady().then(() => {
-+    if (BrowserWindow.getAllWindows().length === 0) {
-+      const win = new BrowserWindow({
-+        width: 1024,
-+        height: 768,
-+        show: true,
-+        webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true }
-+      });
-+      // 按你的构建产物路径调整 index.html 位置
-+      const indexFile = pathToFileURL(
-+        join(__dirname, '../renderer/index.html')
-+      ).toString();
-+      // 加载失败时回退，避免停在 chrome-error://
-+      win.webContents.on('did-fail-load', () => {
-+        if (!win.isDestroyed()) win.loadURL(indexFile); // 自愈重试
-+      });
-+      win.loadURL(indexFile);
-+    }
-+  });
-+}
+要点来源：
 
-3) 新增公共启动器 tests/helpers/launch.ts — 统一入口与就绪等待
+Sentry CLI 支持用环境变量配置（推荐 SENTRY_AUTH_TOKEN/ORG/PROJECT，自托管可加 SENTRY_URL）。
+docs.sentry.io
 
-统一把 Electron 启动入口指向构建产物 dist-electron/main.js，设置 PW_TEST=1，并等待首窗就绪。Playwright 的官方示例就是 electron.launch({ args: ['main.js'] }) → firstWindow()。
-playwright.dev
+Sentry 官方 GitHub Action 也要求同样三件套；命名与值（slug）一致。
+docs.sentry.io
+GitHub
 
-*** /dev/null
---- a/tests/helpers/launch.ts
-+++ b/tests/helpers/launch.ts
-@@
-+import { _electron as electron, ElectronApplication, Page } from '@playwright/test';
-+import { resolve } from 'node:path';
-+import { existsSync } from 'node:fs';
-+
-+export async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
-+  // 优先使用构建产物；若不存在再回退到源码入口（本地临时调试用）
-+  const distEntry = resolve(process.cwd(), 'dist-electron', 'main.js');
-+  const srcEntry  = resolve(process.cwd(), 'electron', 'main.ts');
-+  const mainEntry = existsSync(distEntry) ? distEntry : srcEntry;
-+
-+  const app = await electron.launch({
-+    args: [mainEntry],                 // 指向主进程入口（推荐做法） :contentReference[oaicite:4]{index=4}
-+    cwd: process.cwd(),
-+    timeout: 45_000,
-+    env: { PW_TEST: '1', ...process.env }
-+  });
-+
-+  const page = await app.firstWindow();
-+  await page.waitForFunction(
-+    () => ['interactive', 'complete'].includes(document.readyState),
-+    { timeout: 15_000 }
-+  );
-+  return { app, page };
-+}
+✅ 方案二：Secrets 放在 Environment（如 production）
 
-4) 代表性测试改动（其余测试同理）
+一定要在 job 上声明 environment: production，否则这些环境机密不会注入到该 job。
+GitHub Docs
 
-去掉分散的 electron.launch(...)，统一复用 launchApp()。官方也建议先 launch() 再 firstWindow() 获取窗口句柄。
-playwright.dev
+jobs:
+  sentry_smoke:
+    runs-on: ubuntu-latest
+    environment: production      # 关联到存有 Sentry 机密的 Environment
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}  # 来自 environment: production
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"
+          sentry-cli info
 
---- a/tests/e2e/smoke.electron.spec.ts
-+++ b/tests/e2e/smoke.electron.spec.ts
-@@
--import { test, expect, _electron as electron } from '@playwright/test';
-+import { test, expect } from '@playwright/test';
-+import { launchApp } from '../helpers/launch';
-@@
--test('app starts', async () => {
--  const app = await electron.launch({ args: ['./electron/main.js'] });
--  const page = await app.firstWindow();
--  await page.waitForFunction(() => ['interactive','complete'].includes(document.readyState));
--  await app.close();
--});
-+test('app starts', async () => {
-+  const { app, page } = await launchApp();
-+  await page.waitForSelector('body');   // 轻断言，原有断言可保留/增强
-+  await app.close();
-+});
 
-为什么这版能把你现在的 E2E 波动压下去
+注意：如果该 Environment 配了“必须审批”，你要先通过审批，job 才能访问这些机密。
+GitHub Docs
 
-统一入口：所有用例都从同一个构建入口 dist-electron/main.js 启动，避免相对路径 / 不同 cwd 导致的首窗超时。
-playwright.dev
+✅ 方案三：你在用可复用工作流（workflow_call）
 
-就绪等待：标准的 firstWindow() + document.readyState 判定，契合 Playwright 的 Electron 模式用法。
-playwright.dev
+调用端要把 secrets 传过去（推荐 精确传递；也可 secrets: inherit 一把梭）。
+GitHub Docs
++1
+The GitHub Blog
 
-失败自愈：did-fail-load 回退，避免停在错误页导致测试永远等不到 DOM 就绪。
-zeke.github.io
+调用方（caller repo / workflow）：
 
-如果你后续要继续加“外链双拦截”（onBeforeRequest + will-navigate.preventDefault()）来消灭导航导致的上下文销毁，我也可以给一版单独的极小 diff；这两处挂钩点都在 Electron 官方文档里有说明。
+jobs:
+  call-release:
+    uses: your-org/your-repo/.github/workflows/reusable-sentry.yml@main
+    secrets:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
+    # 或者直接：
+    # secrets: inherit
+
+
+被调用方（reusable-sentry.yml）：
+
+on:
+  workflow_call:
+    secrets:
+      SENTRY_AUTH_TOKEN: { required: true }
+      SENTRY_ORG:        { required: true }
+      SENTRY_PROJECT:    { required: true }
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sentry-cli info
+
+
+secrets: inherit 的官方文档与博文都强调：不显式传递的话，可复用工作流拿不到上游的机密。
+GitHub Docs
+The GitHub Blog
+
+常见坑位清单（逐条对照）
+
+ Secrets 名称对齐：确保仓库/组织里就叫 SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT。
+
+ 值为 slug：不要填显示名；到 Sentry 控制台 URL 里复制 org/project slug。
+docs.sentry.io
+
+ Environment secrets：job 必须 environment: <name>；若设置了“必需审核”，先通过审批。
+GitHub Docs
+
+ 复用工作流：用 secrets: inherit 或显式逐项传递。
+GitHub Docs
+
+ 自托管 Sentry：必填 SENTRY_URL。
+docs.sentry.io
+
+ 不要依赖临时文件：彻底移除 cifix1.txt 的读取逻辑，仅用 Secrets→env 注入即可。
+
+ 故障排查：SENTRY_LOG_LEVEL=debug sentry-cli info 能打印更详细定位（会掩码 token）。
+docs.sentry.io
+
+你现在该怎么改（最小动作）
+
+去 Repo → Settings → Secrets and variables → Actions 新建/核对这三个 Secrets：
+SENTRY_AUTH_TOKEN（组织级 token，scope 至少 project:releases；若要 set-commits 再加 org:read）、SENTRY_ORG（slug）、SENTRY_PROJECT（slug）。
+docs.sentry.io
+
+把你那个 env: 区块写对（见方案一/二/三选其一），并删除任何读取 cifix1.txt 的步骤。
+
+保留你已有的自检步骤，但打印时只打印非敏感项（org/project），然后跑 sentry-cli info。
+docs.sentry.io
+
+照这三步改完后，再跑一次，你的自检输出应该变成类似：
+
+ORG=your-org-slug PROJECT=your-project-slug
+Sentry Server: https://sentry.io
+Default Organization: your-org-slug
+Default Project: your-project-slug
+Authentication Info: Method: Auth Token

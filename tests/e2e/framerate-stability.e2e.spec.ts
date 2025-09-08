@@ -21,7 +21,7 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // 使用统一启动器（cifix1.txt要求）
+  // 使用统一启动器
   const { app, page: launchedPage } = await launchApp();
   electronApp = app;
   page = launchedPage;

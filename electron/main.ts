@@ -181,10 +181,10 @@ function createWindow(): void {
   // ===== 3) 权限处理已在全局设置（避免重复设置）=====
   // 权限处理器已在app.whenReady()之前全局设置，此处无需重复
 
-  // ===== 4) 导航兜底：即使溜过，也阻断（cifix1.txt要求）=====
+  // ===== 4) 导航兜底：即使溜过，也阻断 =====
   mainWindow.webContents.on('will-navigate', e => e.preventDefault()); // 官方建议
 
-  // ===== 5) 失败自愈：避免停在 chrome-error 页（cifix1.txt要求）=====
+  // ===== 5) 失败自愈：避免停在 chrome-error 页 =====
   const indexUrl = 'app://index.html';
   mainWindow.webContents.on('did-fail-load', () => {
     if (!mainWindow.isDestroyed()) {
@@ -223,12 +223,12 @@ function createWindow(): void {
 
   configureTestMode(mainWindow);
 
-  // 使用app://协议加载首页（cifix1.txt要求）
+  // 使用app://协议加载首页
   console.log(`📂 加载页面: ${indexUrl}`);
   mainWindow.loadURL(indexUrl);
 }
 
-// 权限红线：同时实现检查与请求两套 Handler（默认拒绝）（cifix1.txt要求）
+// 权限红线：同时实现检查与请求两套 Handler（默认拒绝）
 // 最好在 app.whenReady() 之前就设定（确保首窗前生效）
 const ses = session.defaultSession;
 ses.setPermissionCheckHandler(() => false); // 一票否决（默认拒绝）
@@ -237,13 +237,13 @@ ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron');
 
-  // 1) 注册app://协议映射（cifix1.txt要求）
+  // 1) 注册app://协议映射
   protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
     const url = request.url.replace('app://', '');
     cb({ path: join(__dirname, '../renderer', url) });
   });
 
-  // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"（cifix1.txt要求）
+  // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"
   ses.webRequest.onBeforeRequest(
     { urls: ['http://*/*', 'https://*/*'] },
     (d, cb) => {
@@ -261,7 +261,7 @@ app.whenReady().then(() => {
     }
   );
 
-  // 3) 响应头安全合集（生产）（cifix1.txt要求）
+  // 3) 响应头安全合集（生产）
   ses.webRequest.onHeadersReceived((details, cb) => {
     const h = details.responseHeaders ?? {};
     h['Content-Security-Policy'] = [

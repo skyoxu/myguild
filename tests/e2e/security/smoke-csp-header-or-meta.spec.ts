@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
 
 test('CSP 以响应头或<meta>其一存在即可', async () => {
-  // 使用统一启动器（cifix1.txt要求）
+  // 使用统一启动器
   const { app, page } = await launchApp();
 
   // 1) readyState 守护 + 非 chrome-error

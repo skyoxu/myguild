@@ -42,7 +42,7 @@ on:
         type: boolean
 
 env:
-  # A建议：关键环境变量表（按cifix1.txt严格配置）
+  # Sentry集成必需环境变量
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -302,7 +302,7 @@ jobs:
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
           echo "🚀 创建Release: $RELEASE_NAME"
 
-          # C建议：按cifix1.txt严格执行完整Sentry Release流程
+          # 执行完整Sentry Release流程
           # 1) 创建release 
           sentry-cli releases new "$RELEASE_NAME" -p "$SENTRY_PROJECT"
           
@@ -465,7 +465,7 @@ jobs:
 
           echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
-          # C建议：按cifix1.txt严格执行 - 只标记deploy (release已finalized)
+          # 标记deploy (release已finalized)
           sentry-cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
 
           echo "✅ 部署标记完成"

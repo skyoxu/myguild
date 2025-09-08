@@ -175,7 +175,7 @@ jobs:
             $scanFile = "trufflehog-scan.json"
           }
           
-          # cifix1.txt要求：严格按照退出码处理
+          # 严格按照退出码处理
           $code = $LASTEXITCODE
           if ($code -eq 0) {
             Write-Host "✅ 未发现已验证的密钥"
