@@ -23,13 +23,13 @@
   extraMetadata: {
     main: 'dist-electron/main.js',
   },
-  extraResources: [
-    {
-      from: 'assets',
-      to: 'assets',
-      filter: ['**/*'],
-    },
-  ],
+  // extraResources: [
+  //   {
+  //     from: 'assets',
+  //     to: 'assets', 
+  //     filter: ['**/*'],
+  //   },
+  // ],
   publish: {
     provider: 'github',
     owner: 'your-username',
@@ -48,7 +48,7 @@
         arch: ['x64'],
       },
     ],
-    icon: 'build/icon.ico',
+    // icon: 'build/icon.ico',  // 临时注释 - 图标文件不存在
     requestedExecutionLevel: 'asInvoker',
     verifyUpdateCodeSignature: false,
     forceCodeSigning: false,
@@ -62,7 +62,7 @@
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: 'ViteGame Studio',
-    include: 'build/installer.nsh',
+    include: null,
     deleteAppDataOnUninstall: false,
     displayLanguageSelector: false,
     installerLanguages: ['en_US', 'zh_CN'],
@@ -78,7 +78,7 @@
       target: 'dmg',
       arch: ['x64', 'arm64'],
     },
-    icon: 'build/icon.icns',
+    // icon: 'build/icon.icns',  // 临时注释 - 图标文件不存在
     category: 'public.app-category.games',
   },
   linux: {
@@ -92,11 +92,11 @@
         arch: ['x64'],
       },
     ],
-    icon: 'build/icon.png',
+    // icon: 'build/icon.png',  // 临时注释 - 图标文件不存在
     category: 'Game',
   },
   dmg: {
-    icon: 'build/icon.icns',
+    // icon: 'build/icon.icns',  // 临时注释 - 图标文件不存在
     iconSize: 128,
     contents: [
       {
