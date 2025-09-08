@@ -11,7 +11,13 @@
  * - 权限请求处理（默认拒绝）
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import {
+  test,
+  expect,
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from '@playwright/test';
 
 let electronApp: ElectronApplication;
 let firstWindow: Page;

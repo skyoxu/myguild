@@ -10,7 +10,7 @@ export async function launchApp(): Promise<{
   app: ElectronApplication;
   page: Page;
 }> {
-  const main = resolve(process.cwd(), 'electron', 'main.js'); // 绝对路径
+  const main = resolve(process.cwd(), 'dist-electron', 'main.js'); // 构建后入口
   const app = await electron.launch({
     args: [main],
     cwd: process.cwd(),

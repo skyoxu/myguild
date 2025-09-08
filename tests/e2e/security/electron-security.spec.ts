@@ -9,7 +9,13 @@
  * 4. 权限控制验证
  * 5. 运行时安全监控
  */
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import {
+  test,
+  expect,
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from '@playwright/test';
 import {
   SecurityConfig,
   getSecurityHealthCheck,
