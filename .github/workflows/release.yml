@@ -281,7 +281,20 @@ jobs:
           npm install -g @sentry/cli
           echo "✅ Sentry CLI 安装完成"
 
+      - name: 🔑 Check for Sentry token
+        id: sentry_check
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
+            echo "token_present=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Sentry token is present."
+          else
+            echo "token_present=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Sentry token is NOT configured. Sentry steps will be skipped."
+          fi
+
       - name: 🔧 检查 Sentry CLI 并自检配置
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: |
           # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
@@ -338,11 +351,13 @@ jobs:
           }
 
       - name: 🔧 安装Release工具
+        if: steps.sentry_check.outputs.token_present == 'true'
         uses: ./.github/actions/setup-release-tools
         with:
           sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 创建Sentry Release
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: |
           $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
@@ -370,6 +385,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 📤 上传Source Maps
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: |
           $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
