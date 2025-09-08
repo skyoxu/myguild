@@ -284,27 +284,56 @@ jobs:
       - name: 🔧 检查 Sentry CLI 并自检配置
         shell: pwsh
         run: |
-          # Sentry CLI配置校验：验证三件套环境变量是否生效
+          # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
+          $ErrorActionPreference = "Stop"  # 确保外部命令错误被捕获
+          
           Write-Host "🔍 开始Sentry配置自检..."
           
+          # 检查关键环境变量是否存在（修复401错误）
+          if (-not $env:SENTRY_AUTH_TOKEN) {
+            Write-Host "❌ 缺失SENTRY_AUTH_TOKEN环境变量" -ForegroundColor Red
+            exit 1
+          }
+          if (-not $env:SENTRY_ORG) {
+            Write-Host "❌ 缺失SENTRY_ORG环境变量" -ForegroundColor Red  
+            exit 1
+          }
+          if (-not $env:SENTRY_PROJECT) {
+            Write-Host "❌ 缺失SENTRY_PROJECT环境变量" -ForegroundColor Red
+            exit 1
+          }
+          
           # 检查Sentry CLI版本
+          Write-Host "🔧 检查Sentry CLI版本..."
           sentry-cli --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Sentry CLI版本检查失败，退出代码: $LASTEXITCODE" -ForegroundColor Red
+            exit 1
+          }
           
           # 设置详细日志级别
           $env:SENTRY_LOG_LEVEL = "info"
           
-          # 安全的环境变量显示（避免语法错误）
+          # 安全显示环境变量（隐藏敏感token）
           Write-Host "配置检查 - ORG: $env:SENTRY_ORG, PROJECT: $env:SENTRY_PROJECT"
+          Write-Host "AUTH_TOKEN: $(if($env:SENTRY_AUTH_TOKEN){'[已设置]'}else{'[未设置]'})"
           
-          # 执行认证检查并添加错误处理
+          # 执行认证检查 - 使用PowerShell外部命令错误处理最佳实践
+          Write-Host "执行 sentry-cli info 验证..."
           try {
-            Write-Host "执行 sentry-cli info 验证..."
             sentry-cli info
-            Write-Host "✅ Sentry配置验证完成"
+            if ($LASTEXITCODE -ne 0) {
+              throw "sentry-cli info 命令失败，退出代码: $LASTEXITCODE"
+            }
+            Write-Host "✅ Sentry配置验证完成" -ForegroundColor Green
           }
           catch {
-            Write-Host "❌ Sentry认证失败，错误信息: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "请检查 SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT 环境变量配置" -ForegroundColor Yellow
+            Write-Host "❌ Sentry认证失败: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "常见原因:" -ForegroundColor Yellow
+            Write-Host "- SENTRY_AUTH_TOKEN 无效或已过期" -ForegroundColor Yellow  
+            Write-Host "- SENTRY_ORG 不是组织slug而是显示名" -ForegroundColor Yellow
+            Write-Host "- SENTRY_PROJECT 不是项目slug而是显示名" -ForegroundColor Yellow
+            Write-Host "- 网络连接问题或sentry.io不可用" -ForegroundColor Yellow
             exit 1
           }
 
