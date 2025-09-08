@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/electron/main';
 import { app } from 'electron';
 
-// C建议：Release Health门槛配置
+// Release Health门槛配置
 interface ReleaseHealthThresholds {
   crashFreeSessionsRate: number; // ≥99.5%
   crashFreeUsersRate: number; // ≥99.8%
@@ -18,7 +18,7 @@ const RELEASE_HEALTH_THRESHOLDS: ReleaseHealthThresholds = {
 
 /**
  * Release Health专项配置和监控
- * C建议：实现Dev→CI→Prod闭环和健康门槛监控
+ * 实现Dev→CI→Prod闭环和健康门槛监控
  */
 export class ReleaseHealthManager {
   private static instance: ReleaseHealthManager;
@@ -56,7 +56,7 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * C建议：设置Release健康门槛监控
+   * 设置Release健康门槛监控
    */
   private setupReleaseHealthGating(): void {
     console.log('🚨 设置Release健康门槛监控...');

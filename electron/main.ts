@@ -1,8 +1,6 @@
 import { app, BrowserWindow, session, protocol } from 'electron';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { securityPolicyManager } from './security/permissions';
 import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
 
@@ -193,8 +191,7 @@ function createWindow(): void {
     }
   });
 
-  // 应用统一安全策略（包含权限控制、导航限制、窗口打开处理）
-  // securityPolicyManager.applySecurityPolicies(mainWindow); // 暂时禁用以避免冲突
+  // 应用统一安全策略已通过上述代码实现（权限控制、导航限制、窗口打开处理）
 
   // CSP策略：开发环境使用webRequest注入，生产环境依赖index.html meta标签
   if (is.dev) {

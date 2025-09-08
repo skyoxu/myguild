@@ -17,6 +17,7 @@ export default defineConfig({
       open: process.env.BUNDLE_ANALYZE === 'true',
       gzipSize: true,
       brotliSize: true,
+      // 使用 sourcemap 进行更准确的体积计算
       sourcemap: true,
     }),
   ],
@@ -27,7 +28,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === 'production',
+    sourcemap: 'hidden', // 生成 map，但不在产物中注释引用（等价于生成并"隐藏"）
+    rollupOptions: {
+      output: {
+        // 手动拆分；示例：把 heavy libs 拆出去
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('phaser')) return 'phaser';
+            if (id.includes('@sentry')) return 'sentry';
+            if (id.includes('react')) return 'react-vendor';
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1024, // 1 MiB，仅调阈值是提示级；真正靠拆包
   },
   resolve: {
     alias: {
