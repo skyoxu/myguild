@@ -285,12 +285,15 @@ jobs:
         id: sentry_check
         shell: bash
         run: |
-          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
+          # 检查SENTRY_AUTH_TOKEN是否存在且不为空字符串
+          TOKEN_VALUE="${{ secrets.SENTRY_AUTH_TOKEN }}"
+          if [ -n "$TOKEN_VALUE" ] && [ "$TOKEN_VALUE" != "" ] && [ "$TOKEN_VALUE" != "null" ]; then
             echo "token_present=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Sentry token is present."
+            echo "✅ Sentry token is present and valid."
           else
             echo "token_present=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Sentry token is NOT configured. Sentry steps will be skipped."
+            echo "⚠️ Sentry token is NOT configured or empty. Sentry steps will be skipped."
+            echo "Token status: $(if [ -z "$TOKEN_VALUE" ]; then echo "empty/unset"; else echo "present but may be null/invalid"; fi)"
           fi
 
       - name: 🔧 检查 Sentry CLI 并自检配置
