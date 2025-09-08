@@ -296,6 +296,10 @@ jobs:
       - name: 🔧 检查 Sentry CLI 并自检配置
         if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
           $ErrorActionPreference = "Stop"  # 确保外部命令错误被捕获
