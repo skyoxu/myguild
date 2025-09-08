@@ -18,6 +18,7 @@
     '!tests',
     '!**/*.ts',
     '!**/*.map',
+    '!node_modules/@img/sharp-darwin-*',
   ],
   asarUnpack: ['**/*.node'],
   extraMetadata: {
@@ -62,7 +63,7 @@
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: 'ViteGame Studio',
-    include: null,
+    include: 'build/installer.nsh',
     deleteAppDataOnUninstall: false,
     displayLanguageSelector: false,
     installerLanguages: ['en_US', 'zh_CN'],
