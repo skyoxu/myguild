@@ -42,10 +42,10 @@ on:
         type: boolean
 
 env:
-  # A建议：关键环境变量表
+  # A建议：关键环境变量表（按cifix1.txt严格配置）
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-  SENTRY_TOKEN: ${{ secrets.SENTRY_TOKEN }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   SENTRY_DSN_STAGING: ${{ secrets.SENTRY_DSN_STAGING }}
 
@@ -270,14 +270,19 @@ jobs:
         shell: bash
         run: tar -xzf build-artifacts.tar.gz
 
-      - name: 🔧 检查 Sentry CLI
+      - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash
-        run: npx @sentry/cli --version
+        run: |
+          # cifix1.txt要求：使用sentry-cli info校验配置
+          sentry-cli --version
+          echo "🔍 Sentry配置自检..."
+          sentry-cli info
+          echo "✅ Sentry配置验证完成"
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
         with:
-          sentry-token: ${{ env.SENTRY_TOKEN }}
+          sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 创建Sentry Release
         shell: bash
@@ -287,32 +292,32 @@ jobs:
 
           # C建议：按cifix1.txt严格执行完整Sentry Release流程
           # 1) 创建release 
-          npx @sentry/cli releases new "$RELEASE_NAME" -p "$SENTRY_PROJECT"
+          sentry-cli releases new "$RELEASE_NAME" -p "$SENTRY_PROJECT"
           
           # 2) 关联commits
-          npx @sentry/cli releases set-commits "$RELEASE_NAME" --auto
+          sentry-cli releases set-commits "$RELEASE_NAME" --auto
           
           # 3) 上传sourcemaps (如果存在dist目录)
           if [ -d "dist" ]; then
-            npx @sentry/cli sourcemaps upload --release "$RELEASE_NAME" --dist windows "dist"
+            sentry-cli sourcemaps upload --release "$RELEASE_NAME" --dist windows "dist"
           fi
           
           # 4) Finalize release (必须在deploy之前)
-          npx @sentry/cli releases finalize "$RELEASE_NAME"
+          sentry-cli releases finalize "$RELEASE_NAME"
 
           echo "✅ Release创建并finalize完成: $RELEASE_NAME"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 📤 上传Source Maps
         run: |
           RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
           echo "📤 上传Source Maps for $RELEASE_NAME"
 
-          # C建议：上传source maps (使用npx)
-          npx @sentry/cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
+          # C建议：上传source maps (使用sentry-cli)
+          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
             --validate \
             --url-prefix "~/" \
             --strip-common-prefix
@@ -321,7 +326,7 @@ jobs:
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
   # 🏥 Release Health检查
   health-check:
@@ -356,7 +361,7 @@ jobs:
           const release = '${{ needs.prepare.outputs.release_name }}';
           const org = process.env.SENTRY_ORG;
           const project = process.env.SENTRY_PROJECT;
-          const token = process.env.SENTRY_TOKEN;
+          const token = process.env.SENTRY_AUTH_TOKEN;
 
           console.log('🔍 检查Release健康状态:', release);
 
@@ -395,7 +400,7 @@ jobs:
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_TOKEN: ${{ env.SENTRY_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
           CRASH_FREE_SESSION_THRESHOLD: ${{ env.CRASH_FREE_SESSION_THRESHOLD }}
           CRASH_FREE_USER_THRESHOLD: ${{ env.CRASH_FREE_USER_THRESHOLD }}
         timeout-minutes: 5
@@ -414,14 +419,19 @@ jobs:
       - name: 📥 检出代码
         uses: actions/checkout@v4
 
-      - name: 🔧 检查 Sentry CLI
+      - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash
-        run: npx @sentry/cli --version
+        run: |
+          # cifix1.txt要求：使用sentry-cli info校验配置
+          sentry-cli --version
+          echo "🔍 Sentry配置自检..."
+          sentry-cli info
+          echo "✅ Sentry配置验证完成"
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
         with:
-          sentry-token: ${{ env.SENTRY_TOKEN }}
+          sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 标记Sentry部署
         shell: bash
@@ -432,13 +442,13 @@ jobs:
           echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
           # C建议：按cifix1.txt严格执行 - 只标记deploy (release已finalized)
-          npx @sentry/cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
+          sentry-cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
 
           echo "✅ 部署标记完成"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🎉 部署成功通知
         run: |
@@ -471,7 +481,7 @@ jobs:
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
   # 📊 发布总结
   summary:

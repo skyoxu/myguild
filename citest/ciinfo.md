@@ -410,3 +410,135 @@ TL;DR 你现在最简单的改法
 或者 在 Windows 上用二进制/Chocolatey 执行 CLI（方案 B）。
 
 同时 在组织/仓库启用 Push Protection，做到“先防后扫”。
+
+## Prettier 基础规则（项目 & CI）
+
+0. 基本观念
+
+Prettier 是“强约定、少配置”的代码格式化器，不做语义检查；团队应尽量少改默认项，避免和工具“拔河”。
+npm
+
+printWidth 是指导线而非硬上限，不要依赖它做“黄金换行”。
+prettier.io
+
+不要使用全局配置（global config）；Prettier 明确不支持，以保证跨机一致性。
+prettier.io
+
+1. 项目内配置（最小可用）
+
+package.json
+
+{
+"devDependencies": {
+"prettier": "3.5.2"
+},
+"scripts": {
+"prettier:check": "prettier . --check",
+"prettier:write": "prettier . --write"
+}
+}
+
+--check 只检查是否已按 Prettier 风格，不会改文件；--write 会就地改写。两者不要一起用。
+prettier.io
++1
+Stack Overflow
+
+.prettierrc.json（保持精简）
+
+{
+"endOfLine": "lf",
+"printWidth": 100,
+"singleQuote": true,
+"trailingComma": "es5"
+}
+
+endOfLine: "lf" 能帮助团队把 CRLF 拦在仓库外（Windows 上尤其重要；v2 起默认即为 lf，这里显式声明）。
+prettier.io
++1
+
+.prettierignore（避免无谓改动/大文件）
+
+# 生成物
+
+dist/
+build/
+coverage/
+_.min._
+
+# 大型/外部同步文件
+
+package-lock.json
+yarn.lock
+
+忽略整类文件用 .prettierignore；忽略局部代码块用 // prettier-ignore 注释。
+prettier.io
+
+迁移到 Prettier 3.x 时注意它以 ESM 形式发布（对插件/配置写法有影响，建议在项目内固定版本并用本地包运行）。
+prettier.io
+
+2. CI 中的检查（GitHub Actions 示例）
+   name: formatting
+   on: [push, pull_request]
+
+jobs:
+prettier:
+runs-on: ubuntu-latest # 任意 OS 均可；示例用 Linux
+steps: - uses: actions/checkout@v4 - uses: actions/setup-node@v4
+with: { node-version: 20 } - run: npm ci - name: Prettier check
+run: npm run prettier:check - name: Summary
+if: always()
+run: |
+echo "### Prettier Check" >> $GITHUB_STEP_SUMMARY
+echo "- Result: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+在 CI 里推荐使用 --check；把格式化（--write）放本地 pre-commit。
+prettier.io
+
+3. 与 EditorConfig / EOL 的配合
+
+若项目已有 .editorconfig，Prettier 会尊重里边的缩进/行尾等基础设定；仍建议在 Prettier 里显式设定 endOfLine: "lf" 统一跨平台换行。
+prettier.io
+
+Windows 上若仍遇到 CRLF 改动，排查是其他工具在改 EOL，而不是 Prettier；确认 Git 与编辑器设置后再看 Prettier 配置。
+Stack Overflow
+
+4. 渐进式落地（庞大老仓库）
+
+用 --require-pragma 仅格式化带 @prettier/@format 头注释的文件，渐进推进至全仓。
+azz.github.io
+
+5. 开发体验 & 约束
+
+VS Code/IDE 侧启用 Prettier 插件，读项目内配置，并可通过 .prettierignore 屏蔽特定语言/路径。
+Visual Studio Marketplace
+
+若与 ESLint 共存：ESLint 负责“语义/质量”，Prettier 负责“排版”。在 CI 里分别执行，避免互相覆盖规则（你已这么做）。
+
+给 Claude Code 的“操作指令模板”
+
+初始化
+
+“在项目根添加 .prettierrc.json（上面的最小配置）与 .prettierignore；在 package.json 增加 prettier:check 与 prettier:write 脚本。”（依据 CLI/Install 文档）
+prettier.io
++1
+
+CI 规则
+
+“在 CI 仅运行 prettier --check，失败就退出；不要把 --check 和 --write 同时使用。”（官方用法 & 社区维护者答复）
+prettier.io
+Stack Overflow
+
+跨平台换行
+
+“显式设置 endOfLine: "lf"；必要时排查是其他工具造成的 CRLF 改动。”（选项哲学与常见问答）
+prettier.io
+Stack Overflow
+
+忽略策略
+
+“生成物/锁文件/压缩产物放进 .prettierignore；需要局部例外时在代码上方写 // prettier-ignore。”（官方忽略文档）
+prettier.io
+
+配置克制
+
+“尽量沿用默认；printWidth 是指导线不是硬规则，不要拿它当强制换行器。”（理念与原理）
