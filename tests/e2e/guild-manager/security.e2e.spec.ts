@@ -3,13 +3,7 @@
  * 验证 Electron 安全配置和 CSP 合规性
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 
 let testApp: { electronApp: ElectronApplication; page: Page };
 

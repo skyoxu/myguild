@@ -178,15 +178,8 @@ function createWindow(): void {
     cb({ responseHeaders: headers });
   });
 
-  // ===== 3) 权限默认拒绝（Request + Check 双保险）=====
-  ses.setPermissionRequestHandler((_wc, _permission, callback) => {
-    console.log(`🚫 [setPermissionRequestHandler] 拒绝权限: ${_permission}`);
-    callback(false);
-  });
-  ses.setPermissionCheckHandler((_wc, _permission) => {
-    console.log(`🚫 [setPermissionCheckHandler] 拒绝权限检查: ${_permission}`);
-    return false;
-  });
+  // ===== 3) 权限处理已在全局设置（避免重复设置）=====
+  // 权限处理器已在app.whenReady()之前全局设置，此处无需重复
 
   // ===== 4) 导航兜底：即使溜过，也阻断（cifix1.txt要求）=====
   mainWindow.webContents.on('will-navigate', e => e.preventDefault()); // 官方建议
@@ -235,6 +228,12 @@ function createWindow(): void {
   mainWindow.loadURL(indexUrl);
 }
 
+// 权限红线：同时实现检查与请求两套 Handler（默认拒绝）（cifix1.txt要求）
+// 最好在 app.whenReady() 之前就设定（确保首窗前生效）
+const ses = session.defaultSession;
+ses.setPermissionCheckHandler(() => false); // 一票否决（默认拒绝）
+ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron');
 
@@ -245,7 +244,6 @@ app.whenReady().then(() => {
   });
 
   // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"（cifix1.txt要求）
-  const ses = session.defaultSession;
   ses.webRequest.onBeforeRequest(
     { urls: ['http://*/*', 'https://*/*'] },
     (d, cb) => {

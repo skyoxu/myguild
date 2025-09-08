@@ -5,12 +5,9 @@
  * 验证构建后的 Electron 应用符合安全基线和基本功能要求
  */
 
-import {
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { ElectronApplication, Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
+import { launchApp } from '../helpers/launch';
 import { join } from 'node:path';
 import { ELECTRON_SECURITY_BASELINE } from '../../src/shared/contracts/build';
 

@@ -4,13 +4,7 @@
  * 优先级: critical
  */
 
-import {
-  test,
-  expect,
-  ElectronApplication,
-  Page,
-  _electron as electron,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 
 test.describe('Electron安全基线验证', () => {
   let electronApp: ElectronApplication;

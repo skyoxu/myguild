@@ -4,15 +4,10 @@
  * 集成P95采样性能测试方法
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { EventEmitter } from 'events';
 import { PerformanceTestUtils } from '../../utils/PerformanceTestUtils';
+import { launchApp } from '../../helpers/launch';
 
 // 测试应用实例类型
 interface TestApp {
@@ -24,24 +19,10 @@ interface TestApp {
 let testApp: TestApp;
 
 test.beforeAll(async () => {
-  // 启动 Electron 应用 - 使用 electron.launch() 标准模式
-  const electronApp = await electron.launch({
-    args: ['dist-electron/main.js'], // 指向构建后的主进程文件
-    env: {
-      NODE_ENV: 'test',
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
-    },
-    recordVideo: {
-      dir: 'test-results/videos/',
-    },
-    trace: 'on',
-  });
+  // 使用统一启动器（cifix1.txt要求）
+  const { app, page } = await launchApp();
 
-  // 获取主页面
-  const page = await electronApp.firstWindow();
-  await page.waitForLoadState('domcontentloaded');
-
-  testApp = { electronApp, page };
+  testApp = { electronApp: app, page };
 });
 
 test.afterAll(async () => {

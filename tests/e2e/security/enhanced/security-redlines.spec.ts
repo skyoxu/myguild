@@ -8,11 +8,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  ElectronApplication,
-  Page,
-  _electron as electron,
-} from '@playwright/test';
+import { launchApp } from '../../../helpers/launch';
+import { ElectronApplication, Page } from '@playwright/test';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -20,15 +17,10 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[RedLine] 启动Electron应用进行红线安全测试...');
 
-  electronApp = await electron.launch({
-    args: ['./electron/main.js'],
-    timeout: 30000,
-    recordVideo: process.env.CI
-      ? { dir: 'test-results/security-redlines' }
-      : undefined,
-  });
-
-  mainWindow = await electronApp.firstWindow();
+  // 使用统一启动器（cifix1.txt要求）
+  const { app, page } = await launchApp();
+  electronApp = app;
+  mainWindow = page;
 
   // 使用更健壮的等待策略
   await mainWindow.waitForFunction(

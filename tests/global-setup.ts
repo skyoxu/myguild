@@ -1,4 +1,4 @@
-import { chromium, FullConfig, _electron as electron } from '@playwright/test';
+import { launchApp } from 'helpers/launch';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -52,10 +52,7 @@ async function globalSetup(config: FullConfig) {
 
   try {
     // 启动Electron进程进行基本验证
-    const electronApp = await electron.launch({
-      args: [electronPath],
-      timeout: 30000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     // 获取主窗口
     const firstWindow = await electronApp.firstWindow({

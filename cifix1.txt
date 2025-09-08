@@ -1,177 +1,164 @@
-下面我先把你这两条现象（“Project not found / Release not found”）给出马上可落地的修复，再给 Claude Code 一份Sentry × CI 常规注意项清单（适配你是 Electron + GitHub Actions + Windows runner 的场景）。
+我把你这份 e2e.txt 跑崩点逐条对了下，结论是：六步自检你做了，但“生效范围不全、时机不够早、入口不稳定”，导致以下三类失败反复出现（10 个失败全在这三类里）：
 
-先解决你现在的两条报错
-A) “Project not found”
+首窗/DOM 就绪卡死与 electron.launch 超时
+多处直接卡在 page.waitForFunction(...readyState...) 或 electron.launch 30s 超时。这里 2 个根因：
 
-最常见原因：SENTRY_ORG / SENTRY_PROJECT 没配、配错（用的是显示名而非 slug），或 token 没权限。Sentry 官方明确：CLI 通过 组织/项目 参数工作，既可在配置/环境变量里指定，也可用 -o/-p 显式传入；环境变量名就是 SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT（自托管还要 SENTRY_URL） 
-Sentry 文档
- 
-Sentry 文档
-。
+各测试文件对 Electron 的启动路径不一致，仍有 args: ['./electron/main.js'] 的相对路径，在 CI（Windows）里 cwd 可能变化，Playwright 找得到 electron，但找不到你的主进程入口，于是附着了调试端口却迟迟没有首窗（你日志的 call log 与“Debugger attached.”吻合）。Playwright 官方建议传主进程入口并按需设置 cwd。
+electronjs.org
+playwright.dev
 
-排查与修复（任选其一或都做）：
+入口页偶发加载失败，页面直接落在 chrome-error://chromewebdata/，DOM 永远到不了 interactive/complete。这个 URL 就是导航失败的错误占位页（常见于入口 URL 无效/资源找不到），需要对入口协议与失败回退做“稳定化”。
+Stack Overflow
 
-在 CI 步骤里加自检（不会泄露 token）：
+“Execution context was destroyed”（评估阶段页面上下文被销毁）
+发生在你主动 window.location.href = ... / 点击外链时。说明真的发生了导航，而不是被你在请求前就拦截；一旦主框架发生导航，Playwright 的上下文就会被销毁。Electron 官方做法是：
 
-# 建议设置：shell: bash
-sentry-cli info
-sentry-cli releases -o "$SENTRY_ORG" new -p "$SENTRY_PROJECT" --finalize "ci-smoke-$(date +%s)" && echo "✅ org/project ok"
+在创建任何 BrowserWindow 之前就对 session.defaultSession 挂 webRequest.onBeforeRequest，对 http://*/*、https://*/* 返回 cancel: true；
 
+同时在 webContents 挂 will-navigate / will-frame-navigate 做兜底（preventDefault()）。
+Stack Overflow
+electronjs.org
 
-sentry-cli info 会打印当前认证/组织信息，便于确认变量生效；官方文档推荐用它校验配置。
-Sentry 文档
+你现在这两道闸并非在所有进程/所有启动路径上都“最早注册并全局生效”，所以偶发地还是发生了真实导航 → 上下文被毁。
 
-确保是 slug：到 Sentry 控制台 URL 里复制 org 与 project 的 slug（不是中文显示名）。CLI 配置页也写明变量接受 “ID 或 slug”。
-Sentry 文档
+CSP 断言失败（<meta> 为 undefined / 启动就超时）
+你的生产意图是走响应头 CSP，但在 file:///自定义协议/测试环境里，最好额外加 <meta http-equiv="Content-Security-Policy"> 兜底，否则像 security-smoke.spec.ts 这种“只找 <meta>”的用例会拿到 undefined。Electron 安全指南明确建议定义 CSP；而在 Electron 里可以用 onHeadersReceived 注入响应头 CSP（生产），开发/测试则用 <meta> 兜底更稳。
+electronjs.org
+Stack Overflow
 
-确认 token 类型/权限：用组织级 token（Organization Token），并将其放在 GitHub Secrets；官方“GitHub Actions”指南要求如此。
-Sentry 文档
+精确改哪里（对照你的失败点）
+A. 稳定入口：自定义协议 + 失败自愈 + 绝对入口
 
-临时调试可设：SENTRY_LOG_LEVEL=info，以打印更丰富的 CLI 日志。
-Sentry 文档
+在 app.whenReady() 之前注册 app:// 协议（registerSchemesAsPrivileged 只能在 ready 之前使用）。
+electronjs.org
 
-B) “Release not found”
+did-fail-load 时自动回退到首页，避免停在 chrome-error://chromewebdata/。
+Zeke
 
-你在 “标记部署” 时还没把 Release 创建出来，或名字不一致。官方文档强调：先创建 release，再创建 deploy；deploys new 需要一个已存在的 release，并且要指定环境（-e production），可选传入耗时（秒）或 --started/--finished（Unix 秒）。
-Sentry 文档
+所有测试统一用绝对路径或设置 cwd 启动 Electron 主进程。
+electronjs.org
 
-最小可用流水（Bash；Windows 也可 shell: bash）：
+主进程最小补丁（示例要点）：
 
-VERSION="app@0.1.1+windows"   # 与 SDK init 里 release 完全一致
-export SENTRY_AUTH_TOKEN SENTRY_ORG SENTRY_PROJECT
+// main.ts（要点顺序不能乱）
+import { app, BrowserWindow, session, protocol } from 'electron';
+import { join } from 'node:path';
 
-# 1) 创建并可选 finalize
-sentry-cli releases new "$VERSION" -p "$SENTRY_PROJECT"  # releases 是“按组织”全局实体，但子命令可带项目。:contentReference[oaicite:7]{index=7}
-sentry-cli releases set-commits "$VERSION" --auto        # 有仓库集成时自动关联合并基线。:contentReference[oaicite:8]{index=8}
-sentry-cli releases finalize "$VERSION"                  # 可选；构建后/上线前任一时机都行。:contentReference[oaicite:9]{index=9}
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'app',
+  privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true }
+}]); // ready 之前，且只调用一次  :contentReference[oaicite:7]{index=7}
 
-# 2) （前端/Electron 渲染进程需要）上传 sourcemaps，可带 --dist
-sentry-cli sourcemaps upload --release "$VERSION" --dist windows "dist"  # --dist 用于区分同一 release 的不同变体。:contentReference[oaicite:10]{index=10} :contentReference[oaicite:11]{index=11}
+app.whenReady().then(() => {
+  // 静态文件映射
+  protocol.registerFileProtocol('app', (req, cb) => {
+    const url = req.url.replace('app://', '');
+    cb({ path: join(__dirname, '../renderer', url) });
+  });
 
-# 3) 标记部署
-start=$(date -u +%s);  # ... 部署动作 ...
-end=$(date -u +%s)
-sentry-cli deploys new --release "$VERSION" -e production -t $((end-start))  # 不能传 ISO 时间串。:contentReference[oaicite:12]{index=12}
+  // 生产：响应头 CSP / COOP / COEP / CORP / Permissions-Policy
+  const ses = session.defaultSession;
+  ses.webRequest.onHeadersReceived((details, cb) => {
+    const h = details.responseHeaders ?? {};
+    h['Content-Security-Policy'] = [
+      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
+      "img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; " +
+      "connect-src 'self'"
+    ];
+    cb({ responseHeaders: h });
+  }); // 生产用响应头注入 CSP  :contentReference[oaicite:8]{index=8}
 
+  // 外链双闸：会话级请求拦截 + 导航兜底
+  ses.webRequest.onBeforeRequest({ urls: ['http://*/*','https://*/*'] }, (d, cb2) => cb2({ cancel: true }));
+  const win = new BrowserWindow({ webPreferences: { preload: join(__dirname, 'preload.js'), nodeIntegration: false, contextIsolation: true, sandbox: true } });
+  win.webContents.on('will-navigate', e => e.preventDefault());              // 主框架兜底 :contentReference[oaicite:9]{index=9}
+  win.webContents.on('will-frame-navigate', e => e.preventDefault());        // 子框架兜底 :contentReference[oaicite:10]{index=10}
 
-同时，SDK 侧也要设置同名 release（Electron 会默认 appName@version，也可以手动覆盖），否则事件上报的 release 与 CLI 不一致。
-Sentry 文档
-
-如果你使用 dist 区分（如 windows/mac），SDK 初始化里也要传 dist，并在 CLI 上传 sourcemaps 时带 --dist，两边对齐。
-Sentry 文档
-
-给 Claude Code 的：Sentry × CI 常规注意项清单
-0. 基础配置（必须）
-
-三件套：SENTRY_AUTH_TOKEN（组织级 token）、SENTRY_ORG、SENTRY_PROJECT；自托管再加 SENTRY_URL。都放进 GitHub Secrets。
-Sentry 文档
-
-变量可通过环境变量、.sentryclirc、或 -o/-p 显式传入；sentry-cli info 用于快速校验配置有效性。
-Sentry 文档
-
-token 需要对应的权限/范围；创建时选择合适的 scopes。
-Sentry 文档
-
-1. Release 命名与一致性
-
-Release 在组织级全局，建议加项目前缀并采用 package@version(+build) 命名，避免不同项目冲突。
-Sentry 文档
-
-Electron SDK 会自动设置 release（appName@version），也可以手动覆盖；务必与 CLI 里的 VERSION 一字不差。
-Sentry 文档
-
-如用多变体（平台/构建号），请在 SDK 设置 dist 并在 CLI sourcemaps 上传时用 --dist 同名。
-Sentry 文档
-
-2. 标准流水顺序（必要时可用官方 Action 简化）
-
-顺序：releases new → set-commits →（可选 sourcemaps upload）→ releases finalize → deploys new。其中 deploys new 必须在 release 存在之后。
-Sentry 文档
-
-GitHub Actions 可以直接用官方 getsentry/action-release 一步创建 release / 上传 sourcemaps（运行前要先完成构建，并配置三件套）。
-Sentry 文档
-
-deploys new 的时间参数：传秒（-t），或传 --started/--finished（Unix 秒），不要传 ISO 字符串。
-Sentry 文档
-
-3. Source Maps（前端/渲染进程）
-
-构建后执行 sentry-cli sourcemaps upload；可加 --url-prefix / --strip-common-prefix 做路径对齐。
-Sentry 文档
-
-多变体用 --dist；并在 SDK 里设置相同 dist 才能正确匹配。
-Sentry 文档
- 
-Sentry 文档
-
-4. 诊断与自检
-
-在关键步骤前后运行：sentry-cli info、sentry-cli releases list -p "$SENTRY_PROJECT"、sentry-cli deploys list --release "$VERSION" 做健康检查。
-
-调试时设置：SENTRY_LOG_LEVEL=info（或 debug）以打印更多 CLI 日志。
-Sentry 文档
-
-无仓库集成时，set-commits 可用 --local 或手动 --commit repo@sha。
-Sentry 文档
-
-5. Monorepo / 多项目
-
-因为 Release 是组织级全局命名空间，要确保唯一（如 projectA@1.0.0 / projectB@1.0.0）。
-Sentry 文档
-
-也可为不同项目分别跑 -p "$SENTRY_PROJECT" 的子命令，让 CLI 操作落到正确项目。
-Sentry 文档
-
-6. 自托管 Sentry
-
-需要设置 SENTRY_URL 指向你的实例，或在 .sentryclirc 的 defaults 里配置。
-Sentry 文档
-
-建议你把 CI 步骤改成这两段（任选其一）
-方案一：用官方 Action（最省心）
-- uses: actions/checkout@v4
-  with: { fetch-depth: 0 }
-
-# （前面先完成 build）
-- name: Create Sentry release + upload sourcemaps
-  uses: getsentry/action-release@v3
-  env:
-    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-    SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
-    SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
-  with:
-    version: "app@0.1.1+windows"
-    environment: production
-    sourcemaps: "./dist"             # 如需 dist：加 with.dist: windows
+  const url = 'app://index.html';
+  win.webContents.on('did-fail-load', () => { if (!win.isDestroyed()) win.loadURL(url); }); // 自愈 :contentReference[oaicite:11]{index=11}
+  win.loadURL(url);
+});
 
 
-官方文档：需要组织级 token + ORG/PROJECT 环境变量；动作需在构建之后、部署之前执行。
-Sentry 文档
+渲染页（仅 dev/test）加 <meta> 兜底：
 
-方案二：原生命令（最灵活）
-- name: Sentry release pipeline (Bash on Windows)
-  shell: bash
-  env:
-    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-    SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
-    SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
-  run: |
-    set -euo pipefail
-    VERSION="app@0.1.1+windows"
-    sentry-cli info
-
-    # 1) Release
-    sentry-cli releases new "$VERSION" -p "$SENTRY_PROJECT"
-    sentry-cli releases set-commits "$VERSION" --auto
-    # 若有 JS 渲染进程：sourcemaps + dist（可选）
-    # sentry-cli sourcemaps upload --release "$VERSION" --dist windows "dist"
-    sentry-cli releases finalize "$VERSION"
-
-    # 2) Deploy
-    start=$(date -u +%s)
-    # ...你的部署动作...
-    end=$(date -u +%s)
-    sentry-cli deploys new --release "$VERSION" -e production -t $((end-start))
+<!-- index.html(dev/test) -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; object-src 'none';
+               img-src 'self' data:; style-src 'self' 'unsafe-inline';
+               script-src 'self'; connect-src 'self'">
 
 
-关键点：顺序正确、release 与 SDK 一致、deploy 用秒级时间。
+生产靠响应头，测试用例再断言“响应头或 <meta> 其一存在即可”。
+electronjs.org
+
+B. 权限红线：同时实现检查与请求两套 Handler（默认拒绝）
+
+你的“地理位置/通知”用例里有 electron.launch 超时与“Target page has been closed”。这通常是权限流转未在“检查阶段”就被拒绝，导致渲染侧卡住或退出。Electron 强调：要同时实现 setPermissionCheckHandler（同步检查）和 setPermissionRequestHandler（异步请求）。
+electronjs.org
+
+// 最好在 app.whenReady() 之前就设定（确保首窗前生效）
+const ses = session.defaultSession;
+ses.setPermissionCheckHandler(() => false); // 一票否决（默认拒绝） :contentReference[oaicite:14]{index=14}
+ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+
+C. 测试侧统一“启动器” & 抗抖
+
+把所有 suite 里的 electron.launch 拉到一个 helper，统一入口、工作目录与就绪等待，避免相对路径与异步就绪差异：
+
+// tests/helpers/launch.ts
+import { _electron as electron, ElectronApplication, Page } from '@playwright/test';
+import { resolve } from 'node:path';
+
+export async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
+  const main = resolve(process.cwd(), 'electron', 'main.js'); // 绝对路径  :contentReference[oaicite:15]{index=15}
+  const app = await electron.launch({ args: [main], cwd: process.cwd(), timeout: 45000 });
+  const page = await app.firstWindow();
+
+  // 就绪 + 避免错误页
+  await page.waitForFunction(() => ['interactive','complete'].includes(document.readyState), { timeout: 15000 });
+  if ((await page.url()).startsWith('chrome-error://')) {
+    throw new Error('Initial load failed (chrome-error://)'); // 提示到点
+  }
+  return { app, page };
+}
+
+
+所有测试改成：
+
+const { app, page } = await launchApp();
+
+
+这样可以一次性解决你列表里的：
+
+electron.launch 30s 超时（#3、#9） → 入口与 cwd 统一；
+
+page.waitForFunction 卡死（#1、#2） → 等待策略统一；
+
+chrome-error:// 引发的上下文销毁（#4、#5、#7、#8） → “入口稳定化 + 导航双闸 + 错误页自愈”。
+
+为什么你的“六步自检通过但仍失败？”
+
+自检多在单一路径（主窗 Happy Path）验证：BrowserWindow 选项、setWindowOpenHandler、部分拦截等。
+
+但不同测试套件用不同启动方式/相对路径，且拦截/协议注册并未在“最早”和“全会话”生效，于是偶发地先进入了真实导航或落到错误页，导致 Playwright 上下文被销毁、就绪等待超时。
+
+同理，CSP 在生产用响应头没问题，但测试用例在找 <meta>，而 dev/test 没有兜底 <meta>，所以直接拿到 undefined。
+
+一次回归核对清单（勾完基本就绿了）
+
+ protocol.registerSchemesAsPrivileged 在 app.ready 前调用；首页走 app://index.html。
+electronjs.org
+
+ session.defaultSession.webRequest.onBeforeRequest 在建窗前注册；will-navigate/will-frame-navigate 同时兜底。
+Stack Overflow
+electronjs.org
+
+ 生产用 onHeadersReceived 注入 CSP；dev/test 加 <meta> 兜底。
+Stack Overflow
+electronjs.org
+
+ 所有测试用统一 launchApp()：绝对入口 + cwd + DOM 就绪等待 + chrome-error:// 断言。
+electronjs.org
+
+ 同时实现 setPermissionCheckHandler 与 setPermissionRequestHandler 默认拒绝。

@@ -1,4 +1,5 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -22,10 +23,7 @@ test.describe('Electron应用基础功能', () => {
     const startTime = Date.now();
 
     // 使用_electron.launch()官方模式启动应用 - 增加超时时间
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000, // 增加到60秒
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log(`✅ Electron 应用启动成功，耗时: ${Date.now() - startTime}ms`);
 
@@ -80,10 +78,7 @@ test.describe('Electron应用基础功能', () => {
 
   test('安全基线验证 - 上下文隔离', async () => {
     console.log('🔒 开始安全基线验证测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(安全测试)...');
     const firstWindow = await electronApp.firstWindow({
@@ -121,10 +116,7 @@ test.describe('Electron应用基础功能', () => {
 
   test('CSP策略生效验证', async () => {
     console.log('🛡️ 开始CSP策略验证测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(CSP测试)...');
     const firstWindow = await electronApp.firstWindow({
@@ -203,10 +195,7 @@ test.describe('Electron应用基础功能', () => {
 
   test('主进程和渲染进程分离', async () => {
     console.log('⚙️ 开始进程分离验证测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     // 验证主进程存在
     expect(electronApp).toBeTruthy();
@@ -235,10 +224,7 @@ test.describe('性能和响应性验证', () => {
     console.log('⏱️ 开始启动时间性能测试...');
     const startTime = Date.now();
 
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(性能测试)...');
     const firstWindow = await electronApp.firstWindow({
@@ -260,10 +246,7 @@ test.describe('性能和响应性验证', () => {
 
   test('窗口响应性测试', async () => {
     console.log('🎯 开始窗口响应性测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(响应性测试)...');
     const firstWindow = await electronApp.firstWindow({
@@ -295,10 +278,7 @@ test.describe('性能和响应性验证', () => {
 test.describe('错误处理和稳定性', () => {
   test('应用意外退出恢复', async () => {
     console.log('🔄 开始应用稳定性测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(稳定性测试)...');
     const firstWindow = await electronApp.firstWindow({
@@ -321,10 +301,7 @@ test.describe('错误处理和稳定性', () => {
 
   test('内存泄漏基础检查', async () => {
     console.log('🧠 开始内存泄漏检查测试...');
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     console.log('🪟 等待主窗口创建(内存测试)...');
     const firstWindow = await electronApp.firstWindow({

@@ -8,11 +8,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  _electron as electron,
-  type ElectronApplication,
-  type Page,
-} from '@playwright/test';
+import { launchApp } from '../helpers/launch';
+import { type ElectronApplication, type Page } from '@playwright/test';
 import path from 'node:path';
 import type {
   PreloadExposedApi,

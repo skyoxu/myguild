@@ -1,4 +1,5 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { launchApp } from '../helpers/launch';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,10 +24,7 @@ test.describe('游戏竖切端到端测试', () => {
 
   test.beforeEach(async () => {
     console.log('🚀 启动竖切测试 - 初始化 Electron 应用...');
-    electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    electronApp = await launchApp().then(result => result.app);
 
     firstWindow = await electronApp.firstWindow({
       timeout: 20000,
@@ -279,10 +277,7 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切测试性能基准验证', async () => {
     console.log('⏱️ 测试竖切性能基准');
 
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
     await firstWindow.waitForLoadState('domcontentloaded');
@@ -324,10 +319,7 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切内存使用监控', async () => {
     console.log('🧠 测试竖切内存使用情况');
 
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../dist-electron/main.js')],
-      timeout: 60000,
-    });
+    const electronApp = await launchApp().then(result => result.app);
 
     const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
     await firstWindow.waitForLoadState('domcontentloaded');

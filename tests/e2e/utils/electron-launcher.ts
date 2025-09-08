@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { _electron as electron, ElectronApplication } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 /**
  * 跨平台Electron应用启动器 - 官方API模式

@@ -4,7 +4,7 @@
  * 防止"纸面升级"问题
  */
 import { test, expect, Page } from '@playwright/test';
-import { _electron as electron, ElectronApplication } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -12,10 +12,7 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[React19 Actions Test] 启动Electron应用...');
 
-  electronApp = await electron.launch({
-    args: ['./electron/main.js'],
-    timeout: 30000,
-  });
+  electronApp = await launchApp().then(result => result.app);
 
   mainWindow = await electronApp.firstWindow();
   await mainWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });

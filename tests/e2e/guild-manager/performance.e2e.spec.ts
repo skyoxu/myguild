@@ -3,13 +3,8 @@
  * 验证 SLO 要求和性能基准
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 // 性能指标收集器
 class PerformanceCollector {
@@ -47,18 +42,10 @@ const perfCollector = new PerformanceCollector();
 let testApp: { electronApp: ElectronApplication; page: Page };
 
 test.beforeAll(async () => {
-  const electronApp = await electron.launch({
-    args: ['dist-electron/main.js'],
-    env: {
-      NODE_ENV: 'test',
-      PERFORMANCE_MODE: 'true',
-    },
-  });
+  // 使用统一启动器（cifix1.txt要求）
+  const { app, page } = await launchApp();
 
-  const page = await electronApp.firstWindow();
-  await page.waitForLoadState('networkidle');
-
-  testApp = { electronApp, page };
+  testApp = { electronApp: app, page };
 });
 
 test.afterAll(async () => {

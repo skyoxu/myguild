@@ -12,11 +12,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../helpers/launch';
 import fs from 'fs';
 import path from 'path';
 
@@ -24,18 +21,10 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // 启动Electron应用
-  electronApp = await electron.launch({
-    args: ['./dist/main.js'],
-    env: {
-      ...process.env,
-      // 强制启用高性能模式
-      ELECTRON_RUN_AS_NODE: '0',
-      NODE_ENV: 'test',
-    },
-  });
-
-  page = await electronApp.firstWindow();
+  // 使用统一启动器（cifix1.txt要求）
+  const { app, page: launchedPage } = await launchApp();
+  electronApp = app;
+  page = launchedPage;
 
   // 等待应用完全加载
   await page.waitForSelector('[data-testid="app-root"]', { timeout: 10000 });

@@ -3,13 +3,7 @@
  * 针对 导航拦截、窗口打开、权限请求 的核心安全测试
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 
 let electronApp: ElectronApplication;
 let firstWindow: Page;

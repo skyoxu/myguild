@@ -57,7 +57,13 @@
       "Bash(__NEW_LINE__ echo \"测试 lint:tests 命令（放宽检查tests目录）：\")",
       "Bash(__NEW_LINE__ echo \"测试完整 lint 命令（组合检查）：\")",
       "Bash(awk:*)",
-      "Bash(ESLINT_MAX_WARNINGS=50 node scripts/eslint-baseline-gate.mjs)"
+      "Bash(ESLINT_MAX_WARNINGS=50 node scripts/eslint-baseline-gate.mjs)",
+      "Bash(where trufflehog)",
+      "Bash(pwsh:*)",
+      "Bash([ -f \".trufflehog-exclude.txt\" ])",
+      "Bash(trufflehog:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": [],

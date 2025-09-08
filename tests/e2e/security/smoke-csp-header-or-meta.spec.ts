@@ -1,12 +1,10 @@
 // tests/e2e/security/smoke-csp-header-or-meta.spec.ts
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 test('CSP 以响应头或<meta>其一存在即可', async () => {
-  const app = await electron.launch({
-    args: ['./electron/main.js'],
-    timeout: 30000,
-  });
-  const page = await app.firstWindow();
+  // 使用统一启动器（cifix1.txt要求）
+  const { app, page } = await launchApp();
 
   // 1) readyState 守护 + 非 chrome-error
   await page.waitForFunction(

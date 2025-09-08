@@ -7,11 +7,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { launchApp } from '../helpers/launch';
+import { ElectronApplication, Page } from '@playwright/test';
 import {
   DEFAULT_FRAME_BUDGET,
   DEFAULT_LATENCY_BUDGET,
@@ -26,10 +23,7 @@ let page: Page;
 
 test.beforeAll(async () => {
   // 启动Electron应用
-  electronApp = await electron.launch({
-    args: ['./dist/main.js'],
-    // TODO: 根据实际构建产物路径调整
-  });
+  electronApp = await launchApp().then(result => result.app);
   page = await electronApp.firstWindow();
 });
 
@@ -48,9 +42,7 @@ test.describe('性能冒烟测试套件', () => {
         }
 
         const startTime = performance.now();
-        electronApp = await electron.launch({
-          args: ['./dist/main.js'],
-        });
+        electronApp = await launchApp().then(result => result.app);
         page = await electronApp.firstWindow();
 
         // 等待应用完全加载
