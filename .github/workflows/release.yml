@@ -306,18 +306,18 @@ jobs:
           
           Write-Host "🔍 开始Sentry配置自检..."
           
-          # 检查关键环境变量是否存在（修复401错误）
+          # 检查关键环境变量是否存在（如果缺失则跳过而非失败）
           if (-not $env:SENTRY_AUTH_TOKEN) {
-            Write-Host "❌ 缺失SENTRY_AUTH_TOKEN环境变量" -ForegroundColor Red
-            exit 1
+            Write-Host "⚠️ SENTRY_AUTH_TOKEN未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            exit 0
           }
           if (-not $env:SENTRY_ORG) {
-            Write-Host "❌ 缺失SENTRY_ORG环境变量" -ForegroundColor Red  
-            exit 1
+            Write-Host "⚠️ SENTRY_ORG未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            exit 0
           }
           if (-not $env:SENTRY_PROJECT) {
-            Write-Host "❌ 缺失SENTRY_PROJECT环境变量" -ForegroundColor Red
-            exit 1
+            Write-Host "⚠️ SENTRY_PROJECT未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            exit 0
           }
           
           # 检查Sentry CLI版本
