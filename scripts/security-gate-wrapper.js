@@ -7,12 +7,18 @@
  * 基于：ADR-0002 Electron安全基线
  */
 
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
+import { exec as execCallback } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 
-const _execAsync = util.promisify(exec); // Reserved for future use
+const exec = promisify(execCallback);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// exec is now already promisified above
 
 const SECURITY_TESTS = {
   electron: {
@@ -112,22 +118,19 @@ class SecurityGateWrapper {
   /**
    * 带超时的命令执行
    */
-  executeWithTimeout(command, timeout) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+  async executeWithTimeout(command, timeout) {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
         reject(new Error(`命令超时 (${timeout}ms): ${command}`));
       }, timeout);
-
-      exec(command, (error, stdout, stderr) => {
-        clearTimeout(timer);
-
-        if (error) {
-          reject(error);
-        } else {
-          resolve({ stdout, stderr });
-        }
-      });
     });
+
+    try {
+      const result = await Promise.race([exec(command), timeoutPromise]);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -321,7 +324,7 @@ class SecurityGateWrapper {
 }
 
 // 主执行逻辑
-if (process.argv[1] === __filename) {
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
   const securityGate = new SecurityGateWrapper();
 
   securityGate
@@ -336,4 +339,4 @@ if (process.argv[1] === __filename) {
     });
 }
 
-module.exports = SecurityGateWrapper;
+export default SecurityGateWrapper;
