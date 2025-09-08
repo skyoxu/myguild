@@ -270,6 +270,13 @@ jobs:
         shell: bash
         run: tar -xzf build-artifacts.tar.gz
 
+      - name: 🔧 安装 Sentry CLI
+        shell: bash
+        run: |
+          echo "🔧 安装 Sentry CLI..."
+          npm install -g @sentry/cli
+          echo "✅ Sentry CLI 安装完成"
+
       - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash
         run: |
@@ -418,6 +425,13 @@ jobs:
     steps:
       - name: 📥 检出代码
         uses: actions/checkout@v4
+
+      - name: 🔧 安装 Sentry CLI
+        shell: bash
+        run: |
+          echo "🔧 安装 Sentry CLI..."
+          npm install -g @sentry/cli
+          echo "✅ Sentry CLI 安装完成"
 
       - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash

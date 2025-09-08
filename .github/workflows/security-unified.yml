@@ -168,7 +168,7 @@ jobs:
             # 1) 降噪：使用排除列表跳过二进制文件和构建产物
             # 2) 正确失败条件：只因已验证密钥而失败，未验证密钥仅作告警
             trufflehog filesystem . `
-              --skip-binaries `
+              --exclude-globs="*.zip,*.tar,*.gz,*.bz2,*.7z,*.dmg,*.exe,*.dll,*.so,*.dylib,*.pkg,*.deb,*.rpm,*.msi,*.iso" `
               --excludepathsfile .trufflehog-exclude.txt `
               --results=verified,unknown `
               --only-verified `
