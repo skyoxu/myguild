@@ -1,0 +1,108 @@
+这条 401 说明 CI 进程没有拿到 SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT。你的日志里还把 ORG= PROJECT= 打印成空值，进一步印证了这一点。sentry-cli 官方要求用这“三件套”通过环境变量或 .sentryclirc 提供配置；你当前两者都未生效。
+docs.sentry.io
++1
+
+下面给你三种最常见根因的“最小修复”，按你的场景套用即可（都是无文件方案，不依赖任何临时 cifix1.txt）。
+
+1) 普通仓库 Secrets（最常见）
+
+在 job 级把 secrets 映射到 env；你在 Windows runner 上，打印要用 PowerShell 语法 $env:VAR（不要用 Bash 的 $VAR，否则显示为空）。
+docs.sentry.io
+Microsoft Learn
+
+jobs:
+  sentry_smoke:
+    runs-on: windows-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}        # 必须是 org “slug”
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}    # 必须是 project “slug”
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sentry CLI config check
+        shell: pwsh
+        run: |
+          $env:SENTRY_LOG_LEVEL = "info"
+          Write-Host "ORG=$($env:SENTRY_ORG) PROJECT=$($env:SENTRY_PROJECT)"  # 仅打印非敏感项
+          sentry-cli info
+
+
+sentry-cli 官方文档：支持用 SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN 直接配置。PowerShell 读取环境变量用 $env:NAME。
+docs.sentry.io
+Microsoft Learn
+
+2) 你的 Secrets 放在 Environment（如 production）
+
+必须给 job 声明 environment: production，否则拿不到环境级 secrets（且需满足该环境的保护/审批规则）。
+GitHub Docs
+
+jobs:
+  sentry_smoke:
+    runs-on: windows-latest
+    environment: production
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: sentry-cli info
+
+3) 你在用可复用工作流（workflow_call）
+
+调用方要传 secrets（或用 secrets: inherit），被调用方要在 workflow_call 声明这些 secrets，之后再映射到 env。
+GitHub Docs
+Stack Overflow
+
+# 调用方
+jobs:
+  call-sentry:
+    uses: your-org/your-repo/.github/workflows/sentry-smoke.yml@main
+    secrets: inherit  # 或逐项传 SENTRY_* 三件套
+
+# 被调用方 .github/workflows/sentry-smoke.yml
+on:
+  workflow_call:
+    secrets:
+      SENTRY_AUTH_TOKEN: { required: true }
+      SENTRY_ORG:        { required: true }
+      SENTRY_PROJECT:    { required: true }
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sentry-cli info
+
+4) 触发源是 fork PR / Dependabot？
+
+GitHub 出于安全，不会把仓库 secrets 下发到 fork 的 pull_request 运行（Dependabot 也一样）。遇到这种上下文，要么跳过需要 secrets 的步骤，要么改成受信触发（例如 workflow_dispatch 或 pull_request_target，但要遵守安全指引）。
+GitHub Docs
+
+# 仅在非 fork PR 时运行 sentry 自检
+if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+
+再给两个“易错但关键”的自检点
+
+用 slug，不是显示名：SENTRY_ORG / SENTRY_PROJECT 必须填 Sentry 控制台 URL 里的 slug；否则 sentry-cli 也会找不到默认 org/project。
+docs.sentry.io
+
+确认变量真的注入了（仅打印非敏感项）：
+
+Windows：Write-Host $env:SENTRY_ORG；Linux：echo "$SENTRY_ORG"。
+Microsoft Learn
+
+按上面改完，再跑 sentry-cli info 正常输出应类似：
+
+ORG=your-org-slug PROJECT=your-project-slug
+Sentry Server: https://sentry.io
+Default Organization: your-org-slug
+Default Project: your-project-slug
+Authentication Info:
+  Method: Auth Token
