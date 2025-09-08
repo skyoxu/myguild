@@ -161,32 +161,39 @@ jobs:
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
             Write-Host "PR模式：执行增量git扫描（base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }}）"
             # 使用PowerShell调用bash来执行git命令（避免Windows路径问题）
-            bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified,unknown --fail-verified --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
+            bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified,unknown --only-verified --fail --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
             $scanFile = "trufflehog-pr.json"
           } else {
             Write-Host "主分支模式：执行全量filesystem扫描"
             # 1) 降噪：使用排除列表跳过二进制文件和构建产物
             # 2) 正确失败条件：只因已验证密钥而失败，未验证密钥仅作告警
             trufflehog filesystem . `
-              --exclude-paths .trufflehog-exclude.txt `
+              --skip-binaries `
+              --excludepathsfile .trufflehog-exclude.txt `
               --results=verified,unknown `
-              --fail-verified `
+              --only-verified `
+              --fail `
               --json | Out-File -FilePath "trufflehog-scan.json" -Encoding UTF8
             $scanFile = "trufflehog-scan.json"
           }
           
-          if (Test-Path $scanFile) {
-            Write-Host "✅ TruffleHog扫描完成"
-            # 检查是否有发现的秘钥
-            $content = Get-Content $scanFile -Raw
-            if ($content -and $content.Trim() -ne "") {
-              Write-Host "⚠️ 发现潜在秘钥泄露，请检查报告"
-            } else {
-              Write-Host "✅ 未发现秘钥泄露"
+          # cifix1.txt要求：严格按照退出码处理
+          $code = $LASTEXITCODE
+          if ($code -eq 0) {
+            Write-Host "✅ 未发现已验证的密钥"
+          } elseif ($code -eq 183) {
+            Write-Host "❌ 发现已验证密钥，详见 $scanFile"
+            # 输出发现的内容用于调试
+            if (Test-Path $scanFile) {
+              $content = Get-Content $scanFile -Raw
+              if ($content -and $content.Trim() -ne "") {
+                Write-Host "🚨 检测到已验证的秘钥泄露"
+              }
             }
-          } else {
-            Write-Host "❌ TruffleHog扫描失败"
             exit 1
+          } else {
+            Write-Host "❌ TruffleHog 扫描发生错误（exit $code）"
+            exit $code
           }
 
       - name: 汇总静态扫描结果
