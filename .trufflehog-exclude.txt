@@ -1,7 +1,31 @@
-^node_modules/
-^dist/
-^build/
-^coverage/
-^\.git/
-^node_modules/app-builder-bin/
+# TruffleHog 排除规则 - RE2 正则表达式语法
+# 注意：这是 RE2 正则，不是 shell glob
+
+# 常见目录
+(?:^|[\/])\.git(?:[\/]|$)
+(?:^|[\/])node_modules(?:[\/]|$)
+(?:^|[\/])dist(?:[\/]|$)
+(?:^|[\/])build(?:[\/]|$)
+(?:^|[\/])coverage(?:[\/]|$)
+(?:^|[\/])logs(?:[\/]|$)
+(?:^|[\/])\.vite(?:[\/]|$)
+(?:^|[\/])\.cache(?:[\/]|$)
+
+# 常见二进制/压缩包（也会配合 --skip-binaries）
 \.(zip|tar|gz|bz2|7z|dmg|exe|dll|so|dylib|pkg|deb|rpm|msi|iso)$
+
+# 排除常见文档和配置文件
+\.txt$
+\.md$
+\.json$
+\.log$
+
+# 排除测试相关文件
+(?:^|[\/])test(?:[\/]|$)
+(?:^|[\/])tests(?:[\/]|$)
+(?:^|[\/])__tests__(?:[\/]|$)
+\.(test|spec)\.(js|ts|jsx|tsx)$
+
+# 排除构建产物和临时文件
+\.(map|orig|tmp|temp)$
+(?:^|[\/])\.nyc_output(?:[\/]|$)
