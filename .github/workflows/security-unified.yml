@@ -382,8 +382,8 @@ jobs:
             exit 1
           fi
 
-          # 使用我们的安全门禁包装脚本
-          if ! node scripts/security-gate-wrapper.js; then
+          # 使用我们的安全门禁包装脚本（ESM模块兼容）
+          if ! npm run guard:security; then
             echo "❌ [硬失败] 安全门禁包装脚本检查失败"
             exit 1
           fi
