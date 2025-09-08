@@ -261,7 +261,7 @@ jobs:
       - name: 🔍 Sentry CLI配置检查
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'default-org' }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || 'bc660-desktop' }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
@@ -271,10 +271,27 @@ jobs:
         run: |
           $env:SENTRY_LOG_LEVEL = "info"
           Write-Host "🔍 Sentry配置自检..."
-          # 仅打印非敏感项做预检
-          Write-Host "ORG=$env:SENTRY_ORG PROJECT=$env:SENTRY_PROJECT"
+          # 详细诊断配置状态
+          Write-Host "📋 配置诊断："
+          Write-Host "  - AUTH_TOKEN: $($env:SENTRY_AUTH_TOKEN -ne $null ? '***配置***' : '未设置')"
+          Write-Host "  - ORG: $env:SENTRY_ORG"
+          Write-Host "  - PROJECT: $env:SENTRY_PROJECT"
+          Write-Host "  - ENVIRONMENT: $env:SENTRY_ENVIRONMENT"
+          Write-Host "  - RELEASE: $env:SENTRY_RELEASE"
+          
+          # 如果关键配置缺失，提供明确错误
+          if (-not $env:SENTRY_AUTH_TOKEN) {
+            Write-Host "❌ SENTRY_AUTH_TOKEN为空"
+            throw "SENTRY_AUTH_TOKEN is required but not set"
+          }
+          if ($env:SENTRY_ORG -eq 'default-org') {
+            Write-Host "⚠️ SENTRY_ORG未配置，使用默认值"
+          }
+          
+          Write-Host "🔍 执行 sentry-cli info..."
           sentry-cli info
-          # 验证发布健康度
+          
+          Write-Host "🏥 验证发布健康度..."
           node scripts/release-health-gate.mjs
 
       - name: ⚠️ Release Health Gate跳过（缺少secrets）
