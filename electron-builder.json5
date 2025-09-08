@@ -63,7 +63,6 @@
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: 'ViteGame Studio',
-    include: 'build/installer.nsh',
     deleteAppDataOnUninstall: false,
     displayLanguageSelector: false,
     installerLanguages: ['en_US', 'zh_CN'],
