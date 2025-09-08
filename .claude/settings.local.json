@@ -63,7 +63,8 @@
       "Bash([ -f \".trufflehog-exclude.txt\" ])",
       "Bash(trufflehog:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(gh workflow:*)"
     ],
     "deny": [],
     "ask": [],
