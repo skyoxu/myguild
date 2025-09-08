@@ -249,10 +249,14 @@ jobs:
   create-release:
     name: 🚀 创建Sentry Release
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0修复：job级别环境变量确保devDependencies正确安装 + Sentry CI配置
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
+      # Sentry CI配置（三件套）
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
     needs: [prepare, build, e2e-smoke]
     if: needs.prepare.outputs.environment != 'development'
     steps:
@@ -280,9 +284,10 @@ jobs:
       - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash
         run: |
-          # cifix1.txt要求：使用sentry-cli info校验配置
+          # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
           echo "🔍 Sentry配置自检..."
+          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 非敏感信息验证
           sentry-cli info
           echo "✅ Sentry配置验证完成"
 
@@ -416,10 +421,14 @@ jobs:
   deploy:
     name: 🚀 标记部署完成
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0修复：job级别环境变量确保devDependencies正确安装 + Sentry CI配置
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
+      # Sentry CI配置（三件套）
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
     needs: [prepare, create-release, health-check]
     if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
     steps:
@@ -436,9 +445,10 @@ jobs:
       - name: 🔧 检查 Sentry CLI 并自检配置
         shell: bash
         run: |
-          # cifix1.txt要求：使用sentry-cli info校验配置
+          # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
           echo "🔍 Sentry配置自检..."
+          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 非敏感信息验证
           sentry-cli info
           echo "✅ Sentry配置验证完成"
 
