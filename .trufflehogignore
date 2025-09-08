@@ -1,0 +1,14 @@
+# TruffleHog ignore patterns
+# Exclude documentation files that may contain code examples
+*.txt
+*.md
+# Exclude build artifacts and logs
+dist/
+build/
+logs/
+node_modules/
+# Exclude test fixtures that may contain mock secrets
+test-fixtures/
+__tests__/fixtures/
+# Exclude git objects and refs
+.git/

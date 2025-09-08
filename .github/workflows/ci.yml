@@ -249,6 +249,15 @@ jobs:
           cache: 'npm'
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
+      - name: 🔑 Check for Sentry token
+        id: sentry_check
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
+            echo "token_present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "token_present=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: 🔍 Sentry CLI配置检查
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -257,7 +266,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
           SENTRY_RELEASE: ${{ github.sha }}
-        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: |
           $env:SENTRY_LOG_LEVEL = "info"
@@ -269,7 +278,7 @@ jobs:
           node scripts/release-health-gate.mjs
 
       - name: ⚠️ Release Health Gate跳过（缺少secrets）
-        if: ${{ secrets.SENTRY_AUTH_TOKEN == '' }}
+        if: steps.sentry_check.outputs.token_present == 'false'
         shell: bash
         run: |
           echo "⚠️ SENTRY_AUTH_TOKEN未配置，跳过发布健康度检查"
