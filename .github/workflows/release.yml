@@ -282,15 +282,15 @@ jobs:
           echo "✅ Sentry CLI 安装完成"
 
       - name: 🔧 检查 Sentry CLI 并自检配置
-        shell: bash
+        shell: pwsh
         run: |
           # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
-          echo "🔍 Sentry配置自检..."
-          export SENTRY_LOG_LEVEL=info
-          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 仅打印非敏感项
+          Write-Host "🔍 Sentry配置自检..."
+          $env:SENTRY_LOG_LEVEL = "info"
+          Write-Host "ORG=$($env:SENTRY_ORG) PROJECT=$($env:SENTRY_PROJECT)"  # 仅打印非敏感项
           sentry-cli info
-          echo "✅ Sentry配置验证完成"
+          Write-Host "✅ Sentry配置验证完成"
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
@@ -444,14 +444,14 @@ jobs:
           echo "✅ Sentry CLI 安装完成"
 
       - name: 🔧 检查 Sentry CLI 并自检配置
-        shell: bash
+        shell: pwsh
         run: |
           # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
-          echo "🔍 Sentry配置自检..."
-          echo "ORG=$SENTRY_ORG PROJECT=$SENTRY_PROJECT"  # 非敏感信息验证
+          Write-Host "🔍 Sentry配置自检..."
+          Write-Host "ORG=$($env:SENTRY_ORG) PROJECT=$($env:SENTRY_PROJECT)"  # 非敏感信息验证
           sentry-cli info
-          echo "✅ Sentry配置验证完成"
+          Write-Host "✅ Sentry配置验证完成"
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
