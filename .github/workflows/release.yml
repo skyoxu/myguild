@@ -298,44 +298,42 @@ jobs:
           sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 创建Sentry Release
-        shell: bash
+        shell: pwsh
         run: |
-          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
-          echo "🚀 创建Release: $RELEASE_NAME"
+          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
+          Write-Host "🚀 创建Release: $RELEASE_NAME"
 
           # 执行完整Sentry Release流程
           # 1) 创建release 
-          sentry-cli releases new "$RELEASE_NAME" -p "$SENTRY_PROJECT"
+          sentry-cli releases new "$RELEASE_NAME" -p "$env:SENTRY_PROJECT"
           
           # 2) 关联commits
           sentry-cli releases set-commits "$RELEASE_NAME" --auto
           
           # 3) 上传sourcemaps (如果存在dist目录)
-          if [ -d "dist" ]; then
+          if (Test-Path "dist") {
             sentry-cli sourcemaps upload --release "$RELEASE_NAME" --dist windows "dist"
-          fi
+          }
           
           # 4) Finalize release (必须在deploy之前)
           sentry-cli releases finalize "$RELEASE_NAME"
 
-          echo "✅ Release创建并finalize完成: $RELEASE_NAME"
+          Write-Host "✅ Release创建并finalize完成: $RELEASE_NAME"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 📤 上传Source Maps
+        shell: pwsh
         run: |
-          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
-          echo "📤 上传Source Maps for $RELEASE_NAME"
+          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
+          Write-Host "📤 上传Source Maps for $RELEASE_NAME"
 
           # C建议：上传source maps (使用sentry-cli)
-          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ \
-            --validate \
-            --url-prefix "~/" \
-            --strip-common-prefix
+          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ --validate --url-prefix "~/" --strip-common-prefix
 
-          echo "✅ Source Maps上传成功"
+          Write-Host "✅ Source Maps上传成功"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
@@ -459,17 +457,17 @@ jobs:
           sentry-token: ${{ env.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 标记Sentry部署
-        shell: bash
+        shell: pwsh
         run: |
-          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
-          ENVIRONMENT="${{ needs.prepare.outputs.environment }}"
+          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
+          $ENVIRONMENT = "${{ needs.prepare.outputs.environment }}"
 
-          echo "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
+          Write-Host "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
 
           # 标记deploy (release已finalized)
           sentry-cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
 
-          echo "✅ 部署标记完成"
+          Write-Host "✅ 部署标记完成"
         env:
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
