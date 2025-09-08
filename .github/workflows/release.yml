@@ -465,8 +465,26 @@ jobs:
           npm install -g @sentry/cli
           echo "✅ Sentry CLI 安装完成"
 
+      - name: 🔑 检查 Sentry token 是否配置
+        id: sentry_check
+        shell: bash
+        run: |
+          # 检查Sentry token是否配置（避免空token导致失败）
+          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ] && [ "${{ secrets.SENTRY_AUTH_TOKEN }}" != "" ]; then
+            echo "token_present=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Sentry token已配置，将执行Sentry相关操作"
+          else
+            echo "token_present=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Sentry token未配置，跳过所有Sentry操作"
+          fi
+
       - name: 🔧 检查 Sentry CLI 并自检配置
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
+        env:
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           # Sentry CLI配置校验：验证三件套环境变量是否生效
           sentry-cli --version
@@ -476,11 +494,13 @@ jobs:
           Write-Host "✅ Sentry配置验证完成"
 
       - name: 🔧 安装Release工具
+        if: steps.sentry_check.outputs.token_present == 'true'
         uses: ./.github/actions/setup-release-tools
         with:
           sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 🚀 标记Sentry部署
+        if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: |
           $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
