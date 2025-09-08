@@ -285,12 +285,28 @@ jobs:
         shell: pwsh
         run: |
           # Sentry CLI配置校验：验证三件套环境变量是否生效
+          Write-Host "🔍 开始Sentry配置自检..."
+          
+          # 检查Sentry CLI版本
           sentry-cli --version
-          Write-Host "🔍 Sentry配置自检..."
+          
+          # 设置详细日志级别
           $env:SENTRY_LOG_LEVEL = "info"
-          Write-Host "ORG=$($env:SENTRY_ORG) PROJECT=$($env:SENTRY_PROJECT)"  # 仅打印非敏感项
-          sentry-cli info
-          Write-Host "✅ Sentry配置验证完成"
+          
+          # 安全的环境变量显示（避免语法错误）
+          Write-Host "配置检查 - ORG: $env:SENTRY_ORG, PROJECT: $env:SENTRY_PROJECT"
+          
+          # 执行认证检查并添加错误处理
+          try {
+            Write-Host "执行 sentry-cli info 验证..."
+            sentry-cli info
+            Write-Host "✅ Sentry配置验证完成"
+          }
+          catch {
+            Write-Host "❌ Sentry认证失败，错误信息: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "请检查 SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT 环境变量配置" -ForegroundColor Yellow
+            exit 1
+          }
 
       - name: 🔧 安装Release工具
         uses: ./.github/actions/setup-release-tools
