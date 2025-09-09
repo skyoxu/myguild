@@ -38,7 +38,7 @@ export default defineConfig({
     video: 'retain-on-failure',
 
     /* Electron特定配置 */
-    headless: false, // Electron需要GUI模式
+    headless: process.env.CI === 'true', // CI环境使用headless模式，本地保持GUI
 
     /* 安全基线验证 */
     extraHTTPHeaders: {
