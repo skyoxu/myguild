@@ -8,7 +8,23 @@ import { resolve } from 'node:path';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export async function launchApp(
+/**
+ * 启动Electron应用程序 - 统一化测试启动函数
+ * 符合cifix1.txt要求，使用构建产物而非源文件
+ */
+export async function launchApp(): Promise<ElectronApplication> {
+  const main = resolve(process.cwd(), 'dist-electron', 'main.js'); // 确保先构建
+  return electron.launch({
+    args: [main],
+    env: {
+      CI: 'true',
+      ELECTRON_ENABLE_LOGGING: '1',
+      SECURITY_TEST_MODE: 'true',
+    },
+  });
+}
+
+export async function launchAppWithPage(
   electron?,
   entry?
 ): Promise<{

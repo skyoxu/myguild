@@ -49,9 +49,28 @@ export interface SystemEvent extends BaseEvent {
 }
 
 /**
+ * 安全全局初始化事件 - 用于Electron安全配置验证
+ * 符合ADR-0004事件命名规约和可观测性要求
+ */
+export interface SecurityGlobalInitEvent extends BaseEvent {
+  type: 'security.global.init';
+  source: 'app://main';
+  data: {
+    readyAt: string;
+    handlers: Array<
+      'permissionCheck' | 'permissionRequest' | 'headers' | 'beforeRequest'
+    >;
+  };
+}
+
+/**
  * 联合事件类型
  */
-export type DomainEvent = GameEvent | UIEvent | SystemEvent;
+export type DomainEvent =
+  | GameEvent
+  | UIEvent
+  | SystemEvent
+  | SecurityGlobalInitEvent;
 
 /**
  * 事件发布器接口

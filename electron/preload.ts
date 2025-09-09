@@ -16,25 +16,31 @@ if (process.contextIsolated) {
     }
 
     // 统一使用 electronAPI 命名，与测试保持一致
-    contextBridge.exposeInMainWorld('electronAPI', {
-      // 基础系统信息
-      platform: process.platform,
-      version: process.versions.electron,
-      isSandboxed: process.sandboxed,
-      contextIsolated: process.contextIsolated,
+    contextBridge.exposeInMainWorld(
+      'electronAPI',
+      Object.freeze({
+        // 基础系统信息
+        platform: process.platform,
+        version: process.versions.electron,
+        isSandboxed: process.sandboxed,
+        contextIsolated: process.contextIsolated,
 
-      // 扩展@electron-toolkit提供的API
-      ...electronAPI,
-    });
+        // 扩展@electron-toolkit提供的API
+        ...electronAPI,
+      })
+    );
 
     // 安全配置验证API（仅测试模式）
     if (process.env.SECURITY_TEST_MODE === 'true') {
-      contextBridge.exposeInMainWorld('__SECURITY_VALIDATION__', {
-        isSandboxed: process.sandboxed,
-        contextIsolated: process.contextIsolated,
-        nodeIntegrationDisabled: typeof require === 'undefined',
-        exposedAt: new Date().toISOString(),
-      });
+      contextBridge.exposeInMainWorld(
+        '__SECURITY_VALIDATION__',
+        Object.freeze({
+          isSandboxed: process.sandboxed,
+          contextIsolated: process.contextIsolated,
+          nodeIntegrationDisabled: typeof require === 'undefined',
+          exposedAt: new Date().toISOString(),
+        })
+      );
     }
 
     // 应用版本信息 - 用于Sentry Release Health
@@ -44,9 +50,12 @@ if (process.contextIsolated) {
     );
 
     // 简化的测试API标识（减少信息泄露）
-    contextBridge.exposeInMainWorld('__CUSTOM_API__', {
-      preloadExposed: true,
-    });
+    contextBridge.exposeInMainWorld(
+      '__CUSTOM_API__',
+      Object.freeze({
+        preloadExposed: true,
+      })
+    );
   } catch (error) {
     console.error('Failed to expose API:', error);
     // 预加载失败时不应回退到非隔离模式

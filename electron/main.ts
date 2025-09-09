@@ -47,28 +47,9 @@ function createSecureBrowserWindow(): BrowserWindow {
     },
   });
 
-  // ===== 1) 彻底阻断外部导航（双层拦截）=====
-  const ses = win.webContents.session;
+  // ===== 1) 网络拦截已在defaultSession统一处理（避免重复）=====
 
-  // 1a) 最早阶段cancel（不会真正导航→不会销上下文）
-  ses.webRequest.onBeforeRequest(
-    { urls: ['http://*/*', 'https://*/*'] },
-    (details, cb) => {
-      // 允许清单（如 Sentry 接入、本地服务）
-      const isAllowed =
-        details.url.includes('localhost') ||
-        details.url.includes('127.0.0.1') ||
-        details.url.includes('sentry.io') ||
-        details.url.startsWith('https://o.sentry.io');
-
-      if (!isAllowed) {
-        console.log(`🚫 [onBeforeRequest] 阻止外部请求: ${details.url}`);
-      }
-      cb({ cancel: !isAllowed });
-    }
-  );
-
-  // 1b) 二道闸：即使溜过，也在将要导航时拦下
+  // 1) 导航拦截：窗口级will-navigate保持作为二道闸
   win.webContents.on('will-navigate', (event, url) => {
     console.log(`🔄 [will-navigate] 尝试导航到: ${url}`);
     event.preventDefault(); // 官方安全指引推荐
@@ -152,36 +133,10 @@ function createWindow(): void {
     mainWindow.show();
   }
 
-  // ===== 2) 生产用响应头下发 CSP / COOP / COEP / CORP / Permissions-Policy =====
-  mainWindow.webContents.session.webRequest.onHeadersReceived((details, cb) => {
-    const headers = details.responseHeaders ?? {};
-    const set = (k: string, v: string) => {
-      headers[k] = [v];
-    };
+  // ===== 2) 响应头注入已在defaultSession统一处理，避免重复 =====
 
-    // 最小可用 CSP（按需扩展 connect-src 等）
-    set(
-      'Content-Security-Policy',
-      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
-        "img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
-        "script-src 'self'; connect-src 'self' https://o.sentry.io"
-    );
-
-    // 相邻安全头
-    set('Cross-Origin-Opener-Policy', 'same-origin');
-    set('Cross-Origin-Embedder-Policy', 'require-corp');
-    set('Cross-Origin-Resource-Policy', 'same-origin');
-    set(
-      'Permissions-Policy',
-      'geolocation=(), microphone=(), camera=(), notifications=(), ' +
-        'fullscreen=(self)'
-    );
-
-    cb({ responseHeaders: headers });
-  });
-
-  // ===== 3) 权限处理已在全局设置（避免重复设置）=====
-  // 权限处理器已在app.whenReady()之前全局设置，此处无需重复
+  // ===== 3) 权限处理已在defaultSession全局设置（避免重复设置）=====
+  // 权限处理器已在app.whenReady()的defaultSession中全局设置，此处无需重复
 
   // ===== 4) 导航兜底：即使溜过，也阻断 =====
   mainWindow.webContents.on('will-navigate', e => e.preventDefault()); // 官方建议
@@ -229,14 +184,18 @@ function createWindow(): void {
   mainWindow.loadURL(indexUrl);
 }
 
-// 权限红线：同时实现检查与请求两套 Handler（默认拒绝）
-// 最好在 app.whenReady() 之前就设定（确保首窗前生效）
-const ses = session.defaultSession;
-ses.setPermissionCheckHandler(() => false); // 一票否决（默认拒绝）
-ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+// ❌ 移除（会在 app 未 ready 时访问 session）
+// 权限控制移到 whenReady 内部处理
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron');
+
+  // ✅ 放在 whenReady 内、且在 createWindow() 之前
+  const ses = session.defaultSession;
+
+  // 2.1 权限：默认拒绝（全局一票否决，可按 overlay 放白名单）
+  ses.setPermissionCheckHandler(() => false);
+  ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 
   // 1) 注册app://协议映射
   protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
