@@ -128,7 +128,7 @@ runs:
             
             # Windows-focused verification: Check critical devDependencies tools
             # Define tools as space-separated string for Windows compatibility
-            dev_tools_list="eslint tsc vitest playwright"
+            dev_tools_list="eslint tsc vitest playwright tsx"
             
             for tool in $dev_tools_list; do
               # Enhanced check: node_modules/.bin first, then npm list verification
