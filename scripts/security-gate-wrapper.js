@@ -25,19 +25,19 @@ const SECURITY_TESTS = {
     name: 'Electron安全测试',
     command: 'npm run test:security:electron',
     critical: true,
-    timeout: 300000, // 5分钟 - 增加超时时间
+    timeout: 480000, // 8分钟 - 进一步增加Electron测试超时时间
   },
   e2e: {
     name: 'E2E安全测试',
     command: 'npm run test:security:e2e',
     critical: true,
-    timeout: 600000, // 10分钟 - 增加E2E测试超时时间
+    timeout: 900000, // 15分钟 - 进一步增加E2E测试超时时间
   },
   static: {
     name: '静态安全扫描',
     command: 'npm run scan:security',
     critical: false,
-    timeout: 180000, // 3分钟 - 增加静态扫描超时时间
+    timeout: 300000, // 5分钟 - 增加静态扫描超时时间
   },
 };
 

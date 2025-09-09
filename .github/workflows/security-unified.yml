@@ -267,6 +267,7 @@ jobs:
             snyk-results.json
             trufflehog-scan.json
             trufflehog-pr.json
+          if-no-files-found: warn
           retention-days: 30
 
   # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）
@@ -331,6 +332,7 @@ jobs:
           path: |
             test-results/
             playwright-report/
+          if-no-files-found: warn
           retention-days: 30
 
   # 阶段3：统一安全门禁决策
@@ -577,28 +579,52 @@ jobs:
               }
             }
 
-            // 2) 修复：避免重复Issue，使用短查询字符串防止256字符限制
-            const shortQuery = `repo:${owner}/${repo} is:issue is:open label:security`;
-            const { data: search } = await github.rest.search.issuesAndPullRequests({
-              q: shortQuery
-            });
+            // 2) 修复：避免重复Issue，使用最简查询字符串防止GitHub API限制
+            try {
+              // 使用最简短的查询避免256字符限制
+              const simpleQuery = `repo:${owner}/${repo} is:open label:security`;
+              console.log(`搜索查询: ${simpleQuery}`);
+              
+              const { data: search } = await github.rest.search.issuesAndPullRequests({
+                q: simpleQuery,
+                sort: 'updated',
+                order: 'desc',
+                per_page: 1
+              });
 
-            if (search.total_count > 0) {
-              const issue_number = search.items[0].number;
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body
-              });
-              console.log(`已在现有Issue #${issue_number} 添加更新评论`);
-            } else {
-              const newIssue = await github.rest.issues.create({
-                owner,
-                repo,
-                title,
-                body,
-                labels: wantedLabels
-              });
-              console.log(`已创建新的安全Issue #${newIssue.data.number}`);
+              if (search.total_count > 0) {
+                const issue_number = search.items[0].number;
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body: `### 🔄 新的安全门禁失败\n\n**时间**: ${new Date().toISOString()}\n**提交**: ${context.sha.substring(0, 8)}\n**分支**: ${context.ref.replace('refs/heads/', '')}\n\n详细信息请查看 [运行日志](${context.payload.repository.html_url}/actions/runs/${context.runId})`
+                });
+                console.log(`已在现有Issue #${issue_number} 添加评论`);
+              } else {
+                const newIssue = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title,
+                  body,
+                  labels: wantedLabels
+                });
+                console.log(`已创建新的安全Issue #${newIssue.data.number}`);
+              }
+            } catch (searchError) {
+              console.log(`搜索Issue失败，直接创建新Issue: ${searchError.message}`);
+              // 如果搜索失败，直接创建新Issue避免阻塞
+              try {
+                const newIssue = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title,
+                  body,
+                  labels: wantedLabels
+                });
+                console.log(`已创建新的安全Issue #${newIssue.data.number}`);
+              } catch (createError) {
+                console.error(`创建Issue也失败: ${createError.message}`);
+                // 记录错误但不阻塞工作流
+              }
             }
