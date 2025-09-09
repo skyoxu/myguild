@@ -51,6 +51,9 @@ jobs:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: write
       actions: write
