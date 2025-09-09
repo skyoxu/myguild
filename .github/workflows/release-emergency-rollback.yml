@@ -135,13 +135,19 @@ jobs:
             if [ -f "$feed_file" ]; then
               echo "Processing $feed_file..."
               
+              # Prepare notify flag for ShellCheck compliance (fixes SC2086)
+              notify_flag=""
+              if [ -n "${WEBHOOK_URL:-}" ]; then
+                notify_flag="--notify"
+              fi
+
               set +e
               result=$(node scripts/release/execute-rollback.mjs \
                 --feed="$feed_file" \
                 --previous-version="$PREV_GA_VERSION" \
                 --manifest="artifacts/manifest.json" \
                 --reason="${{ inputs.reason }}" \
-                ${WEBHOOK_URL:+--notify})
+                $notify_flag)
               rollback_exit_code=$?
               set -e
               
@@ -174,12 +180,18 @@ jobs:
             exit 1
           fi
 
+          # Prepare notify flag for ShellCheck compliance (fixes SC2086)
+          notify_flag=""
+          if [ -n "${WEBHOOK_URL:-}" ]; then
+            notify_flag="--notify"
+          fi
+
           result=$(node scripts/release/execute-rollback.mjs \
             --feed="$feed_file" \
             --previous-version="$PREV_GA_VERSION" \
             --manifest="artifacts/manifest.json" \
             --reason="${{ inputs.reason }}" \
-            ${WEBHOOK_URL:+--notify})
+            $notify_flag)
 
           echo "rollback_result=$result" >> $GITHUB_OUTPUT
           echo "Successfully rolled back $feed_file"
