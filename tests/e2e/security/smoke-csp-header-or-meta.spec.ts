@@ -6,11 +6,8 @@ test('CSP 以响应头或<meta>其一存在即可', async () => {
   // 使用统一启动器
   const { app, page } = await launchApp();
 
-  // 1) readyState 守护 + 非 chrome-error
-  await page.waitForFunction(
-    () => ['interactive', 'complete'].includes(document.readyState),
-    { timeout: 15000 }
-  );
+  // 1) readyState 守护 + 非 chrome-error - 使用官方推荐的等待策略
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   expect(page.url().startsWith('chrome-error://')).toBeFalsy();
 
   // 2) dev/test: 允许 <meta> 作为满足条件之一

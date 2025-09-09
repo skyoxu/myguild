@@ -276,6 +276,9 @@ docs/
 
 - Sentry Releases + Sessions **must** be enabled to compute **Crash‑Free Sessions/Users**. Thresholds are env‑configurable; CI blocks below threshold.
 - Logs are structured and sampled; scrub PII at SDK (preferred) and/or server policy.
+- **Sentry init** in **Electron main and every renderer** at the earliest entry point.
+- **Vite sourcemaps**: use `@sentry/vite-plugin` to create releases & upload source maps in CI.
+- **Release gate**: only widen rollout if **Crash-free Sessions (24h) ≥ 99.5%** on pre-release/production.
 
 ---
 
@@ -339,10 +342,16 @@ docs/
       "guard:electron": ,
       "guard:quality": ,
       "guard:base": ,
-      "guard:ci":
+      "guard:dup": "jscpd --threshold 2 --gitignore --pattern \"**/*.{ts,tsx,js}\"",
+      "guard:complexity": "npx complexity-report -o reports/complexity.html src || exit 1",
+      "guard:deps": "npx depcruise src --config .dependency-cruiser.cjs && npx madge --circular --extensions ts,tsx ./src",
+      "guard:ci": "npm run typecheck && npm run lint && npm run test:unit && npm run guard:dup && npm run guard:complexity && npm run guard:deps && npm run test:e2e"
     }
   }
   ```
+  **Duplication** (jscpd)—2% threshold as a firm fail line (tune per repo size)
+  **Complexity (complexity-report/escomplex)**—enforce **Cyclomatic ≤ 10 / file average ≤ 5** (review the HTML report in CI)
+  ### Dependency guards—no cross-layer shortcuts + no circular deps via dependency-cruiser and madge
   **Python**：如需 Python，请同时支持 py -3 -m pip 与 python -m pip；并在文档中标注最低版本。
   **Playwright**：在 Windows 上提供 npx playwright install --with-deps 的替代说明（某些依赖可省略 --with-deps）
   **Shell 脚本**：为关键脚本提供 PowerShell 版本（如 scripts/\*.ps1），或在 package.json 用 Node 脚本替代纯 Bash
@@ -382,6 +391,9 @@ docs/
 - [ ] 更新/新增 `tests/unit/**`（Vitest）与 `tests/e2e/**`（Playwright Electron）。
 - [ ] 涉及 PRD：Front‑Matter 的 `Test-Refs` 指向相应用例。
 - [ ] 变更口径/阈值/契约：已新增或 _Supersede_ 对应 ADR 并在 PR 描述中引用。
+- [ ] 附上 **E2E 可玩度冒烟** 的运行链接/截图
+- [ ] 附上 **Sonar Quality Gate** 结果链接（新代码绿灯）
+- [ ] 附上 **Sentry Release** 链接（用于回溯本次崩溃/错误）
 
 ---
 

@@ -72,7 +72,8 @@
       "Bash(shellcheck:*)",
       "Bash(where shellcheck)",
       "Bash(where actionlint)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(sync)"
     ],
     "deny": [],
     "ask": [],

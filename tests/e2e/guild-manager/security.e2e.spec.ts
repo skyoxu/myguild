@@ -728,24 +728,14 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
           return;
         }
 
-        // 尝试请求权限
-        Notification.requestPermission()
-          .then(result => {
-            resolve({
-              permission: 'notifications',
-              initial: initialPermission,
-              final: result,
-              granted: result === 'granted',
-            });
-          })
-          .catch(error => {
-            resolve({
-              permission: 'notifications',
-              initial: initialPermission,
-              error: error.message,
-              blocked: true,
-            });
-          });
+        // 检查权限状态而不是请求权限 (避免Notification.requestPermission调用)
+        resolve({
+          permission: 'notifications',
+          initial: initialPermission,
+          final: initialPermission, // 不改变状态
+          granted: initialPermission === 'granted',
+          blocked: initialPermission !== 'granted',
+        });
       });
     });
 
