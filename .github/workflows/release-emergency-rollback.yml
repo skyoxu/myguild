@@ -141,7 +141,7 @@ jobs:
                 --previous-version="$PREV_GA_VERSION" \
                 --manifest="artifacts/manifest.json" \
                 --reason="${{ inputs.reason }}" \
-                "$([ -n "$WEBHOOK_URL" ] && echo "--notify")")
+                ${WEBHOOK_URL:+--notify})
               rollback_exit_code=$?
               set -e
               
@@ -179,7 +179,7 @@ jobs:
             --previous-version="$PREV_GA_VERSION" \
             --manifest="artifacts/manifest.json" \
             --reason="${{ inputs.reason }}" \
-            "$([ -n "$WEBHOOK_URL" ] && echo "--notify")")
+            ${WEBHOOK_URL:+--notify})
 
           echo "rollback_result=$result" >> $GITHUB_OUTPUT
           echo "Successfully rolled back $feed_file"
