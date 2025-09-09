@@ -153,7 +153,7 @@ jobs:
               
               if [ "$rollback_exit_code" -eq 0 ]; then
                 echo "Successfully rolled back $feed_file"
-                rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": true, \"result\": $result}" '. + [$item]')
+                rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": true, \"result\": \"$result\"}" '. + [$item]')
               else
                 echo "Failed to rollback $feed_file (exit code: $rollback_exit_code)"
                 rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": false, \"error\": \"Exit code $rollback_exit_code\"}" '. + [$item]')
@@ -193,7 +193,7 @@ jobs:
             --reason="${{ inputs.reason }}" \
             $notify_flag)
 
-          echo "rollback_result=$result" >> $GITHUB_OUTPUT
+          echo "rollback_result=$result" >> "$GITHUB_OUTPUT"
           echo "Successfully rolled back $feed_file"
 
       - name: 'Stop all running release workflows'
