@@ -1,5 +1,6 @@
 /* 自动更新链路安全配置 */
-import { autoUpdater } from 'electron-updater';
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
 import { app, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';

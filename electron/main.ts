@@ -1,8 +1,8 @@
 import { app, BrowserWindow, session, protocol } from 'electron';
 import { join } from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { secureAutoUpdater } from './security/auto-updater';
-import { CSPManager } from './security/csp-policy';
+import { secureAutoUpdater } from './security/auto-updater.js';
+import { CSPManager } from './security/csp-policy.js';
 
 const APP_SCHEME = 'app';
 
