@@ -24,11 +24,8 @@ test.describe('CSP策略安全验证', () => {
     });
     page = await electronApp.firstWindow();
 
-    // 使用更健壮的等待策略
-    await page.waitForFunction(
-      () => ['interactive', 'complete'].includes(document.readyState),
-      { timeout: 15000 }
-    );
+    // 使用官方推荐的等待策略
+    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
     // 确保页面不是chrome-error://
     const url = page.url();

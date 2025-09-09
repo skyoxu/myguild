@@ -22,11 +22,8 @@ test.beforeAll(async () => {
   electronApp = app;
   mainWindow = page;
 
-  // 使用更健壮的等待策略
-  await mainWindow.waitForFunction(
-    () => ['interactive', 'complete'].includes(document.readyState),
-    { timeout: 15000 }
-  );
+  // 使用官方推荐的等待策略
+  await mainWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
   // 确保页面不是chrome-error://
   const url = mainWindow.url();

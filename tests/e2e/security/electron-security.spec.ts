@@ -22,6 +22,7 @@ import {
   SecurityConfig,
   getSecurityHealthCheck,
 } from '../../../electron/security';
+import { attemptAndAssertBlocked } from '../../helpers/nav-assert';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -237,25 +238,9 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
       console.log('[Test] 测试新窗口打开控制...');
 
       // 尝试打开新窗口
-      const windowOpenResult = await mainWindow.evaluate(() => {
-        try {
-          const newWindow = window.open('https://malicious-site.com', '_blank');
-          return {
-            success: !!newWindow,
-            blocked: !newWindow,
-          };
-        } catch (error) {
-          return {
-            success: false,
-            blocked: true,
-            error: error.message,
-          };
-        }
+      await attemptAndAssertBlocked(mainWindow, () => {
+        window.open('https://malicious-site.com', '_blank');
       });
-
-      // 验证新窗口被阻止
-      expect(windowOpenResult.blocked).toBe(true);
-      expect(windowOpenResult.success).toBe(false);
 
       console.log('[Test] ✅ 新窗口打开控制验证通过');
     });
