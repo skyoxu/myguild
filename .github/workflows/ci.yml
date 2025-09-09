@@ -61,29 +61,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔍 Actionlint 工作流语法检查
-        shell: pwsh
-        run: |
-          # 下载 actionlint 二进制文件 v1.7.7
-          $version = "v1.7.7"
-          $url = "https://github.com/rhymond/actionlint/releases/download/$version/actionlint_1.7.7_windows_amd64.zip"
-          $zipPath = "$env:TEMP\actionlint.zip"
-          $extractPath = "$env:TEMP\actionlint"
-          
-          Write-Host "下载 actionlint $version..."
-          Invoke-WebRequest -Uri $url -OutFile $zipPath
-          
-          Write-Host "解压 actionlint..."
-          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-          
-          Write-Host "运行 actionlint 检查..."
-          $actionlintPath = "$extractPath\actionlint.exe"
-          & $actionlintPath .github/workflows/*.yml
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Actionlint 检查失败 (exit code: $LASTEXITCODE)"
-            exit $LASTEXITCODE
-          }
-          Write-Host "✅ Actionlint 检查通过"
+        uses: raven-actions/actionlint@v2
+        with:
+          actionlint_flags: "-color"
 
       - name: 📦 设置 Node.js (守护脚本)
         uses: actions/setup-node@v4
