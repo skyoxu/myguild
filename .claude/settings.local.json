@@ -67,7 +67,9 @@
       "Bash(gh workflow:*)",
       "Bash(npm audit:*)",
       "Bash(npm run prettier:check:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp__zen-mcp-server__challenge",
+      "Bash(shellcheck:*)"
     ],
     "deny": [],
     "ask": [],
