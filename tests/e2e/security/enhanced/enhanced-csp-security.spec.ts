@@ -78,7 +78,7 @@ test.describe('CSP策略安全验证', () => {
 
   // TODO: CSP违规报告功能测试 - 需要实现
   test('CSP违规报告功能', async () => {
-    test.skipIf(true, '测试用例需要实现');
+    test.fixme(true, '测试用例需要实现');
     expect(true).toBe(true);
   });
 

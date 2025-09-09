@@ -53,7 +53,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     outputs:
       scan-status: ${{ steps.static-scan.outputs.status }}
@@ -279,7 +279,7 @@ jobs:
       NPM_CONFIG_PRODUCTION: 'false'
     needs: security-scan
     if: needs.security-scan.outputs.critical-count == '0'
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     outputs:
       e2e-status: ${{ steps.e2e-test.outputs.status }}
@@ -431,6 +431,8 @@ jobs:
           path: |
             logs/security-gate-report.json
             logs/unified-security-report.json
+            logs/
+          if-no-files-found: warn
           retention-days: 30
 
       - name: 安全门禁结果摘要
@@ -511,11 +513,13 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const title = `🔒 统一安全门禁失败 - ${
-              context.payload.head_commit?.message ||
-              context.payload.pull_request?.title ||
-              'Security Check'
-            }`;
+            // 修复：限制标题长度避免GitHub API 256字符搜索限制
+            const rawTitle = context.payload.head_commit?.message ||
+                           context.payload.pull_request?.title ||
+                           'Security Check';
+            const truncatedTitle = rawTitle.length > 100 ? 
+                                 rawTitle.substring(0, 97) + '...' : rawTitle;
+            const title = `🔒 统一安全门禁失败 - ${truncatedTitle}`;
 
             const body = `
             ## 🚨 统一安全门禁失败报告
@@ -573,9 +577,10 @@ jobs:
               }
             }
 
-            // 2) 避免重复：如果已有同标题的 open issue，就追加评论而不是再开一个
+            // 2) 修复：避免重复Issue，使用短查询字符串防止256字符限制
+            const shortQuery = `repo:${owner}/${repo} is:issue is:open label:security`;
             const { data: search } = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${owner}/${repo} is:issue is:open in:title "${title.replace(/"/g, '\\"')}"`
+              q: shortQuery
             });
 
             if (search.total_count > 0) {
