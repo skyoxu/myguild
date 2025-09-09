@@ -69,7 +69,10 @@
       "Bash(npm run prettier:check:*)",
       "Bash(npm run:*)",
       "mcp__zen-mcp-server__challenge",
-      "Bash(shellcheck:*)"
+      "Bash(shellcheck:*)",
+      "Bash(where shellcheck)",
+      "Bash(where actionlint)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": [],
