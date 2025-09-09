@@ -101,6 +101,7 @@ jobs:
           }
 
       - name: 'Pre-rollback validation'
+        shell: bash
         run: |
           echo "Validating rollback prerequisites..."
 
@@ -124,6 +125,7 @@ jobs:
       - name: 'Execute rollback for all feeds'
         if: inputs.feed_files == 'all'
         id: rollback_all
+        shell: bash
         run: |
           echo "Executing rollback for all feed files..."
 
@@ -162,6 +164,7 @@ jobs:
       - name: 'Execute rollback for single feed'
         if: inputs.feed_files != 'all'
         id: rollback_single
+        shell: bash
         run: |
           feed_file="${{ inputs.feed_files }}"
           echo "Executing rollback for $feed_file..."
@@ -182,6 +185,7 @@ jobs:
           echo "Successfully rolled back $feed_file"
 
       - name: 'Stop all running release workflows'
+        shell: bash
         run: |
           echo "Stopping all running release workflows..."
 
@@ -209,6 +213,7 @@ jobs:
         if: always()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        shell: bash
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "Warning: WEBHOOK_URL not configured, skipping notification"
@@ -246,6 +251,7 @@ jobs:
             }" || echo "Webhook notification failed (non-critical)"
 
       - name: 'Commit rollback changes'
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -274,6 +280,7 @@ jobs:
           fi
 
       - name: 'Push emergency changes'
+        shell: bash
         run: |
           echo "Pushing emergency changes..."
           git push origin ${{ github.ref }}
