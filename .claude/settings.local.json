@@ -64,7 +64,10 @@
       "Bash(trufflehog:*)",
       "Bash(npm run typecheck:*)",
       "Bash(npm run build:*)",
-      "Bash(gh workflow:*)"
+      "Bash(gh workflow:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run prettier:check:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": [],
