@@ -164,7 +164,7 @@ jobs:
             fi
           done
 
-          echo "rollback_results=$rollback_results" >> $GITHUB_OUTPUT
+          printf "rollback_results=%s\n" "${rollback_results}" >> "$GITHUB_OUTPUT"
           echo "All feed files processed successfully"
 
       - name: 'Execute rollback for single feed'
@@ -193,7 +193,7 @@ jobs:
             --reason="${{ inputs.reason }}" \
             "$notify_flag")
 
-          echo "rollback_result=$result" >> "$GITHUB_OUTPUT"
+          printf "rollback_result=%s\n" "${result}" >> "$GITHUB_OUTPUT"
           echo "Successfully rolled back $feed_file"
 
       - name: 'Stop all running release workflows'
