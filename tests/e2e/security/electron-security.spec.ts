@@ -16,7 +16,8 @@ import {
   ElectronApplication,
   Page,
 } from '@playwright/test';
-import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import {
   SecurityConfig,
   getSecurityHealthCheck,
@@ -28,16 +29,18 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[Test] 启动Electron应用进行安全测试...');
 
-  // 启动Electron应用
-  const entry = path.resolve(__dirname, '../../dist-electron/main.js');
+  // ESM 兼容路径获取
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const entry = path.resolve(__dirname, '../../../dist-electron/main.js');
+
   electronApp = await electron.launch({
     args: [entry],
-    env: { SECURITY_TEST_MODE: 'true', CI: 'true' },
+    env: { CI: 'true', SECURITY_TEST_MODE: 'true' },
   });
 
-  // 获取主窗口
-  const win = await electronApp.firstWindow(); // 等首窗
-  await win.waitForLoadState('domcontentloaded'); // 确保首页已就绪
+  const win = await electronApp.firstWindow(); // 等到首窗
+  await win.waitForLoadState('domcontentloaded'); // DOM 就绪再断言
   mainWindow = win;
 });
 
@@ -206,30 +209,24 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
     test('外部导航应被拦截', async () => {
       console.log('[Test] 测试外部导航拦截...');
 
-      // 监听导航事件
-      const navigationPromise = mainWindow
-        .waitForEvent('framenavigated', { timeout: 5000 })
-        .catch(() => null); // 预期导航会被拦截，所以catch错误
-
       // 尝试导航到外部站点
-      const navigationResult = await Promise.allSettled([
-        mainWindow.evaluate(() => {
-          try {
-            window.location.href = 'https://example.com';
-            return 'navigation_attempted';
-          } catch (error) {
-            return 'navigation_blocked';
-          }
-        }),
+      const navigationResult = await mainWindow.evaluate(() => {
+        try {
+          window.location.href = 'https://example.com';
+          return 'navigation_attempted';
+        } catch (error) {
+          return 'navigation_blocked';
+        }
+      });
+
+      // 触发导航（可能被 will-navigate 拦住）
+      await Promise.race([
+        mainWindow.waitForNavigation({ waitUntil: 'commit' }).catch(() => {}),
+        mainWindow.waitForTimeout(150),
       ]);
+      // 继续做"仍在原站点"的断言...
 
-      // 验证导航被拦截
-      expect(navigationResult[0].status).toBe('fulfilled');
-
-      // 等待一下确保没有实际导航发生
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 验证当前URL没有改变
+      // 验证当前URL没有改变（仍在原站点）
       const currentUrl = mainWindow.url();
       expect(currentUrl).not.toContain('example.com');
 

@@ -260,6 +260,10 @@ jobs:
         env:
           CI: true
           # Windows下无需xvfb，Electron可直接运行
+          # 禁用GPU加速确保CI稳定性
+          ELECTRON_DISABLE_GPU: true
+          # 安全测试模式标记
+          SECURITY_TEST_MODE: true
 
       - name: 📋 上传安全测试报告
         if: always()

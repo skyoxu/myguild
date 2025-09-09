@@ -17,9 +17,9 @@ export default defineConfig({
   /* 运行配置 */
   fullyParallel: false, // 配合单线程执行
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   workers: 1, // 强制单线程，避免Electron进程冲突
-  timeout: 30_000, // 恢复生产环境阈值
+  timeout: 90_000, // CI 首窗+协议映射更宽裕
 
   /* 报告配置 */
   reporter: [
@@ -104,29 +104,10 @@ export default defineConfig({
     {
       name: 'electron-security-audit',
       testMatch: ['**/security/**/*.spec.ts', '**/security-*.spec.ts'],
+      timeout: 90_000, // CI 首窗+协议映射更宽裕
       use: {
-        ...devices['Desktop Chrome'],
-        // 安全审计专用配置 - 更严格的安全设置
-        launchOptions: {
-          executablePath: undefined,
-          args: [
-            '--enable-features=ElectronSerialChooser',
-            '--disable-features=VizDisplayCompositor',
-            '--offline', // E2E网络隔离
-          ],
-          env: {
-            NODE_ENV: 'test',
-            CI: 'true',
-            SECURITY_TEST_MODE: 'true',
-          },
-        },
-        extraHTTPHeaders: {
-          'X-Security-Test': 'csp-validation',
-          'X-Context-Isolation': 'strict',
-          'X-Node-Integration': 'disabled',
-        },
+        trace: 'on-first-retry', // trace: 'on-first-retry' 可在失败时产出 trace.zip
       },
-      timeout: 120000, // 首屏加载+协议映射更稳
     },
 
     {
