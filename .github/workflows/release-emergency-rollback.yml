@@ -60,6 +60,7 @@ jobs:
 
     steps:
       - name: 'Emergency rollback initiated'
+        shell: bash
         run: |
           echo "=== Emergency rollback initiated ==="
           echo "Details:"
