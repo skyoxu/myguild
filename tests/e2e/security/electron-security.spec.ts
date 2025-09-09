@@ -16,6 +16,7 @@ import {
   ElectronApplication,
   Page,
 } from '@playwright/test';
+import * as path from 'node:path';
 import {
   SecurityConfig,
   getSecurityHealthCheck,
@@ -28,19 +29,16 @@ test.beforeAll(async () => {
   console.log('[Test] 启动Electron应用进行安全测试...');
 
   // 启动Electron应用
+  const entry = path.resolve(__dirname, '../../dist-electron/main.js');
   electronApp = await electron.launch({
-    args: ['./dist-electron/main.js'],
-    timeout: 60000,
-    env: {
-      NODE_ENV: 'test',
-      CI: 'true',
-      SECURITY_TEST_MODE: 'true',
-    },
+    args: [entry],
+    env: { SECURITY_TEST_MODE: 'true', CI: 'true' },
   });
 
   // 获取主窗口
-  mainWindow = await electronApp.firstWindow();
-  await mainWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });
+  const win = await electronApp.firstWindow(); // 等首窗
+  await win.waitForLoadState('domcontentloaded'); // 确保首页已就绪
+  mainWindow = win;
 });
 
 test.afterAll(async () => {

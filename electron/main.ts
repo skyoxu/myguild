@@ -1,4 +1,7 @@
 import { app, BrowserWindow, session, protocol } from 'electron';
+// CI 下为稳态，需在 app ready 之前禁用 GPU 加速
+//（必须在 ready 之前调用，否则无效）
+if (process.env.CI === 'true') app.disableHardwareAcceleration();
 import { join } from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { secureAutoUpdater } from './security/auto-updater.js';
@@ -35,7 +38,8 @@ function createSecureBrowserWindow(): BrowserWindow {
     show: true,
     autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, '../preload.js'),
+      // 编译后 main.js 与 preload.js 同在 dist-electron 目录
+      preload: join(__dirname, 'preload.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -237,7 +241,8 @@ app.whenReady().then(() => {
   // 1) 注册app://协议映射
   protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
     const url = request.url.replace('app://', '');
-    cb({ path: join(__dirname, '../renderer', url) });
+    // 生产模式页面产于 dist/
+    cb({ path: join(__dirname, '../dist', url) });
   });
 
   // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"

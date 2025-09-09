@@ -126,7 +126,7 @@ export default defineConfig({
           'X-Node-Integration': 'disabled',
         },
       },
-      timeout: 60000,
+      timeout: 120000, // 首屏加载+协议映射更稳
     },
 
     {
