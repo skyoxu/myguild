@@ -199,7 +199,9 @@ jobs:
 
           if [ -n "$running_workflows" ]; then
             echo "Found running release workflows, cancelling..."
-            for run_id in $running_workflows; do
+            # Convert string to array for safe iteration (fixes SC2086)
+          IFS=' ' read -ra workflow_array <<< "$running_workflows"
+          for run_id in "${workflow_array[@]}"; do
               echo "Cancelling workflow run: $run_id"
               gh run cancel "$run_id" --repo "${{ github.repository }}" || echo "Failed to cancel (non-critical)"
             done
