@@ -191,7 +191,7 @@ jobs:
 
           # Find running release workflows
           running_workflows=$(gh run list \
-            --repo ${{ github.repository }} \
+            --repo "${{ github.repository }}" \
             --status in_progress \
             --workflow "Release Ramp" \
             --json databaseId,headBranch \
@@ -201,7 +201,7 @@ jobs:
             echo "Found running release workflows, cancelling..."
             for run_id in $running_workflows; do
               echo "Cancelling workflow run: $run_id"
-              gh run cancel $run_id --repo ${{ github.repository }} || echo "Failed to cancel (non-critical)"
+              gh run cancel "$run_id" --repo "${{ github.repository }}" || echo "Failed to cancel (non-critical)"
             done
           else
             echo "No running release workflows found"
