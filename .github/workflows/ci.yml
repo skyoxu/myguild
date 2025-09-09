@@ -640,7 +640,7 @@ jobs:
       - name: ⚡ 事件循环延迟基准
         shell: bash
         run: |
-          node scripts/benchmarks/event-loop-latency.ts
+          npx tsx scripts/benchmarks/event-loop-latency.ts
           # TODO: 配置性能回归阈值检查
 
       - name: 📊 性能指标收集
