@@ -25,14 +25,14 @@ export async function launchApp(): Promise<ElectronApplication> {
 }
 
 export async function launchAppWithPage(
-  electron?,
+  electronOverride?,
   entry?
 ): Promise<{
   app: ElectronApplication;
   page: Page;
 }> {
   const main = entry || resolve(process.cwd(), 'dist-electron', 'main.js'); // 构建后入口
-  const app = await electron.launch({
+  const app = await (electronOverride || electron).launch({
     args: [main],
     env: { CI: 'true', SECURITY_TEST_MODE: 'true' },
     cwd: process.cwd(),

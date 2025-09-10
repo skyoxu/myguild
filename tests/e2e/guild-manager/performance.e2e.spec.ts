@@ -4,7 +4,7 @@
  */
 
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
-import { launchApp } from '../../helpers/launch';
+import { launchAppWithPage } from '../../helpers/launch';
 
 // 性能指标收集器
 class PerformanceCollector {
@@ -43,7 +43,7 @@ let testApp: { electronApp: ElectronApplication; page: Page };
 
 test.beforeAll(async () => {
   // 使用统一启动器
-  const { app, page } = await launchApp();
+  const { app, page } = await launchAppWithPage();
 
   testApp = { electronApp: app, page };
 });

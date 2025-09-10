@@ -1,10 +1,10 @@
 // tests/e2e/security/smoke-csp-header-or-meta.spec.ts
 import { test, expect } from '@playwright/test';
-import { launchApp } from '../../helpers/launch';
+import { launchAppWithPage } from '../../helpers/launch';
 
 test('CSP 以响应头或<meta>其一存在即可', async () => {
   // 使用统一启动器
-  const { app, page } = await launchApp();
+  const { app, page } = await launchAppWithPage();
 
   // 1) readyState 守护 + 非 chrome-error - 使用官方推荐的等待策略
   await page.waitForLoadState('domcontentloaded', { timeout: 15000 });

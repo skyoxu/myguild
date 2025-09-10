@@ -7,7 +7,7 @@
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { EventEmitter } from 'events';
 import { PerformanceTestUtils } from '../../utils/PerformanceTestUtils';
-import { launchApp } from '../../helpers/launch';
+import { launchAppWithPage } from '../../helpers/launch';
 
 // 测试应用实例类型
 interface TestApp {
@@ -20,7 +20,7 @@ let testApp: TestApp;
 
 test.beforeAll(async () => {
   // 使用统一启动器
-  const { app, page } = await launchApp();
+  const { app, page } = await launchAppWithPage();
 
   testApp = { electronApp: app, page };
 });
