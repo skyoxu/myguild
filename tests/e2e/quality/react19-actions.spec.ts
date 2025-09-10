@@ -12,7 +12,7 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[React19 Actions Test] 启动Electron应用...');
 
-  electronApp = await launchApp().then(result => result.app);
+  electronApp = await launchApp();
 
   mainWindow = await electronApp.firstWindow();
   await mainWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });

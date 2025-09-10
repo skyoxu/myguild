@@ -24,7 +24,7 @@ test.describe('游戏竖切端到端测试', () => {
 
   test.beforeEach(async () => {
     console.log('🚀 启动竖切测试 - 初始化 Electron 应用...');
-    electronApp = await launchApp().then(result => result.app);
+    electronApp = await launchApp();
 
     firstWindow = await electronApp.firstWindow({
       timeout: 20000,
@@ -277,7 +277,7 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切测试性能基准验证', async () => {
     console.log('⏱️ 测试竖切性能基准');
 
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
     await firstWindow.waitForLoadState('domcontentloaded');
@@ -319,7 +319,7 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切内存使用监控', async () => {
     console.log('🧠 测试竖切内存使用情况');
 
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
     await firstWindow.waitForLoadState('domcontentloaded');

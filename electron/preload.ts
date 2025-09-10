@@ -19,13 +19,10 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld(
       'electronAPI',
       Object.freeze({
-        // 基础系统信息
         platform: process.platform,
         version: process.versions.electron,
         isSandboxed: process.sandboxed,
         contextIsolated: process.contextIsolated,
-
-        // 扩展@electron-toolkit提供的API
         ...electronAPI,
       })
     );

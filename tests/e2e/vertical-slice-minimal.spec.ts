@@ -14,7 +14,7 @@ test.describe('竖切测试 - 最小版本', () => {
   test('基础应用启动和UI导航', async () => {
     console.log('🚀 启动最小竖切测试...');
 
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     const firstWindow = await electronApp.firstWindow({
       timeout: 20000,
@@ -91,7 +91,7 @@ test.describe('竖切测试 - 最小版本', () => {
   test('基础存储和数据功能验证', async () => {
     console.log('💾 测试基础存储功能...');
 
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     const firstWindow = await electronApp.firstWindow({
       timeout: 20000,
@@ -138,7 +138,7 @@ test.describe('竖切测试 - 最小版本', () => {
 
     const startTime = Date.now();
 
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     const firstWindow = await electronApp.firstWindow({
       timeout: 20000,

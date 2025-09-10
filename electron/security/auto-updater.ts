@@ -1,6 +1,4 @@
 /* 自动更新链路安全配置 */
-import pkg from 'electron-updater';
-const { autoUpdater } = pkg;
 import { app, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -44,7 +42,7 @@ const PRODUCTION_UPDATE_CONFIG: UpdateSecurityConfig = {
 
   // 📝 安全审计
   enableUpdateLogs: true,
-  logFilePath: path.join(app.getPath('logs'), 'security-updates.log'),
+  logFilePath: '', // 延迟到app ready后设置
 };
 
 /**
@@ -62,13 +60,15 @@ const DEVELOPMENT_UPDATE_CONFIG: UpdateSecurityConfig = {
   autoInstallOnAppQuit: true, // 开发环境自动安装
 
   enableUpdateLogs: true,
-  logFilePath: path.join(app.getPath('logs'), 'dev-updates.log'),
+  logFilePath: '', // 延迟到app ready后设置
 };
 
 class SecureAutoUpdater {
   private config: UpdateSecurityConfig;
   private isProduction: boolean;
   private updateLogStream: fs.WriteStream | null = null;
+  private initialized: boolean = false;
+  private autoUpdater: any = null;
 
   constructor(isProduction: boolean = process.env.NODE_ENV === 'production') {
     this.isProduction = isProduction;
@@ -76,7 +76,21 @@ class SecureAutoUpdater {
       ? PRODUCTION_UPDATE_CONFIG
       : DEVELOPMENT_UPDATE_CONFIG;
 
+    // 不在构造函数中初始化，延迟到显式调用
+  }
+
+  /**
+   * 延迟初始化方法 - 必须在app ready后调用
+   */
+  public async initialize(): Promise<void> {
+    if (this.initialized) return;
+
+    // 动态导入electron-updater
+    const pkg = await import('electron-updater');
+    this.autoUpdater = pkg.autoUpdater;
+
     this.initializeSecureUpdater();
+    this.initialized = true;
   }
 
   /**
@@ -113,7 +127,7 @@ class SecureAutoUpdater {
 
     // 设置更新源（GitHub Releases）
     if (this.config.provider === 'github') {
-      autoUpdater.setFeedURL({
+      this.autoUpdater.setFeedURL({
         provider: 'github',
         owner: 'your-username', // 从环境变量或配置获取
         repo: 'vitegame',
@@ -121,7 +135,7 @@ class SecureAutoUpdater {
         token: process.env.GITHUB_TOKEN, // 可选：私有仓库需要
       });
     } else {
-      autoUpdater.setFeedURL({
+      this.autoUpdater.setFeedURL({
         provider: this.config.provider,
         url: this.config.feedUrl,
       });
@@ -135,12 +149,12 @@ class SecureAutoUpdater {
    */
   private configureSecurityOptions(): void {
     // 代码签名验证
-    autoUpdater.autoDownload = this.config.autoDownload;
-    autoUpdater.autoInstallOnAppQuit = this.config.autoInstallOnAppQuit;
+    this.autoUpdater.autoDownload = this.config.autoDownload;
+    this.autoUpdater.autoInstallOnAppQuit = this.config.autoInstallOnAppQuit;
 
     // 设置最小版本（防止降级攻击）
     if (!this.config.allowDowngrade) {
-      autoUpdater.allowDowngrade = false;
+      this.autoUpdater.allowDowngrade = false;
       // currentVersion是只读属性，通过allowDowngrade控制降级
     }
 
@@ -157,12 +171,12 @@ class SecureAutoUpdater {
    */
   private setupEventListeners(): void {
     // 检查更新
-    autoUpdater.on('checking-for-update', () => {
+    this.autoUpdater.on('checking-for-update', () => {
       this.logSecurityEvent('info', '正在检查更新...');
     });
 
     // 发现可用更新
-    autoUpdater.on('update-available', info => {
+    this.autoUpdater.on('update-available', (info: any) => {
       this.logSecurityEvent('info', '发现可用更新', {
         version: info.version,
         releaseDate: info.releaseDate,
@@ -176,14 +190,14 @@ class SecureAutoUpdater {
     });
 
     // 无可用更新
-    autoUpdater.on('update-not-available', () => {
+    this.autoUpdater.on('update-not-available', () => {
       this.logSecurityEvent('info', '当前已是最新版本', {
         currentVersion: app.getVersion(),
       });
     });
 
     // 下载进度
-    autoUpdater.on('download-progress', progressObj => {
+    this.autoUpdater.on('download-progress', (progressObj: any) => {
       this.logSecurityEvent('info', '下载进度', {
         percent: progressObj.percent.toFixed(2),
         transferred: progressObj.transferred,
@@ -192,7 +206,7 @@ class SecureAutoUpdater {
     });
 
     // 下载完成
-    autoUpdater.on('update-downloaded', info => {
+    this.autoUpdater.on('update-downloaded', (info: any) => {
       this.logSecurityEvent('info', '更新下载完成', {
         version: info.version,
         downloadedFile: info.downloadedFile,
@@ -203,7 +217,7 @@ class SecureAutoUpdater {
     });
 
     // 错误处理
-    autoUpdater.on('error', error => {
+    this.autoUpdater.on('error', (error: any) => {
       this.logSecurityEvent('error', '自动更新错误', {
         error: error.message,
         stack: error.stack,
@@ -228,7 +242,7 @@ class SecureAutoUpdater {
     switch (response.response) {
       case 0: // 现在下载
         this.logSecurityEvent('info', '用户确认下载更新');
-        autoUpdater.downloadUpdate();
+        this.autoUpdater.downloadUpdate();
         break;
       case 1: // 稍后提醒
         this.logSecurityEvent('info', '用户选择稍后更新');
@@ -274,10 +288,10 @@ class SecureAutoUpdater {
 
     if (response.response === 0) {
       this.logSecurityEvent('info', '用户选择立即重启安装');
-      autoUpdater.quitAndInstall();
+      this.autoUpdater.quitAndInstall();
     } else {
       this.logSecurityEvent('info', '用户选择退出时安装');
-      autoUpdater.autoInstallOnAppQuit = true;
+      this.autoUpdater.autoInstallOnAppQuit = true;
     }
   }
 
@@ -288,6 +302,14 @@ class SecureAutoUpdater {
     if (!this.config.enableUpdateLogs) return;
 
     try {
+      // 设置logFilePath（延迟到app ready后）
+      if (!this.config.logFilePath) {
+        const logFileName = this.isProduction
+          ? 'security-updates.log'
+          : 'dev-updates.log';
+        this.config.logFilePath = path.join(app.getPath('logs'), logFileName);
+      }
+
       // 确保日志目录存在
       const logDir = path.dirname(this.config.logFilePath);
       if (!fs.existsSync(logDir)) {
@@ -334,8 +356,12 @@ class SecureAutoUpdater {
    * 手动检查更新
    */
   public checkForUpdates(): void {
+    if (!this.initialized) {
+      console.log('🔄 SecureAutoUpdater 未初始化，跳过更新检查');
+      return;
+    }
     this.logSecurityEvent('info', '手动检查更新');
-    autoUpdater.checkForUpdatesAndNotify();
+    this.autoUpdater.checkForUpdatesAndNotify();
   }
 
   /**

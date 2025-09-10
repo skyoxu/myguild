@@ -23,7 +23,7 @@ let page: Page;
 
 test.beforeAll(async () => {
   // 启动Electron应用
-  electronApp = await launchApp().then(result => result.app);
+  electronApp = await launchApp();
   page = await electronApp.firstWindow();
 });
 
@@ -42,7 +42,7 @@ test.describe('性能冒烟测试套件', () => {
         }
 
         const startTime = performance.now();
-        electronApp = await launchApp().then(result => result.app);
+        electronApp = await launchApp();
         page = await electronApp.firstWindow();
 
         // 等待应用完全加载

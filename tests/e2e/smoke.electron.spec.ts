@@ -15,16 +15,8 @@ let app: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // 启动构建后的 Electron 应用 - 使用绝对路径
-  const main = join(process.cwd(), 'dist-electron', 'main.js');
-  app = await electron.launch({
-    args: [main], // 绝对路径入口
-    env: {
-      NODE_ENV: 'test',
-      CI: 'true',
-      SECURITY_TEST_MODE: 'true', // 启用安全测试模式
-    },
-  });
+  // 使用统一的launchApp函数启动应用
+  app = await launchApp();
 
   // 等待主窗口加载
   page = await app.firstWindow();

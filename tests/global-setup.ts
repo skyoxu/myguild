@@ -52,7 +52,7 @@ async function globalSetup(config: FullConfig) {
 
   try {
     // 启动Electron进程进行基本验证
-    const electronApp = await launchApp().then(result => result.app);
+    const electronApp = await launchApp();
 
     // 获取主窗口
     const firstWindow = await electronApp.firstWindow({
