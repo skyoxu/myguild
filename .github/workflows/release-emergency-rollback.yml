@@ -89,20 +89,21 @@ jobs:
           NPM_CONFIG_PRODUCTION: 'true'
 
       - name: 'Install system tools'
-        shell: pwsh
+        shell: bash
         run: |
-          # Install jq tool on Windows runner using PowerShell instead of Linux apt-get
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
+          # Install jq tool on Windows runner using cross-platform approach
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "Installing jq tool..."
+            if command -v choco >/dev/null 2>&1; then
               choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
+            elif command -v winget >/dev/null 2>&1; then
               winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
+            else
+              echo "Warning: Neither choco nor winget available, manual jq installation may be required"
+            fi
+          else
+            echo "jq already available"
+          fi
 
       - name: 'Pre-rollback validation'
         shell: bash
