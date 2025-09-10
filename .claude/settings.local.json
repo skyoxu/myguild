@@ -85,7 +85,8 @@
       "mcp__zen-mcp-server__consensus",
       "Bash(do echo \"修复 $file\")",
       "Bash(git restore:*)",
-      "Bash(ELECTRON_ENABLE_LOGGING=1 DEBUG=electron* npx playwright test tests/e2e/security/session-ready.spec.ts --project=electron-security-audit)"
+      "Bash(ELECTRON_ENABLE_LOGGING=1 DEBUG=electron* npx playwright test tests/e2e/security/session-ready.spec.ts --project=electron-security-audit)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": [],
