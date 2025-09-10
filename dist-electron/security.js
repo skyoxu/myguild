@@ -1,3 +1,12 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.createSecureBrowserWindow = createSecureBrowserWindow;
+exports.hardenWindow = hardenWindow;
+exports.installSecurityHeaders = installSecurityHeaders;
+exports.setupCSPReporting = setupCSPReporting;
+exports.initializeSecurity = initializeSecurity;
+exports.validateSecurityConfig = validateSecurityConfig;
+exports.getSecurityHealthCheck = getSecurityHealthCheck;
 /**
  * Electron安全基线实现 - 三层拦截与沙箱策略
  * 实现ADR-0002规定的安全防护措施
@@ -7,12 +16,12 @@
  * 2. 导航与权限层：拦截外部导航、弹窗控制、权限管理
  * 3. CSP响应头层：Content Security Policy + COOP/COEP/Permissions Policy
  */
-import { BrowserWindow, session, app, shell } from 'electron';
+const electron_1 = require('electron');
 /**
  * 第一层：安全BrowserWindow配置
  * 确保所有窗口都遵循严格的安全基线
  */
-export function createSecureBrowserWindow(options = {}) {
+function createSecureBrowserWindow(options = {}) {
   const secureOptions = {
     ...options,
     webPreferences: {
@@ -30,13 +39,13 @@ export function createSecureBrowserWindow(options = {}) {
       preload: options.webPreferences?.preload || undefined,
     },
   };
-  return new BrowserWindow(secureOptions);
+  return new electron_1.BrowserWindow(secureOptions);
 }
 /**
  * 第二层：导航与权限拦截
  * 对单个窗口应用三项拦截策略
  */
-export function hardenWindow(window) {
+function hardenWindow(window) {
   // 1. 窗口/弹窗拦截
   window.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[Security] 窗口打开请求被拦截: ${url}`);
@@ -50,7 +59,7 @@ export function hardenWindow(window) {
       return { action: 'allow' };
     }
     // 外部链接通过系统浏览器打开
-    shell.openExternal(url);
+    electron_1.shell.openExternal(url);
     return { action: 'deny' };
   });
   // 2. 导航拦截
@@ -96,16 +105,16 @@ export function hardenWindow(window) {
       !redirectUrl.startsWith('file://')
     ) {
       event.preventDefault();
-      shell.openExternal(redirectUrl);
+      electron_1.shell.openExternal(redirectUrl);
     }
   });
 }
 /**
  * 第三层：CSP响应头安全策略
  * 安装全局安全头，包括CSP、COOP、COEP、Permissions-Policy
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function installSecurityHeaders() {
-  const ses = session.defaultSession;
+function installSecurityHeaders(ses) {
   ses.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = details.responseHeaders || {};
     // Content Security Policy - 核心安全策略
@@ -145,9 +154,9 @@ export function installSecurityHeaders() {
 /**
  * CSP违规报告处理
  * 收集和监控CSP违规事件
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function setupCSPReporting() {
-  const ses = session.defaultSession;
+function setupCSPReporting(ses) {
   ses.webRequest.onBeforeRequest((details, callback) => {
     // 监控可疑的请求模式 - 避免使用javascript:协议字符串
     const url = details.url.toLowerCase();
@@ -166,20 +175,21 @@ export function setupCSPReporting() {
 /**
  * 安全初始化 - 应用启动时调用
  * 设置全局安全策略和事件监听
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function initializeSecurity() {
+function initializeSecurity(ses) {
   console.log('[Security] 初始化Electron安全基线...');
   // 安装全局安全头
-  installSecurityHeaders();
+  installSecurityHeaders(ses);
   // 设置CSP违规监控
-  setupCSPReporting();
+  setupCSPReporting(ses);
   // 应用级安全事件监听
-  app.on('web-contents-created', (_event, contents) => {
+  electron_1.app.on('web-contents-created', (_event, contents) => {
     console.log('[Security] 新的web contents创建，应用安全策略');
     // 使用新的setWindowOpenHandler API替代废弃的new-window事件
     contents.setWindowOpenHandler(({ url }) => {
       console.log(`[Security] 外部链接请求: ${url}`);
-      shell.openExternal(url);
+      electron_1.shell.openExternal(url);
       return { action: 'deny' };
     });
     contents.on('will-attach-webview', event => {
@@ -189,7 +199,7 @@ export function initializeSecurity() {
   });
   console.log('[Security] ✅ Electron安全基线初始化完成');
 }
-export function validateSecurityConfig(window) {
+function validateSecurityConfig(window) {
   // 从BrowserWindow选项获取webPreferences配置
   const options = window.webContents.browserWindowOptions?.webPreferences || {};
   return {
@@ -205,7 +215,7 @@ export function validateSecurityConfig(window) {
  * 安全健康检查
  * 返回当前安全配置的合规状态
  */
-export function getSecurityHealthCheck(window) {
+function getSecurityHealthCheck(window) {
   const config = validateSecurityConfig(window);
   const violations = [];
   // 检查必需的安全配置

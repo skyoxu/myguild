@@ -138,21 +138,26 @@ class SecurityPolicyManager {
 
   /**
    * 应用统一安全策略到窗口
+   * ✅ 按cifix1.txt建议：通过参数传入Session，避免在模块导入时访问defaultSession
    */
-  applySecurityPolicies(window: BrowserWindow): void {
-    this.setupPermissionHandler();
+  applySecurityPolicies(
+    window: BrowserWindow,
+    ses: typeof session.defaultSession
+  ): void {
+    this.setupPermissionHandler(ses);
     this.setupNavigationHandler(window);
     this.setupWindowOpenHandler(window);
-    this.setupWebRequestFiltering();
+    this.setupWebRequestFiltering(ses);
 
     console.log('✅ 安全策略已应用到窗口');
   }
 
   /**
    * 统一权限请求处理器
+   * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
    */
-  private setupPermissionHandler(): void {
-    session.defaultSession.setPermissionRequestHandler(
+  private setupPermissionHandler(ses: typeof session.defaultSession): void {
+    ses.setPermissionRequestHandler(
       (_webContents, permission, callback, details) => {
         const requestingOrigin = new URL(details.requestingUrl).origin;
 
@@ -295,9 +300,10 @@ class SecurityPolicyManager {
 
   /**
    * Web请求过滤
+   * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
    */
-  private setupWebRequestFiltering(): void {
-    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+  private setupWebRequestFiltering(ses: typeof session.defaultSession): void {
+    ses.webRequest.onBeforeRequest((details, callback) => {
       const url = new URL(details.url);
 
       // 允许本地资源

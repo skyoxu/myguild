@@ -1,3 +1,4 @@
+'use strict';
 /**
  * CSP统一策略管理器
  *
@@ -7,7 +8,9 @@
  * - 提供策略验证和一致性检查
  * - 与现有安全基础设施集成
  */
-export class CSPManager {
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.cspManager = exports.CSPManager = void 0;
+class CSPManager {
   static BASE_POLICY = {
     'default-src': ["'none'"],
     'script-src': ["'self'"],
@@ -179,7 +182,8 @@ export class CSPManager {
     return directives;
   }
 }
+exports.CSPManager = CSPManager;
 /**
  * CSP管理器单例
  */
-export const cspManager = new CSPManager();
+exports.cspManager = new CSPManager();

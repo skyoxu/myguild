@@ -8,6 +8,19 @@ import { CSPManager } from './security/csp-policy';
 //（必须在 ready 之前调用，否则无效）
 if (process.env.CI === 'true') app.disableHardwareAcceleration();
 
+// ✅ 添加关键崩溃和加载失败日志（按cifix1.txt建议）
+app.on('render-process-gone', (_e, _wc, d) => {
+  console.error('[main] render-process-gone:', d.reason, d.exitCode);
+});
+app.on('child-process-gone', (_e, d) => {
+  console.error('[main] child-process-gone:', d.reason, d.exitCode);
+});
+app.on('web-contents-created', (_e, wc) => {
+  wc.on('did-fail-load', (_e2, ec, ed) => {
+    console.error('[main] did-fail-load:', ec, ed);
+  });
+});
+
 // CommonJS中的__dirname是内置的，无需声明
 
 const APP_SCHEME = 'app';
@@ -35,17 +48,21 @@ export const SECURITY_PREFERENCES = {
 } as const;
 
 function createSecureBrowserWindow() {
+  const isDev = !!process.env.VITE_DEV_SERVER_URL;
+
   const win = new BrowserWindow({
     width: 1024,
     height: 768,
     show: false, // 延迟显示，等ready-to-show事件
     autoHideMenuBar: true,
     webPreferences: {
-      // 编译后 main.js 与 preload.js 同在 dist-electron 目录
-      preload: join(__dirname, 'preload.js'),
-      sandbox: true,
-      contextIsolation: true,
+      // ✅ 按cifix1.txt建议：确保preload路径在dev/prod环境均正确
+      preload: isDev
+        ? join(__dirname, '../preload.js') // dev环境：../preload.js
+        : join(__dirname, 'preload.js'), // prod环境：同目录preload.js
       nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
       webSecurity: true,
     },
   });
@@ -114,13 +131,18 @@ function createWindow(is: any): void {
     (global as any).__CSP_CONFIG__ = CSPManager.generateTestingConfig();
   }
 
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.once('ready-to-show', () => {
     console.log('🪟 [ready-to-show] 窗口内容就绪，开始显示');
     mainWindow.show();
     // 在测试模式下发出窗口就绪信号
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
       console.log('🧪 [测试模式] 窗口显示完成');
     }
+  });
+
+  // ✅ 按cifix1.txt建议：添加窗口级render-process-gone监听器
+  mainWindow.webContents.on('render-process-gone', (_e, d) => {
+    console.error('[window] render-process-gone:', d.reason, d.exitCode);
   });
 
   // 导航兜底：双重保障，即使有遗漏也阻断
@@ -186,22 +208,44 @@ function createWindow(is: any): void {
     }
   );
 
-  // 使用app://协议加载首页
-  console.log(`📂 [loadURL] 开始加载页面: ${indexUrl}`);
-  mainWindow.loadURL(indexUrl);
+  // ✅ 按cifix1.txt建议：区分dev/prod URL加载，避免白屏
+  const isDev = !!process.env.VITE_DEV_SERVER_URL;
+  if (isDev && process.env.VITE_DEV_SERVER_URL) {
+    console.log(
+      `📂 [loadURL] 开发环境加载: ${process.env.VITE_DEV_SERVER_URL}`
+    );
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    const indexUrl = 'app://index.html';
+    console.log(`📂 [loadURL] 生产环境加载: ${indexUrl}`);
+    mainWindow.loadURL(indexUrl);
+  }
 }
 
 // ❌ 移除（会在 app 未 ready 时访问 session）
 // 权限控制移到 whenReady 内部处理
 
 app.whenReady().then(async () => {
-  // 在CommonJS中直接导入@electron-toolkit/utils
-  const { electronApp, optimizer, is } = require('@electron-toolkit/utils');
+  // 在CommonJS中直接导入@electron-toolkit/utils（提供安全回退，防止缺依赖导致启动失败）
+  let electronApp: any = { setAppUserModelId: (_: string) => {} };
+  let optimizer: any = { watchWindowShortcuts: (_: any) => {} };
+  let is: any = { dev: false };
+  try {
+    const utils = require('@electron-toolkit/utils');
+    electronApp = utils.electronApp ?? electronApp;
+    optimizer = utils.optimizer ?? optimizer;
+    is = utils.is ?? is;
+  } catch (err) {
+    console.warn('[main] @electron-toolkit/utils 未找到，使用安全回退。');
+  }
 
   electronApp.setAppUserModelId('com.electron');
 
   // ✅ 放在 whenReady 内、且在 createWindow() 之前
   const ses = session.defaultSession;
+
+  // ✅ 按cifix1.txt建议：所有session操作在whenReady后执行
+  console.log('🔒 [main] 开始初始化安全策略...');
 
   // 2.1 权限：默认拒绝（全局一票否决，可按 overlay 放白名单）
   ses.setPermissionCheckHandler(() => false);

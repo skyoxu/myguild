@@ -9,13 +9,13 @@ verification:
   - path: scripts/release/updater-config-check.mjs
     assert: electron-updater configured with correct channel and provider
   - path: scripts/release/signing-verify.mjs
-    assert: Windows Authenticode and macOS code signing/notarization succeed
+    assert: Windows Authenticode 代码签名验证通过（仅 Windows）
   - path: scripts/release/rollout.mjs
     assert: Rollout gates on Release Health and supports pause/rollback
 impact-scope:
   - build/
   - electron-builder.json
-  - .github/workflows/
+  - .github/workflows/（Windows-only runners）
   - scripts/release.mjs
 tech-tags:
   - electron-builder
@@ -31,13 +31,15 @@ monitoring-metrics:
   - implementation_coverage
   - compliance_rate
 executable-deliverables:
-  - electron-builder.json
-  - .github/workflows/release.yml
+  - electron-builder.json（仅 Windows 目标）
+  - .github/workflows/release.yml（windows-latest + pwsh）
   - scripts/release-automation.mjs
 supersedes: []
 ---
 
 # ADR-0008: 部署发布与自动更新策略
+
+注：本 ADR 已收敛为 Windows-only。文档中如有历史跨平台描述均视为历史记录，不再作为现行要求。
 
 ## Context and Problem Statement
 
@@ -52,6 +54,8 @@ Electron桌面应用需要建立可靠的部署发布流程和自动更新机制
 - 需要与Release Health监控集成（继承ADR-0003）
 - 需要支持快速回滚机制
 - 需要满足应用商店分发要求
+
+注：根据 ADR-0011 的 Windows-only 决策，“跨平台兼容性”等相关条目为历史背景，不再作为现行要求。
 
 ## Considered Options
 
@@ -479,6 +483,8 @@ export class ProgressiveReleaseManager {
 
 **GitHub Actions发布工作流**：
 
+注：以下为历史跨平台矩阵示例（已废止；Windows-only 不再适用）。请参考上文 Windows-only 工作流示例。
+
 ```yaml
 # .github/workflows/release.yml
 name: Release
@@ -490,11 +496,7 @@ on:
 
 jobs:
   release:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -513,46 +515,27 @@ jobs:
         run: npm run guard:ci
 
       - name: Import Windows certificate
-        if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          echo "${{ secrets.WINDOWS_CERT_P12 }}" | base64 --decode > build/certificates/windows-cert.p12
-        shell: bash
+          $Bytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_P12 }}")
+          New-Item -ItemType Directory -Force -Path "build/certificates" | Out-Null
+          [IO.File]::WriteAllBytes("build/certificates/windows-cert.p12", $Bytes)
 
-      - name: Import macOS certificates
-        if: matrix.os == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: |
-          echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
-          security create-keychain -p "" build.keychain
-          security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
-          security list-keychains -s build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+      # macOS/Linux 配置已移除（Windows-only）
 
       - name: Build and release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run build:release
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: release-${{ matrix.os }}
+          name: release-windows
           path: dist/
 
-      - name: Start progressive release
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: npm run release:progressive
+      # Progressive release (Linux) 步骤已移除（Windows-only）
 ```
 
 **版本管理和发布脚本**：
@@ -845,7 +828,92 @@ export const UpdateProgress: React.FC = () => {
 - **外部文档**:
   - [electron-updater Documentation](https://www.electron.build/auto-update)
   - [Windows Code Signing Guide](https://docs.microsoft.com/en-us/windows/win32/seccrypto/cryptography-tools)
-  - [macOS Notarization Guide](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
   - [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
 - **工具链**: electron-builder, electron-updater, GitHub Actions
 - **相关PRD-ID**: 适用于所有需要桌面应用分发的PRD
+-
+
+## CI Runner & Shell 策略（Windows-only）
+
+决策：
+
+- 默认运行器 `runs-on: windows-latest`；Job 级统一 `defaults.run.shell: pwsh`。
+- 所有脚本使用 PowerShell 7 语法（`$env:VAR`、`if (...) {}`、`Test-Path`）。
+- 如确需第三方工具仅有 Bash 接口，允许步骤级显式 `shell: bash`，并在步骤名/注释中标注“例外原因”。
+- 通知/旁路步骤优先用步骤级 `if:` 控制与 `continue-on-error: true`，避免脚本内判空造成跨 Shell 语义差异。
+
+示例（Windows-only 发布 Job 精简示意）：
+
+```yaml
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Import Windows certificate
+        run: |
+          $Bytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_P12 }}")
+          New-Item -ItemType Directory -Force -Path "build\\certs" | Out-Null
+          [IO.File]::WriteAllBytes("build\\certs\\windows-cert.p12", $Bytes)
+      - name: Build (Windows)
+        run: npm run build:electron
+      - name: Sign artifacts
+        run: node scripts/release/signing-verify.mjs
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist\\
+```
+
+紧急回滚关键步骤（pwsh 语法示例）：
+
+```yaml
+- name: Pre-rollback validation
+  run: |
+    Write-Host "Validating rollback prerequisites..."
+    if (-not (Test-Path -Path "artifacts/manifest.json" -PathType Leaf)) {
+      Write-Error "Missing artifacts/manifest.json"
+      exit 1
+    }
+    $version = "${{ env.PREV_GA_VERSION }}"
+    $manifest = Get-Content artifacts/manifest.json -Raw | ConvertFrom-Json
+    $exists = $manifest.PSObject.Properties.Name -contains $version
+    if (-not $exists) {
+      Write-Error "Target version $version not found in manifest"
+      exit 1
+    }
+
+- name: Send emergency notification
+  if: ${{ env.WEBHOOK_URL != '' }}
+  env:
+    WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+  run: |
+    $payload = @{
+      text = "Emergency Rollback"
+      attachments = @(@{
+        color = "warning"
+        fields = @(
+          @{ title = "Target Version"; value = "${{ env.PREV_GA_VERSION }}"; short = $true },
+          @{ title = "Triggered By";  value = "${{ github.actor }}";         short = $true }
+        )
+        text = "Rollback initiated on Windows"
+      })
+    } | ConvertTo-Json -Depth 5
+    try {
+      Invoke-RestMethod -Uri $env:WEBHOOK_URL -Method Post -Body $payload -ContentType 'application/json'
+      Write-Host "Notification sent"
+    } catch {
+      Write-Warning "Notification failed: $($_.Exception.Message)"
+    }
+  continue-on-error: true
+```

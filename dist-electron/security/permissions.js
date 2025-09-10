@@ -1,5 +1,8 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.SecurityPolicyManager = exports.securityPolicyManager = void 0;
 /* 统一权限与导航策略中间件 */
-import { session, shell } from 'electron';
+const electron_1 = require('electron');
 /**
  * 生产环境安全配置 - 基于最小权限原则
  */
@@ -92,19 +95,21 @@ class SecurityPolicyManager {
   }
   /**
    * 应用统一安全策略到窗口
+   * ✅ 按cifix1.txt建议：通过参数传入Session，避免在模块导入时访问defaultSession
    */
-  applySecurityPolicies(window) {
-    this.setupPermissionHandler();
+  applySecurityPolicies(window, ses) {
+    this.setupPermissionHandler(ses);
     this.setupNavigationHandler(window);
     this.setupWindowOpenHandler(window);
-    this.setupWebRequestFiltering();
+    this.setupWebRequestFiltering(ses);
     console.log('✅ 安全策略已应用到窗口');
   }
   /**
    * 统一权限请求处理器
+   * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
    */
-  setupPermissionHandler() {
-    session.defaultSession.setPermissionRequestHandler(
+  setupPermissionHandler(ses) {
+    ses.setPermissionRequestHandler(
       (_webContents, permission, callback, details) => {
         const requestingOrigin = new URL(details.requestingUrl).origin;
         // 检查源是否被允许
@@ -214,7 +219,7 @@ class SecurityPolicyManager {
           'allow',
           `在外部浏览器打开: ${url} (hostname: ${targetHostname})`
         );
-        shell.openExternal(url);
+        electron_1.shell.openExternal(url);
       } else {
         this.logSecurityEvent(
           'window-open',
@@ -228,9 +233,10 @@ class SecurityPolicyManager {
   }
   /**
    * Web请求过滤
+   * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
    */
-  setupWebRequestFiltering() {
-    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+  setupWebRequestFiltering(ses) {
+    ses.webRequest.onBeforeRequest((details, callback) => {
       const url = new URL(details.url);
       // 允许本地资源
       if (
@@ -298,6 +304,6 @@ class SecurityPolicyManager {
     console.log(`🧹 已清理 ${cleared} 条安全审计记录`);
   }
 }
+exports.SecurityPolicyManager = SecurityPolicyManager;
 // 导出单例实例
-export const securityPolicyManager = new SecurityPolicyManager();
-export { SecurityPolicyManager };
+exports.securityPolicyManager = new SecurityPolicyManager();

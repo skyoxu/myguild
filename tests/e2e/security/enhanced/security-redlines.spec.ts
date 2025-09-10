@@ -8,7 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { launchApp } from '../../../helpers/launch';
+import { launchAppWithPage } from '../../../helpers/launch';
 import { ElectronApplication, Page } from '@playwright/test';
 
 let electronApp: ElectronApplication;
@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   console.log('[RedLine] 启动Electron应用进行红线安全测试...');
 
   // 使用统一启动器
-  const { app, page } = await launchApp();
+  const { app, page } = await launchAppWithPage();
   electronApp = app;
   mainWindow = page;
 

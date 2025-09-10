@@ -1,7 +1,7 @@
 ---
 ADR-ID: ADR-0009
 title: 跨平台兼容策略 - Windows/macOS/Linux统一
-status: Accepted
+status: Superseded
 decision-time: '2025-08-17'
 deciders: [架构团队, 开发团队, UX团队]
 archRefs: [CH04, CH09, CH11]
@@ -33,9 +33,10 @@ executable-deliverables:
   - electron/platform-specific.ts
   - tests/e2e/platform/cross-platform.spec.ts
 supersedes: []
+superseded-by: [ADR-0011]
 ---
 
-# ADR-0009: 跨平台适配策略
+# ADR-0009: 跨平台适配策略（已被 Windows-only 平台策略替代）
 
 ## Context and Problem Statement
 

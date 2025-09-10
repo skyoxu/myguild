@@ -1,119 +1,169 @@
-你已经把主窗口安全基线跑通了（BrowserWindow 配置、导航/弹窗拦截大类、综合评分 100% 都通过），但仍有四类老问题没有按我上轮给的方案完全落地：A) 仍有用例在触发导航时用 page.evaluate 等返回值、导致上下文被销毁；B) chrome-error:// 首屏偶发仍直接失败，启动器没有做“一次重载 + 本地回退”；C) 少数用例还在等 waitForFunction(document.readyState)；D) 通知权限用例仍在渲染侧调用 Notification.requestPermission() 造成超时/窗口关闭。这些点正是本次 10 个失败用例的根因（详见你刚传的日志）。
-支撑资料：Playwright 官方对导航等待和 waitForLoadState('domcontentloaded') 的推荐；“执行上下文因导航被销毁”的成因；Electron 的 did-fail-load 及 app.disableHardwareAcceleration()、setWindowOpenHandler 的用法。
+  - 你这次的 90s 超时，高概率是“在 app.whenReady() 之前访问了 session.defaultSession 或创建 BrowserWindow”，导致首窗未能稳定打开。次因候选是“预加载路径/沙箱
+  不兼容导致渲染崩溃”。不要拉长超时，也不要 fixme，应修正时序与路径。
 
+  最小修复 patch（文本 diff，按你的路径替换）
 
-下面给出“对症最小 diff”，按文件改完即可把这批错误消掉：
+  - 目标：把所有 defaultSession 访问与首窗创建延后到 whenReady()，并加上关键崩溃/加载失败日志，确保 preload 路径在 dev/prod 均正确。
 
-1) 启动器：tests/helpers/launch.ts（修复 chrome-error 首屏）
-+ import path from 'node:path';
-+ import { pathToFileURL } from 'node:url';
+  1. src/main/index.ts（或同等主进程入口）
+  --- a/src/main/index.ts
+  +++ b/src/main/index.ts
+  @@
+  -import { app, session } from 'electron';
+  -import { hardenSession } from '../shared/security/session'; // 假定已存在
+  -import { createMainWindow } from './window';
+  -
+  -const ses = session.defaultSession;
+  -hardenSession(ses);
+  -createMainWindow();
+  +import { app, session } from 'electron';
+  +import { hardenSession } from '../shared/security/session';
+  +import { createMainWindow } from './window';
+  +
+  +app.on('render-process-gone', (_e, wc, d) => {
+  +  console.error('[main] render-process-gone:', d.reason, d.exitCode);
+  +});
+  +app.on('child-process-gone', (_e, d) => {
+  +  console.error('[main] child-process-gone:', d.reason, d.exitCode);
+  +});
+  +app.on('web-contents-created', (_e, wc) => {
+  +  wc.on('did-fail-load', (_e2, ec, ed) => {
+  +    console.error('[main] did-fail-load:', ec, ed);
+  +  });
+  +});
+  +
+  +app.whenReady().then(async () => {
+  +  const ses = session.defaultSession;
+  +  await hardenSession(ses);      // 仅在 ready 之后调用
+  +  await createMainWindow();      // 仅在 ready 之后创建首窗
+  +});
+  2. src/main/window.ts（或首窗创建处）
+  --- a/src/main/window.ts
+  +++ b/src/main/window.ts
+  @@
+  -import { BrowserWindow } from 'electron';
+  +import { BrowserWindow } from 'electron';
+  +import { join } from 'node:path';
+  +
+  +const isDev = !!process.env.VITE_DEV_SERVER_URL;
 
-  export async function launchApp(electron, entry) {
-    const app = await electron.launch({ args: [entry], env: { CI: 'true', SECURITY_TEST_MODE: 'true' } });
-    const page = await app.firstWindow();
--   await page.waitForFunction(() => ['interactive','complete'].includes(document.readyState), { timeout: 15000 });
--   if ((await page.url()).startsWith('chrome-error://')) throw new Error('Initial load failed (chrome-error://)');
-+   await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-+   if (page.url().startsWith('chrome-error://')) {
-+     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-+   }
-+   if (page.url().startsWith('chrome-error://')) {
-+     const fallback = pathToFileURL(path.join(process.cwd(), 'dist', 'index.html')).toString();
-+     await page.goto(fallback, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-+   }
-+   if (page.url().startsWith('chrome-error://')) throw new Error('Initial load failed (chrome-error://)');
-    return { app, page };
-  }
+   export async function createMainWindow() {
+  -  const win = new BrowserWindow({
+  -    webPreferences: {
+  -      contextIsolation: true,
+  -      preload: '../preload/index.js'
+  -    }
+  -  });
+  -  // ...
+  +  const win = new BrowserWindow({
+  +    show: false,
+  +    webPreferences: {
+  +      nodeIntegration: false,
+  +      contextIsolation: true,
+  +      sandbox: true,
+  +      preload: isDev
+  +        ? join(__dirname, '../preload/index.mjs') // dev 产物/源文件的真实后缀视你的打包而定
+  +        : join(__dirname, '../preload/index.cjs'),
+  +    },
+  +  });
+  +  win.once('ready-to-show', () => win.show());
+  +  win.webContents.on('render-process-gone', (_e, d) => {
+  +    console.error('[window] render-process-gone:', d.reason, d.exitCode);
+  +  });
+  +  // dev/prod URL 需区分，避免白屏
+  +  if (isDev && process.env.VITE_DEV_SERVER_URL) {
+  +    await win.loadURL(process.env.VITE_DEV_SERVER_URL);
+  +  } else {
+  +    await win.loadFile(join(__dirname, '../renderer/index.html')); // 按你构建结果修正
+  +  }
+  +  return win;
+   }
+  3. src/shared/security/session.ts（若你在模块导入时访问了 session，必须改）
+  --- a/src/shared/security/session.ts
+  +++ b/src/shared/security/session.ts
+  @@
+  -// ❌ 不要在模块顶层读取 defaultSession
+  -const ses = session.defaultSession;
+  -export function hardenSession() { /* 使用 ses ... */ }
+  +// ✅ 通过参数传入，调用方在 whenReady 后传 defaultSession 进来
+  +import type { Session } from 'electron';
+  +export async function hardenSession(ses: Session) {
+  +  // 仅在 ready 后被调用
+  +  // setPermissionRequestHandler / setWindowOpenHandler / will-navigate 守卫等
+  +}
+  4. Playwright（仅修正 Electron 启动入口；具体文件名依你仓库为准）
 
+  - 确保 Electron 项目使用构建后的主进程入口（而非源码），Windows 上路径必须存在：
+  --- a/playwright.config.ts
+  +++ b/playwright.config.ts
+  @@
+   export default defineConfig({
+     projects: [
+       {
+         name: 'electron',
+  -      use: { /* ... */ } // 你当前的配置
+  +      use: {
+  +        // 明确告诉测试代码从构建产物启动
+  +        // 你的测试里通常用 `_electron.launch({ args: [MAIN_ENTRY] })`
+  +        // 这里通过环境变量/fixtures 统一 MAIN_ENTRY
+  +        launchOptions: {
+  +          env: {
+  +            MAIN_ENTRY: process.env.MAIN_ENTRY ?? 'build/main/index.cjs'
+  +          }
+  +        }
+  +      }
+       }
+     ]
+   });
+  - 若你的测试已在代码里读取 process.env.MAIN_ENTRY，只需在 CI 设置该变量指向构建产物。
 
-要点：用官方 waitForLoadState('domcontentloaded')，失败先 reload，仍失败再跳本地 file://dist/index.html 回退，最后才抛错。
+  5. 测试里（若等待条件过于宽松或无日志，增补等待“窗口可见/可交互”）
 
+  - 示例（仅思路，别改变断言语义）：等待 electronApp.firstWindow() 且 isVisible()/isEnabled() 为真，超时用默认即可；不要简单拉长到 120–180s。
 
-2) 公共小工具：竞态封装，替代“等 evaluate 返回值”
+  CI 变更（防止“入口缺失”导致假失败）
 
-新建 tests/helpers/nav-assert.ts：
+  - 在 test:e2e 前添加 Electron 构建，并注入 MAIN_ENTRY。示例 GitHub Actions 片段：
+  - name: Build Electron
+    run: npm run build:electron
+  - name: E2E (Electron)
+    env:
+      MAIN_ENTRY: build/main/index.cjs        # 与实际产物匹配
+      ELECTRON_ENABLE_LOGGING: '1'
+      DEBUG: 'electron*'
+    run: npx playwright test -g "electron-security-audit" --trace on
+  - name: Upload Playwright Trace
+    if: failure()
+    uses: actions/upload-artifact@v4
+    with:
+      name: pw-trace
+      path: playwright-report
+  验证步骤（本地优先）
 
-import type { Page } from '@playwright/test';
+  - 仅跑该用例，带 debug/trace 与日志：
+      - ELECTRON_ENABLE_LOGGING=1 DEBUG=electron* MAIN_ENTRY=build/main/index.cjs npx playwright test tests/e2e/security/session-ready.spec.ts --debug
+  --project=electron
+      - 复跑 3 次，确保稳定通过且无 render-process-gone/did-fail-load。
+  - 全量安全审计分组：
+      - npx playwright test -g "electron-security-audit" --trace on
 
-/** 触发可能导航/弹窗的动作，与导航事件做竞态，最终对“仍留在我方 URL”做断言。 */
-export async function attemptAndAssertBlocked(page: Page, attempt: () => Promise<void> | void, navTimeout = 800) {
-  const navP = page.waitForEvent('framenavigated', { timeout: navTimeout }).then(() => 'navigated').catch(() => 'no-nav');
-  const actP = Promise.resolve().then(() => attempt()).then(() => 'act-ok').catch(() => 'act-err');
-  await Promise.race([navP, actP]);  // 避免 evaluate 在导航中被销毁
-  const url = page.url();
-  if (!(url.startsWith('file://') || url.startsWith('app://'))) {
-    throw new Error(`navigation was not blocked, current url=${url}`);
-  }
-}
+  验收标准（Acceptance）
 
+  - 安全基线：nodeIntegration=false、contextIsolation=true、sandbox=true 在首窗生效；preload 仅白名单导出，无 remote。
+  - 时序：仓库内无任何在 whenReady() 之前读取 session.defaultSession 或创建 BrowserWindow 的代码（含模块顶层副作用）。
+  - E2E：session-ready.spec.ts 稳定通过（3/3），无白屏/崩溃日志。
+  - CI：build:electron 在 test:e2e 前执行；失败时附带 Playwright trace。
+  - 覆盖率：仍满足全局 ≥ 90%。
 
-原因：导航发生时当前执行上下文会被销毁，page.evaluate 正在执行就会报 Execution context was destroyed；应采用“触发 + 等导航/无导航竞态 + 事后状态断言”的模式。
+  止损机制（短期解堵，但不建议长期保留）
 
+  - 如果 CI 仍偶发超时：保留测试，继续采集 trace+主进程日志，不要调高超时或 fixme。必要时仅在 CI 临时关闭 autoHideMenuBar/启用 show:false + ready-to-show 以
+  稳定首帧展示，但同时附带问题追踪与回滚计划。
 
-3) 改动具体用例（按日志行号）
+  你可能忽略的风险点（直言不讳）
 
-3.1 tests/e2e/security/electron-security.spec.ts（“新窗口打开控制验证”，本次 flaky）
-报错点：第 236 行仍使用 evaluate。
-
-- const windowOpenResult = await mainWindow.evaluate(() => {
--   const newWindow = window.open('https://malicious-site.com', '_blank');
--   return { opened: !!newWindow };
-- });
-- expect(windowOpenResult.opened).toBe(false);
-+ await attemptAndAssertBlocked(mainWindow, () => { window.open('https://malicious-site.com', '_blank'); });
-
-
-3.2 tests/e2e/security/security-redlines.spec.ts
-两个仍报 Execution context was destroyed 的小节（日志 window.location.href 与 “链接点击”）。
-
-- const navigationAttempt = await firstWindow.evaluate(async () => { location.href = 'https://malicious-site.com'; return true; });
-+ await attemptAndAssertBlocked(firstWindow, () => { location.href = 'https://malicious-site.com'; });
-
-- const linkClickTest = await firstWindow.evaluate(async () => {
--   const a = document.createElement('a'); a.href = 'https://attacker.com/malware'; document.body.appendChild(a); a.click(); return true;
-- });
-+ await attemptAndAssertBlocked(firstWindow, () => {
-+   const a = document.createElement('a'); a.href = 'https://attacker.com/malware';
-+   document.body.appendChild(a); a.click();
-+ });
-
-
-3.3 同文件的“综合稳定性”“持久性验证”两段（日志显示第 508 与 624 行仍用 evaluate 做循环攻击向量）→ 将循环里的每个外部动作改为 await attemptAndAssertBlocked(firstWindow, () => { /* 攻击 */ })，不要再收集 evaluate 返回值。
-
-3.4 通知权限用例（本次 90s 超时）
-渲染侧不要调用 Notification.requestPermission()（CI/无头下易卡或触发窗口关闭）。
-
-- const res = await firstWindow.evaluate(async () => {
--   if (!('Notification' in window)) return 'unsupported';
--   return await Notification.requestPermission();
-- });
-- expect(res).toBe('denied');
-+ const state = await firstWindow.evaluate(() => ('Notification' in window) ? Notification.permission : 'unsupported');
-+ expect(['denied','default','unsupported']).toContain(state);
-
-4) “等首屏”统一改成官方等待（两处仍超时）
-
-enhanced/enhanced-csp-security.spec.ts 与 enhanced/enhanced-electron-security.spec.ts 的 “第 28 行 waitForFunction 超时”。
-
-- await page.waitForFunction(() => ['interactive','complete'].includes(document.readyState), { timeout: 15000 });
-+ await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-
-
-（Playwright 推荐使用 waitForLoadState 等内置等待，而不是自写 DOM 轮询。）
-
-
-5) 主进程两点“稳定性兜底”（若还没上）
-
-在 app.whenReady() 之前加：if (process.env.CI==='true') app.disableHardwareAcceleration()（必须 ready 前调用）。
-
-webContents.on('did-fail-load', ...) 首帧失败轻量重载一次；并确保你的 onBeforeRequest 白名单包含 file: / app: / devtools: / about: / chrome: / chrome-error:，避免把内部协议一并拦掉。
-
-
-回答你的两点直问
-
-“上一轮的问题都修复了吗？”——没有，仍有 4 类未落地：评估式断言、启动器回退、等待策略、通知权限用例。对应改动已在上面逐文件给出。证据见本次日志中那些仍报 Execution context was destroyed、chrome-error:// 与 waitForFunction 超时的条目。
-
-“这次新报错算新增吗？”——不算新增，是同一根因在没改到的用例/启动器分支上复现（导航触发导致 evaluate 上下文被销毁；首屏失败没有重载/回退；自写 readyState 轮询不稳；requestPermission() 在 CI 下不可靠）。对应修复就是上面的最小改动。参考官方文档：导航等待与加载状态、did-fail-load/硬件加速、setWindowOpenHandler 的拦截面。
-
-
-按以上 patch 改完再跑，你这批 10 个失败用例应能归零，且不会降低任何 Electron 安全基线
+  - 任何“在模块导入时”访问 session.defaultSession 的工具函数都会违背 ADR‑0002（通常藏在 security/session.ts 或 services/* 中），请全局检索并改为“注入 Session
+  参数 + 在 ready 后调用”。
+  - preload 若还在用 Node 直接能力（fs/path/net）且开启 sandbox:true，渲染会悄悄崩溃，表现即为“等不到首窗”。这类问题 E2E 会超时但日志很少，只有
+  render-process-gone 能露出端倪。
+  - CI 若未固定构建产物路径（不同 runner/OS 生成位置不同），会导致仅在 CI 失败、而本地通过的“玄学问题”。

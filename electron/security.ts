@@ -123,10 +123,11 @@ export function hardenWindow(window: BrowserWindow): void {
 /**
  * 第三层：CSP响应头安全策略
  * 安装全局安全头，包括CSP、COOP、COEP、Permissions-Policy
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function installSecurityHeaders(): void {
-  const ses = session.defaultSession;
-
+export function installSecurityHeaders(
+  ses: typeof session.defaultSession
+): void {
   ses.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = details.responseHeaders || {};
 
@@ -176,10 +177,9 @@ export function installSecurityHeaders(): void {
 /**
  * CSP违规报告处理
  * 收集和监控CSP违规事件
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function setupCSPReporting(): void {
-  const ses = session.defaultSession;
-
+export function setupCSPReporting(ses: typeof session.defaultSession): void {
   ses.webRequest.onBeforeRequest((details, callback) => {
     // 监控可疑的请求模式 - 避免使用javascript:协议字符串
     const url = details.url.toLowerCase();
@@ -202,15 +202,16 @@ export function setupCSPReporting(): void {
 /**
  * 安全初始化 - 应用启动时调用
  * 设置全局安全策略和事件监听
+ * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
-export function initializeSecurity(): void {
+export function initializeSecurity(ses: typeof session.defaultSession): void {
   console.log('[Security] 初始化Electron安全基线...');
 
   // 安装全局安全头
-  installSecurityHeaders();
+  installSecurityHeaders(ses);
 
   // 设置CSP违规监控
-  setupCSPReporting();
+  setupCSPReporting(ses);
 
   // 应用级安全事件监听
   app.on('web-contents-created', (_event, contents) => {
