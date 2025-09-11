@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
 import { useSaveManager } from '../../contexts/GameStateContext';
 import type { SaveData } from '../../game/state/GameStateManager';
+import './GameSaveManager.css';
 
 interface GameSaveManagerProps {
   className?: string;
@@ -155,20 +156,6 @@ export function GameSaveManager({
   return (
     <div
       className={`game-save-manager ${className}`}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 3000,
-        padding: '20px',
-      }}
       onClick={e => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -176,183 +163,76 @@ export function GameSaveManager({
       }}
       data-testid="game-save-manager"
     >
-      <div
-        style={{
-          backgroundColor: '#1f2937',
-          borderRadius: '12px',
-          border: '1px solid #374151',
-          maxWidth: '800px',
-          width: '100%',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow:
-            '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        }}
-      >
+      <div className="game-save-manager__dialog">
         {/* 头部 */}
-        <div
-          style={{
-            padding: '20px',
-            borderBottom: '1px solid #374151',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <h2
-            style={{
-              color: '#f9fafb',
-              fontSize: '20px',
-              fontWeight: '600',
-              margin: 0,
-            }}
-          >
-            存档管理
-          </h2>
+        <div className="game-save-manager__header">
+          <h2 className="game-save-manager__title">存档管理</h2>
 
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="game-save-manager__header-controls">
             <button
               onClick={loadSaveFiles}
               disabled={isLoadingSaves}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: '#374151',
-                color: '#d1d5db',
-                border: '1px solid #4b5563',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
+              className="game-save-manager__refresh-btn"
             >
               🔄 刷新
             </button>
 
-            <button
-              onClick={onClose}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: 'transparent',
-                color: '#9ca3af',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '16px',
-              }}
-            >
+            <button onClick={onClose} className="game-save-manager__close-btn">
               ×
             </button>
           </div>
         </div>
 
         {/* 内容区域 */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: '20px',
-          }}
-        >
+        <div className="game-save-manager__content">
           {isLoadingSaves ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '40px',
-                color: '#9ca3af',
-              }}
-            >
-              <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
+            <div className="game-save-manager__loading">
+              <div className="game-save-manager__loading-icon">⏳</div>
               <div>加载存档中...</div>
             </div>
           ) : saveFiles.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '40px',
-                color: '#9ca3af',
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
-              <div style={{ fontSize: '18px', marginBottom: '8px' }}>
-                暂无存档
-              </div>
-              <div style={{ fontSize: '14px' }}>
+            <div className="game-save-manager__empty">
+              <div className="game-save-manager__empty-icon">📁</div>
+              <div className="game-save-manager__empty-title">暂无存档</div>
+              <div className="game-save-manager__empty-subtitle">
                 开始游戏并保存后，存档将在这里显示
               </div>
             </div>
           ) : (
-            <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
-            >
+            <div className="game-save-manager__saves-list">
               {saveFiles.map(saveFile => (
                 <div
                   key={saveFile.id}
-                  style={{
-                    backgroundColor:
-                      selectedSaveId === saveFile.id ? '#374151' : '#111827',
-                    border: `1px solid ${selectedSaveId === saveFile.id ? '#6b7280' : '#374151'}`,
-                    borderRadius: '8px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
+                  className={`game-save-manager__save-item ${
+                    selectedSaveId === saveFile.id
+                      ? 'game-save-manager__save-item--selected'
+                      : ''
+                  }`}
                   onClick={() => setSelectedSaveId(saveFile.id)}
                   onDoubleClick={() => handleLoadSave(saveFile)}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
+                  <div className="game-save-manager__save-item-content">
                     {/* 存档信息 */}
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          marginBottom: '8px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: '#f9fafb',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                          }}
-                        >
+                    <div className="game-save-manager__save-info">
+                      <div className="game-save-manager__save-header">
+                        <div className="game-save-manager__save-title">
                           存档 #{saveFile.id.slice(-8)}
                         </div>
 
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: '12px',
-                            fontSize: '14px',
-                          }}
-                        >
-                          <span style={{ color: '#fbbf24' }}>
+                        <div className="game-save-manager__save-stats">
+                          <span className="game-save-manager__save-level">
                             等级 {saveFile.state.level}
                           </span>
-                          <span style={{ color: '#3b82f6' }}>
+                          <span className="game-save-manager__save-score">
                             {saveFile.state.score.toLocaleString()} 分
                           </span>
-                          <span style={{ color: '#22c55e' }}>
+                          <span className="game-save-manager__save-health">
                             {saveFile.state.health} HP
                           </span>
                         </div>
                       </div>
 
-                      <div
-                        style={{
-                          color: '#9ca3af',
-                          fontSize: '13px',
-                          marginBottom: '8px',
-                        }}
-                      >
+                      <div className="game-save-manager__save-meta">
                         <div>
                           创建：{saveFile.metadata.createdAt.toLocaleString()}
                         </div>
@@ -365,39 +245,19 @@ export function GameSaveManager({
                       {/* 物品栏预览 */}
                       {saveFile.state.inventory &&
                         saveFile.state.inventory.length > 0 && (
-                          <div
-                            style={{
-                              display: 'flex',
-                              gap: '4px',
-                              marginTop: '8px',
-                              flexWrap: 'wrap',
-                            }}
-                          >
+                          <div className="game-save-manager__inventory-preview">
                             {saveFile.state.inventory
                               .slice(0, 5)
                               .map((item, index) => (
                                 <div
                                   key={index}
-                                  style={{
-                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                                    color: '#93c5fd',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
-                                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                                  }}
+                                  className="game-save-manager__inventory-item"
                                 >
                                   {item}
                                 </div>
                               ))}
                             {saveFile.state.inventory.length > 5 && (
-                              <div
-                                style={{
-                                  color: '#6b7280',
-                                  fontSize: '11px',
-                                  padding: '2px 6px',
-                                }}
-                              >
+                              <div className="game-save-manager__inventory-more">
                                 +{saveFile.state.inventory.length - 5} 更多
                               </div>
                             )}
@@ -406,28 +266,13 @@ export function GameSaveManager({
                     </div>
 
                     {/* 操作按钮 */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '8px',
-                        marginLeft: '16px',
-                      }}
-                    >
+                    <div className="game-save-manager__save-actions">
                       <button
                         onClick={e => {
                           e.stopPropagation();
                           handleLoadSave(saveFile);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#22c55e',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                        }}
+                        className="game-save-manager__action-btn game-save-manager__load-btn"
                         title="加载此存档"
                       >
                         📂 加载
@@ -438,16 +283,7 @@ export function GameSaveManager({
                           e.stopPropagation();
                           handleExportSave(saveFile);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#374151',
-                          color: '#d1d5db',
-                          border: '1px solid #4b5563',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                        }}
+                        className="game-save-manager__action-btn game-save-manager__export-btn"
                         title="导出存档文件"
                       >
                         📤 导出
@@ -458,16 +294,7 @@ export function GameSaveManager({
                           e.stopPropagation();
                           setShowDeleteConfirm(saveFile.id);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#ef4444',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                        }}
+                        className="game-save-manager__action-btn game-save-manager__delete-btn"
                         title="删除此存档"
                       >
                         🗑️ 删除
@@ -484,87 +311,30 @@ export function GameSaveManager({
       {/* 删除确认对话框 */}
       {showDeleteConfirm && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 3001,
-          }}
+          className="game-save-manager__delete-overlay"
           onClick={() => setShowDeleteConfirm(null)}
         >
           <div
-            style={{
-              backgroundColor: '#1f2937',
-              borderRadius: '8px',
-              border: '1px solid #374151',
-              padding: '24px',
-              maxWidth: '400px',
-              width: '90%',
-            }}
+            className="game-save-manager__delete-dialog"
             onClick={e => e.stopPropagation()}
           >
-            <h3
-              style={{
-                color: '#f9fafb',
-                fontSize: '18px',
-                fontWeight: '600',
-                margin: '0 0 16px 0',
-              }}
-            >
-              确认删除存档
-            </h3>
+            <h3 className="game-save-manager__delete-title">确认删除存档</h3>
 
-            <p
-              style={{
-                color: '#d1d5db',
-                fontSize: '14px',
-                margin: '0 0 20px 0',
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="game-save-manager__delete-message">
               您确定要删除此存档吗？此操作无法撤销。
             </p>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-              }}
-            >
+            <div className="game-save-manager__delete-actions">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#374151',
-                  color: '#d1d5db',
-                  border: '1px solid #4b5563',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
+                className="game-save-manager__delete-cancel"
               >
                 取消
               </button>
 
               <button
                 onClick={() => handleDeleteSave(showDeleteConfirm)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#ef4444',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                }}
+                className="game-save-manager__delete-confirm"
               >
                 确认删除
               </button>

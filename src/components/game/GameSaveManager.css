@@ -1,0 +1,301 @@
+/* 游戏存档管理组件样式 */
+
+.game-save-manager {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 20px;
+}
+
+.game-save-manager__dialog {
+  background-color: #1f2937;
+  border-radius: 12px;
+  border: 1px solid #374151;
+  max-width: 800px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 头部区域 */
+.game-save-manager__header {
+  padding: 20px;
+  border-bottom: 1px solid #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-save-manager__title {
+  color: #f9fafb;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.game-save-manager__header-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.game-save-manager__refresh-btn {
+  padding: 6px 12px;
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.game-save-manager__close-btn {
+  padding: 6px 12px;
+  background-color: transparent;
+  color: #9ca3af;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 内容区域 */
+.game-save-manager__content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* 加载状态 */
+.game-save-manager__loading {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+}
+
+.game-save-manager__loading-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+/* 空状态 */
+.game-save-manager__empty {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+}
+
+.game-save-manager__empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.game-save-manager__empty-title {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.game-save-manager__empty-subtitle {
+  font-size: 14px;
+}
+
+/* 存档列表 */
+.game-save-manager__saves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 存档项 */
+.game-save-manager__save-item {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-save-manager__save-item--selected {
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+.game-save-manager__save-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.game-save-manager__save-info {
+  flex: 1;
+}
+
+.game-save-manager__save-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.game-save-manager__save-title {
+  color: #f9fafb;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.game-save-manager__save-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.game-save-manager__save-level {
+  color: #fbbf24;
+}
+
+.game-save-manager__save-score {
+  color: #3b82f6;
+}
+
+.game-save-manager__save-health {
+  color: #22c55e;
+}
+
+.game-save-manager__save-meta {
+  color: #9ca3af;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+/* 物品栏预览 */
+.game-save-manager__inventory-preview {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.game-save-manager__inventory-item {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.game-save-manager__inventory-more {
+  color: #6b7280;
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+/* 操作按钮区域 */
+.game-save-manager__save-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.game-save-manager__action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.game-save-manager__load-btn {
+  background-color: #22c55e;
+  color: #ffffff;
+}
+
+.game-save-manager__export-btn {
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+}
+
+.game-save-manager__delete-btn {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+/* 删除确认对话框 */
+.game-save-manager__delete-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3001;
+}
+
+.game-save-manager__delete-dialog {
+  background-color: #1f2937;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.game-save-manager__delete-title {
+  color: #f9fafb;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.game-save-manager__delete-message {
+  color: #d1d5db;
+  font-size: 14px;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.game-save-manager__delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.game-save-manager__delete-cancel {
+  padding: 8px 16px;
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.game-save-manager__delete-confirm {
+  padding: 8px 16px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}

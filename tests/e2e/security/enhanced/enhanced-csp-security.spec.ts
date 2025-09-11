@@ -4,28 +4,25 @@
  * 优先级: critical
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../../helpers/launch';
 
 test.describe('CSP策略安全验证', () => {
   let electronApp: ElectronApplication;
   let page: Page;
 
   test.beforeAll(async () => {
-    electronApp = await electron.launch({
-      args: ['.'],
-      recordVideo: process.env.CI ? { dir: 'test-results/videos' } : undefined,
-      timeout: 30000,
-    });
+    electronApp = await launchApp();
     page = await electronApp.firstWindow();
 
     // 使用官方推荐的等待策略
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+
+    // ✅ CI优化：使用新的交互准备函数确保窗口前置
+    const { prepareWindowForInteraction } = await import(
+      '../../../helpers/launch'
+    );
+    await prepareWindowForInteraction(page);
 
     // 确保页面不是chrome-error://
     const url = page.url();

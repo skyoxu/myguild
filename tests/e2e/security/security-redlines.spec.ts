@@ -11,13 +11,8 @@
  * - 权限请求处理（默认拒绝）
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 import { attemptAndAssertBlocked } from '../../helpers/nav-assert';
 
 let electronApp: ElectronApplication;
@@ -27,14 +22,7 @@ test.beforeAll(async () => {
   console.log('🚀 启动 Electron 应用进行安全红线测试...');
 
   // 启动 Electron 应用
-  electronApp = await electron.launch({
-    args: ['./dist-electron/main.js'],
-    timeout: 60000,
-    env: {
-      NODE_ENV: 'test',
-      SECURITY_TEST_MODE: 'true', // 启用安全测试模式
-    },
-  });
+  electronApp = await launchApp();
 
   // 获取主窗口
   firstWindow = await electronApp.firstWindow();

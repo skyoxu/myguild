@@ -1,0 +1,157 @@
+/* 游戏界面组件样式 */
+
+.game-interface {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 设置按钮 */
+.game-interface__settings-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* 存档管理按钮 */
+.game-interface__save-manager-btn {
+  position: absolute;
+  top: 20px;
+  left: 70px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* 调试信息面板 */
+.game-interface__debug-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #d1d5db;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 1000;
+  min-width: 200px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.game-interface__debug-title {
+  color: #fbbf24;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.game-interface__debug-state {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #374151;
+}
+
+.game-interface__debug-error {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.game-interface__debug-shortcuts {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* 错误显示 */
+.game-interface__error-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 2000;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.game-interface__error-icon {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.game-interface__error-message {
+  margin-bottom: 12px;
+}
+
+.game-interface__error-close-btn {
+  padding: 6px 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* 加载遮罩 */
+.game-interface__loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+}
+
+.game-interface__loading-content {
+  text-align: center;
+  color: #d1d5db;
+}
+
+.game-interface__loading-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.game-interface__loading-title {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.game-interface__loading-subtitle {
+  font-size: 14px;
+  color: #9ca3af;
+}

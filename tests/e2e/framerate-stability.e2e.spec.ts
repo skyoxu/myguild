@@ -13,7 +13,7 @@
 
 import { test, expect } from '@playwright/test';
 import { ElectronApplication, Page } from '@playwright/test';
-import { launchApp } from '../helpers/launch';
+import { launchAppWithPage } from '../helpers/launch';
 import fs from 'fs';
 import path from 'path';
 
@@ -22,7 +22,7 @@ let page: Page;
 
 test.beforeAll(async () => {
   // 使用统一启动器
-  const { app, page: launchedPage } = await launchApp();
+  const { app, page: launchedPage } = await launchAppWithPage();
   electronApp = app;
   page = launchedPage;
 

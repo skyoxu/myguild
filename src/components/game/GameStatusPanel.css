@@ -1,0 +1,199 @@
+/* 游戏状态面板样式 */
+
+.game-status-panel {
+  position: absolute;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  font-family: monospace;
+  font-size: 14px;
+  min-width: 200px;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+/* 位置变体 */
+.game-status-panel--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.game-status-panel--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.game-status-panel--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.game-status-panel--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+/* 可见性状态 */
+.game-status-panel--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.game-status-panel--hidden {
+  opacity: 0.7;
+  transform: scale(0.95);
+}
+
+/* 头部区域 */
+.game-status-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-status-panel__header--visible {
+  margin-bottom: 8px;
+}
+
+.game-status-panel__header--collapsed {
+  margin-bottom: 0px;
+}
+
+.game-status-panel__title {
+  font-weight: bold;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.game-status-panel__toggle-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+/* 主要内容区域 */
+.game-status-panel__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 生命值区域 */
+.game-status-panel__health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.game-status-panel__health-label {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.game-status-panel__health-value {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.game-status-panel__health-bar {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.game-status-panel__health-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* 分数和等级区域 */
+.game-status-panel__stats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.game-status-panel__stat-label {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.game-status-panel__score-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.game-status-panel__level-container {
+  text-align: right;
+}
+
+.game-status-panel__level-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+/* 物品栏区域 */
+.game-status-panel__inventory-label {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.game-status-panel__inventory-items {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 180px;
+}
+
+.game-status-panel__inventory-item {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.game-status-panel__inventory-empty {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* 位置信息 */
+.game-status-panel__position-label {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.game-status-panel__position-value {
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+/* 调试信息 */
+.game-status-panel__debug-info {
+  margin-top: 8px;
+}
+
+.game-status-panel__debug-id {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.game-status-panel__debug-timestamp {
+  font-size: 10px;
+  color: #6b7280;
+}

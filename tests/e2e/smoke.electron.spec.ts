@@ -218,6 +218,10 @@ test.describe('07章 Electron 基线验证', () => {
   });
 
   test('基本交互：应用响应性测试', async () => {
+    // ✅ CI优化：使用新的交互准备函数确保窗口前置
+    const { prepareWindowForInteraction } = await import('../helpers/launch');
+    await prepareWindowForInteraction(page);
+
     // 测试基本的 UI 交互响应
     const startTime = Date.now();
 

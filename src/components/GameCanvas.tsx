@@ -9,6 +9,7 @@ import type { GameState, GameConfig } from '../ports/game-engine.port';
 import type { DomainEvent } from '../shared/contracts/events';
 import type { GameDomainEvent } from '../shared/contracts/events/GameEvents';
 import { useGameEvents } from '../hooks/useGameEvents';
+import './GameCanvas.css';
 
 interface GameCanvasProps {
   width?: number;
@@ -216,20 +217,9 @@ export function GameCanvas({
     return (
       <div
         className={`game-canvas loading ${className}`}
-        style={{
-          width,
-          height,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          border: '2px solid #3182ce',
-          borderRadius: '8px',
-          backgroundColor: '#1a202c',
-        }}
+        style={{ width, height }}
       >
-        <div style={{ color: '#ffffff', fontSize: '18px' }}>
-          正在加载游戏引擎...
-        </div>
+        <div className="game-canvas__loading-text">正在加载游戏引擎...</div>
       </div>
     );
   }
@@ -239,70 +229,25 @@ export function GameCanvas({
     return (
       <div
         className={`game-canvas error ${className}`}
-        style={{
-          width,
-          height,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          border: '2px solid #ef4444',
-          borderRadius: '8px',
-          backgroundColor: '#1a202c',
-          padding: '20px',
-        }}
+        style={{ width, height }}
       >
-        <div
-          style={{ color: '#ef4444', fontSize: '18px', marginBottom: '10px' }}
-        >
-          游戏引擎初始化失败
-        </div>
-        <div
-          style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center' }}
-        >
-          {error}
-        </div>
+        <div className="game-canvas__error-title">游戏引擎初始化失败</div>
+        <div className="game-canvas__error-details">{error}</div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`game-canvas ${className}`}
-      style={{
-        position: 'relative',
-        border: '2px solid #3182ce',
-        borderRadius: '8px',
-        padding: '10px',
-        backgroundColor: '#1a202c',
-      }}
-    >
+    <div className={`game-canvas ${className}`}>
       <div
         ref={canvasRef}
-        style={{
-          width,
-          height,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
+        className="game-canvas__content"
+        style={{ width, height }}
       />
 
       {/* 游戏状态显示（可选） */}
       {gameState && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: '#ffffff',
-            padding: '10px',
-            borderRadius: '5px',
-            fontSize: '12px',
-            minWidth: '150px',
-          }}
-        >
+        <div className="game-canvas__status-panel">
           <div>分数: {gameState.score}</div>
           <div>等级: {gameState.level}</div>
           <div>生命值: {gameState.health}</div>
@@ -310,68 +255,28 @@ export function GameCanvas({
       )}
 
       {/* 游戏控制按钮（开发时可见） */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          display: 'flex',
-          gap: '10px',
-        }}
-      >
+      <div className="game-canvas__controls">
         <button
           onClick={pauseGame}
-          style={{
-            padding: '5px 10px',
-            backgroundColor: '#3182ce',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '12px',
-          }}
+          className="game-canvas__control-btn game-canvas__control-btn--pause"
         >
           暂停
         </button>
         <button
           onClick={resumeGame}
-          style={{
-            padding: '5px 10px',
-            backgroundColor: '#059669',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '12px',
-          }}
+          className="game-canvas__control-btn game-canvas__control-btn--resume"
         >
           继续
         </button>
         <button
           onClick={saveGame}
-          style={{
-            padding: '5px 10px',
-            backgroundColor: '#dc2626',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '12px',
-          }}
+          className="game-canvas__control-btn game-canvas__control-btn--save"
         >
           保存
         </button>
         <button
           onClick={restartGame}
-          style={{
-            padding: '5px 10px',
-            backgroundColor: '#f59e0b',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '12px',
-          }}
+          className="game-canvas__control-btn game-canvas__control-btn--restart"
         >
           重启
         </button>

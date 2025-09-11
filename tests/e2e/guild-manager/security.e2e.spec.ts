@@ -4,17 +4,12 @@
  */
 
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 let testApp: { electronApp: ElectronApplication; page: Page };
 
 test.beforeAll(async () => {
-  const electronApp = await electron.launch({
-    args: ['dist-electron/main.js'],
-    env: {
-      NODE_ENV: 'test',
-      SECURITY_TEST_MODE: 'true',
-    },
-  });
+  const electronApp = await launchApp();
 
   const page = await electronApp.firstWindow();
   await page.waitForLoadState('domcontentloaded');

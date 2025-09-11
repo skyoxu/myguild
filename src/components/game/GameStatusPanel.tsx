@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { useGameState } from '../../contexts/GameStateContext';
 import type { GameState } from '../../ports/game-engine.port';
+import './GameStatusPanel.css';
 
 interface GameStatusPanelProps {
   gameState?: GameState | null;
@@ -40,21 +41,19 @@ export function GameStatusPanel({
     return '#ef4444'; // 红色
   };
 
-  // 获取位置样式
-  const getPositionStyle = () => {
-    const baseStyle = { position: 'absolute' as const, zIndex: 1000 };
-
+  // 获取位置CSS类名
+  const getPositionClass = () => {
     switch (position) {
       case 'top-left':
-        return { ...baseStyle, top: '20px', left: '20px' };
+        return 'game-status-panel--top-left';
       case 'top-right':
-        return { ...baseStyle, top: '20px', right: '20px' };
+        return 'game-status-panel--top-right';
       case 'bottom-left':
-        return { ...baseStyle, bottom: '20px', left: '20px' };
+        return 'game-status-panel--bottom-left';
       case 'bottom-right':
-        return { ...baseStyle, bottom: '20px', right: '20px' };
+        return 'game-status-panel--bottom-right';
       default:
-        return { ...baseStyle, top: '20px', right: '20px' };
+        return 'game-status-panel--top-right';
     }
   };
 
@@ -69,49 +68,23 @@ export function GameStatusPanel({
 
   return (
     <div
-      className={`game-status-panel ${className}`}
-      style={{
-        ...getPositionStyle(),
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        color: '#ffffff',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        backdropFilter: 'blur(4px)',
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        minWidth: '200px',
-        userSelect: 'none',
-        transition: 'all 0.3s ease',
-        opacity: isVisible ? 1 : 0.7,
-        transform: isVisible ? 'scale(1)' : 'scale(0.95)',
-      }}
+      className={`game-status-panel ${getPositionClass()} ${
+        isVisible ? 'game-status-panel--visible' : 'game-status-panel--hidden'
+      } ${className}`}
       data-testid="game-status-panel"
     >
       {/* 可折叠按钮 */}
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: isVisible ? '8px' : '0px',
-        }}
+        className={`game-status-panel__header ${
+          isVisible
+            ? 'game-status-panel__header--visible'
+            : 'game-status-panel__header--collapsed'
+        }`}
       >
-        <span
-          style={{ fontWeight: 'bold', fontSize: '12px', color: '#94a3b8' }}
-        >
-          游戏状态
-        </span>
+        <span className="game-status-panel__title">游戏状态</span>
         <button
           onClick={toggleVisibility}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '12px',
-            padding: '2px 4px',
-          }}
+          className="game-status-panel__toggle-btn"
           title={isVisible ? '折叠' : '展开'}
         >
           {isVisible ? '−' : '+'}
@@ -120,65 +93,37 @@ export function GameStatusPanel({
 
       {/* 主要状态信息 */}
       {isVisible && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="game-status-panel__content">
           {/* 生命值条 */}
           <div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '4px',
-              }}
-            >
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>生命值</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
+            <div className="game-status-panel__health-header">
+              <span className="game-status-panel__health-label">生命值</span>
+              <span className="game-status-panel__health-value">
                 {gameState.health}/100
               </span>
             </div>
-            <div
-              style={{
-                width: '100%',
-                height: '6px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '3px',
-                overflow: 'hidden',
-              }}
-            >
+            <div className="game-status-panel__health-bar">
               <div
+                className="game-status-panel__health-fill"
                 style={{
                   width: `${healthPercentage}%`,
-                  height: '100%',
                   backgroundColor: getHealthColor(),
-                  transition: 'width 0.3s ease',
                 }}
               />
             </div>
           </div>
 
           {/* 分数和等级 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="game-status-panel__stats">
             <div>
-              <div style={{ fontSize: '12px', color: '#94a3b8' }}>分数</div>
-              <div
-                style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  color: '#fbbf24',
-                }}
-              >
+              <div className="game-status-panel__stat-label">分数</div>
+              <div className="game-status-panel__score-value">
                 {gameState.score.toLocaleString()}
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '12px', color: '#94a3b8' }}>等级</div>
-              <div
-                style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  color: '#3b82f6',
-                }}
-              >
+            <div className="game-status-panel__level-container">
+              <div className="game-status-panel__stat-label">等级</div>
+              <div className="game-status-panel__level-value">
                 {gameState.level}
               </div>
             </div>
@@ -189,48 +134,22 @@ export function GameStatusPanel({
             <>
               {/* 物品栏 */}
               <div>
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#94a3b8',
-                    marginBottom: '4px',
-                  }}
-                >
+                <div className="game-status-panel__inventory-label">
                   物品栏 ({gameState.inventory?.length || 0})
                 </div>
                 {gameState.inventory && gameState.inventory.length > 0 ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '4px',
-                      flexWrap: 'wrap',
-                      maxWidth: '180px',
-                    }}
-                  >
+                  <div className="game-status-panel__inventory-items">
                     {gameState.inventory.map((item, index) => (
                       <div
                         key={index}
-                        style={{
-                          backgroundColor: 'rgba(59, 130, 246, 0.3)',
-                          color: '#93c5fd',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          border: '1px solid rgba(59, 130, 246, 0.5)',
-                        }}
+                        className="game-status-panel__inventory-item"
                       >
                         {item}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: '#6b7280',
-                      fontStyle: 'italic',
-                    }}
-                  >
+                  <div className="game-status-panel__inventory-empty">
                     暂无物品
                   </div>
                 )}
@@ -239,8 +158,8 @@ export function GameStatusPanel({
               {/* 位置信息 */}
               {gameState.position && (
                 <div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>位置</div>
-                  <div style={{ fontSize: '11px', color: '#d1d5db' }}>
+                  <div className="game-status-panel__position-label">位置</div>
+                  <div className="game-status-panel__position-value">
                     X: {Math.round(gameState.position.x)}, Y:{' '}
                     {Math.round(gameState.position.y)}
                   </div>
@@ -249,17 +168,11 @@ export function GameStatusPanel({
 
               {/* 游戏ID（调试信息） */}
               {process.env.NODE_ENV === 'development' && (
-                <div>
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      color: '#6b7280',
-                      marginTop: '8px',
-                    }}
-                  >
+                <div className="game-status-panel__debug-info">
+                  <div className="game-status-panel__debug-id">
                     ID: {gameState.id}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                  <div className="game-status-panel__debug-timestamp">
                     更新: {new Date(gameState.timestamp).toLocaleTimeString()}
                   </div>
                 </div>

@@ -9,20 +9,13 @@
  * 4. 权限控制验证
  * 5. 运行时安全监控
  */
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import {
   SecurityConfig,
   getSecurityHealthCheck,
 } from '../../../electron/security';
 import { attemptAndAssertBlocked } from '../../helpers/nav-assert';
+import { launchApp } from '../../helpers/launch';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -30,15 +23,7 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[Test] 启动Electron应用进行安全测试...');
 
-  // ESM 兼容路径获取
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const entry = path.resolve(__dirname, '../../../dist-electron/main.js');
-
-  electronApp = await electron.launch({
-    args: [entry],
-    env: { CI: 'true', SECURITY_TEST_MODE: 'true' },
-  });
+  electronApp = await launchApp();
 
   const win = await electronApp.firstWindow(); // 等到首窗
   await win.waitForLoadState('domcontentloaded'); // DOM 就绪再断言

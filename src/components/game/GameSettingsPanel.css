@@ -1,0 +1,266 @@
+/* 游戏设置面板样式 */
+
+.game-settings-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 20px;
+}
+
+.game-settings-panel__dialog {
+  background-color: #1f2937;
+  border-radius: 12px;
+  border: 1px solid #374151;
+  max-width: 900px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  overflow: hidden;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 侧边栏 */
+.game-settings-panel__sidebar {
+  width: 200px;
+  background-color: #111827;
+  border-right: 1px solid #374151;
+  padding: 20px 0;
+}
+
+.game-settings-panel__sidebar-title {
+  color: #f9fafb;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 20px;
+}
+
+.game-settings-panel__tab {
+  width: 100%;
+  padding: 12px 20px;
+  background-color: transparent;
+  color: #9ca3af;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-settings-panel__tab--active {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+/* 主内容区域 */
+.game-settings-panel__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-settings-panel__header {
+  padding: 20px;
+  border-bottom: 1px solid #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-settings-panel__header-title {
+  color: #f9fafb;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.game-settings-panel__close-btn {
+  padding: 6px 12px;
+  background-color: transparent;
+  color: #9ca3af;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.game-settings-panel__content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* 表单控件 */
+.game-settings-panel__slider-container {
+  margin-bottom: 16px;
+}
+
+.game-settings-panel__slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.game-settings-panel__slider-label {
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.game-settings-panel__slider-value {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.game-settings-panel__slider {
+  width: 100%;
+  height: 4px;
+  background: #374151;
+  outline: none;
+  border-radius: 2px;
+}
+
+.game-settings-panel__select-container {
+  margin-bottom: 16px;
+}
+
+.game-settings-panel__select-label {
+  display: block;
+  color: #d1d5db;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.game-settings-panel__select {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.game-settings-panel__checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.game-settings-panel__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.game-settings-panel__checkbox-label {
+  color: #d1d5db;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* 控制设置特有样式 */
+.game-settings-panel__controls-section {
+  margin-bottom: 24px;
+}
+
+.game-settings-panel__controls-title {
+  color: #f9fafb;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.game-settings-panel__key-binding-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.game-settings-panel__key-binding-label {
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.game-settings-panel__key-binding-btn {
+  padding: 4px 12px;
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  min-width: 60px;
+}
+
+.game-settings-panel__key-binding-btn--active {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* 底部按钮区域 */
+.game-settings-panel__footer {
+  padding: 20px;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-settings-panel__reset-btn {
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.game-settings-panel__footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.game-settings-panel__cancel-btn {
+  padding: 8px 16px;
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.game-settings-panel__save-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.game-settings-panel__save-btn--enabled {
+  background-color: #3b82f6;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.game-settings-panel__save-btn--disabled {
+  background-color: #374151;
+  color: #6b7280;
+  cursor: not-allowed;
+}

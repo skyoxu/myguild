@@ -44,8 +44,9 @@ function createSecureBrowserWindow(options = {}) {
 /**
  * 第二层：导航与权限拦截
  * 对单个窗口应用三项拦截策略
+ * ✅ 按cifix1.txt建议：通过参数传入Session，避免访问window.webContents.session
  */
-function hardenWindow(window) {
+function hardenWindow(window, ses) {
   // 1. 窗口/弹窗拦截
   window.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[Security] 窗口打开请求被拦截: ${url}`);
@@ -79,24 +80,20 @@ function hardenWindow(window) {
     }
   });
   // 3. 权限请求拦截
-  window.webContents.session.setPermissionRequestHandler(
-    (_webContents, permission, callback) => {
-      console.log(`[Security] 权限请求: ${permission}`);
-      // 定义允许的权限白名单
-      const allowedPermissions = [
-        'clipboard-read',
-        'clipboard-sanitized-write',
-      ];
-      const isAllowed = allowedPermissions.includes(permission);
-      if (isAllowed) {
-        console.log(`[Security] 权限 ${permission} 已允许`);
-        callback(true);
-      } else {
-        console.warn(`[Security] 权限 ${permission} 被拒绝`);
-        callback(false);
-      }
+  // ✅ 按cifix1.txt建议：使用传入的session参数，避免访问window.webContents.session
+  ses.setPermissionRequestHandler((_webContents, permission, callback) => {
+    console.log(`[Security] 权限请求: ${permission}`);
+    // 定义允许的权限白名单
+    const allowedPermissions = ['clipboard-read', 'clipboard-sanitized-write'];
+    const isAllowed = allowedPermissions.includes(permission);
+    if (isAllowed) {
+      console.log(`[Security] 权限 ${permission} 已允许`);
+      callback(true);
+    } else {
+      console.warn(`[Security] 权限 ${permission} 被拒绝`);
+      callback(false);
     }
-  );
+  });
   // 4. 外部协议处理
   window.webContents.on('will-redirect', (event, redirectUrl) => {
     console.log(`[Security] 重定向检查: ${redirectUrl}`);

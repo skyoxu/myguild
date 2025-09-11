@@ -453,8 +453,7 @@ export function GameVerticalSlice({
       {(sliceState.phase === 'playing' || sliceState.phase === 'completed') && (
         <div
           ref={canvasRef}
-          className="game-canvas-container border border-gray-600"
-          style={{ width: 800, height: 600 }}
+          className="game-canvas-container border border-gray-600 w-[800px] h-[600px]"
         />
       )}
 

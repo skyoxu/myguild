@@ -59,7 +59,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 exports.SECURITY_PREFERENCES = void 0;
 const electron_1 = require('electron');
 const path_1 = require('path');
-const fs_1 = require('fs');
+const url_1 = require('url');
 const auto_updater_1 = require('./security/auto-updater');
 const csp_policy_1 = require('./security/csp-policy');
 // CI 下为稳态，需在 app ready 之前禁用 GPU 加速
@@ -115,25 +115,70 @@ function createSecureBrowserWindow() {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
+      // ✅ 安全基线：禁用webview标签防止潜在安全风险
+      webviewTag: false,
+      // ✅ 安全基线：明确禁止加载不安全内容
+      allowRunningInsecureContent: false,
+      // ✅ 安全基线：生产环境禁用开发者工具
+      devTools: process.env.NODE_ENV !== 'production',
+      // ✅ 关键：避免CI后台节流影响交互响应性
+      backgroundThrottling: false,
     },
   });
-  // 导航拦截：窗口级will-navigate保持作为二道闸
+  // ✅ 按cifix1.txt建议：主框架导航用will-navigate阻止，不用webRequest cancel避免chrome-error
   win.webContents.on('will-navigate', (event, url) => {
     console.log(`🔄 [will-navigate] 尝试导航到: ${url}`);
-    // 允许app://协议的导航（应用内页面）
-    if (url.startsWith('app://')) {
-      console.log(`✅ [will-navigate] 允许app://协议导航: ${url}`);
-      return; // 不阻止app://协议的导航
+    // 只允许app://和file://协议
+    if (url.startsWith('app://') || url.startsWith('file://')) {
+      console.log(`✅ [will-navigate] 允许本地协议导航: ${url}`);
+      return;
     }
-    event.preventDefault(); // 阻止其他外部导航
+    // 阻止外部导航（不会生成chrome-error页面）
+    event.preventDefault();
     console.log(`🚫 [will-navigate] 阻止外部导航: ${url}`);
-    // 如需放行其他可信URL，可在此白名单处理
   });
-  // 新窗口一律拒绝
+  // ✅ 按cifix1.txt建议：新窗口统一用setWindowOpenHandler控制
   win.webContents.setWindowOpenHandler(({ url }) => {
-    console.log(`🚫 [setWindowOpenHandler] 阻止新窗口: ${url}`);
+    console.log(`🔍 [setWindowOpenHandler] 新窗口请求: ${url}`);
+    // 检查是否为受信任的外部URL（白名单域名）
+    const trustedDomains = [
+      'github.com',
+      'docs.electronjs.org',
+      'web.dev',
+      'developer.mozilla.org',
+      'stackoverflow.com',
+    ];
+    const urlObj = new URL(url);
+    const isTrusted = trustedDomains.some(
+      domain =>
+        urlObj.hostname === domain || urlObj.hostname.endsWith(`.${domain}`)
+    );
+    if (
+      isTrusted &&
+      (url.startsWith('https://') || url.startsWith('http://'))
+    ) {
+      console.log(
+        `🌐 [setWindowOpenHandler] 通过shell.openExternal打开受信任链接: ${url}`
+      );
+      electron_1.shell.openExternal(url);
+    } else {
+      console.log(`🚫 [setWindowOpenHandler] 阻止不受信任的链接: ${url}`);
+    }
+    // 总是拒绝新窗口创建，受信任的链接通过系统浏览器打开
     return { action: 'deny' };
   });
+  // ✅ 按cifix1.txt建议：添加did-fail-load保险机制，自动恢复到首页
+  win.webContents.on(
+    'did-fail-load',
+    (_, __, ___, validatedURL, isMainFrame) => {
+      if (isMainFrame && validatedURL.startsWith('chrome-error://')) {
+        console.log(
+          `🔄 [did-fail-load] 检测到chrome-error页面，自动恢复到首页`
+        );
+        win.loadURL('app://index.html');
+      }
+    }
+  );
   return win;
 }
 function configureTestMode(_window) {
@@ -146,7 +191,7 @@ function configureTestMode(_window) {
   // 此处仅记录测试模式配置已应用
   console.log('🧪 测试模式已启用 - 安全策略通过defaultSession全局应用');
 }
-function createWindow(is) {
+function createWindow(is, ses) {
   // 创建浏览器窗口
   const mainWindow = createSecureBrowserWindow();
   // 在测试模式下暴露安全配置供验证（最小化信息泄露）
@@ -159,6 +204,7 @@ function createWindow(is) {
       webSecurity: true,
       testMode: true,
       windowId: `window-${Math.random().toString(36).substr(2, 9)}`, // 匿名化ID
+      createdAt: new Date().toISOString(), // 添加缺失的创建时间字段
     };
     // 仅暴露必要的策略验证信息
     global.__SECURITY_POLICY_ENABLED__ = {
@@ -173,9 +219,21 @@ function createWindow(is) {
   mainWindow.once('ready-to-show', () => {
     console.log('🪟 [ready-to-show] 窗口内容就绪，开始显示');
     mainWindow.show();
-    // 在测试模式下发出窗口就绪信号
+    // ✅ CI环境优化：确保窗口完全前置，避免后台节流影响交互响应性
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
-      console.log('🧪 [测试模式] 窗口显示完成');
+      // 强制窗口前置：多重保障
+      mainWindow.focus();
+      mainWindow.moveTop();
+      mainWindow.setAlwaysOnTop(true);
+      // 延迟100ms后恢复正常层级，但保持前置
+      setTimeout(() => {
+        mainWindow.setAlwaysOnTop(false);
+        mainWindow.focus(); // 最终聚焦
+      }, 100);
+      console.log('🧪 [CI优化] 窗口前置完成，准备接收交互');
+    } else {
+      // 生产环境：标准前置逻辑
+      mainWindow.focus();
     }
   });
   // ✅ 按cifix1.txt建议：添加窗口级render-process-gone监听器
@@ -188,37 +246,30 @@ function createWindow(is) {
       e.preventDefault(); // 只阻止非app://协议的导航
     }
   }); // 官方建议
-  // ===== 5) 失败自愈：避免停在 chrome-error 页 =====
-  const indexUrl = 'app://index.html';
-  mainWindow.webContents.on('did-fail-load', () => {
-    if (!mainWindow.isDestroyed()) {
-      console.log('🔄 [did-fail-load] 重新加载首页以恢复...');
-      mainWindow.loadURL(indexUrl);
-    }
-  });
+  // ✅ 移除重复的did-fail-load监听器，避免重复恢复尝试
+  // 错误恢复已在createSecureBrowserWindow()中实现
   // 应用统一安全策略已通过上述代码实现（权限控制、导航限制、窗口打开处理）
   // CSP策略：开发环境使用webRequest注入，生产环境依赖index.html meta标签
   if (is.dev) {
+    // ✅ 按cifix1.txt建议：使用传入的session参数，避免访问mainWindow.webContents.session
     // 开发环境：动态注入CSP以支持热更新和开发工具
-    mainWindow.webContents.session.webRequest.onHeadersReceived(
-      async (details, callback) => {
-        // 为每次导航生成唯一nonce
-        const { randomBytes } = await Promise.resolve().then(() =>
-          __importStar(require('crypto'))
-        );
-        const nonce = randomBytes(16).toString('base64');
-        // 使用统一CSP管理器生成开发环境策略
-        const cspPolicy = csp_policy_1.CSPManager.generateDevelopmentCSP(nonce);
-        callback({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Content-Security-Policy': [cspPolicy],
-            // 存储nonce供渲染进程使用
-            'X-CSP-Nonce': [nonce],
-          },
-        });
-      }
-    );
+    ses.webRequest.onHeadersReceived(async (details, callback) => {
+      // 为每次导航生成唯一nonce
+      const { randomBytes } = await Promise.resolve().then(() =>
+        __importStar(require('crypto'))
+      );
+      const nonce = randomBytes(16).toString('base64');
+      // 使用统一CSP管理器生成开发环境策略
+      const cspPolicy = csp_policy_1.CSPManager.generateDevelopmentCSP(nonce);
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [cspPolicy],
+          // 存储nonce供渲染进程使用
+          'X-CSP-Nonce': [nonce],
+        },
+      });
+    });
   }
   // 生产环境：依赖index.html中的meta标签提供CSP（更高性能）
   configureTestMode(mainWindow);
@@ -273,66 +324,74 @@ electron_1.app.whenReady().then(async () => {
   // 2.1 权限：默认拒绝（全局一票否决，可按 overlay 放白名单）
   ses.setPermissionCheckHandler(() => false);
   ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
-  // 1) 注册app://协议映射
-  electron_1.protocol.registerFileProtocol(APP_SCHEME, (request, cb) => {
+  // ✅ 按cifix1.txt建议：使用新的protocol.handle替代registerFileProtocol
+  await electron_1.protocol.handle(APP_SCHEME, request => {
     try {
-      let url = request.url.replace('app://', '');
-      // 移除末尾的斜杠（如果有的话）
-      if (url.endsWith('/')) {
-        url = url.slice(0, -1);
-      }
-      // 处理相对路径问题：如果URL包含 index.html/xxx，将其转换为 xxx
-      if (url.includes('index.html/')) {
-        url = url.replace('index.html/', '');
-        console.log(`🔄 [protocol] 路径重写: ${request.url} -> ${url}`);
-      }
-      // 生产模式页面产于 dist/
-      const filePath = (0, path_1.join)(__dirname, '../dist', url);
-      console.log(`🔍 [protocol] 请求: ${request.url} -> ${filePath}`);
-      // 同步检查文件是否存在
-      if ((0, fs_1.existsSync)(filePath)) {
-        console.log(`✅ [protocol] 文件存在: ${filePath}`);
-        cb({ path: filePath });
-      } else {
-        console.log(`❌ [protocol] 文件不存在: ${filePath}`);
-        cb({ error: -6 }); // net::ERR_FILE_NOT_FOUND
-      }
+      const { pathname } = new URL(request.url);
+      // 默认加载index.html
+      const file = pathname === '/' ? 'index.html' : pathname;
+      // 修复路径问题：app.getAppPath()在开发时返回dist-electron目录，需要回到上级目录访问dist
+      const basePath = (0, path_1.join)(electron_1.app.getAppPath(), '..');
+      const filePath = (0, path_1.join)(basePath, 'dist', file);
+      console.log(`🔍 [protocol.handle] 请求: ${request.url} -> ${filePath}`);
+      // 使用net.fetch加载本地文件
+      return electron_1.net.fetch(
+        (0, url_1.pathToFileURL)(filePath).toString()
+      );
     } catch (error) {
-      console.log(`🚨 [protocol] 协议处理错误:`, error);
-      cb({ error: -2 }); // net::ERR_FAILED
+      console.error(`🚨 [protocol.handle] 协议处理错误:`, error);
+      // 返回错误响应
+      return new Response('File not found', { status: 404 });
     }
   });
-  // 2) 会话级：在创建任何窗口/加载前，先拦截"外部 http/https"
-  ses.webRequest.onBeforeRequest(
-    { urls: ['http://*/*', 'https://*/*'] },
-    (d, cb) => {
-      // 白名单（Sentry监控等必要域名）
-      const isAllowed =
-        d.url.includes('localhost') ||
-        d.url.includes('127.0.0.1') ||
-        d.url.includes('sentry.io') ||
-        d.url.startsWith('https://o.sentry.io');
-      if (!isAllowed) {
-        console.log(`🚫 [defaultSession] 阻断外部导航: ${d.url}`);
-      }
-      cb({ cancel: !isAllowed }); // 阻断真实导航，避免上下文销毁
+  // ✅ 按cifix1.txt建议：webRequest仅处理子资源，mainFrame交给will-navigate处理
+  ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
+    // 如果是主框架导航，交给will-navigate处理，不要在这里cancel
+    if (details.resourceType === 'mainFrame') {
+      console.log(
+        `🔄 [webRequest] 主框架导航交给will-navigate处理: ${details.url}`
+      );
+      return callback({ cancel: false });
     }
-  );
-  // 3) 响应头安全合集（生产）
+    // 对子资源执行白名单检查
+    const isAllowed =
+      details.url.startsWith('app://') ||
+      details.url.startsWith('file://') ||
+      details.url.startsWith('data:') ||
+      details.url.startsWith('blob:') ||
+      details.url.includes('localhost') ||
+      details.url.includes('127.0.0.1') ||
+      details.url.includes('sentry.io') ||
+      details.url.startsWith('https://o.sentry.io');
+    if (!isAllowed) {
+      console.log(
+        `🚫 [webRequest] 阻断子资源: ${details.url} (${details.resourceType})`
+      );
+    }
+    callback({ cancel: !isAllowed });
+  });
+  // 3) 响应头安全合集（生产）- 强CSP基线，遵循OWASP最佳实践
   ses.webRequest.onHeadersReceived((details, cb) => {
     const h = details.responseHeaders ?? {};
+    // ✅ 强安全CSP基线：移除unsafe-inline，阻断XSS与外部代码混入
     h['Content-Security-Policy'] = [
-      "default-src 'self'; base-uri 'none'; object-src 'none'; " +
-        "img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; " +
-        "connect-src 'self' https://o.sentry.io",
+      "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self'; " + // 移除 'unsafe-inline'
+        "img-src 'self' data: blob:; " +
+        "font-src 'self'; " +
+        "connect-src 'self' https://o.sentry.io; " +
+        "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
     ];
+    // ✅ 现代跨源安全头：COOP/COEP/CORP (web.dev/MDN推荐)
     h['Cross-Origin-Opener-Policy'] = ['same-origin'];
     h['Cross-Origin-Embedder-Policy'] = ['require-corp'];
     h['Cross-Origin-Resource-Policy'] = ['same-origin'];
+    // ✅ 权限策略：默认禁用敏感权限
     h['Permissions-Policy'] = [
       'geolocation=(), microphone=(), camera=(), notifications=()',
     ];
-    cb({ responseHeaders: h }); // 通过 onHeadersReceived 注入响应头
+    cb({ responseHeaders: h });
   });
   electron_1.app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -355,7 +414,24 @@ electron_1.app.whenReady().then(async () => {
     },
   };
   console.log('🔒 安全策略初始化完成:', securityInitEvent);
-  createWindow(is);
+  createWindow(is, ses);
+  // ✅ CI测试专用：窗口前置IPC处理程序
+  if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
+    const { ipcMain } = require('electron');
+    ipcMain.handle('window:bring-to-front', () => {
+      const focusedWindow = electron_1.BrowserWindow.getFocusedWindow();
+      const allWindows = electron_1.BrowserWindow.getAllWindows();
+      const targetWindow = focusedWindow || allWindows[0];
+      if (targetWindow) {
+        targetWindow.show();
+        targetWindow.focus();
+        targetWindow.moveTop();
+        console.log('🧪 [IPC] 窗口前置请求处理完成');
+        return true;
+      }
+      return false;
+    });
+  }
   // 初始化安全自动更新器（仅在非测试环境）
   if (process.env.NODE_ENV !== 'test' && process.env.CI !== 'true') {
     // 异步初始化auto-updater
@@ -376,7 +452,7 @@ electron_1.app.whenReady().then(async () => {
     if (electron_1.BrowserWindow.getAllWindows().length === 0) {
       // 在CommonJS中直接导入is工具用于activate事件
       const { is } = require('@electron-toolkit/utils');
-      createWindow(is);
+      createWindow(is, ses);
     }
   });
 });

@@ -15,6 +15,7 @@ import { GameSettingsPanel } from './GameSettingsPanel';
 import type { GameSettings } from './GameSettingsPanel';
 import type { GameState } from '../../ports/game-engine.port';
 import type { DomainEvent } from '../../shared/contracts/events';
+import './GameInterface.css';
 
 interface GameInterfaceProps {
   className?: string;
@@ -203,16 +204,6 @@ export function GameInterface({
     >
       <div
         className={`game-interface ${className}`}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100vh',
-          backgroundColor: '#0f172a',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
         data-testid="game-interface"
       >
         {/* 主游戏画布 */}
@@ -266,20 +257,7 @@ export function GameInterface({
         {/* 设置按钮（右上角） */}
         <button
           onClick={() => setShowSettings(true)}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            padding: '8px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: '#d1d5db',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            zIndex: 1000,
-            backdropFilter: 'blur(4px)',
-          }}
+          className="game-interface__settings-btn"
           title="打开设置 (F10)"
         >
           ⚙️
@@ -288,20 +266,7 @@ export function GameInterface({
         {/* 存档管理按钮 */}
         <button
           onClick={() => setShowSaveManager(true)}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            left: '70px',
-            padding: '8px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: '#d1d5db',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            zIndex: 1000,
-            backdropFilter: 'blur(4px)',
-          }}
+          className="game-interface__save-manager-btn"
           title="管理存档 (F9)"
         >
           📁
@@ -309,32 +274,8 @@ export function GameInterface({
 
         {/* 调试信息面板 */}
         {showDebugInfo && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '20px',
-              right: '20px',
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              color: '#d1d5db',
-              padding: '12px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontFamily: 'monospace',
-              zIndex: 1000,
-              minWidth: '200px',
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-            }}
-          >
-            <div
-              style={{
-                color: '#fbbf24',
-                marginBottom: '8px',
-                fontWeight: 'bold',
-              }}
-            >
-              调试信息
-            </div>
+          <div className="game-interface__debug-panel">
+            <div className="game-interface__debug-title">调试信息</div>
 
             <div>状态: {isGameRunning ? '运行中' : '已暂停'}</div>
             <div>FPS: {typeof window !== 'undefined' ? '60' : '0'}</div>
@@ -346,13 +287,7 @@ export function GameInterface({
             </div>
 
             {gameState && (
-              <div
-                style={{
-                  marginTop: '8px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid #374151',
-                }}
-              >
+              <div className="game-interface__debug-state">
                 <div>等级: {gameState.level}</div>
                 <div>分数: {gameState.score}</div>
                 <div>生命: {gameState.health}</div>
@@ -366,21 +301,10 @@ export function GameInterface({
             )}
 
             {error && (
-              <div
-                style={{
-                  marginTop: '8px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid #ef4444',
-                  color: '#fca5a5',
-                }}
-              >
-                错误: {error}
-              </div>
+              <div className="game-interface__debug-error">错误: {error}</div>
             )}
 
-            <div
-              style={{ marginTop: '8px', fontSize: '10px', color: '#6b7280' }}
-            >
+            <div className="game-interface__debug-shortcuts">
               F10: 设置 | F9: 存档 | ESC: 暂停 | TAB: 状态面板
             </div>
           </div>
@@ -412,39 +336,12 @@ export function GameInterface({
 
         {/* 错误显示 */}
         {error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'rgba(239, 68, 68, 0.95)',
-              color: '#ffffff',
-              padding: '16px 20px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '500',
-              zIndex: 2000,
-              maxWidth: '400px',
-              textAlign: 'center',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
-            }}
-          >
-            <div style={{ marginBottom: '12px', fontSize: '16px' }}>
-              ⚠️ 错误
-            </div>
-            <div style={{ marginBottom: '12px' }}>{error}</div>
+          <div className="game-interface__error-overlay">
+            <div className="game-interface__error-icon">⚠️ 错误</div>
+            <div className="game-interface__error-message">{error}</div>
             <button
               onClick={() => setError(null)}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
+              className="game-interface__error-close-btn"
             >
               关闭
             </button>
@@ -453,31 +350,13 @@ export function GameInterface({
 
         {/* 加载遮罩（可选） */}
         {!gameState && !error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1500,
-            }}
-          >
-            <div
-              style={{
-                textAlign: 'center',
-                color: '#d1d5db',
-              }}
-            >
-              <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎮</div>
-              <div style={{ fontSize: '18px', marginBottom: '8px' }}>
+          <div className="game-interface__loading-overlay">
+            <div className="game-interface__loading-content">
+              <div className="game-interface__loading-icon">🎮</div>
+              <div className="game-interface__loading-title">
                 初始化游戏引擎...
               </div>
-              <div style={{ fontSize: '14px', color: '#9ca3af' }}>请稍候</div>
+              <div className="game-interface__loading-subtitle">请稍候</div>
             </div>
           </div>
         )}

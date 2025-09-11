@@ -6,6 +6,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
 import { useGameState } from '../../contexts/GameStateContext';
+import './GameControlPanel.css';
 
 interface GameControlPanelProps {
   className?: string;
@@ -157,107 +158,18 @@ export function GameControlPanel({
     gameEvents.sendCommandToPhaser('load', { saveId: lastSaveId });
   }, [gameEvents, lastSaveId, isProcessing]);
 
-  // 获取面板样式
-  const getPanelStyle = () => {
-    const baseStyle = {
-      position: 'absolute' as const,
-      backgroundColor: 'rgba(0, 0, 0, 0.9)',
-      backdropFilter: 'blur(6px)',
-      borderRadius: '12px',
-      padding: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      zIndex: 1001,
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-    };
-
-    switch (position) {
-      case 'top':
-        return {
-          ...baseStyle,
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'bottom':
-        return {
-          ...baseStyle,
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'left':
-        return {
-          ...baseStyle,
-          left: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-        };
-      case 'right':
-        return {
-          ...baseStyle,
-          right: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-        };
-      default:
-        return baseStyle;
-    }
-  };
-
-  const buttonStyle = {
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    transition: 'all 0.2s ease',
-    disabled: isProcessing,
-  };
-
-  const primaryButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-  };
-
-  const secondaryButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    color: '#e5e7eb',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-  };
-
-  const dangerButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-  };
-
   return (
     <div
-      className={`game-control-panel ${className}`}
-      style={getPanelStyle()}
+      className={`game-control-panel position-${position} ${className}`}
       data-testid="game-control-panel"
     >
       {/* 主要控制按钮 */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className="control-main-section">
         {/* 暂停/继续按钮 */}
         <button
           onClick={isGameRunning ? handlePause : handleResume}
           disabled={isProcessing}
-          style={{
-            ...primaryButtonStyle,
-            backgroundColor: isGameRunning ? '#f59e0b' : '#22c55e',
-            opacity: isProcessing ? 0.6 : 1,
-          }}
+          className={`control-btn primary ${isGameRunning ? 'pause' : 'resume'}`}
           title={isGameRunning ? '暂停游戏' : '继续游戏'}
         >
           {isProcessing ? '⏳' : isGameRunning ? '⏸️ 暂停' : '▶️ 继续'}
@@ -267,10 +179,7 @@ export function GameControlPanel({
         <button
           onClick={handleSave}
           disabled={isProcessing}
-          style={{
-            ...secondaryButtonStyle,
-            opacity: isProcessing ? 0.6 : 1,
-          }}
+          className="control-btn secondary"
           title="保存游戏"
         >
           {isProcessing ? '💾...' : '💾 保存'}
@@ -280,10 +189,7 @@ export function GameControlPanel({
         <button
           onClick={handleLoad}
           disabled={isProcessing}
-          style={{
-            ...secondaryButtonStyle,
-            opacity: isProcessing ? 0.6 : 1,
-          }}
+          className="control-btn secondary"
           title="加载存档"
         >
           📂 加载
@@ -293,10 +199,7 @@ export function GameControlPanel({
         <button
           onClick={handleRestart}
           disabled={isProcessing}
-          style={{
-            ...dangerButtonStyle,
-            opacity: isProcessing ? 0.6 : 1,
-          }}
+          className="control-btn danger"
           title="重新开始游戏"
         >
           🔄 重启
@@ -305,34 +208,14 @@ export function GameControlPanel({
 
       {/* 高级控制（可选） */}
       {showAdvanced && (
-        <div
-          style={{
-            marginTop: '12px',
-            paddingTop: '12px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            fontSize: '12px',
-          }}
-        >
-          <span style={{ color: '#94a3b8', marginRight: '8px' }}>
-            快捷操作:
-          </span>
+        <div className="control-advanced-section">
+          <span className="status-label">快捷操作:</span>
 
           {/* 快速保存 */}
           <button
             onClick={handleQuickSave}
             disabled={isProcessing}
-            style={{
-              ...buttonStyle,
-              padding: '4px 8px',
-              fontSize: '11px',
-              backgroundColor: 'rgba(59, 130, 246, 0.3)',
-              color: '#93c5fd',
-              border: '1px solid rgba(59, 130, 246, 0.5)',
-              opacity: isProcessing ? 0.6 : 1,
-            }}
+            className="control-btn small quick-save"
             title="快速保存 (F5)"
           >
             F5 快存
@@ -342,45 +225,24 @@ export function GameControlPanel({
           <button
             onClick={handleQuickLoad}
             disabled={isProcessing || !lastSaveId}
-            style={{
-              ...buttonStyle,
-              padding: '4px 8px',
-              fontSize: '11px',
-              backgroundColor: lastSaveId
-                ? 'rgba(34, 197, 94, 0.3)'
-                : 'rgba(156, 163, 175, 0.3)',
-              color: lastSaveId ? '#86efac' : '#9ca3af',
-              border: `1px solid rgba(${lastSaveId ? '34, 197, 94' : '156, 163, 175'}, 0.5)`,
-              opacity: isProcessing || !lastSaveId ? 0.6 : 1,
-            }}
+            className={`control-btn small quick-load ${!lastSaveId ? 'disabled' : ''}`}
             title={lastSaveId ? '快速加载 (F9)' : '暂无快速存档'}
           >
             F9 快读
           </button>
 
           {/* 状态指示器 */}
-          <div
-            style={{
-              marginLeft: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
+          <div className="status-indicator-section">
             <div
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isProcessing
-                  ? '#f59e0b'
+              className={`status-dot ${
+                isProcessing
+                  ? 'processing'
                   : isGameRunning
-                    ? '#22c55e'
-                    : '#ef4444',
-                transition: 'background-color 0.3s ease',
-              }}
+                    ? 'running'
+                    : 'paused'
+              }`}
             />
-            <span style={{ color: '#94a3b8', fontSize: '10px' }}>
+            <span className="status-text">
               {isProcessing ? '处理中' : isGameRunning ? '运行中' : '已暂停'}
             </span>
           </div>
@@ -389,16 +251,7 @@ export function GameControlPanel({
 
       {/* 键盘提示 */}
       {process.env.NODE_ENV === 'development' && (
-        <div
-          style={{
-            marginTop: '8px',
-            fontSize: '10px',
-            color: '#6b7280',
-            textAlign: 'center',
-          }}
-        >
-          ESC: 暂停 | F5: 快存 | F9: 快读
-        </div>
+        <div className="dev-hints">ESC: 暂停 | F5: 快存 | F9: 快读</div>
       )}
     </div>
   );

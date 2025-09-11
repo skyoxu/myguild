@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
+import './GameSettingsPanel.css';
 
 export interface GameSettings {
   // 图形设置
@@ -249,17 +250,10 @@ export function GameSettingsPanel({
     min = 0,
     max = 100
   ) => (
-    <div style={{ marginBottom: '16px' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px',
-        }}
-      >
-        <label style={{ color: '#d1d5db', fontSize: '14px' }}>{label}</label>
-        <span style={{ color: '#9ca3af', fontSize: '12px' }}>{value}</span>
+    <div className="game-settings-panel__slider-container">
+      <div className="game-settings-panel__slider-header">
+        <label className="game-settings-panel__slider-label">{label}</label>
+        <span className="game-settings-panel__slider-value">{value}</span>
       </div>
       <input
         type="range"
@@ -267,13 +261,7 @@ export function GameSettingsPanel({
         max={max}
         value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{
-          width: '100%',
-          height: '4px',
-          background: '#374151',
-          outline: 'none',
-          borderRadius: '2px',
-        }}
+        className="game-settings-panel__slider"
       />
     </div>
   );
@@ -284,29 +272,12 @@ export function GameSettingsPanel({
     options: { value: string; label: string }[],
     onChange: (value: string) => void
   ) => (
-    <div style={{ marginBottom: '16px' }}>
-      <label
-        style={{
-          display: 'block',
-          color: '#d1d5db',
-          fontSize: '14px',
-          marginBottom: '8px',
-        }}
-      >
-        {label}
-      </label>
+    <div className="game-settings-panel__select-container">
+      <label className="game-settings-panel__select-label">{label}</label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          backgroundColor: '#374151',
-          color: '#f9fafb',
-          border: '1px solid #4b5563',
-          borderRadius: '6px',
-          fontSize: '14px',
-        }}
+        className="game-settings-panel__select"
       >
         {options.map(option => (
           <option key={option.value} value={option.value}>
@@ -322,47 +293,20 @@ export function GameSettingsPanel({
     checked: boolean,
     onChange: (checked: boolean) => void
   ) => (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '16px',
-      }}
-    >
+    <div className="game-settings-panel__checkbox-container">
       <input
         type="checkbox"
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        style={{
-          width: '16px',
-          height: '16px',
-          accentColor: '#3b82f6',
-        }}
+        className="game-settings-panel__checkbox"
       />
-      <label style={{ color: '#d1d5db', fontSize: '14px', cursor: 'pointer' }}>
-        {label}
-      </label>
+      <label className="game-settings-panel__checkbox-label">{label}</label>
     </div>
   );
 
   return (
     <div
       className={`game-settings-panel ${className}`}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 3000,
-        padding: '20px',
-      }}
       onClick={e => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -370,59 +314,18 @@ export function GameSettingsPanel({
       }}
       data-testid="game-settings-panel"
     >
-      <div
-        style={{
-          backgroundColor: '#1f2937',
-          borderRadius: '12px',
-          border: '1px solid #374151',
-          maxWidth: '900px',
-          width: '100%',
-          maxHeight: '80vh',
-          display: 'flex',
-          overflow: 'hidden',
-          boxShadow:
-            '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        }}
-      >
+      <div className="game-settings-panel__dialog">
         {/* 侧边栏标签 */}
-        <div
-          style={{
-            width: '200px',
-            backgroundColor: '#111827',
-            borderRight: '1px solid #374151',
-            padding: '20px 0',
-          }}
-        >
-          <h2
-            style={{
-              color: '#f9fafb',
-              fontSize: '18px',
-              fontWeight: '600',
-              margin: '0 0 20px 20px',
-            }}
-          >
-            游戏设置
-          </h2>
+        <div className="game-settings-panel__sidebar">
+          <h2 className="game-settings-panel__sidebar-title">游戏设置</h2>
 
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                backgroundColor:
-                  activeTab === tab.id ? '#374151' : 'transparent',
-                color: activeTab === tab.id ? '#f9fafb' : '#9ca3af',
-                border: 'none',
-                textAlign: 'left',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
+              className={`game-settings-panel__tab ${
+                activeTab === tab.id ? 'game-settings-panel__tab--active' : ''
+              }`}
             >
               <span>{tab.icon}</span>
               {tab.name}
@@ -431,53 +334,24 @@ export function GameSettingsPanel({
         </div>
 
         {/* 主内容区域 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="game-settings-panel__main">
           {/* 头部 */}
-          <div
-            style={{
-              padding: '20px',
-              borderBottom: '1px solid #374151',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <h3
-              style={{
-                color: '#f9fafb',
-                fontSize: '16px',
-                fontWeight: '600',
-                margin: 0,
-              }}
-            >
+          <div className="game-settings-panel__header">
+            <h3 className="game-settings-panel__header-title">
               {tabs.find(tab => tab.id === activeTab)?.icon}{' '}
               {tabs.find(tab => tab.id === activeTab)?.name}设置
             </h3>
 
             <button
               onClick={onClose}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: 'transparent',
-                color: '#9ca3af',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '16px',
-              }}
+              className="game-settings-panel__close-btn"
             >
               ×
             </button>
           </div>
 
           {/* 设置内容 */}
-          <div
-            style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: '20px',
-            }}
-          >
+          <div className="game-settings-panel__content">
             {/* 图形设置 */}
             {activeTab === 'graphics' && (
               <div>
@@ -578,14 +452,8 @@ export function GameSettingsPanel({
             {/* 控制设置 */}
             {activeTab === 'controls' && (
               <div>
-                <div style={{ marginBottom: '24px' }}>
-                  <h4
-                    style={{
-                      color: '#f9fafb',
-                      fontSize: '14px',
-                      marginBottom: '12px',
-                    }}
-                  >
+                <div className="game-settings-panel__controls-section">
+                  <h4 className="game-settings-panel__controls-title">
                     键盘控制
                   </h4>
 
@@ -593,14 +461,9 @@ export function GameSettingsPanel({
                     ([action, key]) => (
                       <div
                         key={action}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '8px',
-                        }}
+                        className="game-settings-panel__key-binding-row"
                       >
-                        <span style={{ color: '#d1d5db', fontSize: '14px' }}>
+                        <span className="game-settings-panel__key-binding-label">
                           {action === 'moveUp'
                             ? '向上移动'
                             : action === 'moveDown'
@@ -618,18 +481,11 @@ export function GameSettingsPanel({
 
                         <button
                           onClick={() => handleKeyBinding(action)}
-                          style={{
-                            padding: '4px 12px',
-                            backgroundColor:
-                              isKeyBinding === action ? '#3b82f6' : '#374151',
-                            color:
-                              isKeyBinding === action ? '#ffffff' : '#d1d5db',
-                            border: '1px solid #4b5563',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            minWidth: '60px',
-                          }}
+                          className={`game-settings-panel__key-binding-btn ${
+                            isKeyBinding === action
+                              ? 'game-settings-panel__key-binding-btn--active'
+                              : ''
+                          }`}
                         >
                           {isKeyBinding === action ? '按键...' : key}
                         </button>
@@ -692,42 +548,18 @@ export function GameSettingsPanel({
           </div>
 
           {/* 底部按钮 */}
-          <div
-            style={{
-              padding: '20px',
-              borderTop: '1px solid #374151',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <div className="game-settings-panel__footer">
             <button
               onClick={resetSettings}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'transparent',
-                color: '#ef4444',
-                border: '1px solid #ef4444',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
+              className="game-settings-panel__reset-btn"
             >
               重置为默认
             </button>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="game-settings-panel__footer-actions">
               <button
                 onClick={onClose}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#374151',
-                  color: '#d1d5db',
-                  border: '1px solid #4b5563',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
+                className="game-settings-panel__cancel-btn"
               >
                 取消
               </button>
@@ -735,16 +567,11 @@ export function GameSettingsPanel({
               <button
                 onClick={saveSettings}
                 disabled={!hasChanges}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: hasChanges ? '#3b82f6' : '#374151',
-                  color: hasChanges ? '#ffffff' : '#6b7280',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: hasChanges ? 'pointer' : 'not-allowed',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                }}
+                className={`game-settings-panel__save-btn ${
+                  hasChanges
+                    ? 'game-settings-panel__save-btn--enabled'
+                    : 'game-settings-panel__save-btn--disabled'
+                }`}
               >
                 保存设置
               </button>

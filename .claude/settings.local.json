@@ -86,7 +86,8 @@
       "Bash(do echo \"修复 $file\")",
       "Bash(git restore:*)",
       "Bash(ELECTRON_ENABLE_LOGGING=1 DEBUG=electron* npx playwright test tests/e2e/security/session-ready.spec.ts --project=electron-security-audit)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(dir C:buildgamevitegamedist)"
     ],
     "deny": [],
     "ask": [],

@@ -3,10 +3,8 @@
  * 基于Playwright + Electron的端到端测试
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
-import { ElectronApplication, Page } from '@playwright/test';
-import path from 'path';
 
 let electronApp: ElectronApplication;
 let page: Page;
@@ -14,13 +12,7 @@ let page: Page;
 test.describe('Guild Manager Chunk 001 - E2E Tests', () => {
   test.beforeAll(async () => {
     // 启动Electron应用
-    electronApp = await electron.launch({
-      args: [path.join(__dirname, '../../electron/main.js')],
-      recordVideo: {
-        dir: 'tests/recordings/',
-        size: { width: 1280, height: 720 },
-      },
-    });
+    electronApp = await launchApp();
 
     // 获取主窗口
     page = await electronApp.firstWindow();

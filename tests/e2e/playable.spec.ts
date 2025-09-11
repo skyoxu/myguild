@@ -1,13 +1,9 @@
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../helpers/launch';
 
 test('Definition of Playable: 新建档→建造→打一波→存/读档→退出', async () => {
-  const app: ElectronApplication = await electron.launch({ args: ['.'] });
+  // ✅ 按cifix1.txt建议：使用构建产物而非相对路径
+  const app: ElectronApplication = await launchApp();
   const win: Page = await app.firstWindow();
 
   // 进入主菜单

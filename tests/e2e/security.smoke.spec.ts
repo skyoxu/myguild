@@ -7,10 +7,13 @@
  * 包括进程隔离、CSP策略、Context Bridge API、IPC白名单等关键安全措施。
  */
 
-import { test, expect } from '@playwright/test';
+import {
+  test,
+  expect,
+  type ElectronApplication,
+  type Page,
+} from '@playwright/test';
 import { launchApp } from '../helpers/launch';
-import { type ElectronApplication, type Page } from '@playwright/test';
-import path from 'node:path';
 import type {
   PreloadExposedApi,
   SecurityViolation,
@@ -41,21 +44,7 @@ test.describe('Electron安全基线验证套件', () => {
     }
 
     // 启动Electron应用
-    const electronPath = path.join(__dirname, '../../dist/main.js');
-
-    app = await electron.launch({
-      args: [electronPath],
-      env: {
-        ...process.env,
-        NODE_ENV: 'test',
-        // 禁用GPU以避免测试环境问题
-        ELECTRON_DISABLE_GPU: '1',
-        // 启用安全模式
-        ELECTRON_SECURITY_WARNINGS: '1',
-      },
-      // 等待应用启动的额外时间
-      timeout: APP_START_TIMEOUT,
-    });
+    app = await launchApp();
 
     // 监听应用控制台输出
     app.on('console', message => {

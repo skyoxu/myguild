@@ -4,24 +4,15 @@
  * 优先级: critical
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../../helpers/launch';
 
 test.describe('Electron安全基线验证', () => {
   let electronApp: ElectronApplication;
   let page: Page;
 
   test.beforeAll(async () => {
-    electronApp = await electron.launch({
-      args: ['.'],
-      recordVideo: process.env.CI ? { dir: 'test-results/videos' } : undefined,
-      timeout: 30000, // 增加启动超时时间
-    });
+    electronApp = await launchApp();
     page = await electronApp.firstWindow();
 
     // 使用官方推荐的等待策略

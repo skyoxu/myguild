@@ -23,6 +23,13 @@ if (process.contextIsolated) {
         version: process.versions.electron,
         isSandboxed: process.sandboxed,
         contextIsolated: process.contextIsolated,
+        // CI测试专用：窗口前置API
+        bringToFront: () => {
+          if (process.env.CI === 'true' || process.env.NODE_ENV === 'test') {
+            // 通过IPC请求主进程前置窗口
+            electronAPI.ipcRenderer?.invoke?.('window:bring-to-front');
+          }
+        },
         ...electronAPI,
       })
     );

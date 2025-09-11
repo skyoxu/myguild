@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { ElectronApplication, Page } from '@playwright/test';
 import { GUILD_MANAGER_CHUNK_002_SLOS } from '@/shared/contracts/guild-manager-chunk-002';
-import { launchApp } from './utils/electron-launcher';
+import { launchAppWithArgs } from '../helpers/launch';
 
 test.describe('副本阵容管理 E2E 测试', () => {
   let electronApp: ElectronApplication;
@@ -14,7 +14,10 @@ test.describe('副本阵容管理 E2E 测试', () => {
 
   test.beforeAll(async () => {
     // 使用官方API模式启动 Electron 应用
-    electronApp = await launchApp(['--test-mode', '--disable-web-security']);
+    electronApp = await launchAppWithArgs([
+      '--test-mode',
+      '--disable-web-security',
+    ]);
 
     page = await electronApp.firstWindow();
     await page.waitForLoadState('networkidle');

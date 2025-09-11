@@ -3,7 +3,7 @@
  * 确保关键表单走Action路径而非传统状态管理
  * 防止"纸面升级"问题
  */
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, ElectronApplication } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
 
 let electronApp: ElectronApplication;

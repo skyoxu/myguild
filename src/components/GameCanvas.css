@@ -1,0 +1,116 @@
+/* GameCanvas 组件样式 */
+
+/* 基础画布样式 */
+.game-canvas {
+  position: relative;
+  border: 2px solid #3182ce;
+  border-radius: 8px;
+  padding: 10px;
+  background-color: #1a202c;
+}
+
+/* 加载状态 */
+.game-canvas.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #3182ce;
+  border-radius: 8px;
+  background-color: #1a202c;
+}
+
+.game-canvas__loading-text {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+/* 错误状态 */
+.game-canvas.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  background-color: #1a202c;
+  padding: 20px;
+}
+
+.game-canvas__error-title {
+  color: #ef4444;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.game-canvas__error-details {
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 画布内容区域 */
+.game-canvas__content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 游戏状态显示面板 */
+.game-canvas__status-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  min-width: 150px;
+}
+
+/* 控制按钮容器 */
+.game-canvas__controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+/* 基础按钮样式 */
+.game-canvas__control-btn {
+  padding: 5px 10px;
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* 按钮颜色变体 */
+.game-canvas__control-btn--pause {
+  background-color: #3182ce;
+}
+
+.game-canvas__control-btn--resume {
+  background-color: #059669;
+}
+
+.game-canvas__control-btn--save {
+  background-color: #dc2626;
+}
+
+.game-canvas__control-btn--restart {
+  background-color: #f59e0b;
+}
+
+/* 按钮悬停效果 */
+.game-canvas__control-btn:hover {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+/* 按钮按下效果 */
+.game-canvas__control-btn:active {
+  transform: translateY(1px);
+}

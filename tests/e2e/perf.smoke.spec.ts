@@ -113,6 +113,14 @@ test.describe('性能冒烟测试套件', () => {
     // 等待应用就绪，无需重新导航（应用已在beforeAll中启动）
     await page.waitForSelector('[data-testid="app-root"]');
 
+    // ✅ 交互测试前置：确保窗口前台且稳定帧后再开始计时
+    await page.bringToFront();
+    // 用双 rAF 进入稳定帧后再开始计时
+    await page.evaluate(
+      () =>
+        new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+    );
+
     // 测试按钮点击响应时间
     const testButton = page.locator('[data-testid="test-button"]').first();
 
@@ -120,7 +128,7 @@ test.describe('性能冒烟测试套件', () => {
       // 使用P95采样方法验证交互响应性能
       await PerformanceTestUtils.runInteractionP95Test(
         async () => {
-          const startTime = performance.now();
+          const startTime = Date.now();
 
           await testButton.click();
 
@@ -129,7 +137,7 @@ test.describe('性能冒烟测试套件', () => {
             timeout: DEFAULT_LATENCY_BUDGET.interaction.p95,
           });
 
-          return performance.now() - startTime;
+          return Date.now() - startTime;
         },
         DEFAULT_LATENCY_BUDGET.interaction.p95,
         30 // 交互响应采样30次

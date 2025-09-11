@@ -3,13 +3,8 @@
  * 针对 导航拦截、窗口打开、权限请求 的核心安全测试
  */
 
-import {
-  test,
-  expect,
-  _electron as electron,
-  ElectronApplication,
-  Page,
-} from '@playwright/test';
+import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { launchApp } from '../../helpers/launch';
 
 let electronApp: ElectronApplication;
 let firstWindow: Page;
@@ -18,14 +13,7 @@ let firstWindow: Page;
 test.beforeAll(async () => {
   console.log('🚀 启动简化安全红线测试...');
 
-  electronApp = await electron.launch({
-    args: ['./dist-electron/main.js'],
-    timeout: 45000, // 减少超时时间
-    env: {
-      NODE_ENV: 'test',
-      SECURITY_TEST_MODE: 'true',
-    },
-  });
+  electronApp = await launchApp();
 
   firstWindow = await electronApp.firstWindow();
   await firstWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });

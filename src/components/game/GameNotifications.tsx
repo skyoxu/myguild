@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
+import './GameNotifications.css';
 
 interface GameNotification {
   id: string;
@@ -238,47 +239,19 @@ export function GameNotifications({
     }
   };
 
-  // 获取容器位置样式
-  const getContainerStyle = () => {
-    const baseStyle = {
-      position: 'fixed' as const,
-      zIndex: 2000,
-      pointerEvents: 'none' as const,
-      display: 'flex',
-      flexDirection: 'column' as const,
-      gap: '8px',
-      maxWidth: '320px',
-    };
-
+  // 获取容器位置类名
+  const getContainerClassName = () => {
     switch (position) {
       case 'top-center':
-        return {
-          ...baseStyle,
-          top: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
+        return 'game-notifications--top-center';
       case 'top-right':
-        return {
-          ...baseStyle,
-          top: '80px',
-          right: '20px',
-        };
+        return 'game-notifications--top-right';
       case 'bottom-center':
-        return {
-          ...baseStyle,
-          bottom: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
+        return 'game-notifications--bottom-center';
       case 'bottom-right':
-        return {
-          ...baseStyle,
-          bottom: '80px',
-          right: '20px',
-        };
+        return 'game-notifications--bottom-right';
       default:
-        return baseStyle;
+        return 'game-notifications--top-right';
     }
   };
 
@@ -288,8 +261,7 @@ export function GameNotifications({
 
   return (
     <div
-      className={`game-notifications ${className}`}
-      style={getContainerStyle()}
+      className={`game-notifications ${getContainerClassName()} ${className}`}
       data-testid="game-notifications"
     >
       {notifications.map(notification => {
@@ -298,18 +270,7 @@ export function GameNotifications({
         return (
           <div
             key={notification.id}
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              backdropFilter: 'blur(8px)',
-              border: `1px solid ${colors.border}`,
-              borderRadius: '8px',
-              padding: '12px 16px',
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              animation: 'slideInFromRight 0.3s ease',
-              position: 'relative',
-            }}
+            className={`game-notifications__item game-notifications__item--${notification.type}`}
             onClick={() => removeNotification(notification.id)}
             title="点击关闭"
           >
@@ -319,60 +280,30 @@ export function GameNotifications({
                 e.stopPropagation();
                 removeNotification(notification.id);
               }}
-              style={{
-                position: 'absolute',
-                top: '8px',
-                right: '8px',
-                background: 'none',
-                border: 'none',
-                color: '#9ca3af',
-                cursor: 'pointer',
-                fontSize: '12px',
-                padding: '2px',
-                opacity: 0.7,
-              }}
+              className="game-notifications__close-btn"
             >
               ×
             </button>
 
             {/* 通知内容 */}
-            <div
-              style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
-            >
-              <span style={{ fontSize: '16px', marginTop: '2px' }}>
+            <div className="game-notifications__content">
+              <span className="game-notifications__icon">
                 {getNotificationIcon(notification.type)}
               </span>
 
-              <div style={{ flex: 1, paddingRight: '16px' }}>
+              <div className="game-notifications__text">
                 <div
-                  style={{
-                    color: colors.text,
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    marginBottom: '4px',
-                  }}
+                  className={`game-notifications__title game-notifications__title--${notification.type}`}
                 >
                   {notification.title}
                 </div>
 
-                <div
-                  style={{
-                    color: '#e5e7eb',
-                    fontSize: '13px',
-                    lineHeight: 1.4,
-                  }}
-                >
+                <div className="game-notifications__message">
                   {notification.message}
                 </div>
 
                 {/* 时间戳 */}
-                <div
-                  style={{
-                    color: '#9ca3af',
-                    fontSize: '11px',
-                    marginTop: '4px',
-                  }}
-                >
+                <div className="game-notifications__timestamp">
                   {notification.timestamp.toLocaleTimeString()}
                 </div>
               </div>
@@ -382,25 +313,11 @@ export function GameNotifications({
             {notification.duration &&
               notification.duration > 0 &&
               !notification.persistent && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '2px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    overflow: 'hidden',
-                    borderRadius: '0 0 8px 8px',
-                  }}
-                >
+                <div className="game-notifications__progress-container">
                   <div
+                    className={`game-notifications__progress-bar game-notifications__progress-bar--${notification.type}`}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: colors.border,
                       animation: `shrinkWidth ${notification.duration}ms linear`,
-                      transformOrigin: 'left center',
                     }}
                   />
                 </div>
@@ -409,45 +326,11 @@ export function GameNotifications({
         );
       })}
 
-      {/* 全局动画样式 */}
-      <style>{`
-        @keyframes slideInFromRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes shrinkWidth {
-          from {
-            transform: scaleX(1);
-          }
-          to {
-            transform: scaleX(0);
-          }
-        }
-      `}</style>
-
       {/* 清除所有按钮（当有多个通知时） */}
       {notifications.length > 1 && (
         <button
           onClick={clearAllNotifications}
-          style={{
-            alignSelf: 'center',
-            padding: '6px 12px',
-            fontSize: '12px',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: '#9ca3af',
-            border: '1px solid rgba(156, 163, 175, 0.3)',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            pointerEvents: 'auto',
-            transition: 'all 0.2s ease',
-          }}
+          className="game-notifications__clear-all"
         >
           清除所有 ({notifications.length})
         </button>
