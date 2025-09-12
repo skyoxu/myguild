@@ -198,10 +198,10 @@ jobs:
           echo "健康检查结果："
           echo "$HEALTH_RESULT"
 
-          if [ $HEALTH_EXIT_CODE -eq 0 ]; then
+          if [ "$HEALTH_EXIT_CODE" -eq 0 ]; then
             echo "✅ 健康检查通过"
             echo "passed=true" >> $GITHUB_OUTPUT
-          elif [ $HEALTH_EXIT_CODE -eq 42 ]; then
+          elif [ "$HEALTH_EXIT_CODE" -eq 42 ]; then
             echo "❌ 健康检查失败 - 建议回滚"
             echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
