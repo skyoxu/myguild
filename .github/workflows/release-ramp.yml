@@ -5,6 +5,10 @@ permissions:
   contents: write
   actions: write
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   workflow_dispatch:
     inputs:
@@ -96,6 +100,7 @@ jobs:
           }
 
       - name: '📋 Validate prerequisites'
+        shell: bash
         run: |
           echo "🔍 验证必要文件存在..."
 
@@ -143,7 +148,7 @@ jobs:
           echo "🎯 设置分阶段发布百分比为 ${{ inputs.stage }}%..."
 
           result=$(node scripts/release/patch-staging-percentage.mjs "${{ inputs.feed_file }}" "${{ inputs.stage }}")
-          echo "staging_result=$result" >> $GITHUB_OUTPUT
+          echo "staging_result=$result" >> "$GITHUB_OUTPUT"
 
           echo "✅ 分阶段发布百分比设置成功"
           echo "$result" | jq '.'
@@ -170,12 +175,13 @@ jobs:
         if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        shell: bash
         run: |
           echo "🔍 检查版本 $APP_VERSION 的 Release Health..."
 
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "⚠️  SENTRY_AUTH_TOKEN 未配置，跳过健康检查"
-            echo "health_status=skipped" >> $GITHUB_OUTPUT
+            echo "health_status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -185,8 +191,8 @@ jobs:
           health_exit_code=$?
           set -e
 
-          echo "health_result=$health_result" >> $GITHUB_OUTPUT
-          echo "health_exit_code=$health_exit_code" >> $GITHUB_OUTPUT
+          echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
+          echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
 
           echo "📊 健康检查结果:"
           echo "$health_result" | jq '.'
@@ -194,16 +200,16 @@ jobs:
           case $health_exit_code in
             0)
               echo "✅ 健康检查通过 - 可以继续发布"
-              echo "health_status=passed" >> $GITHUB_OUTPUT
+              echo "health_status=passed" >> "$GITHUB_OUTPUT"
               ;;
             42)
               echo "❌ 健康检查失败 - 触发自动回滚"
-              echo "health_status=failed" >> $GITHUB_OUTPUT
+              echo "health_status=failed" >> "$GITHUB_OUTPUT"
               exit 42  # 传播特殊退出码以触发回滚
               ;;
             *)
               echo "⚠️  健康检查遇到错误 (退出码: $health_exit_code)"
-              echo "health_status=error" >> $GITHUB_OUTPUT
+              echo "health_status=error" >> "$GITHUB_OUTPUT"
               exit $health_exit_code
               ;;
           esac
@@ -226,7 +232,7 @@ jobs:
             --reason="$rollback_reason" \
             $([ -n "$WEBHOOK_URL" ] && echo "--notify"))
 
-          echo "rollback_result=$rollback_result" >> $GITHUB_OUTPUT
+          echo "rollback_result=$rollback_result" >> "$GITHUB_OUTPUT"
 
           echo "📋 回滚执行结果:"
           echo "$rollback_result" | jq '.'
@@ -234,10 +240,11 @@ jobs:
           echo "✅ 自动回滚完成"
 
           # 设置回滚状态用于后续步骤
-          echo "rollback_executed=true" >> $GITHUB_OUTPUT
+          echo "rollback_executed=true" >> "$GITHUB_OUTPUT"
 
       - name: '💾 Commit feed changes'
         id: commit
+        shell: bash
         run: |
           # 配置 Git
           git config user.name "github-actions[bot]"
@@ -246,7 +253,7 @@ jobs:
           # 检查是否有变更
           if git diff --quiet "${{ inputs.feed_file }}"; then
             echo "📝 Feed 文件无变更，跳过提交"
-            echo "committed=false" >> $GITHUB_OUTPUT
+            echo "committed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -271,9 +278,12 @@ jobs:
             -m "Run: ${{ github.run_number }}"
 
           echo "变更已提交: $commit_msg"
-          echo "committed=true" >> "$GITHUB_OUTPUT"
-          echo "commit_type=$commit_type" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # 使用单一重定向优化性能（修复 SC2129）
+          {
+            echo "committed=true"
+            echo "commit_type=$commit_type"
+            echo "commit_sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: '🚀 Push changes'
         if: steps.commit.outputs.committed == 'true'
@@ -348,6 +358,7 @@ jobs:
         if: env.WEBHOOK_URL != ''
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        shell: bash
         run: |
           # 根据结果构建通知消息
           if [ "${{ needs.ramp.outputs.rollback_executed }}" = "true" ]; then

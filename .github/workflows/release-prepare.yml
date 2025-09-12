@@ -207,10 +207,12 @@ jobs:
           echo "✅ 清单验证通过"
 
       - name: '📊 Display preparation summary'
+        shell: bash
         run: |
           # 确保UTF-8编码输出
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
+          # 使用单一重定向来优化性能（修复 SC2129）
           {
             echo "## 📦 发布准备完成"
             echo ""
@@ -222,11 +224,9 @@ jobs:
             echo ""
             echo "### 📋 版本清单状态"
             echo "\`\`\`json"
+            node scripts/release/manage-manifest.mjs list | jq '.'
+            echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
-
-          node scripts/release/manage-manifest.mjs list | jq '.' >> "$GITHUB_STEP_SUMMARY"
-
-          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
             {
@@ -247,6 +247,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: '💾 Commit changes'
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
