@@ -94,8 +94,8 @@ jobs:
         shell: bash
         run: |
           if [ -f "${{ env.FEED_FILE }}" ]; then
-            CURRENT_PCT=$(node scripts/release/patch-staging-percentage.mjs status "${{ env.FEED_FILE }}" | grep -o 'percentage: [0-9]*' | cut -d' ' -f2 || echo "0")
-            echo "percentage=${CURRENT_PCT}" >> $GITHUB_OUTPUT
+            CURRENT_PCT="$(node scripts/release/patch-staging-percentage.mjs status "${{ env.FEED_FILE }}" | grep -o 'percentage: [0-9]*' | cut -d' ' -f2 || echo "0")"
+            echo "percentage=${CURRENT_PCT}" >> "$GITHUB_OUTPUT"
             echo "📊 当前发布百分比: ${CURRENT_PCT}%"
           else
             echo "percentage=0" >> $GITHUB_OUTPUT
@@ -191,7 +191,7 @@ jobs:
 
           # 使用现有的auto-rollback脚本进行健康检查
           set +e
-          HEALTH_RESULT=$(node scripts/release/auto-rollback.mjs 2>&1)
+          HEALTH_RESULT="$(node scripts/release/auto-rollback.mjs 2>&1)"
           HEALTH_EXIT_CODE=$?
           set -e
 
@@ -212,7 +212,7 @@ jobs:
           fi
 
           # 提取健康数据用于后续步骤
-          echo "data=$HEALTH_RESULT" >> $GITHUB_OUTPUT
+          echo "data=$HEALTH_RESULT" >> "$GITHUB_OUTPUT"
 
   # 3. 发布部署：更新latest.yml并部署
   deploy_release:
@@ -251,7 +251,7 @@ jobs:
           echo "📝 更新发布配置到 ${{ env.STAGING_PERCENTAGE }}%..."
 
           # 使用发布管理脚本更新latest.yml
-          UPDATE_RESULT=$(node scripts/release/patch-staging-percentage.mjs update "${{ env.FEED_FILE }}" "${{ env.STAGING_PERCENTAGE }}")
+          UPDATE_RESULT="$(node scripts/release/patch-staging-percentage.mjs update "${{ env.FEED_FILE }}" "${{ env.STAGING_PERCENTAGE }}")"
 
           echo "更新结果:"
           echo "$UPDATE_RESULT"

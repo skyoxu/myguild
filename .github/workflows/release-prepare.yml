@@ -153,7 +153,6 @@ jobs:
         shell: bash
         run: |
           version="${{ inputs.version }}"
-          artifact_name="$(basename "${{ inputs.artifact_path }}")"
 
           echo "📄 创建 electron-updater feed 文件..."
 
