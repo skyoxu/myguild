@@ -22,9 +22,11 @@ jobs:
         run: |
           BRANCHES="${{ github.event.inputs.branches }}"
           BRANCHES=$(echo "$BRANCHES" | tr ',' '\n' | sed 's/^\s*//;s/\s*$//' | sed '/^$/d')
-          echo "branches<<EOF" >> $GITHUB_OUTPUT
-          echo "$BRANCHES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "branches<<EOF"
+            echo "$BRANCHES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Update branch protection (require encoding-guard)
         uses: actions/github-script@v7
