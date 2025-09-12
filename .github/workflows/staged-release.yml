@@ -98,7 +98,7 @@ jobs:
             echo "percentage=${CURRENT_PCT}" >> "$GITHUB_OUTPUT"
             echo "📊 当前发布百分比: ${CURRENT_PCT}%"
           else
-            echo "percentage=0" >> $GITHUB_OUTPUT
+            echo "percentage=0" >> "$GITHUB_OUTPUT"
             echo "📦 首次发布，从0%开始"
           fi
 
@@ -116,13 +116,13 @@ jobs:
           # 验证发布是递增的（允许回滚到0%）
           if [ "$TARGET_PCT" = "0" ]; then
             echo "🛑 紧急回滚到0%，允许执行"
-            echo "can_proceed=true" >> $GITHUB_OUTPUT
+            echo "can_proceed=true" >> "$GITHUB_OUTPUT"
           elif [ "$TARGET_PCT" -gt "$CURRENT_PCT" ]; then
             echo "✅ 正常的阶段性递增，允许执行"
-            echo "can_proceed=true" >> $GITHUB_OUTPUT
+            echo "can_proceed=true" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️ 尝试降低发布百分比 (非紧急)，需要确认"
-            echo "can_proceed=false" >> $GITHUB_OUTPUT
+            echo "can_proceed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Validate Sentry configuration
@@ -200,14 +200,14 @@ jobs:
 
           if [ "$HEALTH_EXIT_CODE" -eq 0 ]; then
             echo "✅ 健康检查通过"
-            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "passed=true" >> "$GITHUB_OUTPUT"
           elif [ "$HEALTH_EXIT_CODE" -eq 42 ]; then
             echo "❌ 健康检查失败 - 建议回滚"
-            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "passed=false" >> "$GITHUB_OUTPUT"
             exit 1
           else
             echo "⚠️ 健康检查过程出错"
-            echo "passed=unknown" >> $GITHUB_OUTPUT
+            echo "passed=unknown" >> "$GITHUB_OUTPUT"
             exit 1
           fi
 
