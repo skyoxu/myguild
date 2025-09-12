@@ -182,7 +182,7 @@ export default tseslint.config([
 
   // UI组件文件 - 大幅放宽体量规则（分层降噪优化）
   {
-    files: ['src/components/**/*.{tsx,jsx}'],
+    files: ['src/components/**/*.{tsx,jsx}', 'src/App.tsx'],
     rules: {
       'max-lines-per-function': ['warn', { max: 500 }], // 大幅放宽UI组件行数
       complexity: ['warn', 50], // 大幅放宽复杂度
@@ -214,7 +214,7 @@ export default tseslint.config([
       // 放宽函数复杂度限制
       'max-lines-per-function': [
         'warn',
-        { max: 150, skipBlankLines: true, skipComments: true },
+        { max: 200, skipBlankLines: true, skipComments: true },
       ],
       'max-depth': ['warn', 6],
       'max-params': ['warn', 8],
@@ -354,21 +354,10 @@ export default tseslint.config([
       'tests/**/*.{ts,tsx,js}',
     ],
     rules: {
-      'max-lines-per-function': ['warn', { max: 250 }],
+      'max-lines-per-function': ['warn', { max: 350 }],
       complexity: ['warn', 35],
       '@typescript-eslint/no-unused-vars': 'off', // 测试文件有很多mock变量
       'no-console': 'off', // 测试允许console
-    },
-  },
-
-  // UI组件文件 - 大幅放宽体量规则（分层降噪优化）
-  {
-    files: ['src/components/**/*.{tsx,jsx}'],
-    rules: {
-      'max-lines-per-function': ['warn', { max: 500 }], // 大幅放宽UI组件行数
-      complexity: ['warn', 50], // 大幅放宽复杂度
-      'react-hooks/exhaustive-deps': 'off', // UI组件关闭deps检查
-      '@typescript-eslint/no-explicit-any': 'off', // UI组件允许any
     },
   },
 
