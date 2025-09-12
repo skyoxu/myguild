@@ -74,14 +74,19 @@ jobs:
           for (const file of files) {
             const content = fs.readFileSync(file, 'utf8');
 
-            // Check Windows jobs have pwsh defaults near the job definition
+            // Allow top-level defaults.run.shell: pwsh as global policy
+            const hasTopLevelPwsh = /(^|\n)defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(content);
+
+            // Check Windows jobs have pwsh defaults near the job definition when no top-level defaults
             const reWin = /runs-on:\s*windows-latest/g;
             let m;
-            while ((m = reWin.exec(content))) {
-              const region = content.slice(m.index, m.index + 2000);
-              const hasPwshDefault = /defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(region);
-              if (!hasPwshDefault) {
-                failures.push(`${file}: windows-latest job missing defaults.run.shell: pwsh`);
+            if (!hasTopLevelPwsh) {
+              while ((m = reWin.exec(content))) {
+                const region = content.slice(m.index, m.index + 2000);
+                const hasPwshDefault = /defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(region);
+                if (!hasPwshDefault) {
+                  failures.push(`${file}: windows-latest job missing defaults.run.shell: pwsh`);
+                }
               }
             }
 

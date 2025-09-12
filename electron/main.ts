@@ -6,7 +6,16 @@ import { CSPManager } from './security/csp-policy';
 
 // CI 下为稳态，需在 app ready 之前禁用 GPU 加速
 //（必须在 ready 之前调用，否则无效）
-if (process.env.CI === 'true') app.disableHardwareAcceleration();
+if (process.env.CI === 'true') {
+  app.disableHardwareAcceleration();
+  // CI环境性能优化 - 防止后台节流
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch(
+    'disable-features',
+    'CalculateNativeWinOcclusion'
+  );
+}
 
 // ✅ 添加关键崩溃和加载失败日志（按cifix1.txt建议）
 app.on('render-process-gone', (_e, _wc, d) => {

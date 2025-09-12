@@ -6,6 +6,10 @@ permissions:
   actions: write
   packages: write
 
+defaults:
+  run:
+    shell: pwsh
+
 # 渐进发布工作流：5%/25%/50%/100% 阶梯发布 + Sentry健康门禁
 # 基于完整ADR体系：
 # - ADR-0001 (技术栈选型): Electron + React生态
@@ -87,6 +91,7 @@ jobs:
 
       - name: Check current release status
         id: current_status
+        shell: bash
         run: |
           if [ -f "${{ env.FEED_FILE }}" ]; then
             CURRENT_PCT=$(node scripts/release/patch-staging-percentage.mjs status "${{ env.FEED_FILE }}" | grep -o 'percentage: [0-9]*' | cut -d' ' -f2 || echo "0")
@@ -99,6 +104,7 @@ jobs:
 
       - name: Validate staging progression
         id: validation
+        shell: bash
         run: |
           CURRENT_PCT="${{ steps.current_status.outputs.percentage }}"
           TARGET_PCT="${{ env.STAGING_PERCENTAGE }}"
@@ -179,6 +185,7 @@ jobs:
 
       - name: Check Sentry Release Health
         id: health_gate
+        shell: bash
         run: |
           echo "🏥 检查版本 ${{ env.APP_VERSION }} 的健康度..."
 
@@ -239,6 +246,7 @@ jobs:
 
       - name: Update staging percentage
         id: update_feed
+        shell: bash
         run: |
           echo "📝 更新发布配置到 ${{ env.STAGING_PERCENTAGE }}%..."
 
@@ -386,6 +394,7 @@ jobs:
     steps:
       - name: Determine overall status
         id: status
+        shell: bash
         run: |
           if [ "${{ needs.deploy_release.result }}" = "success" ]; then
             echo "status=success" >> "$GITHUB_OUTPUT"

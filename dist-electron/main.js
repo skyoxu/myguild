@@ -64,7 +64,18 @@ const auto_updater_1 = require('./security/auto-updater');
 const csp_policy_1 = require('./security/csp-policy');
 // CI 下为稳态，需在 app ready 之前禁用 GPU 加速
 //（必须在 ready 之前调用，否则无效）
-if (process.env.CI === 'true') electron_1.app.disableHardwareAcceleration();
+if (process.env.CI === 'true') {
+  electron_1.app.disableHardwareAcceleration();
+  // CI环境性能优化 - 防止后台节流
+  electron_1.app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  electron_1.app.commandLine.appendSwitch(
+    'disable-background-timer-throttling'
+  );
+  electron_1.app.commandLine.appendSwitch(
+    'disable-features',
+    'CalculateNativeWinOcclusion'
+  );
+}
 // ✅ 添加关键崩溃和加载失败日志（按cifix1.txt建议）
 electron_1.app.on('render-process-gone', (_e, _wc, d) => {
   console.error('[main] render-process-gone:', d.reason, d.exitCode);

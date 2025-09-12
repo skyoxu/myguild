@@ -5,6 +5,10 @@ permissions:
   contents: write
   actions: read
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   workflow_dispatch:
     inputs:
@@ -76,7 +80,8 @@ jobs:
             Write-Host "jq already available"
           }
 
-      - name: '✅ Validate version format'
+      - name: 'Validate version format'
+        shell: bash
         run: |
           version="${{ inputs.version }}"
           if ! echo "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'; then
@@ -143,8 +148,9 @@ jobs:
             echo "✅ 占位版本条目已创建"
           fi
 
-      - name: '📄 Create feed files'
+      - name: '📄 Create feed file (Windows-only)'
         if: inputs.create_feeds
+        shell: bash
         run: |
           version="${{ inputs.version }}"
           artifact_name="$(basename "${{ inputs.artifact_path }}")"
@@ -191,8 +197,7 @@ jobs:
 
           # 创建各平台 feed 文件
           create_feed ""        # latest.yml (Windows)
-          create_feed "mac"     # latest-mac.yml
-          create_feed "linux"   # latest-linux.yml
+          # Windows-only: removed macOS/Linux feeds
 
           echo "📄 所有 feed 文件创建完成"
 

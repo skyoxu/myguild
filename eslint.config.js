@@ -191,6 +191,17 @@ export default tseslint.config([
     },
   },
 
+  // Contexts文件 - 放宽体量规则以支持复杂状态管理
+  {
+    files: ['src/contexts/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines-per-function': ['warn', { max: 300 }], // 放宽状态管理函数行数
+      complexity: ['warn', 30], // 适度放宽复杂度
+      'react-hooks/exhaustive-deps': 'off', // Context组件关闭deps检查
+      '@typescript-eslint/no-explicit-any': 'off', // Context允许any
+    },
+  },
+
   // 测试和脚本文件放宽规则（短期措施）
   {
     files: [

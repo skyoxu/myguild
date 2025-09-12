@@ -223,8 +223,10 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
       console.log('[Test] 测试新窗口打开控制...');
 
       // 尝试打开新窗口
-      await attemptAndAssertBlocked(mainWindow, () => {
-        window.open('https://malicious-site.com', '_blank');
+      await attemptAndAssertBlocked(mainWindow, async () => {
+        await mainWindow.evaluate(() => {
+          window.open('https://malicious-site.com', '_blank');
+        });
       });
 
       console.log('[Test] ✅ 新窗口打开控制验证通过');

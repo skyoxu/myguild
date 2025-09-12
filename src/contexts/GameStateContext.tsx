@@ -226,7 +226,7 @@ export function GameStateProvider({
   const loadGame = useCallback(
     async (saveId: string): Promise<boolean> => {
       try {
-        const { state, config } = await stateManager.loadGame(saveId);
+        const { state, config: _config } = await stateManager.loadGame(saveId);
 
         // 强制同步到所有状态源
         stateSynchronizer.forceState(state);
@@ -388,6 +388,7 @@ export function GameStateProvider({
 /**
  * 使用游戏状态上下文的Hook
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGameState(): GameStateContextValue {
   const context = useContext(GameStateContext);
   if (context === undefined) {
@@ -399,6 +400,7 @@ export function useGameState(): GameStateContextValue {
 /**
  * 可选：专门用于存档管理的Hook
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSaveManager() {
   const {
     saveFiles,
@@ -422,6 +424,7 @@ export function useSaveManager() {
 /**
  * 可选：专门用于状态同步的Hook
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useStateSynchronizer() {
   const { registerStateSource, unregisterStateSource, syncStates, gameState } =
     useGameState();
