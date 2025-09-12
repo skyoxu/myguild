@@ -104,7 +104,8 @@
       "Bash(where.exe shellcheck:*)",
       "Bash(winget list:*)",
       "Bash(dir \"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\koalaman.shellcheck_Microsoft.Winget.Source_8wekyb3d8bbwe\" /b)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": [],

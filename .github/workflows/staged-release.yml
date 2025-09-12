@@ -244,6 +244,11 @@ jobs:
           # P0修复：Windows runner使用PowerShell目录创建替代Linux mkdir -p
           New-Item -ItemType Directory -Path "dist" -Force
 
+      - name: Bundle budget gate (soft)
+        env:
+          BUNDLE_GUARD: warn
+        run: npm run guard:bundle
+
       - name: Update staging percentage
         id: update_feed
         shell: bash

@@ -81,6 +81,8 @@ jobs:
 
       - name: Build app
         run: npm run build
+        env:
+          BUNDLE_ANALYZE: 'true'
 
       - name: Bundle budget gate (soft on PR)
         if: ${{ github.event_name == 'pull_request' }}
@@ -94,6 +96,25 @@ jobs:
           BUNDLE_GUARD: strict
         run: npm run guard:bundle
 
+      - name: Perf E2E smoke (soft gate)
+        continue-on-error: true
+        run: npx playwright test tests/e2e/perf.smoke.spec.ts
+
+      - name: Perf P95 summary (soft)
+        if: always()
+        continue-on-error: true
+        run: node scripts/ci/perf-soft-gate.mjs
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-perf-artifacts-${{ github.run_number }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -101,6 +122,14 @@ jobs:
           path: |
             dist/**
             dist-electron/**
+          retention-days: 7
+
+      - name: Upload bundle analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis-${{ github.run_number }}
+          path: dist/bundle-analysis.html
           retention-days: 7
 
   electron-security-tests:
@@ -148,4 +177,3 @@ jobs:
             test-results/
             playwright-report/
           retention-days: ${{ github.event_name == 'pull_request' && 7 || 14 }}
-
