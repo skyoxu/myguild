@@ -29,6 +29,10 @@ permissions:
   contents: read
   actions: read
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   performance-check:
     name: Web Vitals & Bundle Size Check

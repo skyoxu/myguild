@@ -1,218 +1,137 @@
-你上传的最新日志里还在反复出现
-TypeError: Session can only be received when app is ready（main.js 第 ~200 行）→ 说明主因 A（在 app 未 ready 前访问 session）尚未完全落实。
+ 优先级总览（从收益最大→风险可控）
 
-还出现 TypeError: Cannot read properties of undefined (reading 'launch') at tests/helpers/launch.ts:19 → 说明主因 B（Playwright Electron 启动 helper 的导入方式不统一）也未落实到所有用例/帮助函数。
+  - 0 基线与诊断: 建可视化与埋点，确认瓶颈定位与回归度量
+  - 1 首屏与包体拆分: rollup 手工分块 + 动态导入，缩短冷启动/首帧
+  - 2 交互异步化: 把重逻辑移出主线程/延后到空闲帧
+  - 3 启动与场景加载优化: Phaser 延迟加载与资产压缩
+  - 4 构建与门禁: 可视化报告 + 预算与 CI Gate
+  - 5 观测与超框: 长任务监控与性能门槛拉通到 Release Health
 
-另外，多处用例报 Execution context was destroyed, most likely because of a navigation 与页面 URL 跳到 chrome-error://chromewebdata/，这是因为你用 webRequest.onBeforeRequest 在 mainFrame 上“硬拦截”外部导航，Chromium 会把主文档替换成错误页，从而打断 Playwright 的执行上下文。应改为用 will-navigate 阻止主框架导航、setWindowOpenHandler 拒绝新窗，webRequest 仅用于子资源。相关机制与建议做法来自 Electron 官方文档（setWindowOpenHandler、protocol.handle、webContents 事件）与社区经验。
-Electron
- 
-Electron
- 
-Stack Overflow
+  0) 基线与诊断（先做，1天内完成）
 
-一、针对「主因 A」的落地修正（必须）
-1) 把所有 session.* 访问延后到 app.whenReady() 之后
+  - 现状: 失败用例显示“基本交互”> 200ms；构建有大块 phaser 1.48MB、react-vendor 356kB。
+  - 建议
+      - 性能埋点: 在触发 [data-testid="test-button"] 的事件处理链路插入 performance.mark/measure（点击开始/首个 DOM 反馈完成/状态计算结束），输出到控制台，
+  Playwright 收集。
+      - Trace 采集: 将失败用例打开 --trace=on，在 CI 失败时上传 artifacts 便于回溯。
+      - 可视化: 运行 rollup-visualizer 产出 stats.html，作为 PR 附件（已在 devDeps 中）。
 
-不要在模块顶层（import 副作用）里访问 session.defaultSession / session.fromPartition 或注册 webRequest。把它们封装成函数，待 await app.whenReady() 后再调用。官方也强调 protocol / session 相关注册要在 ready 之后（registerSchemesAsPrivileged 例外，需在 ready 之前调用一次）。
-Electron
+  1) 首屏与包体拆分（收益最大，低风险，优先）
 
-main.ts（示例片段）
+  - 目标: 降低首屏解析/编译/执行成本，避免主线程阻塞。
+  - 变更建议
+      - vite 分块（vite.config.ts）
+      - manualChunks: 拆出核心大包
+        - react: ['react','react-dom']
+        - phaser: ['phaser']
+        - antd: ['antd','@ant-design/icons']
+        - ui-chunks: 视业务模块再拆（如 guild-manager、raid-compose 等）
+      - chunkSizeWarningLimit: 临时抬高阈值到 1500 以降低噪音，但配合预算 Gate（见第4点）。
+  - 动态导入（src）
+      - Phaser 及场景: 在“开始游戏/进入场景”点击后 `await import('phaser')` 与 `await import('./game/scenes/MainScene')`
+      - 路由/功能切片: 用 `React.lazy`/`Suspense` 对“管理/编队/战斗”各大视图懒加载
+      - 重型 UI 组件: antd 模块化导入，避免整包全量引入
+  - Skeleton 占位: 首屏仅渲染轻量骨架与导航，异步加载重模块；确保“可交互”尽快发生（改善感知性能）
+  - 验收
+      - 首屏加载 JS 体积（initial chunks）较现状下降 ≥ 40%
+      - electron-launch 启动时间与“应用启动并显示主窗口”稳定下降（在当前 runner 上可见）
 
-// ✅ 放在 ready 之前：注册自定义协议的权限
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
-]);
+  2) 交互异步化（修复 >200ms 的核心）
 
-async function boot() {
-  await app.whenReady();
+  - 目标: 交互触发到“可见反馈控件出现”P95 < 200ms。
+  - 变更建议
+      - 主线程释压
+      - requestAnimationFrame 双帧或 requestIdleCallback: 将非关键计算延后到渲染后/空闲时
+      - 避免同步 IO: 交互路径禁用同步 fs/JSON 解析；改为预热或后台异步准备
+  - 计算移出主线程
+      - Web Worker（渲染侧）/worker_threads（主进程侧）：AI/队伍编制/大数组聚合等重逻辑从事件回调剥离，交互先给轻提示（loading/进度），完成后再回填
+      - 推荐封装: Renderer <-> Worker 用 Comlink 或自定义 RPC，主进程 IPC 仅用于系统资源
+  - React 优化
+      - 非阻塞更新: 使用 `useTransition`/`useDeferredValue` 将非紧急更新降级为“并发”更新
+      - 渲染减载: 列表虚拟化（windowing），精准 selector/memo（`useMemo`/`useCallback`），避免大范围重渲染
+  - 验收
+      - Playwright “基本交互：应用响应性测试”通过；本地 P95 观测 < 200ms，截图与 mark/measure 日志一致
 
-  // ✅ 只在 ready 后再访问 session / 注册 webRequest
-  const ses = session.defaultSession;
-  installNetworkGuards(ses); // 只处理子资源，见下节
+  3) 启动与场景加载优化（Phaser 专项）
 
-  await protocol.handle('app', (req) => {
-    const { pathname } = new URL(req.url);
-    const file = pathname === '/' ? 'index.html' : pathname;
-    return net.fetch(pathToFileURL(join(app.getAppPath(), 'dist', file)).toString());
-  });
+  - 目标: 避免 Phaser 成为冷启动瓶颈，把成本迁移到“进入游戏”瞬间并可视觉过渡。
+  - 变更建议
+      - 延迟加载 Phaser: 不在首屏初始化 Phaser；用户进入游戏时动态导入，显示过渡动画（骨架/进度条）
+      - 资产压缩与打包
+      - 纹理打包: 使用 atlas/spritesheets 降低 draw call 与资源请求数
+      - 纹理压缩: webp/avif；如支持 Basis（.basis/.ktx2），降低 GPU 上传与内存
+  - 预热缓存: 进入游戏前的空闲窗口预热少量关键贴图/字体（后台帧10~16ms预算内逐步做）
+  - 验收
+      - 冷启动 P95 不受 Phaser 影响，进入游戏场景的加载体验平滑、总耗时受控
 
-  const win = await createMainWindow();
-  bindNavigationGuards(win); // will-navigate + setWindowOpenHandler（见下节）
-}
-boot();
+  4) 构建与预算门禁（拉入 CI）
 
+  - 目标: 阻断包体回归，形成可追溯度量。
+  - 变更建议
+      - 可视化报告: rollup-plugin-visualizer 产物上传到 PR 附件
+      - 预算门禁（脚本+阈值）
+      - initial js 总量 ≤ 400kB（gzip）; phaser chunk ≤ 500kB（gzip）
+      - react vendor ≤ 150kB（gzip）
+      - 若超阈值则 PR Gate 失败（集成至 `guard:workflows` 或新 job）
+  - E2E 性能 Gate
+      - 将“基本交互 P95 < 200ms”“冷启动 P95 达标”加入 soft gate（先告警，1~2 周后转硬门）
 
-上面 protocol.handle 与 registerSchemesAsPrivileged 的用法取自官方示例；新版本推荐 protocol.handle 取代旧的 register*Protocol。
-Electron
+  5) 观测与“超框建议”（提升洞察力与抗抖）
 
-二、针对「主因 B」的统一修正（Playwright Electron 启动）
+  - 事件循环卡顿监控（Long Tasks/ELD）
+      - Renderer: PerformanceObserver('longtask') 若可用；否则用 performance.now() + 微任务检测粗略监控
+      - Preload/Node: perf_hooks.monitorEventLoopDelay()（注意只在 Node 侧），contextBridge 上报指标
+  - Sentry Performance + 版本门禁（ADR-0003）
+      - 对冷启动/交互/场景切换上报 transaction + span，CI 读取 Release Health 对比上个基线
+  - 真实硬件校准
+      - 选定一台 Windows 参考机（中低配）定期跑基准；CI 基础设施数字仅做相对参考
 
-所有 Electron 启动入口（测试与 helpers）统一成同一种导入：
+  实施顺序与粒度（两周冲刺建议）
 
-// tests/helpers/launch.ts
-import { _electron as electron, ElectronApplication } from 'playwright';
-// 或：from '@playwright/test'，但全仓库需保持一致
+  - 第0天（准备/基线）
+      - 接入 rollup-visualizer；为交互用例添加 performance.mark；开启失败用例 trace 上传
+  - 第1~2天（首屏拆分）
+      - vite manualChunks + 动态导入 Phaser/场景/大视图；antd 模块化导入；Skeleton 占位
+  - 第3~4天（交互异步化）
+      - 将交互路径重逻辑改用 Worker/Idle/双 rAF；引入 useTransition；修整渲染 diff 范围
+  - 第5天（Phaser 专项）
+      - 延迟加载 + 资产打包/压缩策略雏形；进入游戏进度条体验
+  - 第6天（构建门禁）
+      - 加入 bundle 预算 Gate + 性能 soft gate；PR 附可视化报告
+  - 第7~10天（优化迭代）
+      - 根据 trace/埋点数据逐步压降卡顿源；把较难的计算迁 Worker
+  - 第11~12天（转硬门）
+      - 评估两周数据，决定将软门转硬门的阈值与波动缓冲策略
 
-export async function launchApp(entry?: string): Promise<ElectronApplication> {
-  const main = entry ?? resolve(process.cwd(), 'dist-electron', 'main.js');
-  return electron.launch({ args: [main], env: { CI: 'true', SECURITY_TEST_MODE: 'true' } });
-}
+  注意事项（安全/基线/ADR 对齐）
 
+  - Electron 安全基线保持：nodeIntegration=false、contextIsolation=true、sandbox=true；Worker 场景不得绕开隔离（不要在 preload 中引重库）。
+  - CSP：script-src 'self' 可支持动态导入（同源）；避免任何 unsafe-eval/new Function。
+  - 文档与 ADR：本提案与 ADR‑0008（Windows-only 发布）/ADR‑0011（Windows-only 平台与 CI 策略）一致；更新 ADR‑0005 的质量门禁附录以收录性能预算与 Gate。
 
-Playwright 官方文档明确 _electron.launch({ args: ['main.js'] }) 的调用方式，务必避免把 _electron 解构漏成 electron 未定义。
-Electron
-Playwright
+  
+  已创建与更新
 
-三、把“外部导航/弹窗拦截”从 webRequest(mainFrame) 改为 will-navigate / setWindowOpenHandler
-目标
+  - vite.config.ts: 手工分块增强（新增 antd-vendor），保留 phaser/react/vendor 分离与可视化插件。
+  - src/game/lazy/phaser-loader.ts: Phaser 与场景动态导入工具（延迟加载核心库与场景）。
+  - src/components/LazyGame.tsx: 懒加载示例组件（“Start Game”后再加载 Phaser/场景，含双 rAF 进入稳定帧）。
+  - src/workers/computation.worker.ts + src/shared/workers/workerBridge.ts：计算密集任务迁移到 Worker 的最小桥接实现。
+  - scripts/ci/bundle-budget-gate.mjs：bundle 预算 Gate（gzip 阈值：phaser ≤ 500kB、react-vendor ≤ 150kB、initial 合计 ≤ 400kB）。
+  - package.json: 新增脚本 guard:bundle 以执行预算 Gate。
 
-主框架外跳：在导航开始前阻止（保持当前文档，不触发错误页）。
+  建议执行顺序（落地与验证）
 
-新窗口：一律拒绝或转 shell.openExternal（白名单）。
+  - 运行构建与预算 Gate：npm run build && npm run guard:bundle（应输出各 chunk gzip 大小与是否达标）。
+  - 将 LazyGame 集成到首屏或“开始游戏”入口，替换直接加载 Phaser 的路径（代码改造时优先这一处）。
+  - 将交互中耗时逻辑改用 workerBridge.heavyTask() 或等价 Worker 封装，按钮点击路径先反馈再回填结果。
+  - 按需将各大视图改为 React.lazy 懒加载；Antd 改为按需/模块化引入，避免整包打入首屏。
+  - 若需 CI Gate，将 npm run guard:bundle 加入工作流的构建后阶段（或软门禁先告警）。
+  
+  
+  
+  验收标准（最小闭环）
 
-子资源：可继续用 webRequest 做细粒度阻断/标记。
-
-实施
-function bindNavigationGuards(win: BrowserWindow) {
-  // 1) 主框架导航：will-navigate 直接阻止（不让页面换成 chrome-error）
-  win.webContents.on('will-navigate', (e, url) => {
-    if (!isAppUrl(url)) {
-      e.preventDefault();                 // ✅ 不进入导航 → 不会生成错误页
-      // 可选择：记录审计、提示、或 shell.openExternal(url)（白名单）
-    }
-  });
-
-  // 2) 新窗口：从主进程统一拒绝/放行
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    return isAllowedExternal(url)
-      ? (shell.openExternal(url), { action: 'deny' })
-      : { action: 'deny' };               // ✅ 官方推荐入口
-  });
-}
-
-// 仅对子资源做统一网络护栏，不要 cancel mainFrame
-function installNetworkGuards(ses: Session) {
-  ses.webRequest.onBeforeRequest(
-    { urls: ['*://*/*'] },
-    (details, callback) => {
-      if (details.resourceType === 'mainFrame') {
-        // 交给 will-navigate 处理，避免 chrome-error 页
-        return callback({ cancel: false });
-      }
-      // 对子资源执行你的 CSP/域白名单等策略
-      const blocked = shouldBlockSubresource(details);
-      callback({ cancel: blocked });
-    }
-  );
-}
-
-
-setWindowOpenHandler 是 Electron 官方推荐在主进程统一控制 renderer 创建窗口的方式。
-Electron
-
-使用 will-navigate 阻止主文档跳转，可以避免 webRequest(cancel) 造成的 ERR_BLOCKED_BY_CLIENT → chrome-error://chromewebdata/ 错误页，从而不再打断 Playwright 的执行上下文。will-navigate 的做法是官方与社区长期建议的拦截主框架导航手段。
-Stack Overflow
-
-若仍偶发到错误页，可加一道保险：
-
-win.webContents.on('did-fail-load', (_e, _code, _desc, url, isMain) => {
-  if (isMain && url.startsWith('chrome-error://')) win.loadURL('app://index.html');
-});
-
-
-did-fail-load 用于捕捉加载失败事件并恢复。
-Electron
-
-四、app:// 协议的健壮性（避免首屏就进错误页）
-
-在 ready 之前注册权限：registerSchemesAsPrivileged([{ scheme:'app', privileges:{ standard:true, secure:true, supportFetchAPI:true } }])。
-
-在 ready 之后用 protocol.handle('app', handler) 提供资源（如 dist/index.html、静态文件等）。官方推荐 handle 替代旧 register*Protocol。
-Electron
-
-五、就地验收（片段）
-1) TS 事件契约
-// src/shared/contracts/security-events.ts
-export type SecurityEvent =
-  | { type: 'NAV_BLOCKED'; url: string }
-  | { type: 'POPUP_BLOCKED'; url: string };
-
-2) Playwright：外部导航应被阻止（不出现错误页）
-// tests/e2e/security/redlines.navigation.spec.ts
-import { test, expect, _electron as electron } from '@playwright/test';
-
-test('外部导航阻止 - 不应落到 chrome-error', async () => {
-  const app = await electron.launch({ args: ['dist-electron/main.js'] });
-  const page = await app.firstWindow();
-  await page.waitForLoadState('domcontentloaded');
-
-  // 触发外部跳转
-  await page.evaluate(() => (window.location.href = 'https://example.com'));
-
-  // 仍停留在 app:// 协议；也不应是 chrome-error
-  const url = page.url();
-  expect(url.startsWith('app://')).toBeTruthy();
-  expect(url.startsWith('chrome-error://')).toBeFalsy();
-
-  await app.close();
-});
-
-3) Playwright：统一的启动 helper（防止 “electron 未定义”）
-// tests/helpers/launch.spec.ts
-import { test, expect } from '@playwright/test';
-import { launchApp } from './launch';
-
-test('能用统一 helper 启动应用', async () => {
-  const app = await launchApp();
-  const page = await app.firstWindow();
-  await page.waitForLoadState('domcontentloaded');
-  expect(await page.evaluate(() => document.readyState)).toBe('complete');
-  await app.close();
-});
-
-六、补充：为什么这套改动能消除你现在的报错
-
-Session 访问时机：Electron 明确要求在 app.ready 之后再获取 session，否则抛出你日志里的同款错误（“app is ready”）。把 session 相关注册延后，根因即解。
-Electron
-
-导航与错误页：当你用 webRequest.onBeforeRequest({cancel:true}) 去拦主文档导航时，Chromium 会把页面替换为错误文档（常见为 chrome-error://chromewebdata/），Playwright 执行上下文因此被销毁，出现 “Execution context was destroyed…”；改用 will-navigate 先期阻止主框架导航则不会进入错误页。
-Stack Overflow
-GitHub
-
-新窗控制：统一用 setWindowOpenHandler（主进程）保证任何 target=_blank / window.open 都被拒绝或转系统浏览器，官方推荐。
-Electron
-
-自定义协议：registerSchemesAsPrivileged + protocol.handle 是官方当前推荐路径，既保证安全能力（standard/secure），又确保 fetch/相对路径解析正确，避免首屏 404/错误页。
-Electron
-
-Playwright 导入：官方范例要求通过 _electron 命名空间获取 launch，导入不统一会导致 “electron 未定义”。
-Electron
-
-七、顺手把 CI 里另一个坑也一并抹掉（PowerShell vs Bash）
-
-你之前的 emergency_rollback 报错：在 Windows runner 下执行了 Bash 语法（if [ -z "$WEBHOOK_URL" ]），而默认 shell 是 PowerShell。
-两种修法二选一：
-
-在该 step 显式加 shell: bash；
-
-或改为 PowerShell 语法：if (-not $env:WEBHOOK_URL) { … }。
-
-（这正是“避免 shell 混用”的那条门禁。）
-
-你现在要做的最小变更清单
-
-把所有 session.* 访问从模块顶层移到 await app.whenReady() 之后；
-
-将主框架外跳从 webRequest(cancel) 改为 will-navigate(e.preventDefault())；
-
-统一 setWindowOpenHandler 拦新窗；
-
-webRequest 仅用于子资源；
-
-落实 protocol.registerSchemesAsPrivileged（pre-ready）+ protocol.handle（post-ready） ；
-
-全仓库统一 Playwright 导入：import { _electron as electron } from 'playwright'（或 @playwright/test），修复 helpers/launch.ts 与复用它的所有 spec；
-
-（可选保险） 在 did-fail-load 检测到 chrome-error:// 时自动回到 app://index.html。
-
-按上面把主因 A/B 先修掉，你这条流水线里 “启动超时 / 执行上下文被销毁 / chrome-error 页面” 会一并消失，安全红线与冒烟都会稳定下来。
+  - 交互用例“<200ms”通过，重复 3 次无偶发失败
+  - initial js gzip 降至 ≤400kB；phaser 独立 chunk；react vendor ≤150kB
+  - 冷启动 P95 达标（现预算）并在 PR 中提供 visualizer 截图/报告
+  - CI 出现性能回归时给出可定位的信息（trace + mark/measure）

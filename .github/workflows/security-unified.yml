@@ -9,6 +9,10 @@ permissions:
   issues: write
   id-token: write
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   push:
     branches: [main, develop]
@@ -241,12 +245,12 @@ jobs:
           echo "high-count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
 
           # ADR-0002 硬失败逻辑：Critical=0, High≤3
-          if [ $CRITICAL_COUNT -gt 0 ]; then
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
             echo "❌ [硬失败] 发现 $CRITICAL_COUNT 个Critical级别安全问题，根据ADR-0002必须为0"
             echo "🚨 门禁将强制失败，禁止合并"
             exit 1
-          elif [ $HIGH_COUNT -gt 3 ]; then
+          elif [ "$HIGH_COUNT" -gt 3 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
             echo "❌ [硬失败] 发现 $HIGH_COUNT 个High级别安全问题，根据ADR-0002最大允许3个"
             echo "🚨 门禁将强制失败，禁止合并"

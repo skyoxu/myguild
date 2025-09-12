@@ -117,9 +117,9 @@ jobs:
             ENV="${{ github.event.inputs.environment }}"
           elif [[ "$BRANCH_REF" == "refs/heads/main" ]]; then
             ENV="production"
-          elif [[ "$BRANCH_REF" == refs/heads/release/* ]]; then
+          elif [[ "$BRANCH_REF" == "refs/heads/release/"* ]]; then
             ENV="staging"
-          elif [[ "$BRANCH_REF" == refs/tags/v* ]]; then
+          elif [[ "$BRANCH_REF" == "refs/tags/v"* ]]; then
             ENV="production"
           else
             ENV="development"

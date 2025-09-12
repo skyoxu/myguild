@@ -5,6 +5,10 @@ permissions:
   contents: read
   actions: write
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   schedule:
     # 每 15 分钟监控一次发布健康度
@@ -116,6 +120,7 @@ jobs:
         if: steps.conditions.outputs.should_monitor == 'true'
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        shell: bash
         run: |
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "⚠️  SENTRY_AUTH_TOKEN 未配置，跳过健康监控"
@@ -192,6 +197,7 @@ jobs:
         if: steps.health_monitor.outputs.monitor_status == 'unhealthy'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        shell: bash
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "⚠️  WEBHOOK_URL 未配置，跳过通知"
@@ -218,6 +224,7 @@ jobs:
 
       - name: '💾 Commit monitoring data'
         if: steps.conditions.outputs.should_monitor == 'true'
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

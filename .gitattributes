@@ -1,40 +1,12 @@
-# Set default behavior, in case users don't have core.autocrlf set.
+# Normalize text files and enforce LF endings
 * text=auto eol=lf
 
-# Explicitly declare text files you want to always be normalized and converted
-# to LF line endings.
-*.js text eol=lf
-*.jsx text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
-*.mjs text eol=lf
-*.json text eol=lf
-*.md text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.html text eol=lf
-*.css text eol=lf
-*.scss text eol=lf
-*.txt text eol=lf
-*.gitattributes text eol=lf
-*.gitignore text eol=lf
+# Workflows and YAML must be UTF-8 with LF
+.github/workflows/*.yml text eol=lf working-tree-encoding=UTF-8
+.github/workflows/*.yaml text eol=lf working-tree-encoding=UTF-8
+*.yml text eol=lf working-tree-encoding=UTF-8
+*.yaml text eol=lf working-tree-encoding=UTF-8
 
-# Windows-specific files should maintain CRLF
-*.bat text eol=crlf
-*.ps1 text eol=crlf
+# Ensure shell scripts use LF
+*.sh text eol=lf
 
-# Denote all files that are truly binary and should not be modified.
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.ico binary
-*.woff binary
-*.woff2 binary
-*.ttf binary
-*.otf binary
-*.zip binary
-*.tar.gz binary
-*.exe binary
-*.dll binary
-*.so binary

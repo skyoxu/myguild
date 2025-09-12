@@ -5,6 +5,10 @@ permissions:
   contents: read
   actions: read
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   push:
     branches: [main, develop]

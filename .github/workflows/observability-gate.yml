@@ -5,6 +5,10 @@ permissions:
   contents: read
   actions: read
 
+defaults:
+  run:
+    shell: pwsh
+
 on:
   push:
     branches: [main, develop]
@@ -72,7 +76,7 @@ jobs:
         run: |
           echo "📊 开始执行统一可观测性配置验证..."
           node scripts/observability-config-validation.js
-          echo "validation-status=success" >> $GITHUB_OUTPUT
+          echo "validation-status=success" >> "$GITHUB_OUTPUT"
         continue-on-error: false
 
       - name: 上传验证报告
@@ -144,6 +148,7 @@ jobs:
 
       - name: 验证失败处理
         if: failure()
+        shell: bash
         run: |
           echo "❌ 统一可观测性配置验证失败"
           echo ""
@@ -223,6 +228,7 @@ jobs:
           echo "✅ Sentry集成配置检查完成"
 
       - name: 验证日志配置一致性
+        shell: bash
         run: |
           echo "📝 验证日志配置一致性..."
 

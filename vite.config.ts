@@ -37,6 +37,8 @@ export default defineConfig({
             if (id.includes('phaser')) return 'phaser';
             if (id.includes('@sentry')) return 'sentry';
             if (id.includes('react')) return 'react-vendor';
+            if (id.includes('antd') || id.includes('@ant-design'))
+              return 'antd-vendor';
             return 'vendor';
           }
         },

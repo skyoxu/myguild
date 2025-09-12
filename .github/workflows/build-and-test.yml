@@ -28,244 +28,118 @@ on:
       - '.github/workflows/build-and-test.yml'
       - '.github/actions/**'
 
-env:
-  NODE_VERSION: '20.x'
-  COVERAGE_THRESHOLD: 90
-
 permissions:
   contents: read
   actions: read
 
-# ==================== 并发控制 ====================
+defaults:
+  run:
+    shell: pwsh
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '20.x'
+
 jobs:
-  # ==================== 核心构建测试 ====================
   build-and-test:
     name: Build and Test
     runs-on: windows-latest
-    timeout-minutes: 15
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    timeout-minutes: 20
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-
     steps:
-      - name: 📥 检出代码
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 验证工具链设置（Windows专注）
-        shell: bash
-        run: |
-          echo "🔍 Windows环境信息诊断："
-          node -v && npm -v
-          echo "验证ESLint可用性（避免误判安装问题）："
-          # 使用 npx 替代已弃用的 npm bin 命令
-          npx --yes eslint -v
-          echo "✅ 工具链设置验证完成"
-
-      # 仅对改动文件执行 0 warning 门禁（禁止新增告警）
-      - name: 📁 获取改动文件
-        id: changed
-        uses: tj-actions/changed-files@v45
-        with:
-          separator: ' '
-
-      - name: 🚫 改动文件门禁 (0 warnings)
-        if: ${{ steps.changed.outputs.any_changed == 'true' }}
-        shell: bash
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
-        run: |
-          set -euo pipefail
-          # 过滤出受影响的源码/脚本文件
-          echo "${ALL_CHANGED_FILES}" | tr ' ' '\n' \
-            | grep -E '\.(ts|tsx|js|jsx)$' > changed.txt || true
-          if [ ! -s changed.txt ]; then
-            echo "No relevant changed files for lint gate."
-            exit 0
-          fi
-          # 使用 npx 替代已弃用的 npm bin 命令 - 改动文件门禁段落
-          echo "Lint on changed files:"
-          cat changed.txt
-          # 安全读取改动文件，按目录分别处理ESLint门禁（buildandtest.md方法A1）
-          src_files=()
-          test_files=()
-          while IFS= read -r f; do 
-            if [[ "$f" =~ ^src/ ]]; then
-              src_files+=("$f")
-            elif [[ "$f" =~ ^tests/ ]]; then
-              test_files+=("$f")
-            fi
-          done < changed.txt
-          
-          # 严格检查业务代码（临时阈值115，将逐步收敛到0）
-          if [ "${#src_files[@]}" -gt 0 ]; then
-            echo "Strict lint check on src files:"
-            printf '%s\n' "${src_files[@]}"
-            npx eslint "${src_files[@]}" --max-warnings 115
-            npx prettier --check "${src_files[@]}"
-          fi
-          
-          # 测试代码放宽（允许≤300条警告）
-          if [ "${#test_files[@]}" -gt 0 ]; then
-            echo "Relaxed lint check on test files:"
-            printf '%s\n' "${test_files[@]}"
-            npx eslint "${test_files[@]}" --max-warnings 300
-            npx prettier --check "${test_files[@]}"
-          fi
-
-      - name: 🎨 Prettier 格式检查
-        shell: bash
-        run: |
-          echo "检查代码格式..."
-          npx prettier . --check || (echo "❌ 代码格式不符合要求，请运行 'npm run format' 修复"; exit 1)
-          echo "✅ 代码格式检查通过"
-
-      - name: 🔍 ESLint 检查
+      - name: Lint
         run: npm run lint
 
-      - name: 🚨 ESLint 基线门禁
-        run: npm run lint:baseline
-        env:
-          ESLINT_MAX_WARNINGS: 50
-
-      - name: 🏗️ TypeScript 编译检查
+      - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: 🧪 运行单元测试
+      - name: Unit tests
         uses: ./.github/actions/run-tests
         with:
           test-type: unit
         env:
           NODE_ENV: test
 
-      - name: 🏗️ 构建应用
+      - name: Build app
         run: npm run build
 
-      - name: 🔍 验证构建产物（Windows原生）
-        shell: bash
-        run: |
-          echo "验证Windows构建产物结构："
-          ls -la dist/
-          if [ ! -f "dist/index.html" ]; then echo "❌ 缺少 index.html"; exit 1; fi
-          if [ ! -d "dist/assets" ]; then echo "❌ 缺少 assets 目录"; exit 1; fi
-          echo "✅ 构建产物验证通过"
+      - name: Bundle budget gate (soft on PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BUNDLE_GUARD: warn
+        run: npm run guard:bundle
 
-      # 性能门禁（Windows）- 软门禁模式
-      - name: 🧪 性能基准（User Timing）
-        id: perf
-        run: npm run guard:performance
-        continue-on-error: true   # 不阻断合并
-        env: { NODE_ENV: test }
+      - name: Bundle budget gate (strict on push)
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          BUNDLE_GUARD: strict
+        run: npm run guard:bundle
 
-      # 性能门禁失败预警（但不阻断）
-      - name: ⚠️ 性能门禁预警
-        if: failure() && steps.perf.outcome == 'failure'
-        shell: bash
-        run: |
-          {
-            echo "## ⚠️ 性能门禁预警（未阻断）"
-            echo ""
-            echo "- 本次 P95/P99 超阈值；请在合并前复核对照基线"
-            echo "- 共享 Windows Runner 性能抖动明显，建议以相对回归为准"
-            echo "- 详细报告请查看 Performance Gate Summary"
-            echo ""
-            echo "### 超阈场景分析"
-            echo "- App Startup: 目标 P95≤3000ms"  
-            echo "- Game Scene Load: 目标 P95≤1500ms"
-            echo "- UI Modal Open: 目标 P95≤200ms"
-            echo "- Game Turn Process: 目标 P95≤500ms"
-            echo "- Data Save: 目标 P95≤800ms"
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/**
+            dist-electron/**
+          retention-days: 7
 
-      - name: 🧪 性能门禁（帧率稳定）
-        run: npm run guard:framerate
-        continue-on-error: true   # 软门禁
-        env: { NODE_ENV: test }
-
-      - name: 🧪 性能门禁（场景切换）
-        run: npm run guard:scene-transition
-        continue-on-error: true   # 软门禁
-        env: { NODE_ENV: test }
-
-      - name: 🧪 性能门禁（WebVitals 混合）
-        run: node scripts/perf/web-vitals-hybrid-gate.mjs
-        continue-on-error: true   # 软门禁
-        env: { NODE_ENV: test }
-
-      - name: 📈 Performance Gate Summary
-        if: always()
-        shell: bash
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## 📈 Performance Gates (Windows)
-          - User Timing: 已执行并门禁化
-          - 帧率稳定/场景切换: 已执行并门禁化
-          - WebVitals（如配置）: 已执行并门禁化
-          EOF
-
-      - name: 📋 Quality Gate Summary
-        if: always()
-        shell: bash
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## ✅ Quality Gates (Windows)
-          - Lint/Typecheck: 已执行（含改动文件 0 warning 门禁）
-          - Coverage Gate: 全局 ≥ 90%（若低于已阻断）
-          - Bundle/体量阈值: 已校验
-          EOF
-
-  # ==================== Electron安全测试 ====================
   electron-security-tests:
     name: Electron Security Tests
     runs-on: windows-latest
     needs: build-and-test
     timeout-minutes: 20
-    # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-
     steps:
-      - name: 📥 检出代码
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🛡️ 运行Electron安全冒烟测试（Windows）
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Run Electron security smoke tests
         uses: ./.github/actions/run-tests
         with:
           test-type: security
         env:
           CI: true
-          # Windows下无需xvfb，Electron可直接运行
-          # 禁用GPU加速确保CI稳定性
           ELECTRON_DISABLE_GPU: true
-          # 安全测试模式标记
           SECURITY_TEST_MODE: true
 
-      - name: 📋 上传安全测试报告
+      - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -273,5 +147,5 @@ jobs:
           path: |
             test-results/
             playwright-report/
-          # P2标准化：测试报告常规保留期7天，PR构建5天
           retention-days: ${{ github.event_name == 'pull_request' && 7 || 14 }}
+

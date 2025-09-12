@@ -13,7 +13,7 @@ output_summary_header() {
     local title="$1"
     local icon="${2:-🔍}"
     
-    cat >> $GITHUB_STEP_SUMMARY << EOF
+    cat >> "$GITHUB_STEP_SUMMARY" << EOF
 ## ${icon} ${title}
 
 ### 📊 执行摘要
@@ -22,7 +22,7 @@ EOF
 
 # 函数：输出标准化表格头
 output_table_header() {
-    cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+    cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
 | 检查项目 | 状态 | 结果 |
 |---------|------|------|
 EOF
@@ -34,14 +34,14 @@ output_status_row() {
     local status="$2"  # ✅ ❌ ⚠️ 🔄
     local result="$3"
     
-    echo "| $item | $status | $result |" >> $GITHUB_STEP_SUMMARY
+    echo "| $item | $status | $result |" >> "$GITHUB_STEP_SUMMARY"
 }
 
 # 函数：输出标准化结尾
 output_summary_footer() {
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
     
-    cat >> $GITHUB_STEP_SUMMARY << EOF
+    cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
 ---
 **执行时间**: ${timestamp}  

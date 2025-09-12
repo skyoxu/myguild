@@ -1,8 +1,5 @@
-# 测试执行统一Action
-# 减少测试命令在多个workflow中的重复，提供统一的测试执行和报告
-
 name: 'Run Tests'
-description: '统一执行项目测试（单元测试、E2E测试、安全测试等）'
+description: '统一执行项目测试（单元、E2E、安全、覆盖率等）'
 
 inputs:
   test-type:
@@ -20,9 +17,9 @@ inputs:
   timeout:
     description: '测试超时时间(ms)'
     required: false
-    default: '300000' # 5分钟
+    default: '300000'
   fail-fast:
-    description: '测试失败时是否立即失败'
+    description: '测试失败是否立即失败'
     required: false
     default: 'true'
   reporter:
@@ -44,7 +41,8 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: 🧪 执行测试
+    - name: Run tests
+
       id: test
       shell: bash
       run: |
@@ -56,40 +54,45 @@ runs:
         REPORTER="${{ inputs.reporter }}"
         OUTPUT_FILE="${{ inputs.output-file }}"
 
-        echo "🧪 开始执行${TEST_TYPE}测试..."
+        echo "🧪 开始执行 ${TEST_TYPE} 测试..."
         echo "⏱️ 超时设置: ${TIMEOUT}ms"
         echo "🚨 快速失败: ${FAIL_FAST}"
 
+        # Electron E2E 预检：若缺少构建产物则先构建（适用于 e2e / security / smoke）
+        if [ "$TEST_TYPE" = "e2e" ] || [ "$TEST_TYPE" = "security" ] || [ "$TEST_TYPE" = "smoke" ]; then
+          if [ ! -f "dist-electron/main.js" ]; then
+            echo "⚠️ dist-electron/main.js 缺失，执行构建..."
+            npm run build
+          fi
+        fi
+
         # 构建测试命令
         case "$TEST_TYPE" in
-          "unit")
+          unit)
             TEST_CMD="npm run test:unit"
             if [ "$REPORTER" != "default" ]; then
               TEST_CMD="$TEST_CMD -- --reporter=$REPORTER"
             fi
-            if [ "$FAIL_FAST" == "false" ]; then
-              TEST_CMD="$TEST_CMD --passWithNoTests"
-            fi
             ;;
-          "coverage")
+          coverage)
             TEST_CMD="npm run test:coverage"
             ;;
-          "e2e")
+          e2e)
             TEST_CMD="npm run test:e2e"
             if [ "$TIMEOUT" != "300000" ]; then
               TEST_CMD="$TEST_CMD --timeout=$TIMEOUT"
             fi
             ;;
-          "security")
+          security)
             TEST_CMD="npm run test:e2e:security"
             ;;
-          "smoke")
+          smoke)
             TEST_CMD="npm run test:e2e:smoke"
             if [ "$TIMEOUT" != "300000" ]; then
               TEST_CMD="$TEST_CMD --timeout=$TIMEOUT"
             fi
             ;;
-          "observability")
+          observability)
             TEST_CMD="npm run test:observability"
             ;;
           *)
@@ -99,20 +102,18 @@ runs:
         esac
 
         # 执行测试
-        if [ "$FAIL_FAST" == "false" ]; then
-          # 容错模式：测试失败不阻塞流程
+        if [ "$FAIL_FAST" = "false" ]; then
           if $TEST_CMD; then
             echo "result=success" >> $GITHUB_OUTPUT
-            echo "✅ ${TEST_TYPE}测试通过"
+            echo "✅ ${TEST_TYPE} 测试通过"
           else
             echo "result=failure" >> $GITHUB_OUTPUT
-            echo "⚠️ ${TEST_TYPE}测试失败，但不阻塞流程"
+            echo "⚠️ ${TEST_TYPE} 测试失败，但不阻塞流程"
           fi
         else
-          # 严格模式：测试失败时停止
           $TEST_CMD
           echo "result=success" >> $GITHUB_OUTPUT
-          echo "✅ ${TEST_TYPE}测试通过"
+          echo "✅ ${TEST_TYPE} 测试通过"
         fi
 
         # 输出报告文件路径
@@ -126,17 +127,14 @@ runs:
           echo "report_path=" >> $GITHUB_OUTPUT
         fi
 
-        echo "🎯 ${TEST_TYPE}测试执行完成"
-
-    - name: 📊 生成测试总结
+    - name: Print summary
       shell: bash
       run: |
-        if [ "${{ steps.test.outputs.result }}" == "success" ]; then
+        if [ "${{ steps.test.outputs.result }}" = "success" ]; then
           echo "✅ 测试状态: 通过"
         else
           echo "⚠️ 测试状态: 失败"
         fi
-
         if [ -n "${{ steps.test.outputs.report_path }}" ]; then
           echo "📄 报告路径: ${{ steps.test.outputs.report_path }}"
         fi

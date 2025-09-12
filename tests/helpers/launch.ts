@@ -7,6 +7,8 @@ import {
 import { resolve } from 'node:path';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 /**
  * 启动Electron应用程序 - 统一化测试启动函数
@@ -15,6 +17,15 @@ import { pathToFileURL } from 'node:url';
  */
 export async function launchApp(entry?: string): Promise<ElectronApplication> {
   const main = entry ?? resolve(process.cwd(), 'dist-electron', 'main.js');
+  if (!existsSync(main)) {
+    try {
+      console.log('[launch] dist-electron/main.js not found, building...');
+      execSync('npm run build', { stdio: 'inherit' });
+    } catch (e) {
+      console.error('[launch] build failed before E2E launch');
+      throw e;
+    }
+  }
   return electron.launch({
     args: [main],
     env: {
@@ -40,10 +51,28 @@ export async function launchAppWithArgs(
   if (Array.isArray(entryOrArgs)) {
     // 第一个参数是额外参数数组
     main = resolve(process.cwd(), 'dist-electron', 'main.js');
+    if (!existsSync(main)) {
+      try {
+        console.log('[launch] dist-electron/main.js not found, building...');
+        execSync('npm run build', { stdio: 'inherit' });
+      } catch (e) {
+        console.error('[launch] build failed before E2E launch');
+        throw e;
+      }
+    }
     args = [main, ...entryOrArgs];
   } else {
     // 第一个参数是entry路径
     main = entryOrArgs ?? resolve(process.cwd(), 'dist-electron', 'main.js');
+    if (!existsSync(main)) {
+      try {
+        console.log('[launch] dist-electron/main.js not found, building...');
+        execSync('npm run build', { stdio: 'inherit' });
+      } catch (e) {
+        console.error('[launch] build failed before E2E launch');
+        throw e;
+      }
+    }
     args = extraArgs ? [main, ...extraArgs] : [main];
   }
 

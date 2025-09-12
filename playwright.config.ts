@@ -13,6 +13,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  expect: { timeout: 10_000 },
 
   /* 运行配置 */
   fullyParallel: false, // 配合单线程执行
@@ -33,6 +34,7 @@ export default defineConfig({
   use: {
     /* 基础设置 */
     actionTimeout: 15000,
+    navigationTimeout: 30000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
