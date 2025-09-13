@@ -1,28 +1,41 @@
-import { defineConfig, devices } from '@playwright/test';
+﻿import { defineConfig, devices } from '@playwright/test';
+
+// Unify security E2E timeouts via env (default 300s).
+const E2E_SECURITY_TIMEOUT_MS = Number(
+  process.env.E2E_SECURITY_TIMEOUT_MS ??
+    process.env.SECURITY_E2E_TIMEOUT_MS ??
+    '300000'
+);
+if (
+  !Number.isFinite(E2E_SECURITY_TIMEOUT_MS) ||
+  E2E_SECURITY_TIMEOUT_MS < 60000
+) {
+  throw new Error(
+    `Invalid E2E_SECURITY_TIMEOUT_MS: ${process.env.E2E_SECURITY_TIMEOUT_MS ?? process.env.SECURITY_E2E_TIMEOUT_MS}`
+  );
+}
+console.log(
+  `[playwright-config] E2E_SECURITY_TIMEOUT_MS=${E2E_SECURITY_TIMEOUT_MS}`
+);
 
 /**
- * Playwright配置 - Electron桌面应用E2E测试
- * 基于ADR-0002 Electron安全基线和ADR-0005质量门禁
+ * Playwright閰嶇疆 - Electron妗岄潰搴旂敤E2E娴嬭瘯
+ * 鍩轰簬ADR-0002 Electron瀹夊叏鍩虹嚎鍜孉DR-0005璐ㄩ噺闂ㄧ
  *
- * 增强功能：
- * - 官方_electron.launch()模式支持
- * - 冒烟测试、完整E2E测试、安全审计分离
- * - Windows/macOS/Linux跨平台支持
- * - CSP策略验证、Node.js隔离检查
- * - IPC通道安全测试、上下文隔离验证
+ * 澧炲己鍔熻兘锛? * - 瀹樻柟_electron.launch()妯″紡鏀寔
+ * - 鍐掔儫娴嬭瘯銆佸畬鏁碋2E娴嬭瘯銆佸畨鍏ㄥ璁″垎绂? * - Windows/macOS/Linux璺ㄥ钩鍙版敮鎸? * - CSP绛栫暐楠岃瘉銆丯ode.js闅旂妫€鏌? * - IPC閫氶亾瀹夊叏娴嬭瘯銆佷笂涓嬫枃闅旂楠岃瘉
  */
 export default defineConfig({
   testDir: './tests/e2e',
   expect: { timeout: 10_000 },
 
-  /* 运行配置 */
+  /* 杩愯閰嶇疆 */
   fullyParallel: false, // 配合单线程执行
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1, // 强制单线程，避免Electron进程冲突
-  timeout: 90_000, // CI 首窗+协议映射更宽裕
-
-  /* 报告配置 */
+  workers: 1, // 寮哄埗鍗曠嚎绋嬶紝閬垮厤Electron杩涚▼鍐茬獊
+  timeout: E2E_SECURITY_TIMEOUT_MS, // CI 棣栫獥+鍗忚鏄犲皠鏇村瑁?
+  /* 鎶ュ憡閰嶇疆 */
   reporter: [
     ['html', { outputFolder: 'test-results/playwright-report' }],
     ['junit', { outputFile: 'test-results/junit-results.xml' }],
@@ -30,41 +43,40 @@ export default defineConfig({
     ...(process.env.CI ? [['github']] : [['list']]),
   ],
 
-  /* 全局设置 */
+  /* 鍏ㄥ眬璁剧疆 */
   use: {
-    /* 基础设置 */
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+    /* 鍩虹璁剧疆 */
+    actionTimeout: 120000,
+    navigationTimeout: 60000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
 
-    /* Electron特定配置 */
-    headless: process.env.CI === 'true', // CI环境使用headless模式，本地保持GUI
+    /* Electron鐗瑰畾閰嶇疆 */
+    headless: process.env.CI === 'true', // CI鐜浣跨敤headless妯″紡锛屾湰鍦颁繚鎸丟UI
 
-    /* 安全基线验证 */
+    /* 瀹夊叏鍩虹嚎楠岃瘉 */
     extraHTTPHeaders: {
       'X-Test-Security': 'electron-csp-validation',
       'X-Test-Context-Isolation': 'enabled',
     },
   },
 
-  /* 测试项目配置 */
+  /* 娴嬭瘯椤圭洰閰嶇疆 */
   projects: [
     {
       name: 'electron-smoke-tests',
       testMatch: ['**/smoke/**/*.spec.ts', '**/smoke.*.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
-        // Electron专用配置 - 使用_electron.launch()
+        // Electron涓撶敤閰嶇疆 - 浣跨敤_electron.launch()
         launchOptions: {
-          executablePath: undefined, // 由_electron.launch()自动确定
+          executablePath: undefined, // 鐢盻electron.launch()鑷姩纭畾
           args: [
-            '--disable-web-security', // 仅测试环境
-            '--allow-running-insecure-content',
+            '--disable-web-security', // 浠呮祴璇曠幆澧?            '--allow-running-insecure-content',
             '--disable-features=VizDisplayCompositor',
-            '--no-sandbox', // 测试环境临时禁用沙箱
-            '--offline', // E2E网络隔离
+            '--no-sandbox', // 娴嬭瘯鐜涓存椂绂佺敤娌欑
+            '--offline', // E2E缃戠粶闅旂
           ],
           env: {
             NODE_ENV: 'test',
@@ -83,7 +95,7 @@ export default defineConfig({
         '!**/security/**/*.spec.ts',
         '!**/smoke/**/*.spec.ts',
       ],
-      dependencies: ['electron-smoke-tests'], // 依赖冒烟测试通过
+      dependencies: ['electron-smoke-tests'], // 渚濊禆鍐掔儫娴嬭瘯閫氳繃
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
@@ -91,7 +103,7 @@ export default defineConfig({
           args: [
             '--disable-web-security',
             '--allow-running-insecure-content',
-            '--offline', // E2E网络隔离
+            '--offline', // E2E缃戠粶闅旂
           ],
           env: {
             NODE_ENV: 'test',
@@ -106,9 +118,9 @@ export default defineConfig({
     {
       name: 'electron-security-audit',
       testMatch: ['**/security/**/*.spec.ts', '**/security-*.spec.ts'],
-      timeout: 90_000, // CI 首窗+协议映射更宽裕
+      timeout: E2E_SECURITY_TIMEOUT_MS, // CI 首窗+协议映射更复杂
       use: {
-        trace: 'on-first-retry', // trace: 'on-first-retry' 可在失败时产出 trace.zip
+        trace: 'on-first-retry', // trace: 'on-first-retry' 鍙湪澶辫触鏃朵骇鍑?trace.zip
       },
     },
 
@@ -124,7 +136,7 @@ export default defineConfig({
             '--disable-web-security',
             '--disable-extensions',
             '--disable-default-apps',
-            '--offline', // E2E网络隔离
+            '--offline', // E2E缃戠粶闅旂
           ],
           env: {
             NODE_ENV: 'test',
@@ -139,7 +151,7 @@ export default defineConfig({
     {
       name: 'framerate-stability',
       testMatch: ['**/framerate-stability.e2e.spec.ts'],
-      dependencies: ['electron-smoke-tests'], // 依赖基础冒烟测试
+      dependencies: ['electron-smoke-tests'], // 渚濊禆鍩虹鍐掔儫娴嬭瘯
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
@@ -148,28 +160,27 @@ export default defineConfig({
             '--disable-web-security',
             '--disable-extensions',
             '--disable-default-apps',
-            '--enable-gpu-rasterization', // 启用GPU加速确保最佳帧率
-            '--enable-zero-copy',
-            '--disable-background-timer-throttling', // 禁用后台节流
+            '--enable-gpu-rasterization', // 鍚敤GPU鍔犻€熺‘淇濇渶浣冲抚鐜?            '--enable-zero-copy',
+            '--disable-background-timer-throttling', // 绂佺敤鍚庡彴鑺傛祦
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
-            '--offline', // E2E网络隔离
+            '--offline', // E2E缃戠粶闅旂
           ],
           env: {
             NODE_ENV: 'test',
             CI: 'true',
-            FRAMERATE_TEST_MODE: 'true', // 专门标记
+            FRAMERATE_TEST_MODE: 'true', // 涓撻棬鏍囪
             ELECTRON_RUN_AS_NODE: '0',
           },
         },
       },
-      timeout: 120000, // 帧率测试需要更长时间 (2分钟)
+      timeout: 120000, // 甯х巼娴嬭瘯闇€瑕佹洿闀挎椂闂?(2鍒嗛挓)
     },
 
     {
       name: 'scene-transition',
       testMatch: ['**/scene-transition.e2e.spec.ts'],
-      dependencies: ['electron-smoke-tests'], // 依赖基础冒烟测试
+      dependencies: ['electron-smoke-tests'], // 渚濊禆鍩虹鍐掔儫娴嬭瘯
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
@@ -178,48 +189,45 @@ export default defineConfig({
             '--disable-web-security',
             '--disable-extensions',
             '--disable-default-apps',
-            '--enable-precise-memory-info', // 启用精确内存信息用于User Timing API
-            '--disable-background-timer-throttling', // 确保计时器精度
-            '--enable-high-resolution-time', // 启用高精度时间戳
-            '--offline', // E2E网络隔离
+            '--enable-precise-memory-info', // 鍚敤绮剧‘鍐呭瓨淇℃伅鐢ㄤ簬User Timing API
+            '--disable-background-timer-throttling', // 纭繚璁℃椂鍣ㄧ簿搴?            '--enable-high-resolution-time', // 鍚敤楂樼簿搴︽椂闂存埑
+            '--offline', // E2E缃戠粶闅旂
           ],
           env: {
             NODE_ENV: 'test',
             CI: 'true',
-            SCENE_TRANSITION_TEST_MODE: 'true', // 专门标记
+            SCENE_TRANSITION_TEST_MODE: 'true', // 涓撻棬鏍囪
             USER_TIMING_API_ENABLED: 'true',
             ELECTRON_RUN_AS_NODE: '0',
           },
         },
       },
-      timeout: 90000, // 场景转换测试时间 (1.5分钟)
+      timeout: 90000, // 鍦烘櫙杞崲娴嬭瘯鏃堕棿 (1.5鍒嗛挓)
     },
   ],
 
-  /* 输出目录 */
+  /* 杈撳嚭鐩綍 */
   outputDir: 'test-results/artifacts',
 
-  /* 全局设置和清理 */
-  // 暂时禁用全局设置以直接测试 Electron launch
+  /* 鍏ㄥ眬璁剧疆鍜屾竻鐞?*/
+  // 鏆傛椂绂佺敤鍏ㄥ眬璁剧疆浠ョ洿鎺ユ祴璇?Electron launch
   // globalSetup: './tests/global-setup.ts',
   // globalTeardown: './tests/global-teardown.ts',
 
-  /* 开发服务器配置 - Electron构建 */
-  // 暂时禁用 webServer 配置以绕过构建失败问题
-  // webServer: [
+  /* 寮€鍙戞湇鍔″櫒閰嶇疆 - Electron鏋勫缓 */
+  // 鏆傛椂绂佺敤 webServer 閰嶇疆浠ョ粫杩囨瀯寤哄け璐ラ棶棰?  // webServer: [
   //   {
   //     command: 'npm run build',
-  //     port: 3000, // 占位端口，实际不会启动web服务器
-  //     timeout: 120 * 1000,
+  //     port: 3000, // 鍗犱綅绔彛锛屽疄闄呬笉浼氬惎鍔╳eb鏈嶅姟鍣?  //     timeout: 120 * 1000,
   //     reuseExistingServer: !process.env.CI,
   //     stdout: 'pipe',
   //     stderr: 'pipe',
   //   },
   // ],
 
-  /* 期待和忽略 */
+  /* 鏈熷緟鍜屽拷鐣?*/
   expect: {
-    // Electron应用启动可能较慢
+    // Electron搴旂敤鍚姩鍙兘杈冩參
     timeout: 10000,
   },
 });

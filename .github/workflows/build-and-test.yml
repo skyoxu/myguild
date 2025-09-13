@@ -27,6 +27,23 @@ jobs:
           COVERAGE_MODE: development
           NODE_ENV: test
         run: npm run test:coverage:gate
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          if (Test-Path -LiteralPath 'coverage/coverage-summary.json') {
+            $summary = Get-Content -Raw -LiteralPath 'coverage/coverage-summary.json' | ConvertFrom-Json
+            $t = $summary.total
+            $lines = """
+            ## Coverage Summary
+            - Lines: $($t.lines.pct)%
+            - Statements: $($t.statements.pct)%
+            - Functions: $($t.functions.pct)%
+            - Branches: $($t.branches.pct)%
+            """
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
+          } else {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Coverage summary not found."
+          }
       - name: Build
         run: npm run build
 
@@ -41,22 +58,107 @@ jobs:
       VITE_E2E_SMOKE: 'true'
       ELECTRON_ENABLE_LOGGING: '1'
       ELECTRON_DISABLE_GPU: '1'
+      E2E_SECURITY_TIMEOUT_MS: 300000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm ci
+      - name: Detect changes for E2E
+        id: changes-e2e
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            src/**
+            tests/e2e/**
+            playwright.config.ts
+      - name: Install deps (npm ci)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm ci
+      - name: Validate E2E timeout config (fail-fast)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: |
+          $raw = $env:E2E_SECURITY_TIMEOUT_MS
+          if ([string]::IsNullOrWhiteSpace($raw)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not set"
+            exit 1
+          }
+          $val = 0
+          if (-not [int]::TryParse($raw, [ref]$val)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not a valid integer: $raw"
+            exit 1
+          }
+          if ($val -lt 60000 -or $val -gt 900000) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS out of range [60000,900000]: $val"
+            exit 1
+          }
+          Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
+      - name: Cache Playwright browsers
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
       - name: Dependency Probe (Electron + Playwright)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
         run: |
           pwsh -File scripts/ci/electron-deps-probe.ps1
       - name: Install Playwright browsers
+        if: steps.changes-e2e.outputs.any_changed == 'true'
         run: npx playwright install --with-deps
       - name: Run perf smoke (Electron)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
         run: npm run test:e2e:perf-smoke
+      - name: Publish E2E perf P95 summary
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        run: |
+          if (Test-Path -LiteralPath 'test-results/test-results.json') {
+            $json = Get-Content -Raw -LiteralPath 'test-results/test-results.json' | ConvertFrom-Json
+            $durations = New-Object System.Collections.Generic.List[double]
+            function Collect($n) {
+              if ($null -ne $n.suites) { foreach ($s in $n.suites) { Collect $s } }
+              if ($null -ne $n.specs) {
+                foreach ($sp in $n.specs) {
+                  foreach ($t in $sp.tests) {
+                    foreach ($res in $t.results) {
+                      if ($null -ne $res.duration) { [void]$durations.Add([double]$res.duration) }
+                    }
+                  }
+                }
+              }
+            }
+            Collect $json
+            if ($durations.Count -gt 0) {
+              $durations.Sort()
+              function Pct([double[]]$arr, [double]$p) { $idx=[math]::Floor(($arr.Length-1)*$p); return [int]$arr[$idx] }
+              $p50 = Pct $durations 0.5
+              $p90 = Pct $durations 0.9
+              $p95 = Pct $durations 0.95
+              $p99 = Pct $durations 0.99
+              $avg = [math]::Round(($durations | Measure-Object -Average).Average,2)
+              $max = [int]($durations[-1])
+              $lines = """
+              ## E2E Perf (Playwright)
+              - samples: $($durations.Count)
+              - p50: $p50 ms
+              - p90: $p90 ms
+              - p95: $p95 ms
+              - p99: $p99 ms
+              - avg: $avg ms
+              - max: $max ms
+              """
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
+            } else {
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No E2E durations found to compute P95."
+            }
+          } else {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No Playwright JSON report at test-results/test-results.json."
+          }
       - name: Upload Playwright artifacts
-        if: always()
+        if: failure() && steps.changes-e2e.outputs.any_changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results
@@ -64,3 +166,7 @@ jobs:
             test-results/**
             test-results/playwright-report/**
           if-no-files-found: warn
+      - name: Skip E2E (no changes detected)
+        if: steps.changes-e2e.outputs.any_changed != 'true'
+        run: |
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "E2E perf smoke skipped: no relevant changes (src/**, tests/e2e/**, playwright.config.ts)."

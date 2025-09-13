@@ -565,8 +565,9 @@ jobs:
       - name: 🔧 安装依赖（加固版）
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 Snyk安全扫描
-        uses: snyk/actions/node@0a1954d24f8d4624d36f731238914f659556b6c0 # 固定到v0.4.0对应的commit，避免标签解析问题
+      - name: 🔍 Snyk安全扫描（若配置了Token）
+        if: ${{ secrets.SNYK_TOKEN != '' }}
+        uses: snyk/actions/node@0a1954d24f8d4624d36f731238914f659556b6c0 # 固定到v0.4.0对应的commit
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

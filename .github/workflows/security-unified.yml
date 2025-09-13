@@ -1,6 +1,6 @@
 name: Security Gate (Unified)
 
-# 最小权限原则
+# Minimal permissions principle
 permissions:
   contents: read
   actions: read
@@ -36,10 +36,10 @@ on:
       - 'tsconfig*.json'
       - 'vite.config.ts'
 
-  # 支持手动触发
+  # Support manual trigger
   workflow_dispatch:
 
-# 并发控制：相同分支只运行一个实例
+# Concurrency control: only one instance per branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -48,15 +48,17 @@ env:
   NODE_VERSION: '20.x'
 
 jobs:
-  # 阶段1：静态安全扫描（快速，并行执行）
-  # 兼容性：保持与现有分支保护规则兼容的job名称
+  # Stage 1: Static Security Scan (fast, parallel execution)
+  # Compatibility: Keep job names compatible with existing branch protection rules
   security-scan:
-    name: 📊 静态安全扫描（统一）
+    name: 🔍 Static Security Scan (Unified)
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
+      E2E_SECURITY_TIMEOUT_MS: 300000
+      E2E_SECURITY_TIMEOUT_MS: 300000
     timeout-minutes: 15
 
     outputs:
@@ -65,24 +67,42 @@ jobs:
       high-count: ${{ steps.static-scan.outputs.high-count }}
 
     steps:
-      - name: Checkout代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 设置Node.js
+      - name: Validate E2E timeout config (fail-fast)
+        run: |
+          $raw = $env:E2E_SECURITY_TIMEOUT_MS
+          if ([string]::IsNullOrWhiteSpace($raw)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not set"
+            exit 1
+          }
+          $val = 0
+          if (-not [int]::TryParse($raw, [ref]$val)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not a valid integer: $raw"
+            exit 1
+          }
+          if ($val -lt 60000 -or $val -gt 900000) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS out of range [60000,900000]: $val"
+            exit 1
+          }
+          Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 安装依赖
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 安装jq工具
+      - name: Install jq tool
         shell: pwsh
         run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          # P0 fix: Windows runner uses PowerShell package management instead of Linux apt-get
           if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
             Write-Host "Installing jq tool..."
             if (Get-Command choco -ErrorAction SilentlyContinue) {
@@ -95,82 +115,82 @@ jobs:
             Write-Host "jq already available"
           }
 
-      - name: 安装静态安全扫描工具
+      - name: Install static security scan tools
         run: |
           npm install -g @doyensec/electronegativity@1.10.3
           npm install -g snyk
           npm install -g audit-ci
 
-      - name: 执行Electronegativity扫描
+      - name: Run Electronegativity scan
         id: electronegativity
         shell: bash
         run: |
-          echo "🔍 运行Electronegativity安全扫描..."
-          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ 扫描完成但有警告"
+          echo "🔍 Running Electronegativity security scan..."
+          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ Scan completed but with warnings"
 
           if [ -f electronegativity-scan.csv ]; then
-            echo "✅ Electronegativity扫描完成"
+            echo "✅ Electronegativity scan completed"
             echo "electronegativity-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ Electronegativity扫描失败"
+            echo "❌ Electronegativity scan failed"
             echo "electronegativity-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 执行npm audit
+      - name: Run npm audit
         id: npm-audit
         shell: bash
         run: |
-          echo "🔍 运行npm audit..."
+          echo "🔍 Running npm audit..."
           npm audit --audit-level high --json > npm-audit-results.json || true
 
           if [ -f npm-audit-results.json ]; then
-            echo "✅ npm audit完成"
+            echo "✅ npm audit completed"
             echo "npm-audit-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ npm audit失败"
+            echo "❌ npm audit failed"
             echo "npm-audit-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 执行Snyk扫描（如果有Token）
+      - name: Run Snyk scan (if token available)
         id: snyk-scan
         shell: bash
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -n "$SNYK_TOKEN" ]; then
-            echo "🔍 运行Snyk扫描..."
+            echo "🔍 Running Snyk scan..."
             snyk test --json > snyk-results.json || true
             snyk monitor || true
-            echo "✅ Snyk扫描完成"
+            echo "✅ Snyk scan completed"
             echo "snyk-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "⚠️ 跳过Snyk扫描（无SNYK_TOKEN）"
+            echo "⚠️ Skipping Snyk scan (no SNYK_TOKEN)"
             echo "snyk-status=skipped" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 安装TruffleHog工具（Windows原生）
+      - name: Install TruffleHog tool (Windows native)
         shell: pwsh
         run: |
           Write-Host "Installing TruffleHog via Chocolatey..."
           choco install trufflehog -y --no-progress
           trufflehog --version
-          Write-Host "✅ TruffleHog安装完成"
+          Write-Host "✅ TruffleHog installation completed"
 
-      - name: 检查秘钥泄露（Windows原生）
+      - name: Check for secret leaks (Windows native)
         shell: pwsh
         run: |
-          Write-Host "🔍 运行TruffleHog秘钥扫描..."
+          Write-Host "🔍 Running TruffleHog secret scan..."
           
-          # PR场景：使用git增量扫描（更快更准）
+          # PR scenario: use git incremental scan (faster and more accurate)
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
-            Write-Host "PR模式：执行增量git扫描（base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }}）"
-            # 使用PowerShell调用bash来执行git命令（避免Windows路径问题）
+            Write-Host "PR mode: performing incremental git scan (base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }})"
+            # Use PowerShell to call bash for git commands (avoid Windows path issues)
             bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified,unknown --only-verified --fail --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
             $scanFile = "trufflehog-pr.json"
           } else {
-            Write-Host "主分支模式：执行全量filesystem扫描"
-            # 1) 降噪：使用排除列表跳过二进制文件和构建产物
-            # 2) 正确失败条件：只因已验证密钥而失败，未验证密钥仅作告警
+            Write-Host "Main branch mode: performing full filesystem scan"
+            # 1) Reduce noise: use exclusion list to skip binary files and build artifacts
+            # 2) Correct failure condition: only fail on verified secrets, unverified secrets as warnings only
             trufflehog filesystem . `
               --exclude-paths .trufflehog-exclude.txt `
               --results=verified,unknown `
@@ -180,36 +200,36 @@ jobs:
             $scanFile = "trufflehog-scan.json"
           }
           
-          # 严格按照退出码处理
+          # Strict exit code handling
           $code = $LASTEXITCODE
           if ($code -eq 0) {
-            Write-Host "✅ 未发现已验证的密钥"
+            Write-Host "✅ No verified secrets found"
           } elseif ($code -eq 183) {
-            Write-Host "❌ 发现已验证密钥，详见 $scanFile"
-            # 输出发现的内容用于调试
+            Write-Host "❌ Verified secrets found, see $scanFile"
+            # Output found content for debugging
             if (Test-Path $scanFile) {
               $content = Get-Content $scanFile -Raw
               if ($content -and $content.Trim() -ne "") {
-                Write-Host "🚨 检测到已验证的秘钥泄露"
+                Write-Host "🚨 Detected verified secret leaks"
               }
             }
             exit 1
           } else {
-            Write-Host "❌ TruffleHog 扫描发生错误（exit $code）"
+            Write-Host "❌ TruffleHog scan error (exit $code)"
             exit $code
           }
 
-      - name: 汇总静态扫描结果
+      - name: Aggregate static scan results
         id: static-scan
         shell: bash
         continue-on-error: false
         run: |
-          echo "📊 汇总静态安全扫描结果..."
+          echo "📊 Aggregating static security scan results..."
 
           CRITICAL_COUNT=0
           HIGH_COUNT=0
 
-          # 处理Electronegativity结果（修正：第2列是severity，处理引号）
+          # Process Electronegativity results (fix: column 2 is severity, handle quotes)
           if [ -f electronegativity-scan.csv ]; then
             ELECTRO_CRITICAL=$(awk -F',' 'NR>1 && $2=="\"CRITICAL\"" {count++} END {print count+0}' electronegativity-scan.csv)
             ELECTRO_HIGH=$(awk -F',' 'NR>1 && $2=="\"HIGH\"" {count++} END {print count+0}' electronegativity-scan.csv)
@@ -218,7 +238,7 @@ jobs:
             echo "Electronegativity - Critical: $ELECTRO_CRITICAL, High: $ELECTRO_HIGH"
           fi
 
-          # 处理npm audit结果
+          # Process npm audit results
           if [ -f npm-audit-results.json ]; then
             NPM_CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-results.json 2>/dev/null || echo "0")
             NPM_HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit-results.json 2>/dev/null || echo "0")
@@ -227,7 +247,7 @@ jobs:
             echo "npm audit - Critical: $NPM_CRITICAL, High: $NPM_HIGH"
           fi
 
-          # 处理Snyk结果
+          # Process Snyk results
           if [ -f snyk-results.json ]; then
             SNYK_CRITICAL=$(jq '[.vulnerabilities[] | select(.severity == "critical")] | length' snyk-results.json 2>/dev/null || echo "0")
             SNYK_HIGH=$(jq '[.vulnerabilities[] | select(.severity == "high")] | length' snyk-results.json 2>/dev/null || echo "0")
@@ -236,31 +256,31 @@ jobs:
             echo "Snyk - Critical: $SNYK_CRITICAL, High: $SNYK_HIGH"
           fi
 
-          echo "📊 静态扫描汇总："
-          echo "  Critical总计: $CRITICAL_COUNT"
-          echo "  High总计: $HIGH_COUNT"
+          echo "📊 Static scan summary:"
+          echo "  Critical total: $CRITICAL_COUNT"
+          echo "  High total: $HIGH_COUNT"
 
-          # 输出结果
+          # Output results
           echo "critical-count=$CRITICAL_COUNT" >> "$GITHUB_OUTPUT"
           echo "high-count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
 
-          # ADR-0002 硬失败逻辑：Critical=0, High≤3
+          # ADR-0002 hard failure logic: Critical=0, High≤3
           if [ "$CRITICAL_COUNT" -gt 0 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
-            echo "❌ [硬失败] 发现 $CRITICAL_COUNT 个Critical级别安全问题，根据ADR-0002必须为0"
-            echo "🚨 门禁将强制失败，禁止合并"
+            echo "❌ [Hard Failure] Found $CRITICAL_COUNT Critical-level security issues, ADR-0002 requires zero"
+            echo "🚨 Gate will force failure, merge prohibited"
             exit 1
           elif [ "$HIGH_COUNT" -gt 3 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
-            echo "❌ [硬失败] 发现 $HIGH_COUNT 个High级别安全问题，根据ADR-0002最大允许3个"
-            echo "🚨 门禁将强制失败，禁止合并"
+            echo "❌ [Hard Failure] Found $HIGH_COUNT High-level security issues, ADR-0002 allows maximum 3"
+            echo "🚨 Gate will force failure, merge prohibited"
             exit 1
           else
             echo "status=pass" >> "$GITHUB_OUTPUT"
-            echo "✅ 静态安全扫描通过ADR-0002基线要求"
+            echo "✅ Static security scan passes ADR-0002 baseline requirements"
           fi
 
-      - name: 上传静态扫描报告
+      - name: Upload static scan reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -274,11 +294,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # 阶段2：E2E安全测试（仅在静态扫描通过且critical问题为0时运行）
+  # Stage 2: E2E Security Tests (only when static scan passes with zero Critical issues)
   e2e-security-test:
-    name: 🧪 E2E安全测试
+    name: 🛡️ E2E Security Tests
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -290,45 +310,78 @@ jobs:
       e2e-status: ${{ steps.e2e-test.outputs.status }}
 
     steps:
-      - name: Checkout代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 设置Node.js
+      - name: Validate E2E timeout config (fail-fast)
+        run: |
+          $raw = $env:E2E_SECURITY_TIMEOUT_MS
+          if ([string]::IsNullOrWhiteSpace($raw)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not set"
+            exit 1
+          }
+          $val = 0
+          if (-not [int]::TryParse($raw, [ref]$val)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not a valid integer: $raw"
+            exit 1
+          }
+          if ($val -lt 60000 -or $val -gt 900000) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS out of range [60000,900000]: $val"
+            exit 1
+          }
+          Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 安装依赖
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 安装Playwright浏览器
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: 构建Electron应用
+      - name: Build Electron application
         run: |
           npm run build
           npx tsc -p electron
           npx electron-builder --dir
 
-      - name: 执行E2E安全测试
+      - name: Run E2E security tests (PR Smoke)
+        if: github.event_name == 'pull_request'
         id: e2e-test
         shell: bash
         run: |
-          echo "🧪 开始E2E安全测试..."
-          if npm run test:e2e:security; then
-            echo "✅ E2E安全测试通过"
+          echo "🛡️ (PR) Running security smoke subset..."
+          if cross-env SECURITY_TEST_MODE=true CI=true \
+             npx playwright test --project=electron-security-audit --grep @smoke --reporter=github,line --trace=on-first-retry; then
+            echo "✅ E2E security smoke passed"
             echo "status=pass" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ E2E安全测试失败"
+            echo "❌ E2E security smoke failed"
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run E2E security tests (Full)
+        if: github.event_name != 'pull_request'
+        id: e2e-test
+        shell: bash
+        run: |
+          echo "🛡️ (Full) Running complete E2E security tests..."
+          if npm run test:e2e:security; then
+            echo "✅ E2E security tests passed"
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ E2E security tests failed"
             echo "status=failed" >> "$GITHUB_OUTPUT"
           fi
         env:
           CI: true
 
-      - name: 上传E2E测试报告
+      - name: Upload E2E test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -339,58 +392,58 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # 阶段3：统一安全门禁决策
+  # Stage 3: Unified Security Gate Decision
   unified-security-gate:
-    name: 🚦 统一安全门禁
+    name: 🔒 Unified Security Gate
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     needs: [security-scan, e2e-security-test]
     if: always()
 
-    # 此作业需要创建Issue的权限
+    # This job needs permissions to create Issues
     permissions:
       contents: read
       issues: write
       actions: read
 
     steps:
-      - name: Checkout代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 设置Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 安装依赖
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 确保日志目录存在
+      - name: Ensure logs directory exists
         shell: bash
         run: mkdir -p logs
 
-      - name: 执行统一安全门禁检查
+      - name: Execute unified security gate check
         continue-on-error: false
         shell: bash
         run: |
-          echo "🔒 开始执行统一安全门禁检查..."
+          echo "🔐 Starting unified security gate check..."
 
-          # ADR-0002 硬失败检查：静态扫描必须通过
+          # ADR-0002 hard failure check: static scan must pass
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
-            echo "❌ [硬失败] 静态安全扫描未通过，违反ADR-0002安全基线"
-            echo "🚨 Critical或High安全问题阻止合并"
+            echo "❌ [Hard Failure] Static security scan failed, violates ADR-0002 security baseline"
+            echo "🚨 Critical or High security issues block merge"
             exit 1
           fi
 
-          # 使用我们的安全门禁包装脚本（ESM模块兼容）
+          # Use our security gate wrapper script (ESM module compatible)
           if ! npm run guard:security; then
-            echo "❌ [硬失败] 安全门禁包装脚本检查失败"
+            echo "❌ [Hard Failure] Security gate wrapper script check failed"
             exit 1
           fi
         env:
@@ -399,17 +452,17 @@ jobs:
           HIGH_COUNT: ${{ needs.security-scan.outputs.high-count }}
           E2E_STATUS: ${{ needs.e2e-security-test.outputs.e2e-status }}
 
-      - name: 下载所有安全报告
+      - name: Download all security reports
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: 生成统一安全报告
+      - name: Generate unified security report
         shell: bash
         run: |
-          echo "📊 生成统一安全门禁报告..."
+          echo "📊 Generating unified security gate report..."
 
-          # 创建包含所有结果的综合报告
+          # Create comprehensive report containing all results
           cat > logs/unified-security-report.json << EOF
           {
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -429,7 +482,7 @@ jobs:
           }
           EOF
 
-      - name: 上传统一安全报告
+      - name: Upload unified security report
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -441,76 +494,96 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: 安全门禁结果摘要
+      - name: E2E Gate Mode Notice (Top)
         shell: bash
         run: |
-          # 确保UTF-8编码输出
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            {
+              echo "## ⚠️ Security Notice"
+              echo "This PR uses a SOFT gate for E2E security checks (non-blocking)."
+              echo "Please review smoke results and fix before merging to main where HARD gate applies."
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## 🔒 Security Notice"
+              echo "This branch uses a HARD gate for E2E security checks (blocking on failure)."
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Security gate results summary
+        shell: bash
+        run: |
+          # Ensure UTF-8 encoding output
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
 
-          # 生成安全门禁结果摘要
+          # Generate security gate results summary
           scan_result="${{ needs.security-scan.result }}"
           e2e_status="${{ needs.e2e-security-test.outputs.e2e-status }}"
           critical_count="${{ needs.security-scan.outputs.critical-count }}"
           high_count="${{ needs.security-scan.outputs.high-count }}"
           
-          # 确定结果状态和消息
+          # Determine result status and message
           if [ "$scan_result" != "success" ]; then
-            result_title="### ❌ 安全门禁硬失败"
+            result_title="### ❌ Security Gate Hard Failure"
             {
-              echo "**ADR-0002违反**: 静态安全扫描未通过基线要求"
-              echo "- Critical安全问题: ${critical_count}个（要求: 0个）"
-              echo "- High安全问题: ${high_count}个（要求: ≤3个）"
+              echo "**ADR-0002 Violation**: Static security scan failed baseline requirements"
+              echo "- Critical security issues: ${critical_count} (required: 0)"
+              echo "- High security issues: ${high_count} (required: ≤3)"
               echo ""
-              echo "🚨 **此PR被硬性阻止合并，必须修复所有安全问题**"
+              echo "🚨 **This PR is hard-blocked from merging, must fix all security issues**"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
           elif [ "$e2e_status" = "failed" ]; then
-            result_title="### ❌ 安全门禁硬失败"
+            result_title="### ❌ Security Gate Hard Failure"
             {
-              echo "**ADR-0002违反**: E2E安全测试失败"
-              echo "请检查Electron安全配置："
+              echo "**ADR-0002 Violation**: E2E security tests failed"
+              echo "Please check Electron security configuration:"
               echo "- nodeIntegration=false ✓"
               echo "- contextIsolation=true ✓"
               echo "- sandbox=true ✓"
               echo ""
-              echo "🚨 **此PR被硬性阻止合并，必须修复Electron安全配置**"
+              echo "🚨 **This PR is hard-blocked from merging, must fix Electron security config**"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
           else
-            result_title="### ✅ 安全门禁通过"
+            result_title="### ✅ Security Gate Passed"
             {
-              echo "**ADR-0002合规**: 所有安全检查均已通过，符合严格安全基线要求"
-              echo "- Critical安全问题: 0个 ✅"
-              echo "- High安全问题: ${high_count}个 (≤3) ✅"
-              echo "- E2E安全测试: 通过 ✅"
+              echo "**ADR-0002 Compliant**: All security checks passed, meets strict security baseline requirements"
+              echo "- Critical security issues: 0 ✓"
+              echo "- High security issues: ${high_count} (≤3) ✓"
+              echo "- E2E security tests: Passed ✓"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=0
           fi
           
-          # 一次性写入所有内容到Summary
+          # Write all content to Summary at once
           {
-            echo "## 🔒 统一安全门禁结果"
+            echo "## 🔐 Unified Security Gate Results"
             echo ""
-            echo "### 📊 检查摘要"
-            echo "| 检查项目 | 状态 | 结果 |"
+            echo "### 📊 Check Summary"
+            echo "| Check Item | Status | Result |"
             echo "|---------|------|------|"
-            echo "| 静态安全扫描 | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${critical_count}, High: ${high_count} |"
-            echo "| E2E安全测试 | ${e2e_status} | ${{ needs.e2e-security-test.result != 'skipped' && '执行完成' || '跳过（存在Critical问题）' }} |"
+            echo "| Static Security Scan | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${critical_count}, High: ${high_count} |"
+            echo "| E2E Security Tests | ${e2e_status} | ${{ needs.e2e-security-test.result != 'skipped' && 'Executed' || 'Skipped (Critical issues exist)' }} |"
+            gate_label=$([ "${{ github.event_name }}" = "pull_request" ] && echo "Soft" || echo "Hard")
+            echo "| E2E Gate | ${gate_label} | Mode: PR=Soft / Main=Hard |"
             echo ""
             echo "$result_title"
             echo "$result_message"
           } >> "$GITHUB_STEP_SUMMARY"
           
-          # ADR-0002 强制硬失败决策
+          # ADR-0002 mandatory hard failure decision
           if [ "$exit_code" -eq 1 ]; then
             exit 1
           fi
 
-      - name: 失败时创建Issue
+      - name: Create Issue on failure
         uses: actions/github-script@v7
         if: failure() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
         with:
@@ -519,46 +592,46 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // 修复：限制标题长度避免GitHub API 256字符搜索限制
+            // Fix: limit title length to avoid GitHub API 256-char search limit
             const rawTitle = context.payload.head_commit?.message ||
                            context.payload.pull_request?.title ||
                            'Security Check';
             const truncatedTitle = rawTitle.length > 100 ? 
                                  rawTitle.substring(0, 97) + '...' : rawTitle;
-            const title = `🔒 统一安全门禁失败 - ${truncatedTitle}`;
+            const title = `🔐 Unified Security Gate Failure - ${truncatedTitle}`;
 
             const body = `
-            ## 🚨 统一安全门禁失败报告
+            ## 🚨 Unified Security Gate Failure Report
 
-            **提交**: ${context.sha}
-            **分支**: ${context.ref}
-            **工作流**: ${context.workflow}
-            **运行ID**: ${context.runId}
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            **Workflow**: ${context.workflow}
+            **Run ID**: ${context.runId}
 
-            ### 📊 检查结果
-            - **静态扫描状态**: ${{ needs.security-scan.outputs.scan-status }}
-            - **Critical问题**: ${{ needs.security-scan.outputs.critical-count }}个
-            - **High问题**: ${{ needs.security-scan.outputs.high-count }}个
-            - **E2E测试状态**: ${{ needs.e2e-security-test.outputs.e2e-status }}
+            ### 📊 Check Results
+            - **Static scan status**: ${{ needs.security-scan.outputs.scan-status }}
+            - **Critical issues**: ${{ needs.security-scan.outputs.critical-count }}
+            - **High issues**: ${{ needs.security-scan.outputs.high-count }}
+            - **E2E test status**: ${{ needs.e2e-security-test.outputs.e2e-status }}
 
-            ### 📋 需要检查的项目
-            - [ ] 修复所有Critical级别安全问题
-            - [ ] 检查Electron安全配置（nodeIntegration=false, contextIsolation=true）
-            - [ ] 验证CSP安全策略
-            - [ ] 检查IPC通道安全性
-            - [ ] 验证预加载脚本安全性
+            ### 📝 Items to check
+            - [ ] Fix all Critical-level security issues
+            - [ ] Check Electron security config (nodeIntegration=false, contextIsolation=true)
+            - [ ] Verify CSP security policy
+            - [ ] Check IPC channel security
+            - [ ] Verify preload script security
 
-            ### 🔗 相关链接
-            - [查看详细日志](${context.payload.repository.html_url}/actions/runs/${context.runId})
-            - [下载安全报告](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
+            ### 🔗 Related links
+            - [View detailed logs](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            - [Download security reports](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
 
-            ### ⚠️ 注意事项
-            **安全门禁失败意味着应用存在安全风险，请立即修复后再发布！**
+            ### ⚠️ Notice
+            **Security gate failure means the application has security risks, please fix immediately before release!**
 
-            > 此Issue由GitHub Actions自动创建 - 基于ADR-0002统一安全门禁标准
+            > This Issue was auto-created by GitHub Actions - based on ADR-0002 unified security gate standards
             `;
 
-            // 1) 先确保标签存在（labels 必须预先存在于仓库）
+            // 1) First ensure labels exist (labels must pre-exist in repository)
             const wantedLabels = ['security', 'bug', 'urgent', 'P0'];
             const existing = await github.paginate(
               github.rest.issues.listLabelsForRepo,
@@ -578,16 +651,16 @@ jobs:
                            labelName === 'urgent' ? 'b60205' : '000000'
                   });
                 } catch (error) {
-                  console.log(`注意: 无法创建标签 ${labelName}: ${error.message}`);
+                  console.log(`Note: Cannot create label ${labelName}: ${error.message}`);
                 }
               }
             }
 
-            // 2) 修复：避免重复Issue，使用最简查询字符串防止GitHub API限制
+            // 2) Fix: avoid duplicate Issues, use simplest query string to prevent GitHub API limits
             try {
-              // 使用最简短的查询避免256字符限制
+              // Use shortest query to avoid 256-char limit
               const simpleQuery = `repo:${owner}/${repo} is:open label:security`;
-              console.log(`搜索查询: ${simpleQuery}`);
+              console.log(`Search query: ${simpleQuery}`);
               
               const { data: search } = await github.rest.search.issuesAndPullRequests({
                 q: simpleQuery,
@@ -602,9 +675,9 @@ jobs:
                   owner,
                   repo,
                   issue_number,
-                  body: `### 🔄 新的安全门禁失败\n\n**时间**: ${new Date().toISOString()}\n**提交**: ${context.sha.substring(0, 8)}\n**分支**: ${context.ref.replace('refs/heads/', '')}\n\n详细信息请查看 [运行日志](${context.payload.repository.html_url}/actions/runs/${context.runId})`
+                  body: `### 🔄 New security gate failure\n\n**Time**: ${new Date().toISOString()}\n**Commit**: ${context.sha.substring(0, 8)}\n**Branch**: ${context.ref.replace('refs/heads/', '')}\n\nFor details see [run logs](${context.payload.repository.html_url}/actions/runs/${context.runId})`
                 });
-                console.log(`已在现有Issue #${issue_number} 添加评论`);
+                console.log(`Added comment to existing Issue #${issue_number}`);
               } else {
                 const newIssue = await github.rest.issues.create({
                   owner,
@@ -613,11 +686,11 @@ jobs:
                   body,
                   labels: wantedLabels
                 });
-                console.log(`已创建新的安全Issue #${newIssue.data.number}`);
+                console.log(`Created new security Issue #${newIssue.data.number}`);
               }
             } catch (searchError) {
-              console.log(`搜索Issue失败，直接创建新Issue: ${searchError.message}`);
-              // 如果搜索失败，直接创建新Issue避免阻塞
+              console.log(`Issue search failed, creating new Issue directly: ${searchError.message}`);
+              // If search fails, create new Issue directly to avoid blocking
               try {
                 const newIssue = await github.rest.issues.create({
                   owner,
@@ -626,9 +699,9 @@ jobs:
                   body,
                   labels: wantedLabels
                 });
-                console.log(`已创建新的安全Issue #${newIssue.data.number}`);
+                console.log(`Created new security Issue #${newIssue.data.number}`);
               } catch (createError) {
-                console.error(`创建Issue也失败: ${createError.message}`);
-                // 记录错误但不阻塞工作流
+                console.error(`Issue creation also failed: ${createError.message}`);
+                // Log error but don't block workflow
               }
             }

@@ -225,6 +225,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
+      E2E_SECURITY_TIMEOUT_MS: 300000
     needs: [prepare, build]
     steps:
       - name: 📥 检出代码
@@ -238,6 +239,24 @@ jobs:
 
       - name: 📦 安装依赖
         uses: ./.github/actions/npm-install
+
+      - name: Validate E2E timeout config (fail-fast)
+        run: |
+          $raw = $env:E2E_SECURITY_TIMEOUT_MS
+          if ([string]::IsNullOrWhiteSpace($raw)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not set"
+            exit 1
+          }
+          $val = 0
+          if (-not [int]::TryParse($raw, [ref]$val)) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS is not a valid integer: $raw"
+            exit 1
+          }
+          if ($val -lt 60000 -or $val -gt 900000) {
+            Write-Error "E2E_SECURITY_TIMEOUT_MS out of range [60000,900000]: $val"
+            exit 1
+          }
+          Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
 
       - name: 🧪 Perf E2E smoke (soft gate)
         continue-on-error: true

@@ -1,0 +1,2 @@
+      timeout: E2E_SECURITY_TIMEOUT_MS, // CI 首窗+协议映射更复杂
+      use: {

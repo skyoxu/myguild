@@ -18,26 +18,40 @@ const exec = promisify(execCallback);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// exec is now already promisified above
+// 统一安全E2E超时（默认300s），与 Playwright 共享同一旋钮
+const rawTimeout =
+  process.env.E2E_SECURITY_TIMEOUT_MS ??
+  process.env.SECURITY_E2E_TIMEOUT_MS ??
+  '300000';
+const E2E_SECURITY_TIMEOUT_MS = Number(rawTimeout);
+if (
+  !Number.isFinite(E2E_SECURITY_TIMEOUT_MS) ||
+  E2E_SECURITY_TIMEOUT_MS < 60000
+) {
+  throw new Error(`Invalid E2E_SECURITY_TIMEOUT_MS: ${rawTimeout}`);
+}
+console.log(
+  `[security-gate] E2E_SECURITY_TIMEOUT_MS=${E2E_SECURITY_TIMEOUT_MS}`
+);
 
 const SECURITY_TESTS = {
   electron: {
     name: 'Electron安全测试',
     command: 'npm run test:security:electron',
     critical: true,
-    timeout: 480000, // 8分钟 - 进一步增加Electron测试超时时间
+    timeout: E2E_SECURITY_TIMEOUT_MS,
   },
   e2e: {
     name: 'E2E安全测试',
     command: 'npm run test:security:e2e',
     critical: true,
-    timeout: 900000, // 15分钟 - 进一步增加E2E测试超时时间
+    timeout: E2E_SECURITY_TIMEOUT_MS,
   },
   static: {
     name: '静态安全扫描',
     command: 'npm run scan:security',
     critical: false,
-    timeout: 300000, // 5分钟 - 增加静态扫描超时时间
+    timeout: E2E_SECURITY_TIMEOUT_MS,
   },
 };
 
