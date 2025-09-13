@@ -32,13 +32,15 @@ jobs:
 
   e2e-perf-smoke:
     needs: build-and-unit
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     env:
       CI: 'true'
       VITE_E2E_SMOKE: 'true'
       ELECTRON_ENABLE_LOGGING: '1'
       ELECTRON_DISABLE_GPU: '1'
-      QT_QPA_PLATFORM: 'offscreen'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,27 +48,13 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      - name: Install Electron runtime dependencies (Ubuntu)
+      - name: Dependency Probe (Electron + Playwright)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libnss3 \
-            libgtk-3-0 \
-            libasound2 \
-            libatspi2.0-0 \
-            libxss1 \
-            libxkbcommon0 \
-            libxdamage1 \
-            libxrandr2 \
-            libgbm1 \
-            libx11-xcb1 \
-            libxtst6 \
-            libdrm2
+          pwsh -File scripts/ci/electron-deps-probe.ps1
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
       - name: Run perf smoke (Electron)
-        run: |
-          xvfb-run -a npm run test:e2e:perf-smoke
+        run: npm run test:e2e:perf-smoke
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
