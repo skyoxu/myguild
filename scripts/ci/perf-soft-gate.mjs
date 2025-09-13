@@ -27,26 +27,30 @@ const stdoutLines = [];
 function traverse(node) {
   if (!node) return;
   if (Array.isArray(node.suites)) node.suites.forEach(traverse);
-  if (Array.isArray(node.specs)) node.specs.forEach((s) => {
-    for (const test of s.tests || []) {
-      results.push({
-        title: [...(s.titlePath || [])].join(' > '),
-        status: test.status,
-        location: s.location || s.file,
-      });
-      if (Array.isArray(test.stdout)) {
-        for (const out of test.stdout) {
-          if (typeof out === 'string') stdoutLines.push(out);
-          else if (out && typeof out.text === 'string') stdoutLines.push(out.text);
+  if (Array.isArray(node.specs))
+    node.specs.forEach(s => {
+      for (const test of s.tests || []) {
+        results.push({
+          title: [...(s.titlePath || [])].join(' > '),
+          status: test.status,
+          location: s.location || s.file,
+        });
+        if (Array.isArray(test.stdout)) {
+          for (const out of test.stdout) {
+            if (typeof out === 'string') stdoutLines.push(out);
+            else if (out && typeof out.text === 'string')
+              stdoutLines.push(out.text);
+          }
         }
       }
-    }
-  });
+    });
 }
 
 if (Array.isArray(data.suites)) data.suites.forEach(traverse);
 
-const perfRelated = results.filter(r => /perf|性能|交互|帧率|冷启动/i.test(r.title));
+const perfRelated = results.filter(r =>
+  /perf|性能|交互|帧率|冷启动/i.test(r.title)
+);
 const failed = perfRelated.filter(r => r.status !== 'passed');
 
 console.log('[perf-soft-gate] Perf-related tests:', perfRelated.length);
@@ -56,7 +60,9 @@ for (const f of failed) {
 }
 
 if (failed.length > 0) {
-  console.warn('[perf-soft-gate] Soft gate: performance tests had failures (not failing job)');
+  console.warn(
+    '[perf-soft-gate] Soft gate: performance tests had failures (not failing job)'
+  );
 }
 
 // Try to extract P95 numbers from stdout (PerformanceTestUtils log lines)
@@ -70,7 +76,10 @@ function extractP95(lines, tag) {
       for (let j = i; j < Math.min(lines.length, i + 6); j++) {
         const l2 = lines[j];
         const m = l2.match(/P95[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*ms/i);
-        if (m) { p95 = Number(m[1]); break; }
+        if (m) {
+          p95 = Number(m[1]);
+          break;
+        }
       }
     }
     if (p95 != null) break;
@@ -99,7 +108,9 @@ async function fileGzipSize(path) {
   return await gzipSize(readFileSync(path));
 }
 
-let initialTotal = null, phaserGz = null, reactGz = null;
+let initialTotal = null,
+  phaserGz = null,
+  reactGz = null;
 try {
   const ASSETS = 'dist/assets';
   const files = readdirSync(ASSETS);
@@ -115,9 +126,20 @@ try {
   if (react) reactGz = await fileGzipSize(join(ASSETS, react));
 } catch {}
 
-console.log('[perf-soft-gate] initial js gzip (index+vendor):', initialTotal != null ? Math.round(initialTotal/1024)+' kB' : 'N/A');
-if (phaserGz != null) console.log('[perf-soft-gate] phaser gzip:', Math.round(phaserGz/1024)+' kB');
-if (reactGz != null) console.log('[perf-soft-gate] react-vendor gzip:', Math.round(reactGz/1024)+' kB');
+console.log(
+  '[perf-soft-gate] initial js gzip (index+vendor):',
+  initialTotal != null ? Math.round(initialTotal / 1024) + ' kB' : 'N/A'
+);
+if (phaserGz != null)
+  console.log(
+    '[perf-soft-gate] phaser gzip:',
+    Math.round(phaserGz / 1024) + ' kB'
+  );
+if (reactGz != null)
+  console.log(
+    '[perf-soft-gate] react-vendor gzip:',
+    Math.round(reactGz / 1024) + ' kB'
+  );
 
 // Append to GitHub Step Summary
 try {
@@ -129,10 +151,17 @@ try {
     lines.push(`- Perf tests: ${perfRelated.length}, Failed: ${failed.length}`);
     lines.push(`- P95 cold_startup: ${p95Cold ?? 'N/A'} ms`);
     lines.push(`- P95 interaction_response: ${p95Interact ?? 'N/A'} ms`);
-    if (initialTotal != null) lines.push(`- Initial JS (gzip index+vendor): ${Math.round(initialTotal/1024)} kB`);
-    if (phaserGz != null) lines.push(`- phaser (gzip): ${Math.round(phaserGz/1024)} kB`);
-    if (reactGz != null) lines.push(`- react-vendor (gzip): ${Math.round(reactGz/1024)} kB`);
+    if (initialTotal != null)
+      lines.push(
+        `- Initial JS (gzip index+vendor): ${Math.round(initialTotal / 1024)} kB`
+      );
+    if (phaserGz != null)
+      lines.push(`- phaser (gzip): ${Math.round(phaserGz / 1024)} kB`);
+    if (reactGz != null)
+      lines.push(`- react-vendor (gzip): ${Math.round(reactGz / 1024)} kB`);
     lines.push('');
-    await (await import('node:fs/promises')).appendFile(summary, lines.join('\n')+'\n');
+    await (
+      await import('node:fs/promises')
+    ).appendFile(summary, lines.join('\n') + '\n');
   }
 } catch {}

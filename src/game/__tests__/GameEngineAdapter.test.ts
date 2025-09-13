@@ -6,8 +6,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameEngineAdapter } from '../GameEngineAdapter';
 import type { GameConfig, GameState } from '../../ports/game-engine.port';
 
-// Mock Phaser
+// Mock Phaser 并同步到全局，兼容 BaseScene 对全局 Phaser 的引用
 vi.mock('phaser', () => import('./__mocks__/phaser'));
+import Phaser from 'phaser';
+(globalThis as any).Phaser = Phaser as any;
 
 // Mock DOM API
 Object.defineProperty(window, 'localStorage', {

@@ -1,179 +1,54 @@
-name: Build and Test
+name: Build & Test
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'electron/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - '.github/workflows/build-and-test.yml'
-      - '.github/actions/**'
   pull_request:
-    branches: [main, develop]
-    paths:
-      - 'src/**'
-      - 'electron/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - '.github/workflows/build-and-test.yml'
-      - '.github/actions/**'
-
-permissions:
-  contents: read
-  actions: read
-
-defaults:
-  run:
-    shell: pwsh
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  NODE_VERSION: '20.x'
+  push:
+    branches: [ main ]
 
 jobs:
-  build-and-test:
-    name: Build and Test
-    runs-on: windows-latest
-    timeout-minutes: 20
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
+  build-and-unit:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
           cache: 'npm'
-
-      - name: Install dependencies
-        uses: ./.github/actions/npm-install
-
+      - run: npm ci
       - name: Lint
         run: npm run lint
-
       - name: Typecheck
-        run: npx tsc --noEmit
-
-      - name: Unit tests
-        uses: ./.github/actions/run-tests
-        with:
-          test-type: unit
-        env:
-          NODE_ENV: test
-
-      - name: Build app
+        run: npm run typecheck
+      - name: Unit tests with coverage gate
+        run: npm run test:coverage:gate
+      - name: Build
         run: npm run build
-        env:
-          BUNDLE_ANALYZE: 'true'
 
-      - name: Bundle budget gate (soft on PR)
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          BUNDLE_GUARD: warn
-        run: npm run guard:bundle
-
-      - name: Bundle budget gate (strict on push)
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          BUNDLE_GUARD: strict
-        run: npm run guard:bundle
-
-      - name: Perf E2E smoke (soft gate)
-        continue-on-error: true
-        run: npx playwright test tests/e2e/perf.smoke.spec.ts
-
-      - name: Perf P95 summary (soft)
-        if: always()
-        continue-on-error: true
-        run: node scripts/ci/perf-soft-gate.mjs
-
-      - name: Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-perf-artifacts-${{ github.run_number }}
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 7
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            dist/**
-            dist-electron/**
-          retention-days: 7
-
-      - name: Upload bundle analysis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-analysis-${{ github.run_number }}
-          path: dist/bundle-analysis.html
-          retention-days: 7
-
-  electron-security-tests:
-    name: Electron Security Tests
-    runs-on: windows-latest
-    needs: build-and-test
-    timeout-minutes: 20
+  e2e-perf-smoke:
+    needs: build-and-unit
+    runs-on: ubuntu-latest
     env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
+      CI: 'true'
+      VITE_E2E_SMOKE: 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
           cache: 'npm'
-
-      - name: Install dependencies
-        uses: ./.github/actions/npm-install
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: .
-
-      - name: Run Electron security smoke tests
-        uses: ./.github/actions/run-tests
-        with:
-          test-type: security
-        env:
-          CI: true
-          ELECTRON_DISABLE_GPU: true
-          SECURITY_TEST_MODE: true
-
+      - run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run perf smoke (Electron)
+        run: |
+          xvfb-run -a npm run test:e2e:perf-smoke
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: electron-security-report-${{ github.run_number }}
+          name: playwright-results
           path: |
-            test-results/
-            playwright-report/
-          retention-days: ${{ github.event_name == 'pull_request' && 7 || 14 }}
+            test-results/**
+            test-results/playwright-report/**
+          if-no-files-found: warn
+

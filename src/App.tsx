@@ -1,15 +1,45 @@
-import { GameCanvas } from './components/GameCanvas';
-import { GameVerticalSlice } from './components/GameVerticalSlice';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useWebVitals } from './hooks/useWebVitals';
-import { useEffect, useState } from 'react';
+import { startLongTaskMonitor } from '@/shared/observability/longtask-monitor';
+import { useEventLoopDelayMonitor } from '@/hooks/useEventLoopDelay';
+import {
+  runPreheatQueue,
+  preheatImages,
+} from '@/shared/performance/asset-preheater';
+import { startTransaction } from '@/shared/observability/sentry-perf';
+import { scheduleNonBlocking } from '@/shared/performance/idle';
+
+const LazyGameCanvas = lazy(() =>
+  import('./components/GameCanvas').then(m => ({ default: m.GameCanvas }))
+);
+const LazyVerticalSlice = lazy(() =>
+  import('./components/GameVerticalSlice').then(m => ({
+    default: m.GameVerticalSlice,
+  }))
+);
+// Perf 测试组件采用按需动态导入，仅在特征旗标下加载，避免进入生产包
 
 type AppMode = 'normal' | 'vertical-slice';
 
 function App() {
   const [mode, setMode] = useState<AppMode>('normal');
   const [verticalSliceCompleted, setVerticalSliceCompleted] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const isPerfSmoke = (() => {
+    // 以 Vite 注入的构建期旗标为主，query 为辅
+    const byFlag = (import.meta as any)?.env?.VITE_E2E_SMOKE === 'true';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const byQuery = params.get('e2e-smoke') === '1';
+      return Boolean(byFlag || byQuery);
+    } catch {
+      return Boolean(byFlag);
+    }
+  })();
+  const [showPerfHarness, setShowPerfHarness] = useState<boolean>(isPerfSmoke);
+  const [PerfHarnessComp, setPerfHarnessComp] =
+    useState<React.ComponentType | null>(null);
 
-  // 初始化Web Vitals监控
   const webVitals = useWebVitals({
     enabled: true,
     componentName: 'App',
@@ -19,84 +49,99 @@ function App() {
       enabled: true,
       sentryEnabled: true,
       batchSize: 5,
-      flushInterval: 15000, // 15秒批量上报
+      flushInterval: 15000,
     },
   });
 
-  // 应用启动性能监控
   useEffect(() => {
     webVitals.startTiming('app_initialization');
-
-    // 模拟应用初始化完成
+    let txn: { finish: () => void } | null = null;
+    (async () => {
+      txn = await startTransaction('app_initialization', 'startup');
+    })();
     const timer = setTimeout(() => {
       webVitals.endTiming('app_initialization');
     }, 100);
-
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      txn?.finish?.();
+    };
   }, [webVitals]);
 
-  // 处理竖切测试完成
+  useEffect(() => {
+    const monitor = startLongTaskMonitor({
+      thresholdMs: 50,
+      onReport: samples => {
+        if (process?.env?.NODE_ENV !== 'production') {
+          scheduleNonBlocking(() => console.log('[longtask]', samples));
+        }
+      },
+    });
+    return () => monitor.stop();
+  }, []);
+
+  useEventLoopDelayMonitor(5000);
+
+  useEffect(() => {
+    const tiny =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+    runPreheatQueue(preheatImages([tiny]), 4).catch(() => void 0);
+  }, []);
+
+  useEffect(() => {
+    try {
+      console.log('[e2e] search:', window.location.search);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('vertical-slice') === 'auto') setMode('vertical-slice');
+      if (params.get('auto-start') === '1') setGameStarted(true);
+    } catch {}
+  }, []);
+
+  // 仅在 perf-smoke 模式下按需加载测试组件，生产构建不包含该模块
+  useEffect(() => {
+    if (isPerfSmoke) {
+      import('./components/PerfTestHarness')
+        .then(m => setPerfHarnessComp(() => m.default))
+        .catch(() => setPerfHarnessComp(null));
+    }
+  }, [isPerfSmoke]);
+
   const handleVerticalSliceComplete = (result: any) => {
-    console.log('🎉 竖切测试完成:', result);
+    console.log('[vertical-slice] completed:', result);
     setVerticalSliceCompleted(true);
     webVitals.recordCustomEvent('vertical_slice_completed', {
-      testId: result.testId,
-      score: result.result?.score,
-      duration: result.result?.duration,
+      testId: result?.testId,
+      score: result?.result?.score,
+      duration: result?.result?.duration,
     });
   };
 
-  // 处理竖切测试错误
   const handleVerticalSliceError = (error: string) => {
-    console.error('❌ 竖切测试失败:', error);
+    console.error('[vertical-slice] error:', error);
     webVitals.recordError(new Error(error), 'vertical_slice');
   };
 
-  // 快速启动竖切测试（开发用）
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('vertical-slice') === 'auto') {
-      console.log('🚀 自动启动竖切测试');
-      setMode('vertical-slice');
-    }
-  }, []);
-
   return (
-    <div
-      className="app-container p-8 min-h-screen bg-game-ui-background"
-      data-testid="app-root"
-    >
+    <div className="app-container p-8 min-h-screen" data-testid="app-root">
       <header className="text-center mb-8">
-        <h1 className="text-game-title font-bold text-game-primary mb-4">
+        <h1 className="font-bold text-xl mb-2">
           Phaser 3 + React 19 + TypeScript
         </h1>
-        <p className="text-game-subtitle text-game-ui-muted">
-          符合 CLAUDE.md 技术栈要求的游戏开发环境
-        </p>
-
-        {/* 导航切换 */}
+        <p className="text-gray-500">Demo application</p>
         <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={() => setMode('normal')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              mode === 'normal'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
+            className={`px-4 py-2 rounded ${mode === 'normal' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'}`}
           >
-            🎮 常规游戏
+            Normal
           </button>
           <button
             onClick={() => setMode('vertical-slice')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              mode === 'vertical-slice'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
+            className={`px-4 py-2 rounded ${mode === 'vertical-slice' ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`}
           >
-            🚀 竖切测试
+            Vertical Slice{' '}
             {verticalSliceCompleted && (
-              <span className="ml-2 text-green-300">✅</span>
+              <span className="ml-2 text-green-300">✓</span>
             )}
           </button>
         </div>
@@ -105,45 +150,59 @@ function App() {
       <main className="flex justify-center">
         {mode === 'normal' ? (
           <div className="flex flex-col items-center">
-            <GameCanvas width={800} height={600} className="shadow-lg" />
+            {!gameStarted ? (
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white"
+                onClick={() => setGameStarted(true)}
+                data-testid="start-game"
+              >
+                Start Game
+              </button>
+            ) : (
+              <Suspense
+                fallback={
+                  <div className="text-gray-300">Loading game module...</div>
+                }
+              >
+                <LazyGameCanvas
+                  width={800}
+                  height={600}
+                  className="shadow-lg"
+                />
+              </Suspense>
+            )}
             <p className="text-center mt-4 text-gray-400 text-sm max-w-md">
-              这是标准的游戏画布，使用现有的 GameEngineAdapter 和
-              MenuScene/GameScene
+              Standard game canvas using GameEngineAdapter & Menu/Game scenes.
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <GameVerticalSlice
-              onComplete={handleVerticalSliceComplete}
-              onError={handleVerticalSliceError}
-              className="max-w-4xl"
-              autoStart={false}
-            />
-            <div className="mt-6 p-4 bg-gray-800 rounded-lg max-w-2xl">
-              <h3 className="text-white font-semibold mb-2">🔬 竖切测试说明</h3>
-              <ul className="text-gray-300 text-sm space-y-1">
-                <li>• 验证 React → Phaser → CloudEvents → SQLite 端到端流程</li>
-                <li>• 包含数据持久化、可观测性上报、性能监控</li>
-                <li>• 集成现有的备份系统和 Sentry 监控</li>
-                <li>
-                  • 支持快速访问: <code>?vertical-slice=auto</code>
-                </li>
-              </ul>
-            </div>
+            <Suspense
+              fallback={<div className="text-gray-300">Loading slice...</div>}
+            >
+              <LazyVerticalSlice
+                onComplete={handleVerticalSliceComplete}
+                onError={handleVerticalSliceError}
+                className="max-w-4xl"
+                autoStart={false}
+              />
+            </Suspense>
           </div>
         )}
       </main>
 
-      <footer className="text-center mt-8 text-game-ui-muted">
-        <p>
-          🎮 技术栈：Electron + React 19 + Vite + Phaser 3 + Tailwind CSS v4 +
-          TypeScript
-        </p>
-        {mode === 'vertical-slice' && (
-          <p className="mt-2 text-sm text-green-400">
-            竖切模式: 端到端验证所有组件集成
-          </p>
-        )}
+      {showPerfHarness && PerfHarnessComp && (
+        <Suspense
+          fallback={
+            <div className="text-gray-300">Loading perf harness...</div>
+          }
+        >
+          <PerfHarnessComp />
+        </Suspense>
+      )}
+
+      <footer className="text-center mt-8 text-gray-500">
+        <p>Electron + React 19 + Vite + Phaser 3 + Tailwind + TypeScript</p>
       </footer>
     </div>
   );

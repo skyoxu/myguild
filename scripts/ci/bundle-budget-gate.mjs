@@ -16,7 +16,7 @@ function gzipSize(buf) {
   return new Promise((resolve, reject) => {
     const gz = createGzip();
     const chunks = [];
-    gz.on('data', (c) => chunks.push(c));
+    gz.on('data', c => chunks.push(c));
     gz.on('end', () => resolve(Buffer.concat(chunks).length));
     gz.on('error', reject);
     gz.end(buf);
@@ -30,7 +30,7 @@ async function fileGzipSize(path) {
 
 function listJs() {
   try {
-    return readdirSync(ASSETS).filter((f) => f.endsWith('.js'));
+    return readdirSync(ASSETS).filter(f => f.endsWith('.js'));
   } catch {
     return [];
   }
@@ -38,7 +38,7 @@ function listJs() {
 
 function matchOne(files, patterns) {
   const regex = new RegExp(patterns.join('|'));
-  return files.find((f) => regex.test(f));
+  return files.find(f => regex.test(f));
 }
 
 async function main() {
@@ -57,17 +57,32 @@ async function main() {
 
   if (phaserFile) {
     const size = await fileGzipSize(join(ASSETS, phaserFile));
-    results.push({ name: 'phaser', file: phaserFile, gzip: size, limit: 500 * 1024 });
+    results.push({
+      name: 'phaser',
+      file: phaserFile,
+      gzip: size,
+      limit: 500 * 1024,
+    });
   }
   if (reactFile) {
     const size = await fileGzipSize(join(ASSETS, reactFile));
-    results.push({ name: 'react-vendor', file: reactFile, gzip: size, limit: 150 * 1024 });
+    results.push({
+      name: 'react-vendor',
+      file: reactFile,
+      gzip: size,
+      limit: 150 * 1024,
+    });
   }
   if (indexFile || vendorFile) {
     let total = 0;
     if (indexFile) total += await fileGzipSize(join(ASSETS, indexFile));
     if (vendorFile) total += await fileGzipSize(join(ASSETS, vendorFile));
-    results.push({ name: 'initial-total', file: `${indexFile || ''} + ${vendorFile || ''}`.trim(), gzip: total, limit: 400 * 1024 });
+    results.push({
+      name: 'initial-total',
+      file: `${indexFile || ''} + ${vendorFile || ''}`.trim(),
+      gzip: total,
+      limit: 400 * 1024,
+    });
   }
 
   const mode = (process.env.BUNDLE_GUARD || '').toLowerCase();
@@ -77,7 +92,11 @@ async function main() {
     const ratio = (r.gzip / r.limit) * 100;
     const line = `${r.name}: ${Math.round(r.gzip / 1024)} kB gzip (limit ${Math.round(r.limit / 1024)} kB) -> ${ratio.toFixed(1)}%`;
     if (r.gzip > r.limit) {
-      console.error('[bundle-budget] FAIL', line, r.file ? `file=${r.file}` : '');
+      console.error(
+        '[bundle-budget] FAIL',
+        line,
+        r.file ? `file=${r.file}` : ''
+      );
       failed = true;
     } else {
       console.log('[bundle-budget] OK  ', line, r.file ? `file=${r.file}` : '');
@@ -86,14 +105,16 @@ async function main() {
 
   if (failed) {
     if (soft) {
-      console.warn('[bundle-budget] Soft mode active (warn) – not failing the job');
+      console.warn(
+        '[bundle-budget] Soft mode active (warn) – not failing the job'
+      );
     } else {
       process.exit(1);
     }
   }
 }
 
-main().catch((e) => {
+main().catch(e => {
   console.error('[bundle-budget] ERROR', e);
   process.exit(1);
 });

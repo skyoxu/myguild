@@ -6,8 +6,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SceneManager } from '../SceneManager';
 import type { DomainEvent } from '../../shared/contracts/events';
 
-// Mock Phaser
+// Mock Phaser 并同步到全局，兼容 BaseScene 对全局 Phaser 的引用
 vi.mock('phaser', () => import('./__mocks__/phaser'));
+import Phaser from 'phaser';
+(globalThis as any).Phaser = Phaser as any;
 
 describe('SceneManager', () => {
   let sceneManager: SceneManager;

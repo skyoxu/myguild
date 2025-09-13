@@ -3,11 +3,16 @@
  * 最小化实现：精灵移动 → 触发level.complete事件 → 数据持久化
  */
 
-import Phaser from 'phaser';
+// 顶层移除对 phaser 的静态导入，改用全局 Phaser（由 SceneManager.initialize 注入）
+declare const Phaser: any;
 import { BaseScene } from './BaseScene';
 import type { GameState, GameInput } from '../../ports/game-engine.port';
 import type { GameDomainEvent } from '../../shared/contracts/events/GameEvents';
 import { EventUtils } from '../../shared/contracts/events';
+import {
+  setupTexturePipeline,
+  DEFAULT_TEXTURES,
+} from '../assets/texture-pipeline';
 
 interface TestSceneState {
   playerPosition: { x: number; y: number };
@@ -38,9 +43,13 @@ export class TestScene extends BaseScene {
   }
 
   /**
-   * 预加载资源（测试场景无需外部资源）
+   * 预加载资源
    */
   preload(): void {
+    // 纹理/atlas 管线（占位配置，可按需填充 DEFAULT_TEXTURES）
+    // @ts-ignore - Phaser 注入 loader API
+    setupTexturePipeline(this.load as any, DEFAULT_TEXTURES);
+
     // 发布场景开始加载事件
     this.publishEvent(
       EventUtils.createEvent({

@@ -3,10 +3,14 @@
  * 提供通用的场景功能和事件处理
  */
 
-import Phaser from 'phaser';
+// 顶层移除对 phaser 的静态导入，改用全局 Phaser（由 SceneManager.initialize 注入）
+declare const Phaser: any;
+// 在单元测试（未注入全局 Phaser）时，提供一个最小的基类以避免模块评估期抛错
+// 生产/集成环境下 SceneManager.initialize 会注入全局 Phaser，此分支不会被命中
+const PhaserSceneBase: any = (globalThis as any)?.Phaser?.Scene ?? class {};
 import type { DomainEvent } from '../../shared/contracts/events';
 
-export abstract class BaseScene extends Phaser.Scene {
+export abstract class BaseScene extends PhaserSceneBase {
   protected eventCallbacks: Map<string, Function[]> = new Map();
 
   constructor(config: string | Phaser.Types.Scenes.SettingsConfig) {
@@ -65,10 +69,31 @@ export abstract class BaseScene extends Phaser.Scene {
    * 通用的 create 方法
    */
   create(): void {
+    try {
+      if (typeof performance !== 'undefined' && performance.mark) {
+        performance.mark(`scene_create_start:${this.scene.key}`);
+      }
+    } catch {}
+
     this.initializeScene();
 
     // 设置更新循环
     this.events.on('update', this.updateScene, this);
+
+    try {
+      if (
+        typeof performance !== 'undefined' &&
+        performance.mark &&
+        performance.measure
+      ) {
+        performance.mark(`scene_create_end:${this.scene.key}`);
+        performance.measure(
+          `scene_create_duration:${this.scene.key}`,
+          `scene_create_start:${this.scene.key}`,
+          `scene_create_end:${this.scene.key}`
+        );
+      }
+    } catch {}
   }
 
   /**

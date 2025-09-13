@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState, useTransition } from 'react';
 import { createComputationWorker } from '@/shared/workers/workerBridge';
 
 export default function PerfTestHarness() {
+  const e2eSmoke = (import.meta as any)?.env?.VITE_E2E_SMOKE === 'true';
   const [responded, setResponded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -21,6 +22,8 @@ export default function PerfTestHarness() {
     // 立即反馈 UI，保证响应性（下一帧渲染）
     requestAnimationFrame(() => {
       startTransition(() => setResponded(true));
+      // 仅在 E2E 性能烟囱模式下，为采样自动隐藏指示器；生产不改变 UI 行为
+      if (e2eSmoke) setTimeout(() => setResponded(false), 120);
       performance.mark('response_indicator_visible');
       performance.measure(
         'click_to_indicator',

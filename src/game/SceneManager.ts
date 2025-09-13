@@ -2,7 +2,7 @@
  * 场景管理器 - 统一管理游戏场景的切换和生命周期
  */
 
-import Phaser from 'phaser';
+// 顶层不再静态导入 phaser，改为 initialize() 内动态加载
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
 import { TestScene } from './scenes/TestScene';
@@ -16,7 +16,8 @@ export interface SceneManagerConfig {
 }
 
 export class SceneManager {
-  private game: Phaser.Game | null = null;
+  private game: any | null = null;
+  private phaser: any | null = null;
   private config: SceneManagerConfig;
   private eventCallback?: (event: DomainEvent) => void;
 
@@ -28,15 +29,20 @@ export class SceneManager {
   /**
    * 初始化场景管理器
    */
-  initialize(
+  async initialize(
     container: HTMLElement,
     width: number = 800,
     height: number = 600
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        const gameConfig: Phaser.Types.Core.GameConfig = {
-          type: Phaser.AUTO,
+    try {
+      const PhaserMod = (await import('phaser')).default as any;
+      this.phaser = PhaserMod;
+      // 暴露到全局，供未静态导入的场景访问（BaseScene/各 Scene 引用全局 Phaser）
+      (globalThis as any).Phaser = PhaserMod;
+
+      return new Promise<void>(resolve => {
+        const gameConfig: any = {
+          type: PhaserMod.AUTO,
           width,
           height,
           parent: container,
@@ -49,8 +55,8 @@ export class SceneManager {
             },
           },
           scale: {
-            mode: Phaser.Scale.FIT,
-            autoCenter: Phaser.Scale.CENTER_BOTH,
+            mode: PhaserMod.Scale.FIT,
+            autoCenter: PhaserMod.Scale.CENTER_BOTH,
             min: {
               width: 400,
               height: 300,
@@ -69,12 +75,12 @@ export class SceneManager {
           },
         };
 
-        this.game = new Phaser.Game(gameConfig);
-      } catch (error) {
-        this.config.onError?.(error as Error);
-        reject(error);
-      }
-    });
+        this.game = new PhaserMod.Game(gameConfig);
+      });
+    } catch (error) {
+      this.config.onError?.(error as Error);
+      throw error;
+    }
   }
 
   /**
@@ -178,6 +184,11 @@ export class SceneManager {
    */
   startGame(): void {
     if (!this.game) return;
+    try {
+      if (typeof performance !== 'undefined' && performance.mark) {
+        performance.mark('scene_switch_triggered:GameScene');
+      }
+    } catch {}
 
     const gameScene = this.game.scene.getScene('GameScene') as GameScene;
     if (gameScene) {
@@ -223,6 +234,11 @@ export class SceneManager {
    */
   returnToMenu(): void {
     if (!this.game) return;
+    try {
+      if (typeof performance !== 'undefined' && performance.mark) {
+        performance.mark('scene_switch_triggered:MenuScene');
+      }
+    } catch {}
 
     this.game.scene.start('MenuScene');
   }
@@ -240,7 +256,7 @@ export class SceneManager {
   /**
    * 获取当前活动场景
    */
-  getCurrentScene(): Phaser.Scene | null {
+  getCurrentScene(): any | null {
     if (!this.game) return null;
 
     const scenes = this.game.scene.getScenes(true);

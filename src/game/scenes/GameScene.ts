@@ -3,7 +3,8 @@
  * 处理游戏逻辑、UI 交互和事件管理
  */
 
-import Phaser from 'phaser';
+// 顶层移除对 phaser 的静态导入，改用全局 Phaser（由 SceneManager.initialize 注入）
+declare const Phaser: any;
 import { BaseScene } from './BaseScene';
 import type {
   GameState,
@@ -12,6 +13,10 @@ import type {
 } from '../../ports/game-engine.port';
 import type { DomainEvent } from '../../shared/contracts/events';
 import { EventUtils } from '../../shared/contracts/events';
+import {
+  setupTexturePipeline,
+  DEFAULT_TEXTURES,
+} from '../assets/texture-pipeline';
 
 export class GameScene extends BaseScene {
   private gameState: Partial<GameState> = {
@@ -39,6 +44,9 @@ export class GameScene extends BaseScene {
    * 预加载资源
    */
   preload(): void {
+    // 纹理/atlas 管线（占位配置，可按需填充 DEFAULT_TEXTURES）
+    // @ts-ignore - Phaser 注入 loader API
+    setupTexturePipeline(this.load as any, DEFAULT_TEXTURES);
     // 创建简单的像素图形作为占位符
     this.load.image(
       'player',

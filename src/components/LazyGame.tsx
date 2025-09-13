@@ -1,4 +1,10 @@
-import React, { Suspense, useCallback, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useState,
+  useTransition,
+  useDeferredValue,
+} from 'react';
 
 type LazyGameProps = {
   sceneModule?: string; // e.g. '@/game/scenes/MainScene'
@@ -11,6 +17,8 @@ export default function LazyGame({
 }: LazyGameProps) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const deferredMounted = useDeferredValue(mounted);
 
   const onStart = useCallback(async () => {
     if (mounted || loading) return;
@@ -21,14 +29,14 @@ export default function LazyGame({
       new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))),
     ]);
     await loadPhaserAndScene(sceneModule);
-    setMounted(true);
+    startTransition(() => setMounted(true));
     setLoading(false);
     onLoaded?.();
   }, [mounted, loading, sceneModule, onLoaded]);
 
   return (
     <div data-testid="lazy-game-container">
-      {!mounted ? (
+      {!deferredMounted ? (
         <button data-testid="start-button" onClick={onStart} disabled={loading}>
           {loading ? 'Loading…' : 'Start Game'}
         </button>

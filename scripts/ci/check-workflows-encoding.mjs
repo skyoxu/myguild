@@ -35,12 +35,16 @@ try {
     }
     // Check CRLF
     if (/\r\n/.test(txt) || /\r(?!\n)/.test(txt)) {
-      console.error(`[encoding-guard] FAIL: CR characters (non-LF EOL) in ${f}`);
+      console.error(
+        `[encoding-guard] FAIL: CR characters (non-LF EOL) in ${f}`
+      );
       failed = true;
     }
     // Check replacement characters (mojibake sign)
     if (txt.includes('\uFFFD')) {
-      console.error(`[encoding-guard] FAIL: Replacement character (\uFFFD) found in ${f}`);
+      console.error(
+        `[encoding-guard] FAIL: Replacement character (\uFFFD) found in ${f}`
+      );
       failed = true;
     }
   }
@@ -60,4 +64,3 @@ if (failed) {
   process.exit(1);
 }
 console.log('[encoding-guard] OK: UTF-8 + LF enforced for workflows');
-

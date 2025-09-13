@@ -45,4 +45,3 @@ for (const f of files) {
 }
 
 console.log(`[normalize-yaml] Done. Changed ${changed} file(s).`);
-

@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron';
+﻿import { BrowserWindow, app } from 'electron';
 import path from 'node:path';
 
 export function createMainWindow() {
@@ -11,11 +11,20 @@ export function createMainWindow() {
     },
   });
 
-  // 加载入口（开发/生产可按需切换）
   if (process.env.VITE_DEV_SERVER_URL) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL);
+    const devUrl = new URL(process.env.VITE_DEV_SERVER_URL);
+    if (process.env.E2E_AUTO_START === '1') {
+      devUrl.searchParams.set('auto-start', '1');
+      devUrl.searchParams.set('e2e-smoke', '1');
+    }
+    win.loadURL(devUrl.toString());
   } else {
-    win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+    const distIndex = path.join(process.cwd(), 'dist', 'index.html');
+    if (process.env.E2E_AUTO_START === '1') {
+      win.loadFile(distIndex, { search: 'auto-start=1&e2e-smoke=1' });
+    } else {
+      win.loadFile(distIndex);
+    }
   }
   return win;
 }

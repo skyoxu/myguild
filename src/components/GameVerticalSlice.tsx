@@ -3,13 +3,15 @@
  * 整合 React UI → Phaser TestScene → 事件处理 → 数据持久化 → 可观测性
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
+import { useConcurrentState } from '@/hooks/useConcurrentState';
 import { GameEngineAdapter } from '../game/GameEngineAdapter';
 import type { GameConfig } from '../ports/game-engine.port';
 import type { DomainEvent } from '../shared/contracts/events';
 import type { GameDomainEvent } from '../shared/contracts/events/GameEvents';
 import { useGameEvents } from '../hooks/useGameEvents';
 import { useWebVitals } from '../hooks/useWebVitals';
+import { scheduleNonBlocking } from '@/shared/performance/idle';
 
 interface VerticalSliceState {
   phase: 'ready' | 'initializing' | 'playing' | 'completed' | 'error';
@@ -37,10 +39,11 @@ export function GameVerticalSlice({
 }: GameVerticalSliceProps) {
   const gameEngineRef = useRef<GameEngineAdapter | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [sliceState, setSliceState] = useState<VerticalSliceState>({
-    phase: 'ready',
-    events: [],
-  });
+  const {
+    state: sliceState,
+    set: setSliceState,
+    deferred: deferredSliceState,
+  } = useConcurrentState<VerticalSliceState>({ phase: 'ready', events: [] });
 
   // Web Vitals监控 - 测试性能指标
   const webVitals = useWebVitals({
@@ -67,7 +70,8 @@ export function GameVerticalSlice({
    */
   const handleGameEvent = useCallback(
     (event: DomainEvent) => {
-      console.log('🎮 Vertical Slice Event:', event);
+      // 非关键日志使用空闲排程，避免阻塞交互
+      scheduleNonBlocking(() => console.log('🎮 Vertical Slice Event:', event));
 
       // 只处理游戏域事件
       if (!event.type.startsWith('game.')) {
@@ -77,10 +81,7 @@ export function GameVerticalSlice({
       const gameEvent = event as unknown as GameDomainEvent;
 
       // 记录所有事件用于调试和验证
-      setSliceState(prev => ({
-        ...prev,
-        events: [...prev.events, gameEvent],
-      }));
+      setSliceState(prev => ({ ...prev, events: [...prev.events, gameEvent] }));
 
       // 处理关键事件
       switch (gameEvent.type) {
@@ -137,16 +138,18 @@ export function GameVerticalSlice({
           break;
       }
 
-      // 发布到Sentry进行可观测性
+      // 发布到Sentry进行可观测性（非关键，空闲帧执行）
       if (window.electronAPI) {
-        window.electronAPI.reportEvent?.({
-          type: 'game_event',
-          data: {
-            eventType: gameEvent.type,
-            source: gameEvent.source,
-            timestamp: gameEvent.timestamp,
-          },
-        });
+        scheduleNonBlocking(() =>
+          window.electronAPI!.reportEvent?.({
+            type: 'game_event',
+            data: {
+              eventType: gameEvent.type,
+              source: gameEvent.source,
+              timestamp: gameEvent.timestamp,
+            },
+          })
+        );
       }
     },
     [webVitals, onError]

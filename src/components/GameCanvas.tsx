@@ -3,13 +3,16 @@
  * 符合 CLAUDE.md 技术栈要求：Phaser 3 WebGL渲染 & 场景管理
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useTransition } from 'react';
 import { GameEngineAdapter } from '../game/GameEngineAdapter';
 import type { GameState, GameConfig } from '../ports/game-engine.port';
 import type { DomainEvent } from '../shared/contracts/events';
 import type { GameDomainEvent } from '../shared/contracts/events/GameEvents';
 import { useGameEvents } from '../hooks/useGameEvents';
+import { createComputationWorker } from '@/shared/workers/workerBridge';
 import './GameCanvas.css';
+import { scheduleNonBlocking } from '@/shared/performance/idle';
+import { startTransaction } from '@/shared/observability/sentry-perf';
 
 interface GameCanvasProps {
   width?: number;
@@ -33,6 +36,9 @@ export function GameCanvas({
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [interactionLoading, setInteractionLoading] = useState(false);
+  const [interactionDone, setInteractionDone] = useState(false);
 
   // 使用EventBus进行React-Phaser通信
   const gameEvents = useGameEvents({
@@ -56,7 +62,7 @@ export function GameCanvas({
 
       const gameEvent = event as unknown as GameDomainEvent;
 
-      // 更新游戏状态
+      // 更新游戏状态（使用并发更新降级避免阻塞交互）
       if (
         gameEvent.type === 'game.state.updated' ||
         gameEvent.type === 'game.state.changed'
@@ -64,8 +70,10 @@ export function GameCanvas({
         const { gameState: newState } = gameEvent.data.gameState
           ? { gameState: gameEvent.data.gameState }
           : (gameEvent.data as { gameState: GameState });
-        setGameState(newState);
-        onGameStateChange?.(newState);
+        startTransition(() => {
+          setGameState(newState);
+          onGameStateChange?.(newState);
+        });
       }
 
       // 处理错误事件
@@ -80,11 +88,16 @@ export function GameCanvas({
         gameEvent.data &&
         'warning' in gameEvent.data
       ) {
-        console.warn('Game warning:', (gameEvent.data as any).warning);
+        // 非关键日志放入空闲帧，避免阻塞交互
+        scheduleNonBlocking(() => {
+          console.warn('Game warning:', (gameEvent.data as any).warning);
+        });
       }
 
-      // 转发事件给父组件
-      onGameEvent?.(event);
+      // 转发事件给父组件（非关键路径亦延后）
+      if (onGameEvent) {
+        scheduleNonBlocking(() => onGameEvent(event));
+      }
     },
     [onGameEvent, onGameStateChange]
   );
@@ -280,7 +293,61 @@ export function GameCanvas({
         >
           重启
         </button>
+        <button
+          data-testid="test-button"
+          disabled={interactionLoading}
+          onClick={async () => {
+            try {
+              setInteractionLoading(true);
+              const txn = await startTransaction(
+                'interaction:test_button',
+                'ui.action'
+              );
+              if (typeof performance !== 'undefined' && performance.mark) {
+                performance.mark('test_button_click_start');
+              }
+              await new Promise(r =>
+                requestAnimationFrame(() => requestAnimationFrame(r))
+              );
+              const { heavyTask, terminate } = createComputationWorker();
+              await heavyTask(5_000_000);
+              terminate();
+              setInteractionDone(true);
+              if (
+                typeof performance !== 'undefined' &&
+                performance.mark &&
+                performance.measure
+              ) {
+                performance.mark('response_indicator_visible');
+                performance.measure(
+                  'test_button_latency',
+                  'test_button_click_start',
+                  'response_indicator_visible'
+                );
+              }
+              txn.finish();
+            } catch (e) {
+              console.error('worker heavyTask failed', e);
+            } finally {
+              setInteractionLoading(false);
+              setTimeout(() => setInteractionDone(false), 60);
+            }
+          }}
+          className="game-canvas__control-btn game-canvas__control-btn--test"
+        >
+          {interactionLoading ? '处理中…' : '测试交互(Worker)'}
+        </button>
       </div>
+
+      {interactionDone && (
+        <div
+          data-testid="response-indicator"
+          aria-live="polite"
+          style={{ position: 'absolute', top: -9999, left: -9999 }}
+        >
+          done
+        </div>
+      )}
     </div>
   );
 }
