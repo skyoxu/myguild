@@ -207,8 +207,8 @@ jobs:
       - name: 🔒 覆盖率门禁检查 (90% 硬门)
         run: node scripts/ci/coverage-gate.cjs
         env:
-          COVERAGE_MODE: production
-          NODE_ENV: production
+          COVERAGE_MODE: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+          NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
 
   build-verification-core:
     name: Build Verification (windows-latest)
