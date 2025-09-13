@@ -60,7 +60,12 @@ const COVERAGE_CONFIGS = {
  */
 function getCoverageConfig() {
   const environment = process.env.NODE_ENV || 'development';
-  const coverageMode = process.env.COVERAGE_MODE || 'development';
+  let coverageMode = process.env.COVERAGE_MODE || '';
+
+  // 在 GitHub PR 场景缺省时，默认走 development，避免因生产默认阈值(90%)误伤
+  if (!coverageMode && process.env.GITHUB_ACTIONS && process.env.GITHUB_EVENT_NAME === 'pull_request') {
+    coverageMode = 'development';
+  }
 
   // 优先使用 COVERAGE_MODE，然后是 NODE_ENV
   const configKey = COVERAGE_CONFIGS[coverageMode] ? coverageMode : environment;
