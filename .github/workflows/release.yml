@@ -348,8 +348,8 @@ jobs:
         id: sentry_check
         shell: bash
         run: |
-          # 使用GitHub Actions的条件表达式检查token是否真正存在
-          if [ "${{ secrets.SENTRY_AUTH_TOKEN != '' && secrets.SENTRY_AUTH_TOKEN != null }}" = "true" ]; then
+          # 检查token是否存在和非空
+          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
             echo "token_present=true" >> "$GITHUB_OUTPUT"
             echo "✅ Sentry token is present and valid."
           else

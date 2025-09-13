@@ -257,8 +257,8 @@ jobs:
         id: sentry_check
         shell: bash
         run: |
-          # 使用GitHub Actions的条件表达式检查token是否真正存在
-          if [ "${{ secrets.SENTRY_AUTH_TOKEN != '' && secrets.SENTRY_AUTH_TOKEN != null }}" = "true" ]; then
+          # 检查token是否存在和非空
+          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
             echo "token_present=true" >> "$GITHUB_OUTPUT"
             echo "✅ Sentry token is present and valid."
           else
@@ -566,7 +566,6 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🔍 Snyk安全扫描（若配置了Token）
-        if: ${{ secrets.SNYK_TOKEN != '' }}
         uses: snyk/actions/node@0a1954d24f8d4624d36f731238914f659556b6c0 # 固定到v0.4.0对应的commit
         continue-on-error: true
         env:
