@@ -62,8 +62,19 @@ function getCoverageConfig() {
   const environment = process.env.NODE_ENV || 'development';
   let coverageMode = process.env.COVERAGE_MODE || '';
 
-  // 在 GitHub PR 场景缺省时，默认走 development，避免因生产默认阈值(90%)误伤
-  if (!coverageMode && process.env.GITHUB_ACTIONS && process.env.GITHUB_EVENT_NAME === 'pull_request') {
+  // 在 GitHub 场景下：
+  // - PR 一律按 development（60%）
+  // - 非 main 分支一律按 development（60%）
+  if (process.env.GITHUB_ACTIONS) {
+    const event = process.env.GITHUB_EVENT_NAME || '';
+    const ref = process.env.GITHUB_REF || '';
+    const isPR = event === 'pull_request';
+    const isMain = ref === 'refs/heads/main';
+    if (isPR || !isMain) {
+      coverageMode = 'development';
+    }
+  } else if (!coverageMode) {
+    // 本地缺省时，退回 development
     coverageMode = 'development';
   }
 

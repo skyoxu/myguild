@@ -38,7 +38,7 @@ export async function setupMainProcessMonitoring() {
 }
 
 // ===========================================
-// 2. 在渲染进程中 (src/App.tsx)
+// 2. 在渲染进程中 (src/app.tsx)
 // ===========================================
 
 export async function setupRendererProcessMonitoring() {

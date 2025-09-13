@@ -48,7 +48,7 @@ async function globalSetup(config: FullConfig) {
   }
 
   // 验证必要的资源文件存在
-  const requiredFiles = ['src/App.tsx', 'index.html', 'vite.config.ts'];
+  const requiredFiles = ['src/app.tsx', 'index.html', 'vite.config.ts'];
 
   for (const file of requiredFiles) {
     if (!fs.existsSync(file)) {

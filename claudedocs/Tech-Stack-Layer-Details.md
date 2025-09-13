@@ -236,7 +236,7 @@ project-root/
 │   ├── shared/                 # 共享类型和契约
 │   │   └── contracts/          # TypeScript 接口定义
 │   ├── main.tsx               # React 应用入口
-│   └── App.tsx                # 根组件
+│   └── app.tsx                # 根组件
 ├── electron/                   # Electron 主进程
 │   ├── main.ts               # 主进程入口
 │   └── preload.ts            # 预加载脚本
@@ -273,7 +273,7 @@ project-root/
 // src/main.tsx - React 19 渲染配置
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import App from './app.tsx';
 import './index.css';
 
 // React 19 支持的新 createRoot API

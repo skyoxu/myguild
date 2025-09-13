@@ -182,7 +182,7 @@ export default tseslint.config([
 
   // UI组件文件 - 大幅放宽体量规则（分层降噪优化）
   {
-    files: ['src/components/**/*.{tsx,jsx}', 'src/App.tsx'],
+    files: ['src/components/**/*.{tsx,jsx}', 'src/app.tsx'],
     rules: {
       'max-lines-per-function': ['warn', { max: 500 }], // 大幅放宽UI组件行数
       complexity: ['warn', 50], // 大幅放宽复杂度
