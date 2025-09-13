@@ -14,7 +14,10 @@ import { pathToFileURL } from 'node:url';
 function buildApp() {
   try {
     console.log('[launch] building application (npm run build)...');
-    execSync('npm run build', { stdio: 'inherit' });
+    execSync('npm run build', {
+      stdio: 'inherit',
+      env: { ...process.env },
+    });
   } catch (e) {
     console.error('[launch] build failed before E2E launch');
     throw e;
