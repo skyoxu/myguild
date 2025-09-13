@@ -58,7 +58,6 @@ jobs:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
       E2E_SECURITY_TIMEOUT_MS: 300000
-      E2E_SECURITY_TIMEOUT_MS: 300000
     timeout-minutes: 15
 
     outputs:
@@ -307,7 +306,7 @@ jobs:
     timeout-minutes: 20
 
     outputs:
-      e2e-status: ${{ steps.e2e-test.outputs.status }}
+      e2e-status: ${{ steps.e2e-test-smoke.outputs.status || steps.e2e-test-full.outputs.status }}
 
     steps:
       - name: Checkout code
@@ -353,7 +352,7 @@ jobs:
 
       - name: Run E2E security tests (PR Smoke)
         if: github.event_name == 'pull_request'
-        id: e2e-test
+        id: e2e-test-smoke
         shell: bash
         run: |
           echo "🛡️ (PR) Running security smoke subset..."
@@ -367,7 +366,7 @@ jobs:
           fi
       - name: Run E2E security tests (Full)
         if: github.event_name != 'pull_request'
-        id: e2e-test
+        id: e2e-test-full
         shell: bash
         run: |
           echo "🛡️ (Full) Running complete E2E security tests..."
