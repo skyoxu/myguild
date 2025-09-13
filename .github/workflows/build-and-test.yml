@@ -20,6 +20,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Unit tests with coverage gate
+        env:
+          COVERAGE_MODE: development
+          NODE_ENV: test
         run: npm run test:coverage:gate
       - name: Build
         run: npm run build
@@ -51,4 +54,3 @@ jobs:
             test-results/**
             test-results/playwright-report/**
           if-no-files-found: warn
-
