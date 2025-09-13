@@ -4,17 +4,14 @@
  */
 
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
-import { launchApp } from '../../helpers/launch';
+import { launchAppWithPage } from '../../helpers/launch';
 
 let testApp: { electronApp: ElectronApplication; page: Page };
 
 test.beforeAll(async () => {
-  const electronApp = await launchApp();
+  const { app, page } = await launchAppWithPage();
 
-  const page = await electronApp.firstWindow();
-  await page.waitForLoadState('domcontentloaded');
-
-  testApp = { electronApp, page };
+  testApp = { electronApp: app, page };
 });
 
 test.afterAll(async () => {
@@ -28,7 +25,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     const { electronApp } = testApp;
 
     // 直接从主进程验证安全配置
-    const securityConfig = await electronApp.evaluate(() => {
+    const securityConfig = await electronApp.evaluate(({}) => {
       return (global as any).__SECURITY_PREFS__ || null;
     });
 
@@ -48,7 +45,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     const { electronApp } = testApp;
 
     // 获取所有暴露的安全配置
-    const securityConfigs = await electronApp.evaluate(() => {
+    const securityConfigs = await electronApp.evaluate(({}) => {
       return {
         securityPrefs: (global as any).__SECURITY_PREFS__,
         policyConfig: (global as any).__SECURITY_POLICY_CONFIG__,
@@ -130,7 +127,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     const { electronApp } = testApp;
 
     // 获取环境相关的安全配置
-    const environmentConfig = await electronApp.evaluate(() => {
+    const environmentConfig = await electronApp.evaluate(({}) => {
       const policyConfig = (global as any).__SECURITY_POLICY_CONFIG__;
       if (!policyConfig) return null;
 
@@ -184,8 +181,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     const { electronApp } = testApp;
 
     // 从主进程获取当前窗口的实际webPreferences配置
-    const windowConfig = await electronApp.evaluate(() => {
-      const { BrowserWindow } = require('electron');
+    const windowConfig = await electronApp.evaluate(({ BrowserWindow }) => {
       const windows = BrowserWindow.getAllWindows();
 
       if (windows.length === 0) {
@@ -402,10 +398,11 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     const { page, electronApp } = testApp;
 
     // 记录初始窗口数量
-    const initialWindowCount = await electronApp.evaluate(() => {
-      const { BrowserWindow } = require('electron');
-      return BrowserWindow.getAllWindows().length;
-    });
+    const initialWindowCount = await electronApp.evaluate(
+      ({ BrowserWindow }) => {
+        return BrowserWindow.getAllWindows().length;
+      }
+    );
 
     // 测试被阻止的域名（不在allowedExternalDomains中）
     const blockedAttempts = await page.evaluate(() => {
@@ -479,8 +476,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     await page.waitForTimeout(1000);
 
     // 验证没有新的Electron窗口被创建
-    const finalWindowCount = await electronApp.evaluate(() => {
-      const { BrowserWindow } = require('electron');
+    const finalWindowCount = await electronApp.evaluate(({ BrowserWindow }) => {
       return BrowserWindow.getAllWindows().length;
     });
 

@@ -3,6 +3,7 @@ import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
+import { securityPolicyManager } from './security/permissions';
 
 // CI 下为稳态，需在 app ready 之前禁用 GPU 加速
 //（必须在 ready 之前调用，否则无效）
@@ -57,8 +58,6 @@ export const SECURITY_PREFERENCES = {
 } as const;
 
 function createSecureBrowserWindow() {
-  const isDev = !!process.env.VITE_DEV_SERVER_URL;
-
   const win = new BrowserWindow({
     width: 1024,
     height: 768,
@@ -66,9 +65,7 @@ function createSecureBrowserWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       // ✅ 按cifix1.txt建议：确保preload路径在dev/prod环境均正确
-      preload: isDev
-        ? join(__dirname, '../preload.js') // dev环境：../preload.js
-        : join(__dirname, 'preload.js'), // prod环境：同目录preload.js
+      preload: join(__dirname, 'preload.js'), // dev/prod环境：都在dist-electron目录下
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -189,6 +186,27 @@ function createWindow(is: any, ses: Electron.Session): void {
 
     // 使用CSPManager生成测试配置
     (global as any).__CSP_CONFIG__ = CSPManager.generateTestingConfig();
+
+    // 添加测试所需的安全策略配置
+    (global as any).__SECURITY_POLICY_CONFIG__ = {
+      config: securityPolicyManager.getConfig(),
+      testMode: true,
+      isProduction: process.env.NODE_ENV === 'production',
+    };
+
+    // 添加测试所需的安全处理程序状态
+    (global as any).__SECURITY_HANDLERS__ = {
+      permissionHandler: { enabled: true },
+      navigationHandler: {
+        enabled: true,
+        events: ['will-navigate', 'will-attach-webview'],
+      },
+      windowOpenHandler: {
+        enabled: true,
+        policy: 'deny-new-windows-redirect-external',
+      },
+      webRequestFiltering: { enabled: true },
+    };
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -324,10 +342,10 @@ app.whenReady().then(async () => {
     try {
       const { pathname } = new URL(request.url);
       // 默认加载index.html
-      const file = pathname === '/' ? 'index.html' : pathname;
-      // 修复路径问题：app.getAppPath()在开发时返回dist-electron目录，需要回到上级目录访问dist
-      const basePath = join(app.getAppPath(), '..');
-      const filePath = join(basePath, 'dist', file);
+      const file = pathname === '/' ? 'index.html' : pathname.slice(1);
+
+      // 修复路径：开发模式下app.getAppPath()返回项目根目录，直接拼接dist
+      const filePath = join(app.getAppPath(), 'dist', file);
 
       console.log(`🔍 [protocol.handle] 请求: ${request.url} -> ${filePath}`);
 
