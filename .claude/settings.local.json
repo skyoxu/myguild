@@ -107,7 +107,8 @@
       "Bash(git show:*)",
       "WebFetch(domain:api.github.com)",
       "Bash(\"/c/Users/weiruan/AppData/Local/Microsoft/WinGet/Packages/koalaman.shellcheck_Microsoft.Winget.Source_8wekyb3d8bbwe/shellcheck.exe\" .github/workflows/branch-protection-encoding-guard.yml)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": [],

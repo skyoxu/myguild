@@ -1,4 +1,10 @@
-import React, { useCallback, useRef, useState, useTransition } from 'react';
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useTransition,
+  useLayoutEffect,
+} from 'react';
 import { createComputationWorker } from '@/shared/workers/workerBridge';
 
 export default function PerfTestHarness() {
@@ -9,6 +15,7 @@ export default function PerfTestHarness() {
   const workerRef = useRef<ReturnType<typeof createComputationWorker> | null>(
     null
   );
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const ensureWorker = () => {
     if (!workerRef.current) workerRef.current = createComputationWorker();
@@ -19,23 +26,8 @@ export default function PerfTestHarness() {
     const t0 = performance.now();
     performance.mark('test_button_click_start');
 
-    // 立即反馈 UI，保证响应性（下一帧渲染）
-    requestAnimationFrame(() => {
-      startTransition(() => setResponded(true));
-      // 仅在 E2E 性能烟囱模式下，为采样自动隐藏指示器；生产不改变 UI 行为
-      if (e2eSmoke) setTimeout(() => setResponded(false), 120);
-      performance.mark('response_indicator_visible');
-      performance.measure(
-        'click_to_indicator',
-        'test_button_click_start',
-        'response_indicator_visible'
-      );
-      const m = performance.getEntriesByName('click_to_indicator').pop();
-      if (m)
-        console.log(
-          `[PerfTestHarness] click_to_indicator=${m.duration.toFixed(2)}ms`
-        );
-    });
+    // 立即设置responded状态，确保同步DOM更新
+    setResponded(true);
 
     // 后台重计算：不阻塞主线程
     setBusy(true);
@@ -55,6 +47,39 @@ export default function PerfTestHarness() {
       );
     }
   }, []);
+
+  // 使用useLayoutEffect确保response-indicator的同步显示和性能标记
+  useLayoutEffect(() => {
+    if (responded) {
+      // 立即标记指示器可见，确保在DOM更新后同步执行
+      performance.mark('response_indicator_visible');
+      performance.measure(
+        'click_to_indicator',
+        'test_button_click_start',
+        'response_indicator_visible'
+      );
+
+      const m = performance.getEntriesByName('click_to_indicator').pop();
+      if (m) {
+        console.log(
+          `[PerfTestHarness] click_to_indicator=${m.duration.toFixed(2)}ms`
+        );
+      }
+
+      // E2E烟雾测试模式下120ms后隐藏
+      if (e2eSmoke) {
+        timerRef.current = setTimeout(() => setResponded(false), 120);
+      }
+    }
+
+    // 清理函数：组件卸载时清理定时器
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [responded, e2eSmoke]);
 
   return (
     <div className="mt-6 flex items-center gap-3" data-testid="perf-harness">
