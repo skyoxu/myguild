@@ -1,0 +1,7 @@
+Workflow trigger for main branch CI validation
+Generated at: 2025-09-14
+Purpose: Trigger GitHub Actions workflow to validate build and test pipeline
+
+Validation status: Ready for CI testing
+Build system: Vite + Electron + React 19
+Test framework: Playwright + Vitest
