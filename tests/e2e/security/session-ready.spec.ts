@@ -7,12 +7,28 @@ test(
   async () => {
     const app = await launchApp();
 
+    // 根据citest/ciinfo.md规则56：electron.launch() / firstWindow() 后用 document.readyState 判就绪
+    // 先获取首窗确保Electron完全准备好
+    const win = await app.firstWindow();
+
+    // 等待渲染进程就绪，避免race condition
+    await win.waitForLoadState('domcontentloaded');
+
+    // 现在安全检查session.defaultSession，因为Electron已完全初始化
     const ok = await app.evaluate(async ({ app, session }) => {
-      return app.isReady() && !!session.defaultSession;
+      // 双重检查：app ready + session存在
+      if (!app.isReady()) return false;
+
+      try {
+        return !!session.defaultSession;
+      } catch (error) {
+        // session未初始化时的安全降级，测试失败本身就是信号
+        return false;
+      }
     });
     expect(ok).toBe(true);
 
-    const win = await app.firstWindow();
+    // win已在上面获取，直接验证
     await expect(win).toBeTruthy();
 
     // 校验 CSP 头是否注入（navigate 到 app:// 后取响应头，按你的加载方式适配）

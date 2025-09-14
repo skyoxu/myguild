@@ -8,16 +8,32 @@ import { resolve, join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+// 构建缓存机制：避免CI环境中重复构建
+const buildCache = { completed: false };
+
 /**
  * Build application before launching to ensure latest code is used.
+ * 优化：CI环境中只构建一次，后续复用
  */
 function buildApp() {
+  // CI环境构建优化：首次构建后复用
+  if (process.env.CI === 'true' && buildCache.completed) {
+    console.log('[launch] CI mode: reusing existing build');
+    return;
+  }
+
   try {
     console.log('[launch] building application (npm run build)...');
     execSync('npm run build', {
       stdio: 'inherit',
       env: { ...process.env },
     });
+
+    // 标记构建完成（仅CI环境缓存）
+    if (process.env.CI === 'true') {
+      buildCache.completed = true;
+      console.log('[launch] CI mode: build cached for subsequent tests');
+    }
   } catch (e) {
     console.error('[launch] build failed before E2E launch');
     throw e;
@@ -64,7 +80,7 @@ export async function launchAppWithArgs(
 }
 
 export async function launchAppWithPage(
-  electronOverride?: any,
+  electronOverride?: typeof electron,
   entry?: string
 ): Promise<{ app: ElectronApplication; page: Page }> {
   buildApp();
@@ -101,6 +117,7 @@ export async function prepareWindowForInteraction(page: Page): Promise<Page> {
   await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   if (process.env.CI === 'true' || process.env.NODE_ENV === 'test') {
     await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).electronAPI?.bringToFront?.();
     });
     await page.evaluate(
