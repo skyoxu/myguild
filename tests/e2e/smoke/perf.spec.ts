@@ -3,7 +3,7 @@
  * Focus: basic app boot and interaction P95 with stable sampling.
  */
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
-import { launchApp } from '../../helpers/launch';
+import { launchApp, prepareWindowForInteraction } from '../../helpers/launch';
 import { PerformanceTestUtils } from '../../utils/PerformanceTestUtils';
 
 let electronApp: ElectronApplication;
@@ -12,10 +12,16 @@ let page: Page;
 test.beforeAll(async () => {
   electronApp = await launchApp();
   page = await electronApp.firstWindow();
+
+  // Wait for page to load and prepare for interaction
+  await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+  await prepareWindowForInteraction(page);
 });
 
 test.afterAll(async () => {
-  await electronApp.close();
+  if (electronApp) {
+    await electronApp.close();
+  }
 });
 
 test.describe('@smoke Perf Smoke Suite', () => {
