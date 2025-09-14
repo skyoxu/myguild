@@ -293,7 +293,49 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # Stage 2: E2E Security Tests (only when static scan passes with zero Critical issues)
+  # Stage 2: Build and Package Application (separate from tests for artifact reuse)
+  build-and-package:
+    name: 🔨 Build & Package
+    runs-on: windows-latest
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+    needs: security-scan
+    if: needs.security-scan.outputs.critical-count == '0'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        uses: ./.github/actions/npm-install
+
+      - name: Build Electron application
+        shell: bash  # 保持原有shell: bash以确保兼容性
+        run: |
+          npm run build
+          npx tsc -p electron
+          npx electron-builder --dir
+
+      - name: Upload application artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-app-windows
+          # 按照citest/ciinfo.md规则，使用标准输出路径
+          path: dist/win-unpacked/
+          if-no-files-found: error
+          retention-days: 1  # 短期artifact，仅用于当前workflow
+
+  # Stage 3: E2E Security Tests (downloads pre-built artifact)
   e2e-security-test:
     name: 🛡️ E2E Security Tests
     runs-on: windows-latest
@@ -301,8 +343,7 @@ jobs:
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-    needs: security-scan
-    if: needs.security-scan.outputs.critical-count == '0'
+    needs: build-and-package
     timeout-minutes: 20
 
     outputs:
@@ -338,17 +379,32 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install dev dependencies (for Playwright)
         uses: ./.github/actions/npm-install
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Build Electron application
+      - name: Download pre-built application
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-app-windows
+          path: dist/win-unpacked/
+
+      - name: Verify and set Electron entry path
         run: |
-          npm run build
-          npx tsc -p electron
-          npx electron-builder --dir
+          $electronMain = "dist/win-unpacked/dist-electron/main.js"
+          if (Test-Path $electronMain) {
+            Write-Host "✅ Found Electron entry point: $electronMain"
+            # 设置环境变量供后续steps使用
+            echo "ELECTRON_MAIN_PATH=$electronMain" >> $env:GITHUB_ENV
+            # 同时设置VITE_E2E_SMOKE以保持E2E_PERF配置兼容性
+            echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
+          } else {
+            Write-Host "❌ Electron entry point not found: $electronMain"
+            Get-ChildItem dist/win-unpacked -Recurse -Name
+            exit 1
+          }
 
       - name: Run E2E security tests (PR Smoke)
         if: github.event_name == 'pull_request'

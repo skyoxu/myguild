@@ -6,7 +6,48 @@ on:
     branches: [ main ]
 
 jobs:
+  build-artifacts:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    outputs:
+      artifacts-available: ${{ steps.build-check.outputs.artifacts-available }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Build application
+        env:
+          VITE_E2E_SMOKE: 'true'
+        run: npm run build
+      - name: Verify build outputs
+        id: build-check
+        run: |
+          if ((Test-Path -LiteralPath 'dist') -and (Test-Path -LiteralPath 'dist-electron')) {
+            Write-Host "✅ Build artifacts verified: dist/ and dist-electron/ directories exist"
+            echo "artifacts-available=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Error "❌ Build artifacts missing: dist/ or dist-electron/ not found"
+            echo "artifacts-available=false" >> $env:GITHUB_OUTPUT
+            exit 1
+          }
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            dist-electron/
+          retention-days: 1
+          compression-level: 6
+          include-hidden-files: false
+
   build-and-unit:
+    needs: build-artifacts
     runs-on: windows-latest
     defaults:
       run:
@@ -44,11 +85,9 @@ jobs:
           } else {
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Coverage summary not found."
           }
-      - name: Build
-        run: npm run build
 
   e2e-perf-smoke:
-    needs: build-and-unit
+    needs: [build-artifacts, build-and-unit]
     runs-on: windows-latest
     defaults:
       run:
@@ -59,6 +98,7 @@ jobs:
       ELECTRON_ENABLE_LOGGING: '1'
       ELECTRON_DISABLE_GPU: '1'
       E2E_SECURITY_TIMEOUT_MS: 300000
+      CI_ARTIFACTS_AVAILABLE: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,6 +116,30 @@ jobs:
       - name: Install deps (npm ci)
         if: steps.changes-e2e.outputs.any_changed == 'true'
         run: npm ci
+      - name: Download build artifacts
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+      - name: Verify downloaded artifacts
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: |
+          Write-Host "📦 Verifying downloaded build artifacts..."
+          if ((Test-Path -LiteralPath 'dist') -and (Test-Path -LiteralPath 'dist-electron')) {
+            Write-Host "✅ Build artifacts downloaded successfully:"
+            Write-Host "   - dist/ directory exists"
+            Write-Host "   - dist-electron/ directory exists"
+            if (Test-Path -LiteralPath 'dist-electron/main.js') {
+              Write-Host "   - main.js entry point found"
+            } else {
+              Write-Error "❌ main.js entry point not found in dist-electron/"
+              exit 1
+            }
+          } else {
+            Write-Error "❌ Downloaded artifacts missing: dist/ or dist-electron/ not found"
+            exit 1
+          }
       - name: Validate E2E timeout config (fail-fast)
         if: steps.changes-e2e.outputs.any_changed == 'true'
         run: |

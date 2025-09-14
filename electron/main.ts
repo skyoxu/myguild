@@ -341,11 +341,30 @@ app.whenReady().then(async () => {
   await protocol.handle(APP_SCHEME, request => {
     try {
       const { pathname } = new URL(request.url);
+
+      // ✅ 处理API路由请求（修复web-vitals等API调用失败）
+      if (pathname.startsWith('/api/')) {
+        console.log(`🔍 [protocol.handle] API请求: ${pathname}`);
+        if (pathname === '/api/web-vitals') {
+          // 返回空的JSON响应，避免阻塞React渲染
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        // 其他API路径返回404
+        return new Response('API Not Found', { status: 404 });
+      }
+
       // 默认加载index.html
       const file = pathname === '/' ? 'index.html' : pathname.slice(1);
 
-      // 修复路径：开发模式下app.getAppPath()返回项目根目录，直接拼接dist
-      const filePath = join(app.getAppPath(), 'dist', file);
+      // ✅ 修复路径：在dist-electron环境中，向上一级找到项目根目录再拼接dist
+      const appPath = app.getAppPath();
+      const projectRoot = appPath.endsWith('dist-electron')
+        ? join(appPath, '..')
+        : appPath;
+      const filePath = join(projectRoot, 'dist', file);
 
       console.log(`🔍 [protocol.handle] 请求: ${request.url} -> ${filePath}`);
 
