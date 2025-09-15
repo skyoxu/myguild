@@ -5,11 +5,10 @@ test(
   'ADR-0002: defaultSession 仅在 ready 后访问，且首窗可打开',
   { timeout: 180000 },
   async () => {
-    const app = await launchApp();
+    const { app, page: win } = await launchApp();
 
     // 根据citest/ciinfo.md规则56：electron.launch() / firstWindow() 后用 document.readyState 判就绪
     // 先获取首窗确保Electron完全准备好
-    const win = await app.firstWindow();
 
     // 等待渲染进程就绪，避免race condition
     await win.waitForLoadState('domcontentloaded');

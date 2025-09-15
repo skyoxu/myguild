@@ -322,9 +322,29 @@ jobs:
       - name: Build Electron application
         shell: bash  # 保持原有shell: bash以确保兼容性
         run: |
+          # Clean platform-specific dependencies to avoid Sharp conflicts
+          rm -rf "node_modules/@img/sharp-darwin-"* || true
+          rm -rf "node_modules/@img/sharp-linux-"* || true
+          
+          # Build application
           npm run build
           npx tsc -p electron
           npx electron-builder --dir
+          
+          # Adapt artifact path for GitHub Actions compatibility
+          # electron-builder outputs to release/${version}/win-unpacked/
+          # GitHub Actions expects dist/win-unpacked/
+          ACTUAL_OUTPUT=$(find release -name "win-unpacked" -type d | head -1)
+          if [ -n "$ACTUAL_OUTPUT" ]; then
+            echo "✅ Found electron-builder output: $ACTUAL_OUTPUT"
+            mkdir -p dist/win-unpacked
+            cp -r "$ACTUAL_OUTPUT"/* dist/win-unpacked/
+            echo "✅ Adapted artifact path for GitHub Actions: dist/win-unpacked/"
+          else
+            echo "❌ electron-builder output not found in release/ directory"
+            find release -type f -name "*.exe" || true
+            exit 1
+          fi
 
       - name: Upload application artifact
         uses: actions/upload-artifact@v4

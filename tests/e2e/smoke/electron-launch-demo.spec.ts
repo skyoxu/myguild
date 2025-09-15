@@ -23,39 +23,16 @@ test.describe('Electron应用基础功能', () => {
     const startTime = Date.now();
 
     // 使用_electron.launch()官方模式启动应用 - 增加超时时间
-    const electronApp = await launchApp();
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     console.log(`✅ Electron 应用启动成功，耗时: ${Date.now() - startTime}ms`);
 
-    // 等待主窗口创建 - 增加超时时间和重试机制
-    console.log('🪟 等待主窗口创建...');
-    const windowStartTime = Date.now();
-
-    let firstWindow;
-    let retryCount = 0;
-    const maxRetries = 3;
-
-    while (retryCount < maxRetries) {
-      try {
-        firstWindow = await electronApp.firstWindow({
-          timeout: 20000, // 每次尝试20秒
-        });
-        console.log(
-          `✅ 主窗口创建成功，耗时: ${Date.now() - windowStartTime}ms，重试次数: ${retryCount}`
-        );
-        break;
-      } catch (error) {
-        retryCount++;
-        console.log(`⚠️ 第${retryCount}次获取主窗口失败: ${error.message}`);
-        if (retryCount >= maxRetries) {
-          throw new Error(
-            `主窗口创建失败，已重试${maxRetries}次: ${error.message}`
-          );
-        }
-        // 短暂等待后重试
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
+    // ✅ 验收脚本：协议/路径自检断言（定位chrome-error://问题）
+    await firstWindow.waitForLoadState('domcontentloaded');
+    const url = firstWindow.url();
+    expect(url.startsWith('file://') || url.startsWith('app://')).toBeTruthy();
+    expect(url.startsWith('chrome-error://')).toBeFalsy();
+    console.log(`✅ URL协议验证通过: ${url}`);
 
     // 验证窗口基本属性
     await expect(firstWindow).toHaveTitle(
@@ -78,12 +55,7 @@ test.describe('Electron应用基础功能', () => {
 
   test('安全基线验证 - 上下文隔离', async () => {
     console.log('🔒 开始安全基线验证测试...');
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(安全测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 验证上下文隔离 - Node.js API不可访问
     const nodeAccessBlocked = await firstWindow.evaluate(() => {
@@ -116,12 +88,7 @@ test.describe('Electron应用基础功能', () => {
 
   test('CSP策略生效验证', async () => {
     console.log('🛡️ 开始CSP策略验证测试...');
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(CSP测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 验证内联脚本被阻止 - 使用更可靠的CSP检测方法
     const inlineScriptBlocked = await firstWindow.evaluate(async () => {
@@ -195,15 +162,10 @@ test.describe('Electron应用基础功能', () => {
 
   test('主进程和渲染进程分离', async () => {
     console.log('⚙️ 开始进程分离验证测试...');
-    const electronApp = await launchApp();
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 验证主进程存在
     expect(electronApp).toBeTruthy();
-
-    console.log('🪟 等待主窗口创建(进程分离测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
 
     // 验证渲染进程独立运行
     const rendererInfo = await firstWindow.evaluate(() => ({
@@ -224,12 +186,7 @@ test.describe('性能和响应性验证', () => {
     console.log('⏱️ 开始启动时间性能测试...');
     const startTime = Date.now();
 
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(性能测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 等待应用完全加载
     await firstWindow.waitForLoadState('domcontentloaded');
@@ -246,12 +203,7 @@ test.describe('性能和响应性验证', () => {
 
   test('窗口响应性测试', async () => {
     console.log('🎯 开始窗口响应性测试...');
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(响应性测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
     await firstWindow.waitForLoadState('domcontentloaded');
 
     // 测试基本UI交互响应时间
@@ -278,12 +230,7 @@ test.describe('性能和响应性验证', () => {
 test.describe('错误处理和稳定性', () => {
   test('应用意外退出恢复', async () => {
     console.log('🔄 开始应用稳定性测试...');
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(稳定性测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 验证应用稳定运行
     await firstWindow.waitForLoadState('domcontentloaded');
@@ -301,12 +248,7 @@ test.describe('错误处理和稳定性', () => {
 
   test('内存泄漏基础检查', async () => {
     console.log('🧠 开始内存泄漏检查测试...');
-    const electronApp = await launchApp();
-
-    console.log('🪟 等待主窗口创建(内存测试)...');
-    const firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app: electronApp, page: firstWindow } = await launchApp();
     await firstWindow.waitForLoadState('domcontentloaded');
 
     // 基础内存使用情况检查

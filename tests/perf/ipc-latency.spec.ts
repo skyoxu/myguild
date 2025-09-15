@@ -1,7 +1,7 @@
 import { launchApp } from '../helpers/launch';
 
 test('IPC 往返基线（开发机）', async () => {
-  const { app: app, page: win } = await launchApp();
+  const { app, page: win } = await launchApp();
   const samples: number[] = [];
   for (let i = 0; i < 200; i++) {
     const t0 = Date.now();

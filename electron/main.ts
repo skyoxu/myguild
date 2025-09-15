@@ -131,15 +131,24 @@ function createSecureBrowserWindow() {
     return { action: 'deny' };
   });
 
-  // ✅ 按cifix1.txt建议：添加did-fail-load保险机制，自动恢复到首页
+  // ✅ 简化的错误恢复机制：使用loadFile重新加载
   win.webContents.on(
     'did-fail-load',
-    (_, __, ___, validatedURL, isMainFrame) => {
-      if (isMainFrame && validatedURL.startsWith('chrome-error://')) {
+    (_, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (isMainFrame && errorCode !== 0) {
         console.log(
-          `🔄 [did-fail-load] 检测到chrome-error页面，自动恢复到首页`
+          `🔄 [did-fail-load] 主框架加载失败 (${errorCode}): ${errorDescription}, URL: ${validatedURL}`
         );
-        win.loadURL('app://index.html');
+        // 生产环境通过loadFile重新加载，避免协议相关问题
+        if (!process.env.VITE_DEV_SERVER_URL) {
+          const appPath = app.getAppPath();
+          const projectRoot = appPath.endsWith('dist-electron')
+            ? join(appPath, '..')
+            : appPath;
+          const indexPath = join(projectRoot, 'dist', 'index.html');
+          console.log(`🔄 [did-fail-load] 尝试重新加载: ${indexPath}`);
+          win.loadFile(indexPath);
+        }
       }
     }
   );
@@ -294,7 +303,7 @@ function createWindow(is: any, ses: Electron.Session): void {
     }
   );
 
-  // ✅ 按cifix1.txt建议：区分dev/prod URL加载，避免白屏
+  // ✅ 修复chrome-error://问题：使用loadFile替代loadURL('app://')
   const isDev = !!process.env.VITE_DEV_SERVER_URL;
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     console.log(
@@ -302,9 +311,14 @@ function createWindow(is: any, ses: Electron.Session): void {
     );
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    const indexUrl = 'app://index.html';
-    console.log(`📂 [loadURL] 生产环境加载: ${indexUrl}`);
-    mainWindow.loadURL(indexUrl);
+    // ✅ 生产环境：使用loadFile避免chrome-error://chromewebdata/问题
+    const appPath = app.getAppPath();
+    const projectRoot = appPath.endsWith('dist-electron')
+      ? join(appPath, '..')
+      : appPath;
+    const indexPath = join(projectRoot, 'dist', 'index.html');
+    console.log(`📂 [loadFile] 生产环境加载文件: ${indexPath}`);
+    mainWindow.loadFile(indexPath);
   }
 }
 

@@ -11,8 +11,9 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  electronApp = await launchApp();
-  page = await electronApp.firstWindow();
+  const { app, page: launchedPage } = await launchApp();
+  electronApp = app;
+  page = launchedPage;
 });
 
 test.afterAll(async () => {

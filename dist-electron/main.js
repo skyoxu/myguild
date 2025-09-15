@@ -176,15 +176,24 @@ function createSecureBrowserWindow() {
     // 总是拒绝新窗口创建，受信任的链接通过系统浏览器打开
     return { action: 'deny' };
   });
-  // ✅ 按cifix1.txt建议：添加did-fail-load保险机制，自动恢复到首页
+  // ✅ 简化的错误恢复机制：使用loadFile重新加载
   win.webContents.on(
     'did-fail-load',
-    (_, __, ___, validatedURL, isMainFrame) => {
-      if (isMainFrame && validatedURL.startsWith('chrome-error://')) {
+    (_, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (isMainFrame && errorCode !== 0) {
         console.log(
-          `🔄 [did-fail-load] 检测到chrome-error页面，自动恢复到首页`
+          `🔄 [did-fail-load] 主框架加载失败 (${errorCode}): ${errorDescription}, URL: ${validatedURL}`
         );
-        win.loadURL('app://index.html');
+        // 生产环境通过loadFile重新加载，避免协议相关问题
+        if (!process.env.VITE_DEV_SERVER_URL) {
+          const appPath = electron_1.app.getAppPath();
+          const projectRoot = appPath.endsWith('dist-electron')
+            ? (0, path_1.join)(appPath, '..')
+            : appPath;
+          const indexPath = (0, path_1.join)(projectRoot, 'dist', 'index.html');
+          console.log(`🔄 [did-fail-load] 尝试重新加载: ${indexPath}`);
+          win.loadFile(indexPath);
+        }
       }
     }
   );
@@ -316,7 +325,7 @@ function createWindow(is, ses) {
       );
     }
   );
-  // ✅ 按cifix1.txt建议：区分dev/prod URL加载，避免白屏
+  // ✅ 修复chrome-error://问题：使用loadFile替代loadURL('app://')
   const isDev = !!process.env.VITE_DEV_SERVER_URL;
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     console.log(
@@ -324,9 +333,14 @@ function createWindow(is, ses) {
     );
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    const indexUrl = 'app://index.html';
-    console.log(`📂 [loadURL] 生产环境加载: ${indexUrl}`);
-    mainWindow.loadURL(indexUrl);
+    // ✅ 生产环境：使用loadFile避免chrome-error://chromewebdata/问题
+    const appPath = electron_1.app.getAppPath();
+    const projectRoot = appPath.endsWith('dist-electron')
+      ? (0, path_1.join)(appPath, '..')
+      : appPath;
+    const indexPath = (0, path_1.join)(projectRoot, 'dist', 'index.html');
+    console.log(`📂 [loadFile] 生产环境加载文件: ${indexPath}`);
+    mainWindow.loadFile(indexPath);
   }
 }
 // ❌ 移除（会在 app 未 ready 时访问 session）
@@ -356,14 +370,27 @@ electron_1.app.whenReady().then(async () => {
   await electron_1.protocol.handle(APP_SCHEME, request => {
     try {
       const { pathname } = new URL(request.url);
+      // ✅ 处理API路由请求（修复web-vitals等API调用失败）
+      if (pathname.startsWith('/api/')) {
+        console.log(`🔍 [protocol.handle] API请求: ${pathname}`);
+        if (pathname === '/api/web-vitals') {
+          // 返回空的JSON响应，避免阻塞React渲染
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        // 其他API路径返回404
+        return new Response('API Not Found', { status: 404 });
+      }
       // 默认加载index.html
       const file = pathname === '/' ? 'index.html' : pathname.slice(1);
-      // 修复路径：开发模式下app.getAppPath()返回项目根目录，直接拼接dist
-      const filePath = (0, path_1.join)(
-        electron_1.app.getAppPath(),
-        'dist',
-        file
-      );
+      // ✅ 修复路径：在dist-electron环境中，向上一级找到项目根目录再拼接dist
+      const appPath = electron_1.app.getAppPath();
+      const projectRoot = appPath.endsWith('dist-electron')
+        ? (0, path_1.join)(appPath, '..')
+        : appPath;
+      const filePath = (0, path_1.join)(projectRoot, 'dist', file);
       console.log(`🔍 [protocol.handle] 请求: ${request.url} -> ${filePath}`);
       // 使用net.fetch加载本地文件
       return electron_1.net.fetch(

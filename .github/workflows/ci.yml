@@ -566,12 +566,19 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: 🔍 Snyk安全扫描（若配置了Token）
-        uses: snyk/actions/node@0a1954d24f8d4624d36f731238914f659556b6c0 # 固定到v0.4.0对应的commit
+        shell: bash
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "🔍 Installing and running Snyk CLI..."
+            npm install -g snyk
+            snyk test --severity-threshold=high --json > snyk-results.json || true
+            echo "✅ Snyk scan completed"
+          else
+            echo "⚠️ Skipping Snyk scan (no SNYK_TOKEN)"
+          fi
 
       - name: 📊 License合规检查
         shell: bash

@@ -22,10 +22,9 @@ test.beforeAll(async () => {
   console.log('🚀 启动 Electron 应用进行安全红线测试...');
 
   // 启动 Electron 应用
-  electronApp = await launchApp();
-
-  // 获取主窗口
-  firstWindow = await electronApp.firstWindow();
+  const { app, page } = await launchApp();
+  electronApp = app;
+  firstWindow = page;
   await firstWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
   console.log('✅ Electron 应用启动完成');
@@ -56,8 +55,10 @@ test.describe('🚫 红线用例 1: 导航拦截（默认拒绝）', () => {
 
     for (const url of testUrls) {
       console.log(`  - 测试导航到: ${url}`);
-      await attemptAndAssertBlocked(firstWindow, () => {
-        location.href = url;
+      await attemptAndAssertBlocked(firstWindow, async () => {
+        await firstWindow.evaluate(u => {
+          location.href = u;
+        }, url);
       });
     }
 
@@ -80,11 +81,16 @@ test.describe('🚫 红线用例 1: 导航拦截（默认拒绝）', () => {
 
     for (const url of testLinks) {
       console.log(`  - 测试点击链接: ${url}`);
-      await attemptAndAssertBlocked(firstWindow, () => {
-        const a = document.createElement('a');
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
+      await attemptAndAssertBlocked(firstWindow, async () => {
+        await firstWindow.evaluate(u => {
+          const a = document.createElement('a');
+          a.href = u;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          // 清理DOM
+          document.body.removeChild(a);
+        }, url);
       });
     }
 
@@ -397,8 +403,10 @@ test.describe('🛡️ 综合红线验证', () => {
     for (const url of navigationUrls) {
       console.log(`  - 测试导航拦截: ${url}`);
       try {
-        await attemptAndAssertBlocked(firstWindow, () => {
-          location.href = url;
+        await attemptAndAssertBlocked(firstWindow, async () => {
+          await firstWindow.evaluate(u => {
+            location.href = u;
+          }, url);
         });
         navigationBlocks++;
       } catch (error) {
@@ -482,8 +490,10 @@ test.describe('🛡️ 综合红线验证', () => {
 
       // 导航攻击测试
       console.log(`    测试导航攻击...`);
-      await attemptAndAssertBlocked(firstWindow, () => {
-        location.href = 'https://attack.com';
+      await attemptAndAssertBlocked(firstWindow, async () => {
+        await firstWindow.evaluate(() => {
+          location.href = 'https://attack.com';
+        });
       });
 
       // 窗口打开攻击测试

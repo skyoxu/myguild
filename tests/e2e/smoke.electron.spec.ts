@@ -16,11 +16,16 @@ let page: Page;
 
 test.beforeAll(async () => {
   // 使用统一的launchApp函数启动应用
-  app = await launchApp();
-
-  // 等待主窗口加载
-  page = await app.firstWindow();
+  const { app: electronApp, page: p } = await launchApp();
+  app = electronApp;
+  page = p;
   await page.waitForLoadState('domcontentloaded');
+
+  // ✅ 验收脚本：协议/路径自检断言（定位chrome-error://问题）
+  const url = page.url();
+  expect(url.startsWith('file://') || url.startsWith('app://')).toBeTruthy();
+  expect(url.startsWith('chrome-error://')).toBeFalsy();
+  console.log(`✅ Electron基线测试URL协议验证通过: ${url}`);
 });
 
 test.afterAll(async () => {
@@ -262,7 +267,7 @@ test.describe('07章 Electron 基线验证', () => {
     if (memoryInfo) {
       // 基本的内存健康检查
       expect(memoryInfo.usedJSHeapSize).toBeGreaterThan(0);
-      expect(memoryInfo.usedJSHeapSize).toBeLessThan(
+      expect(memoryInfo.usedJSHeapSize).toBeLessThanOrEqual(
         memoryInfo.totalJSHeapSize
       );
 

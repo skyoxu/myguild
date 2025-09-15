@@ -13,9 +13,10 @@ let firstWindow: Page;
 test.beforeAll(async () => {
   console.log('🚀 启动简化安全红线测试...');
 
-  electronApp = await launchApp();
+  const { app, page } = await launchApp();
+  electronApp = app;
+  firstWindow = page;
 
-  firstWindow = await electronApp.firstWindow();
   await firstWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
   console.log('✅ 应用启动成功');
