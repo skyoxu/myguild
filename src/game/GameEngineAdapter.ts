@@ -178,6 +178,10 @@ export class GameEngineAdapter implements GameEnginePort {
       // 初始化场景管理器
       if (!this.sceneManager.isInitialized()) {
         await this.sceneManager.initialize(this.container, 800, 600);
+
+        // 启动TestScene
+        console.log('🚀 GameEngineAdapter: 启动TestScene');
+        this.sceneManager.startTestScene();
       }
 
       // 开始游戏循环
@@ -324,6 +328,12 @@ export class GameEngineAdapter implements GameEnginePort {
    * 处理用户输入
    */
   async handleInput(input: GameInput): Promise<void> {
+    console.log(
+      '🎛️ GameEngineAdapter.handleInput:',
+      input.type,
+      input.action,
+      input.data
+    );
     // 更新统计信息
     this.gameStatistics.totalMoves++;
 
@@ -455,7 +465,10 @@ export class GameEngineAdapter implements GameEnginePort {
    * 处理域事件
    */
   private handleDomainEvent(event: DomainEvent): void {
+    console.log('🎯 GameEngineAdapter.handleDomainEvent:', event.type, event);
+
     // 转发事件给所有监听器
+    console.log('🎯 转发事件给', this.eventCallbacks.size, '个监听器');
     this.eventCallbacks.forEach(callback => {
       try {
         callback(event);

@@ -9,6 +9,7 @@ declare const Phaser: any;
 // 生产/集成环境下 SceneManager.initialize 会注入全局 Phaser，此分支不会被命中
 const PhaserSceneBase: any = (globalThis as any)?.Phaser?.Scene ?? class {};
 import type { DomainEvent } from '../../shared/contracts/events';
+import { globalEventBus } from '../../hooks/useGameEvents';
 
 export abstract class BaseScene extends PhaserSceneBase {
   protected eventCallbacks: Map<string, Function[]> = new Map();
@@ -21,7 +22,29 @@ export abstract class BaseScene extends PhaserSceneBase {
    * 发布域事件到 React 层
    */
   protected publishEvent(event: DomainEvent): void {
+    console.log('🎪 BaseScene.publishEvent: 发布事件', event.type, event);
+
+    // 方法1: 通过Scene事件系统（原有方式）
     this.events.emit('domain-event', event);
+    console.log('🎪 BaseScene.publishEvent: domain-event 已emit');
+
+    // 方法2: 直接发布到全局事件总线（绕过SceneManager）
+    try {
+      console.log('🎪 BaseScene.publishEvent: 直接发布到globalEventBus');
+      // 类型转换：DomainEvent兼容GameDomainEvent
+      globalEventBus.publish(event as any, {
+        id: `scene-direct-${Date.now()}`,
+        timestamp: new Date(),
+        source: 'base-scene-direct',
+        priority: 'normal' as any,
+      });
+      console.log('🎪 BaseScene.publishEvent: globalEventBus发布成功');
+    } catch (error) {
+      console.error(
+        '🎪 BaseScene.publishEvent: globalEventBus发布失败:',
+        error
+      );
+    }
   }
 
   /**

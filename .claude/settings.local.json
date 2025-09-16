@@ -122,7 +122,10 @@
       "Bash(set GITHUB_EVENT_NAME=pull_request)",
       "Bash(set GITHUB_WORKFLOW=\"CI\")",
       "Bash(set SENTRY_ENVIRONMENT=ci)",
-      "Bash(set NODE_ENV=test)"
+      "Bash(set NODE_ENV=test)",
+      "Bash(certutil:*)",
+      "Bash(md5sum:*)",
+      "mcp__filesystem__read_text_file"
     ],
     "deny": [],
     "ask": [],

@@ -94,15 +94,48 @@ export class SceneManager {
       this.handleDomainEvent(event);
     });
 
-    // 为每个场景设置事件转发
+    // 为已经存在的场景设置事件转发
+    this.setupSceneEventListeners();
+
+    // 延迟设置场景监听器，确保所有场景都已创建
+    setTimeout(() => {
+      console.log('🔗 SceneManager: 延迟设置场景监听器');
+      this.setupSceneEventListeners();
+    }, 500);
+  }
+
+  /**
+   * 为单个场景设置事件监听器
+   */
+  private setupListenerForScene(scene: any): void {
+    const sceneKey = scene.scene.key;
+    console.log(`🔗 SceneManager: 为场景 ${sceneKey} 设置事件监听器`);
+
+    // 避免重复监听器
+    scene.events.off('domain-event');
+
+    scene.events.on('domain-event', (event: DomainEvent) => {
+      console.log(`🔗 SceneManager: 收到来自 ${sceneKey} 的事件:`, event.type);
+      console.log(`🔗 SceneManager: eventCallback 存在:`, !!this.eventCallback);
+      this.eventCallback?.(event);
+      console.log(`🔗 SceneManager: 已转发事件给 eventCallback`);
+    });
+  }
+
+  /**
+   * 为所有场景设置事件监听器
+   */
+  private setupSceneEventListeners(): void {
+    if (!this.game) return;
+
     const sceneManager = this.game.scene;
 
     ['MenuScene', 'GameScene', 'TestScene'].forEach(sceneKey => {
       const scene = sceneManager.getScene(sceneKey);
       if (scene) {
-        scene.events.on('domain-event', (event: DomainEvent) => {
-          this.eventCallback?.(event);
-        });
+        this.setupListenerForScene(scene);
+      } else {
+        console.warn(`⚠️ SceneManager: 场景 ${sceneKey} 未找到，稍后重试`);
       }
     });
   }
@@ -227,6 +260,21 @@ export class SceneManager {
     if (!this.game) return;
 
     this.game.scene.start('GameScene');
+  }
+
+  /**
+   * 启动测试场景
+   */
+  startTestScene(): void {
+    if (!this.game) return;
+    try {
+      if (typeof performance !== 'undefined' && performance.mark) {
+        performance.mark('scene_switch_triggered:TestScene');
+      }
+    } catch {}
+
+    console.log('🎮 SceneManager: 启动TestScene');
+    this.game.scene.start('TestScene');
   }
 
   /**

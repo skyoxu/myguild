@@ -24,11 +24,9 @@ test.describe('游戏竖切端到端测试', () => {
 
   test.beforeEach(async () => {
     console.log('🚀 启动竖切测试 - 初始化 Electron 应用...');
-    electronApp = await launchApp();
-
-    firstWindow = await electronApp.firstWindow({
-      timeout: 20000,
-    });
+    const { app, page } = await launchApp();
+    electronApp = app;
+    firstWindow = page;
 
     await firstWindow.waitForLoadState('domcontentloaded');
     console.log('✅ Electron 应用启动完成');
@@ -44,22 +42,19 @@ test.describe('游戏竖切端到端测试', () => {
   test('完整竖切流程 - 从启动到数据持久化', async () => {
     // 步骤1: 验证应用初始状态
     console.log('📋 步骤1: 验证应用初始状态');
-    await expect(firstWindow).toHaveTitle(/Phaser 3 \+ React 19 \+ TypeScript/);
+    await expect(firstWindow).toHaveTitle(/Vite \+ React \+ TS/);
 
     // 确保页面完全加载
-    await firstWindow.waitForSelector(
-      '[data-testid="app-container"], .app-container',
-      {
-        timeout: 10000,
-      }
-    );
+    await firstWindow.waitForSelector('[data-testid="app-root"]', {
+      timeout: 10000,
+    });
 
     // 步骤2: 切换到竖切测试模式
     console.log('📋 步骤2: 切换到竖切测试模式');
 
-    // 查找竖切测试按钮（支持多种可能的选择器）
+    // 查找竖切测试按钮（使用实际的UI文本）
     const verticalSliceButton = firstWindow.locator(
-      'button:has-text("竖切测试"), button:has-text("🚀 竖切测试")'
+      'button:has-text("Vertical Slice")'
     );
     await expect(verticalSliceButton).toBeVisible({ timeout: 5000 });
     await verticalSliceButton.click();
@@ -92,28 +87,28 @@ test.describe('游戏竖切端到端测试', () => {
 
     // 模拟键盘操作移动精灵（WASD键）
     console.log('🎮 模拟键盘操作: 按D键向右移动');
-    await firstWindow.press('body', 'KeyD');
+    await firstWindow.press('body', 'd');
     await firstWindow.waitForTimeout(500);
 
     console.log('🎮 模拟键盘操作: 按W键向上移动');
-    await firstWindow.press('body', 'KeyW');
+    await firstWindow.press('body', 'w');
     await firstWindow.waitForTimeout(500);
 
     // 额外移动确保到达目标区域
-    await firstWindow.press('body', 'KeyD');
+    await firstWindow.press('body', 'd');
     await firstWindow.waitForTimeout(300);
-    await firstWindow.press('body', 'KeyW');
+    await firstWindow.press('body', 'w');
     await firstWindow.waitForTimeout(300);
 
     // 手动触发完成（备用方案）
     console.log('🎮 手动触发关卡完成: 按空格键');
-    await firstWindow.press('body', 'Space');
+    await firstWindow.press('body', ' ');
 
     // 步骤5: 验证关卡完成状态
     console.log('📋 步骤5: 验证关卡完成和数据持久化');
 
     // 等待测试完成状态（增加超时时间以等待数据持久化）
-    await expect(firstWindow.locator('text=测试完成')).toBeVisible({
+    await expect(firstWindow.locator('text=🎉 测试完成！')).toBeVisible({
       timeout: 20000,
     });
     console.log('🎉 关卡完成状态验证通过');
@@ -217,7 +212,7 @@ test.describe('游戏竖切端到端测试', () => {
     console.log('🔄 测试竖切重置功能');
 
     // 先完成一次完整测试流程（简化版）
-    await firstWindow.locator('button:has-text("竖切测试")').click();
+    await firstWindow.locator('button:has-text("Vertical Slice")').click();
     await firstWindow.locator('button:has-text("开始测试")').click();
 
     // 等待测试开始
@@ -226,8 +221,8 @@ test.describe('游戏竖切端到端测试', () => {
     });
 
     // 手动触发完成
-    await firstWindow.press('body', 'Space');
-    await expect(firstWindow.locator('text=测试完成')).toBeVisible({
+    await firstWindow.press('body', ' ');
+    await expect(firstWindow.locator('text=🎉 测试完成！')).toBeVisible({
       timeout: 15000,
     });
 
@@ -247,7 +242,7 @@ test.describe('游戏竖切端到端测试', () => {
     console.log('❌ 测试竖切错误处理能力');
 
     // 切换到竖切模式但不等待完全加载就关闭
-    await firstWindow.locator('button:has-text("竖切测试")').click();
+    await firstWindow.locator('button:has-text("Vertical Slice")').click();
 
     // 验证错误状态处理
     // 这里可以测试各种错误情况，比如游戏引擎初始化失败等
@@ -277,15 +272,13 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切测试性能基准验证', async () => {
     console.log('⏱️ 测试竖切性能基准');
 
-    const electronApp = await launchApp();
-
-    const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
+    const { app: electronApp, page: firstWindow } = await launchApp();
     await firstWindow.waitForLoadState('domcontentloaded');
 
     const startTime = Date.now();
 
     // 执行竖切流程并记录时间
-    await firstWindow.locator('button:has-text("竖切测试")').click();
+    await firstWindow.locator('button:has-text("Vertical Slice")').click();
     await firstWindow.locator('button:has-text("开始测试")').click();
 
     const initTime = Date.now() - startTime;
@@ -303,7 +296,7 @@ test.describe('竖切性能和稳定性测试', () => {
 
     // 手动完成测试
     await firstWindow.press('body', 'Space');
-    await expect(firstWindow.locator('text=测试完成')).toBeVisible({
+    await expect(firstWindow.locator('text=🎉 测试完成！')).toBeVisible({
       timeout: 10000,
     });
 
@@ -319,9 +312,7 @@ test.describe('竖切性能和稳定性测试', () => {
   test('竖切内存使用监控', async () => {
     console.log('🧠 测试竖切内存使用情况');
 
-    const electronApp = await launchApp();
-
-    const firstWindow = await electronApp.firstWindow({ timeout: 20000 });
+    const { app: electronApp, page: firstWindow } = await launchApp();
     await firstWindow.waitForLoadState('domcontentloaded');
 
     // 记录初始内存
@@ -335,7 +326,7 @@ test.describe('竖切性能和稳定性测试', () => {
     });
 
     // 运行竖切测试
-    await firstWindow.locator('button:has-text("竖切测试")').click();
+    await firstWindow.locator('button:has-text("Vertical Slice")').click();
     await firstWindow.locator('button:has-text("开始测试")').click();
     await expect(firstWindow.locator('text=测试进行中')).toBeVisible({
       timeout: 10000,

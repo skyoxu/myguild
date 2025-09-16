@@ -12,8 +12,9 @@ test.describe('CSP策略安全验证', () => {
   let page: Page;
 
   test.beforeAll(async () => {
-    electronApp = await launchApp();
-    page = await electronApp.firstWindow();
+    const { app, page: window } = await launchApp();
+    electronApp = app;
+    page = window;
 
     // 使用官方推荐的等待策略
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 });

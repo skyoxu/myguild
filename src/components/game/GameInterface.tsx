@@ -12,6 +12,8 @@ import { GameControlPanel } from './GameControlPanel';
 import { GameNotifications } from './GameNotifications';
 import { GameSaveManager } from './GameSaveManager';
 import { GameSettingsPanel } from './GameSettingsPanel';
+import GuildManager from '../guild/GuildManager';
+import '../guild/GuildManager.css';
 import type { GameSettings } from './GameSettingsPanel';
 import type { GameState } from '../../ports/game-engine.port';
 import type { DomainEvent } from '../../shared/contracts/events';
@@ -41,6 +43,7 @@ export function GameInterface({
   const [showStatusPanel, setShowStatusPanel] = useState(true);
   const [showControlPanel, setShowControlPanel] = useState(true);
   const [showNotifications, setShowNotifications] = useState(true);
+  const [showGuildManager, setShowGuildManager] = useState(true);
 
   // 设置状态
   const [gameSettings, setGameSettings] = useState<Partial<GameSettings>>({
@@ -150,6 +153,11 @@ export function GameInterface({
             setShowNotifications(!showNotifications);
           }
           break;
+
+        case 'KeyG':
+          event.preventDefault();
+          setShowGuildManager(!showGuildManager);
+          break;
       }
     };
 
@@ -163,6 +171,7 @@ export function GameInterface({
     showStatusPanel,
     showControlPanel,
     showNotifications,
+    showGuildManager,
   ]);
 
   // 监听Phaser响应以更新运行状态
@@ -207,13 +216,18 @@ export function GameInterface({
         data-testid="game-interface"
       >
         {/* 主游戏画布 */}
-        <GameCanvas
-          width={width}
-          height={height}
-          onGameEvent={handleGameEvent}
-          onGameStateChange={handleGameStateChange}
-          className="main-game-canvas"
-        />
+        {!showGuildManager && (
+          <GameCanvas
+            width={width}
+            height={height}
+            onGameEvent={handleGameEvent}
+            onGameStateChange={handleGameStateChange}
+            className="main-game-canvas"
+          />
+        )}
+
+        {/* Guild Manager界面 */}
+        {showGuildManager && <GuildManager isVisible={showGuildManager} />}
 
         {/* 游戏状态面板 */}
         {showStatusPanel && (
@@ -270,6 +284,15 @@ export function GameInterface({
           title="管理存档 (F9)"
         >
           📁
+        </button>
+
+        {/* Guild Manager切换按钮 */}
+        <button
+          onClick={() => setShowGuildManager(!showGuildManager)}
+          className="game-interface__guild-manager-btn"
+          title="公会管理器 (G)"
+        >
+          🏰
         </button>
 
         {/* 调试信息面板 */}

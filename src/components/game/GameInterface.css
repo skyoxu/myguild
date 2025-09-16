@@ -43,6 +43,22 @@
   backdrop-filter: blur(4px);
 }
 
+/* Guild Manager按钮 */
+.game-interface__guild-manager-btn {
+  position: absolute;
+  top: 20px;
+  left: 120px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
 /* 调试信息面板 */
 .game-interface__debug-panel {
   position: absolute;

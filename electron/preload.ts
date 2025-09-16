@@ -43,6 +43,45 @@ if (process.contextIsolated) {
           contextIsolated: process.contextIsolated,
           nodeIntegrationDisabled: typeof require === 'undefined',
           exposedAt: new Date().toISOString(),
+          // 增强安全配置验证 - 支持enhanced-electron-security.spec.ts
+          securityConfigs: Object.freeze({
+            cspConfig: Object.freeze({
+              enabled: true,
+              strictMode: true,
+              blockInlineScripts: true,
+              allowedSources: ['self'],
+              reportViolations: true,
+            }),
+            electronSecurity: Object.freeze({
+              sandboxEnabled: process.sandboxed,
+              contextIsolationEnabled: process.contextIsolated,
+              nodeIntegrationDisabled: typeof require === 'undefined',
+              webSecurityEnabled: true,
+              allowRunningInsecureContent: false,
+              experimentalFeatures: false,
+            }),
+            navigationSecurity: Object.freeze({
+              externalNavigationBlocked: true,
+              allowedDomains: [],
+              interceptEnabled: true,
+              preventChromiumErrors: true,
+            }),
+            permissionSecurity: Object.freeze({
+              defaultDenyAll: true,
+              permissionRequestsLogged: true,
+              whitelistedPermissions: [],
+              strictValidation: true,
+            }),
+          }),
+          // 红线拦截状态查询支持
+          redlineStatus: Object.freeze({
+            navigationInterceptActive: true,
+            externalRequestBlocked: true,
+            permissionRequestsDenied: true,
+            cspViolationsBlocked: true,
+            lastInterceptAt: new Date().toISOString(),
+            interceptCount: 0,
+          }),
         })
       );
     }

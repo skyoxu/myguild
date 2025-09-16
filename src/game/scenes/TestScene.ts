@@ -233,7 +233,21 @@ export class TestScene extends BaseScene {
    * 处理玩家输入
    */
   handleInput(input: GameInput): void {
-    if (!this.player || this.testState.levelCompleted) return;
+    console.log(
+      '🎮 TestScene.handleInput:',
+      input.type,
+      input.action,
+      input.data
+    );
+    if (!this.player || this.testState.levelCompleted) {
+      console.log(
+        '🎮 TestScene.handleInput: 早期返回 - player:',
+        !!this.player,
+        'completed:',
+        this.testState.levelCompleted
+      );
+      return;
+    }
 
     const speed = 50;
     let moved = false;
@@ -390,6 +404,9 @@ export class TestScene extends BaseScene {
     };
 
     // 发布关键的 level.complete 事件（用于数据持久化）
+    console.log(
+      '🚀 TestScene.triggerLevelComplete: 准备发布 game.level.completed 事件'
+    );
     this.publishEvent(
       EventUtils.createEvent({
         type: 'game.level.completed',
@@ -404,6 +421,9 @@ export class TestScene extends BaseScene {
           timestamp: endTime,
         },
       })
+    );
+    console.log(
+      '🚀 TestScene.triggerLevelComplete: game.level.completed 事件已发布'
     );
 
     // 发布分数事件

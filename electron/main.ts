@@ -85,8 +85,19 @@ function createSecureBrowserWindow() {
   win.webContents.on('will-navigate', (event, url) => {
     console.log(`🔄 [will-navigate] 尝试导航到: ${url}`);
 
-    // 只允许app://和file://协议
-    if (url.startsWith('app://') || url.startsWith('file://')) {
+    // 只允许app://、file://协议和开发服务器
+    const isLocalProtocol =
+      url.startsWith('app://') || url.startsWith('file://');
+    const isDevServer =
+      process.env.VITE_DEV_SERVER_URL &&
+      url.startsWith(process.env.VITE_DEV_SERVER_URL);
+    const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
+
+    if (
+      isLocalProtocol ||
+      isDevServer ||
+      (process.env.NODE_ENV === 'development' && isLocalhost)
+    ) {
       console.log(`✅ [will-navigate] 允许本地协议导航: ${url}`);
       return;
     }
@@ -94,6 +105,14 @@ function createSecureBrowserWindow() {
     // 阻止外部导航（不会生成chrome-error页面）
     event.preventDefault();
     console.log(`🚫 [will-navigate] 阻止外部导航: ${url}`);
+
+    // 记录拦截状态（用于测试验证）
+    if (process.env.SECURITY_TEST_MODE === 'true') {
+      (global as any).__NAVIGATION_INTERCEPT_COUNT__ =
+        ((global as any).__NAVIGATION_INTERCEPT_COUNT__ || 0) + 1;
+      (global as any).__LAST_INTERCEPTED_URL__ = url;
+      (global as any).__LAST_INTERCEPT_TIME__ = new Date().toISOString();
+    }
   });
 
   // ✅ 按cifix1.txt建议：新窗口统一用setWindowOpenHandler控制
@@ -131,7 +150,7 @@ function createSecureBrowserWindow() {
     return { action: 'deny' };
   });
 
-  // ✅ 简化的错误恢复机制：使用loadFile重新加载
+  // ✅ 增强的错误恢复机制：阻止chrome-error页面出现
   win.webContents.on(
     'did-fail-load',
     (_, errorCode, errorDescription, validatedURL, isMainFrame) => {
@@ -139,6 +158,27 @@ function createSecureBrowserWindow() {
         console.log(
           `🔄 [did-fail-load] 主框架加载失败 (${errorCode}): ${errorDescription}, URL: ${validatedURL}`
         );
+
+        // 检查是否是chrome-error页面，立即阻止
+        if (validatedURL && validatedURL.startsWith('chrome-error://')) {
+          console.log(
+            `🚫 [did-fail-load] 检测到chrome-error页面，立即重定向到安全页面`
+          );
+
+          // 立即加载安全的本地页面
+          if (process.env.VITE_DEV_SERVER_URL) {
+            win.loadURL(process.env.VITE_DEV_SERVER_URL);
+          } else {
+            const appPath = app.getAppPath();
+            const projectRoot = appPath.endsWith('dist-electron')
+              ? join(appPath, '..')
+              : appPath;
+            const indexPath = join(projectRoot, 'dist', 'index.html');
+            win.loadFile(indexPath);
+          }
+          return;
+        }
+
         // 生产环境通过loadFile重新加载，避免协议相关问题
         if (!process.env.VITE_DEV_SERVER_URL) {
           const appPath = app.getAppPath();

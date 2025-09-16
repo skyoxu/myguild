@@ -69,21 +69,18 @@ export function GameVerticalSlice({
    * 处理游戏事件 - 竖切的核心事件流
    */
   const handleGameEvent = useCallback(
-    (event: DomainEvent) => {
+    (event: GameDomainEvent) => {
       // 非关键日志使用空闲排程，避免阻塞交互
       scheduleNonBlocking(() => console.log('🎮 Vertical Slice Event:', event));
 
-      // 只处理游戏域事件
-      if (!event.type.startsWith('game.')) {
-        return;
-      }
-
-      const gameEvent = event as unknown as GameDomainEvent;
+      // 事件已经是 GameDomainEvent 类型，无需类型检查和转换
+      const gameEvent = event;
 
       // 记录所有事件用于调试和验证
       setSliceState(prev => ({ ...prev, events: [...prev.events, gameEvent] }));
 
       // 处理关键事件
+      console.log('🔍 handleGameEvent switch on type:', gameEvent.type);
       switch (gameEvent.type) {
         case 'game.scene.created':
           if (gameEvent.data.sceneKey === 'TestScene') {
@@ -242,9 +239,25 @@ export function GameVerticalSlice({
    * 初始化游戏引擎和TestScene
    */
   const initializeGameEngine = useCallback(async () => {
-    if (!canvasRef.current || gameEngineRef.current) return;
+    console.log(
+      '🚀 initializeGameEngine called, canvasRef.current:',
+      !!canvasRef.current,
+      'gameEngineRef.current:',
+      !!gameEngineRef.current
+    );
+
+    if (!canvasRef.current || gameEngineRef.current) {
+      console.warn(
+        '⚠️ Early return from initializeGameEngine - canvas:',
+        !!canvasRef.current,
+        'engine:',
+        !!gameEngineRef.current
+      );
+      return;
+    }
 
     try {
+      console.log('🔄 Setting state to initializing...');
       setSliceState(prev => ({ ...prev, phase: 'initializing' }));
       webVitals.startTiming('game_engine_init');
 
@@ -262,8 +275,13 @@ export function GameVerticalSlice({
       // 设置游戏容器
       gameEngineRef.current.setContainer(canvasRef.current);
 
-      // 注册事件监听
-      gameEngineRef.current.onGameEvent(handleGameEvent);
+      // 注册事件监听 - 创建适配器以兼容不同的事件类型
+      gameEngineRef.current.onGameEvent((event: any) => {
+        // 将 DomainEvent 转换为 GameDomainEvent 以供处理
+        if (event.type?.startsWith?.('game.')) {
+          handleGameEvent(event as GameDomainEvent);
+        }
+      });
 
       // 初始化引擎
       await gameEngineRef.current.initializeGame(gameConfig);
@@ -281,11 +299,13 @@ export function GameVerticalSlice({
       console.log('✅ 游戏引擎初始化完成，TestScene已启动');
       webVitals.endTiming('game_engine_init');
 
+      console.log('🎮 Setting state to playing...');
       setSliceState(prev => ({
         ...prev,
         phase: 'playing',
         testStartTime: new Date(),
       }));
+      console.log('🎮 State set to playing complete');
     } catch (error) {
       console.error('❌ 游戏引擎初始化失败:', error);
       webVitals.recordError(error as Error, 'game_engine_init');
@@ -328,8 +348,11 @@ export function GameVerticalSlice({
    * 手动开始测试
    */
   const startTest = useCallback(() => {
+    console.log('🎬 startTest called!');
     webVitals.recordCustomEvent('vertical_slice_start');
+    console.log('🎬 About to call initializeGameEngine...');
     initializeGameEngine();
+    console.log('🎬 initializeGameEngine call completed');
   }, [initializeGameEngine, webVitals]);
 
   // 自动启动
@@ -339,6 +362,68 @@ export function GameVerticalSlice({
       return () => clearTimeout(timer);
     }
   }, [autoStart, startTest]);
+
+  // 键盘输入处理
+  useEffect(() => {
+    if (sliceState.phase !== 'playing') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('⌨️ Keyboard event received:', event.key, event.code);
+
+      if (gameEngineRef.current) {
+        const gameInput = {
+          type: 'keyboard' as const,
+          action: 'keydown' as const,
+          data: {
+            key: event.key.toLowerCase(),
+            code: event.code,
+          },
+          timestamp: new Date(),
+        };
+
+        console.log('⌨️ Sending input to game engine:', gameInput);
+        gameEngineRef.current.handleInput(gameInput);
+      }
+    };
+
+    // 监听全局键盘事件
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [sliceState.phase]);
+
+  // 游戏事件订阅
+  useEffect(() => {
+    console.log('🔗 GameVerticalSlice: 设置事件订阅');
+
+    // 订阅所有相关的游戏事件
+    const subscriptions = [
+      gameEvents.subscribe('game.level.completed', handleGameEvent),
+      gameEvents.subscribe('game.scene.created', handleGameEvent),
+      gameEvents.subscribe('game.player.moved', handleGameEvent),
+      gameEvents.subscribe('game.error', handleGameEvent),
+      gameEvents.subscribe('game.warning', handleGameEvent),
+    ];
+
+    console.log(
+      '🔗 GameVerticalSlice: 事件订阅完成，订阅数量:',
+      subscriptions.length
+    );
+    console.log('🔗 GameVerticalSlice: 订阅ID列表:', subscriptions);
+
+    // 检查事件总线状态
+    const stats = gameEvents.getStats();
+    console.log('🔗 GameVerticalSlice: 事件总线统计:', stats);
+
+    return () => {
+      console.log('🔗 GameVerticalSlice: 清理事件订阅');
+      subscriptions.forEach(subscriptionId => {
+        gameEvents.unsubscribe(subscriptionId);
+      });
+    };
+  }, [gameEvents, handleGameEvent]);
 
   // 清理效果
   useEffect(() => {
@@ -452,13 +537,15 @@ export function GameVerticalSlice({
     <div className={`game-vertical-slice ${className}`}>
       {renderPhaseUI()}
 
-      {/* 游戏画布区域 */}
-      {(sliceState.phase === 'playing' || sliceState.phase === 'completed') && (
-        <div
-          ref={canvasRef}
-          className="game-canvas-container border border-gray-600 w-[800px] h-[600px]"
-        />
-      )}
+      {/* 游戏画布区域 - 始终存在以便游戏引擎初始化 */}
+      <div
+        ref={canvasRef}
+        className={`game-canvas-container border border-gray-600 w-[800px] h-[600px] ${
+          sliceState.phase === 'ready' || sliceState.phase === 'error'
+            ? 'hidden'
+            : ''
+        }`}
+      />
 
       {/* 调试信息（开发时显示）*/}
       {process.env.NODE_ENV === 'development' &&
