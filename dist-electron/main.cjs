@@ -80,7 +80,8 @@ if (process.env.CI === 'true') {
     electron_1.app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 }
 // ✅ Minimal test environment switches - only essential ones to avoid startup issues
-if (process.env.SECURITY_TEST_MODE === 'true' || process.env.E2E_AUTO_START === '1') {
+if (process.env.SECURITY_TEST_MODE === 'true' ||
+    process.env.E2E_AUTO_START === '1') {
     // Only renderer stability switches that are essential for navigation tests
     electron_1.app.commandLine.appendSwitch('disable-background-timer-throttling');
     electron_1.app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
@@ -302,7 +303,7 @@ function createWindow(is, ses) {
             mainWindow.setAlwaysOnTop(true);
             // 延迟100ms后恢复正常层级，但保持前置 - 使用安全定时器防护
             safeSetTimeout(() => {
-                withLiveWindow(mainWindow, (win) => {
+                withLiveWindow(mainWindow, win => {
                     win.setAlwaysOnTop(false);
                     win.focus(); // 最终聚焦
                 });
