@@ -23,11 +23,23 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[Test] 启动Electron应用进行安全测试...');
 
-  electronApp = await launchApp();
+  const { app, page } = await launchApp();
+  electronApp = app;
 
-  const win = await electronApp.firstWindow(); // 等到首窗
-  await win.waitForLoadState('domcontentloaded'); // DOM 就绪再断言
-  mainWindow = win;
+  // 等待DOM和React完全渲染
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('networkidle');
+
+  // 确保React应用已经渲染完成
+  await page.waitForFunction(
+    () => {
+      const root = document.querySelector('#root');
+      return root && root.children.length > 0;
+    },
+    { timeout: 10000 }
+  );
+
+  mainWindow = page;
 });
 
 test.afterAll(async () => {
@@ -356,45 +368,49 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
       // 验证页面基本元素可见 - 等待更长时间让React应用完全渲染
       await mainWindow.waitForLoadState('networkidle');
 
-      // 更宽松的元素检测策略
-      const bodyElement = mainWindow.locator('body');
-      const htmlElement = mainWindow.locator('html');
-
-      try {
-        // 最基本的检查：确保body元素存在
-        await expect(bodyElement).toBeVisible({ timeout: 5000 });
-        console.log('[Test] ✅ body 元素存在');
-
-        // 检查页面是否有内容（通过文本内容检测）
-        const hasContent = await mainWindow.evaluate(() => {
-          const bodyText = document.body.textContent || '';
-          const hasGameContent =
-            bodyText.includes('Phaser') ||
-            bodyText.includes('React') ||
-            bodyText.includes('游戏') ||
-            bodyText.includes('分数') ||
-            bodyText.includes('等级');
-
-          return {
-            bodyTextLength: bodyText.length,
-            hasGameContent,
-            bodyInnerHTML: document.body.innerHTML.length > 100,
-          };
-        });
-
-        if (
-          hasContent.bodyTextLength > 10 ||
-          hasContent.hasGameContent ||
-          hasContent.bodyInnerHTML
-        ) {
-          console.log('[Test] ✅ 页面内容已加载，应用正常运行');
-        } else {
-          console.log('[Warning] 页面内容较少，但基本DOM结构存在');
+      // 确保页面完全加载
+      await mainWindow.waitForFunction(
+        () => document.readyState === 'complete',
+        {
+          timeout: 10000,
         }
-      } catch (error) {
-        // 如果连body都找不到，这是更严重的问题
-        throw new Error(`基本DOM结构不存在: ${error.message}`);
-      }
+      );
+
+      // 额外等待React app-root元素渲染完成
+      await mainWindow.waitForFunction(
+        () => {
+          const appRoot =
+            document.querySelector('[data-testid="app-root"]') ||
+            document.querySelector('#root') ||
+            document.body;
+          return (
+            appRoot !== null &&
+            (appRoot.children.length > 0 ||
+              document.body.innerHTML.length > 100)
+          );
+        },
+        { timeout: 10000 }
+      );
+
+      // 简化验证 - 不依赖元素可见性，直接检查DOM结构
+      const domStructure = await mainWindow.evaluate(() => {
+        return {
+          hasBody: !!document.body,
+          hasHead: !!document.head,
+          hasRoot: !!document.querySelector('#root'),
+          bodyTagName: document.body ? document.body.tagName : null,
+          title: document.title,
+        };
+      });
+
+      // 验证基本DOM结构
+      expect(domStructure.hasBody).toBe(true);
+      expect(domStructure.hasHead).toBe(true);
+      expect(domStructure.hasRoot).toBe(true);
+      expect(domStructure.bodyTagName).toBe('BODY');
+      expect(domStructure.title).toContain('Guild Manager');
+
+      console.log('[Test] ✅ DOM基本结构验证通过');
 
       // 验证基本JavaScript功能正常
       const basicFunctionality = await mainWindow.evaluate(() => {
