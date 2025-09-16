@@ -1,0 +1,80 @@
+/* Guild Manager 样式 - 最小化实现 */
+.guild-manager-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.overview-panel {
+  padding: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.resource-section {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.resource-item {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  border-radius: 4px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.guild-navigation {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.guild-navigation button {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.guild-navigation button:hover {
+  background: #3a3a3a;
+}
+
+.guild-navigation button.active {
+  background: #4a7c59;
+}
+
+.guild-content {
+  flex: 1;
+  padding: 16px;
+}
+
+.member-section,
+.tactical-section,
+.raid-section,
+.diplomacy-section {
+  height: 100%;
+}
+
+/* 隐藏元素的默认样式 */
+[style*='display: none'] {
+  display: none !important;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .guild-navigation {
+    flex-wrap: wrap;
+  }
+
+  .resource-section {
+    flex-direction: column;
+  }
+}

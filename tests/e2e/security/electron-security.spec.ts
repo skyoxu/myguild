@@ -16,6 +16,7 @@ import {
 } from '../../../electron/security';
 import { attemptAndAssertBlocked } from '../../helpers/nav-assert';
 import { launchApp } from '../../helpers/launch';
+import { ensureDomReady } from '../../helpers/ensureDomReady';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -26,17 +27,21 @@ test.beforeAll(async () => {
   const { app, page } = await launchApp();
   electronApp = app;
 
-  // 等待DOM和React完全渲染
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForLoadState('networkidle');
+  // ✅ Add navigation diagnostics for troubleshooting
+  page.on('framenavigated', frame => {
+    console.log(`[Navigation] Frame navigated: ${frame.url()}`);
+  });
 
-  // 确保React应用已经渲染完成
-  await page.waitForFunction(
-    () => {
-      const root = document.querySelector('#root');
-      return root && root.children.length > 0;
-    },
-    { timeout: 10000 }
+  // ✅ Use deterministic wait strategy instead of networkidle
+  await page.waitForURL(/index\.html|^app:\/\//, {
+    waitUntil: 'domcontentloaded',
+  });
+  await page.waitForLoadState('domcontentloaded');
+
+  // Enter stable rendering frames
+  await page.evaluate(
+    () =>
+      new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
   );
 
   mainWindow = page;
@@ -365,34 +370,11 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
     test('应用基本功能正常', async () => {
       console.log('[Test] 验证安全配置不影响基本功能...');
 
-      // 验证页面基本元素可见 - 等待更长时间让React应用完全渲染
-      await mainWindow.waitForLoadState('networkidle');
+      // ✅ 使用统一的ensureDomReady helper，解决导航完成检测问题
+      await ensureDomReady(mainWindow, 10000);
+      console.log('[Test] ✅ DOM已就绪');
 
-      // 确保页面完全加载
-      await mainWindow.waitForFunction(
-        () => document.readyState === 'complete',
-        {
-          timeout: 10000,
-        }
-      );
-
-      // 额外等待React app-root元素渲染完成
-      await mainWindow.waitForFunction(
-        () => {
-          const appRoot =
-            document.querySelector('[data-testid="app-root"]') ||
-            document.querySelector('#root') ||
-            document.body;
-          return (
-            appRoot !== null &&
-            (appRoot.children.length > 0 ||
-              document.body.innerHTML.length > 100)
-          );
-        },
-        { timeout: 10000 }
-      );
-
-      // 简化验证 - 不依赖元素可见性，直接检查DOM结构
+      // Now check DOM structure details
       const domStructure = await mainWindow.evaluate(() => {
         return {
           hasBody: !!document.body,
@@ -403,14 +385,13 @@ test.describe('Electron安全基线验证 - ADR-0002', () => {
         };
       });
 
-      // 验证基本DOM结构
+      // Verify DOM structure
       expect(domStructure.hasBody).toBe(true);
       expect(domStructure.hasHead).toBe(true);
       expect(domStructure.hasRoot).toBe(true);
       expect(domStructure.bodyTagName).toBe('BODY');
       expect(domStructure.title).toContain('Guild Manager');
-
-      console.log('[Test] ✅ DOM基本结构验证通过');
+      console.log('[Test] ✅ DOM结构验证通过');
 
       // 验证基本JavaScript功能正常
       const basicFunctionality = await mainWindow.evaluate(() => {

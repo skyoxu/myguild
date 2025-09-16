@@ -5,6 +5,43 @@ import { secureAutoUpdater } from './security/auto-updater';
 import { CSPManager } from './security/csp-policy';
 import { securityPolicyManager } from './security/permissions';
 
+/**
+ * 定时器集中管理系统 - 防止"对象已销毁"崩溃
+ */
+const timers = new Set<NodeJS.Timeout>();
+
+/**
+ * 安全定时器包装器 - 自动管理生命周期
+ */
+function safeSetTimeout(fn: () => void, delay: number): NodeJS.Timeout {
+  const timer = setTimeout(() => {
+    timers.delete(timer);
+    fn();
+  }, delay);
+  timers.add(timer);
+  return timer;
+}
+
+/**
+ * 清理所有活跃定时器
+ */
+function clearAllTimers() {
+  timers.forEach(timer => clearTimeout(timer));
+  timers.clear();
+}
+
+/**
+ * 安全窗口操作包装器 - 防止访问已销毁对象
+ */
+function withLiveWindow(
+  win: BrowserWindow | null,
+  fn: (w: BrowserWindow) => void
+) {
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+    fn(win);
+  }
+}
+
 // CI 下为稳态，需在 app ready 之前禁用 GPU 加速
 //（必须在 ready 之前调用，否则无效）
 if (process.env.CI === 'true') {
@@ -15,6 +52,21 @@ if (process.env.CI === 'true') {
   app.commandLine.appendSwitch(
     'disable-features',
     'CalculateNativeWinOcclusion'
+  );
+}
+
+// ✅ Minimal test environment switches - only essential ones to avoid startup issues
+if (
+  process.env.SECURITY_TEST_MODE === 'true' ||
+  process.env.E2E_AUTO_START === '1'
+) {
+  // Only renderer stability switches that are essential for navigation tests
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
+  console.log(
+    '📋 [main.ts] Minimal test switches applied - removed potentially problematic options'
   );
 }
 
@@ -81,32 +133,36 @@ function createSecureBrowserWindow() {
     },
   });
 
-  // ✅ 按cifix1.txt建议：主框架导航用will-navigate阻止，不用webRequest cancel避免chrome-error
+  // ✅ will-navigate ONLY blocks external navigation, allows same-origin file://
   win.webContents.on('will-navigate', (event, url) => {
-    console.log(`🔄 [will-navigate] 尝试导航到: ${url}`);
+    console.log(`🔄 [will-navigate] Navigation attempt: ${url}`);
 
-    // 只允许app://、file://协议和开发服务器
-    const isLocalProtocol =
-      url.startsWith('app://') || url.startsWith('file://');
+    // Allow local protocols and development server URLs
+    const isLocal = url.startsWith('file://') || url.startsWith('app://');
     const isDevServer =
       process.env.VITE_DEV_SERVER_URL &&
       url.startsWith(process.env.VITE_DEV_SERVER_URL);
     const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
 
     if (
-      isLocalProtocol ||
+      isLocal ||
       isDevServer ||
       (process.env.NODE_ENV === 'development' && isLocalhost)
     ) {
-      console.log(`✅ [will-navigate] 允许本地协议导航: ${url}`);
-      return;
+      console.log(`✅ [will-navigate] Allow local navigation: ${url}`);
+      return; // Allow navigation to proceed
     }
 
-    // 阻止外部导航（不会生成chrome-error页面）
+    // Block external navigation (prevents chrome-error pages)
     event.preventDefault();
-    console.log(`🚫 [will-navigate] 阻止外部导航: ${url}`);
+    console.log(`🚫 [will-navigate] Block external navigation: ${url}`);
 
-    // 记录拦截状态（用于测试验证）
+    // Optional: open external URLs in system browser
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url);
+    }
+
+    // Record interception for testing
     if (process.env.SECURITY_TEST_MODE === 'true') {
       (global as any).__NAVIGATION_INTERCEPT_COUNT__ =
         ((global as any).__NAVIGATION_INTERCEPT_COUNT__ || 0) + 1;
@@ -212,6 +268,12 @@ function createWindow(is: any, ses: Electron.Session): void {
   // 创建浏览器窗口
   const mainWindow = createSecureBrowserWindow();
 
+  // ✅ 添加窗口关闭时的定时器清理逻辑
+  mainWindow.on('closed', () => {
+    console.log('🧹 [窗口关闭] 清理所有活跃定时器');
+    clearAllTimers();
+  });
+
   // 在测试模式下暴露安全配置供验证（最小化信息泄露）
   if (process.env.SECURITY_TEST_MODE === 'true') {
     // 限制暴露的信息，仅包含测试必需的数据
@@ -269,10 +331,12 @@ function createWindow(is: any, ses: Electron.Session): void {
       mainWindow.moveTop();
       mainWindow.setAlwaysOnTop(true);
 
-      // 延迟100ms后恢复正常层级，但保持前置
-      setTimeout(() => {
-        mainWindow.setAlwaysOnTop(false);
-        mainWindow.focus(); // 最终聚焦
+      // 延迟100ms后恢复正常层级，但保持前置 - 使用安全定时器防护
+      safeSetTimeout(() => {
+        withLiveWindow(mainWindow, win => {
+          win.setAlwaysOnTop(false);
+          win.focus(); // 最终聚焦
+        });
       }, 100);
 
       console.log('🧪 [CI优化] 窗口前置完成，准备接收交互');
@@ -287,12 +351,8 @@ function createWindow(is: any, ses: Electron.Session): void {
     console.error('[window] render-process-gone:', d.reason, d.exitCode);
   });
 
-  // 导航兜底：双重保障，即使有遗漏也阻断
-  mainWindow.webContents.on('will-navigate', (e: any, url: string) => {
-    if (!url.startsWith('app://')) {
-      e.preventDefault(); // 只阻止非app://协议的导航
-    }
-  }); // 官方建议
+  // ✅ Remove duplicate will-navigate listener to avoid conflicts
+  // Navigation is already handled in createSecureBrowserWindow()
 
   // ✅ 移除重复的did-fail-load监听器，避免重复恢复尝试
   // 错误恢复已在createSecureBrowserWindow()中实现
@@ -431,18 +491,15 @@ app.whenReady().then(async () => {
     }
   });
 
-  // ✅ 按cifix1.txt建议：webRequest仅处理子资源，mainFrame交给will-navigate处理
+  // ✅ webRequest ONLY intercept subresources, mainFrame handled by will-navigate
   ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
-    // 如果是主框架导航，交给will-navigate处理，不要在这里cancel
+    // Skip mainFrame processing entirely - let will-navigate handle it
     if (details.resourceType === 'mainFrame') {
-      console.log(
-        `🔄 [webRequest] 主框架导航交给will-navigate处理: ${details.url}`
-      );
-      return callback({ cancel: false });
+      return callback({ cancel: false }); // Critical: avoid any delay for main frame
     }
 
-    // 对子资源执行白名单检查
-    const isAllowed =
+    // Apply whitelist check only for subresources (scripts, images, stylesheets, etc.)
+    const isSubresourceAllowed =
       details.url.startsWith('app://') ||
       details.url.startsWith('file://') ||
       details.url.startsWith('data:') ||
@@ -452,13 +509,13 @@ app.whenReady().then(async () => {
       details.url.includes('sentry.io') ||
       details.url.startsWith('https://o.sentry.io');
 
-    if (!isAllowed) {
+    if (!isSubresourceAllowed) {
       console.log(
-        `🚫 [webRequest] 阻断子资源: ${details.url} (${details.resourceType})`
+        `🚫 [webRequest] Block subresource: ${details.url} (${details.resourceType})`
       );
     }
 
-    callback({ cancel: !isAllowed });
+    callback({ cancel: !isSubresourceAllowed });
   });
 
   // 3) 响应头安全合集（生产）- 强CSP基线，遵循OWASP最佳实践
@@ -539,8 +596,8 @@ app.whenReady().then(async () => {
     secureAutoUpdater
       .initialize()
       .then(() => {
-        // 延迟检查更新，避免阻塞应用启动
-        setTimeout(() => {
+        // 延迟检查更新，避免阻塞应用启动 - 使用安全定时器防护
+        safeSetTimeout(() => {
           console.log('🔄 正在检查应用更新...');
           secureAutoUpdater.checkForUpdates();
         }, 3000);

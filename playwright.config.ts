@@ -1,4 +1,11 @@
 ﻿import { defineConfig, devices } from '@playwright/test';
+import { config } from 'dotenv';
+import { existsSync } from 'fs';
+
+// Load cache bust environment variables if file exists
+if (existsSync('.env.cache-bust')) {
+  config({ path: '.env.cache-bust' });
+}
 
 // Unify security E2E timeouts via env (default 300s).
 const E2E_SECURITY_TIMEOUT_MS = Number(
@@ -18,6 +25,10 @@ console.log(
   `[playwright-config] E2E_SECURITY_TIMEOUT_MS=${E2E_SECURITY_TIMEOUT_MS}`
 );
 
+// Load cache bust token for transform cache invalidation
+const CACHE_BUST_TOKEN = process.env.PW_CACHE_BUST ?? 'default-token';
+console.log(`[playwright-config] PW_CACHE_BUST=${CACHE_BUST_TOKEN}`);
+
 /**
  * Playwright閰嶇疆 - Electron妗岄潰搴旂敤E2E娴嬭瘯
  * 鍩轰簬ADR-0002 Electron瀹夊叏鍩虹嚎鍜孉DR-0005璐ㄩ噺闂ㄧ
@@ -30,11 +41,11 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   /* 杩愯閰嶇疆 */
-  fullyParallel: false, // 配合单线程执行
+  fullyParallel: false, // Single-threaded execution for stability
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1, // 寮哄埗鍗曠嚎绋嬶紝閬垮厤Electron杩涚▼鍐茬獊
-  timeout: E2E_SECURITY_TIMEOUT_MS, // CI 棣栫獥+鍗忚鏄犲皠鏇村瑁?
+  workers: 1, // Force single thread to avoid Electron process conflicts
+  timeout: E2E_SECURITY_TIMEOUT_MS, // CI timeout for complex security tests
   /* 鎶ュ憡閰嶇疆 */
   reporter: [
     ['html', { outputFolder: 'test-results/playwright-report' }],
@@ -64,11 +75,21 @@ export default defineConfig({
 
   /* 娴嬭瘯椤圭洰閰嶇疆 */
   projects: [
+    // Pre-setup cache cleanup project - ensures all projects use latest source code
+    {
+      name: 'setup:cache',
+      testMatch: ['**/__cache-setup__.spec.ts'],
+      use: {
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
+      },
+    },
+
     {
       name: 'electron-smoke-tests',
+      dependencies: ['setup:cache'], // Depends on cache cleanup
       testMatch: ['**/smoke/**/*.spec.ts', '**/smoke.*.spec.ts'],
       use: {
-        ...devices['Desktop Chrome'],
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
         // Electron涓撶敤閰嶇疆 - 浣跨敤_electron.launch()
         launchOptions: {
           executablePath: undefined, // 鐢盻electron.launch()鑷姩纭畾
@@ -95,15 +116,14 @@ export default defineConfig({
         '!**/security/**/*.spec.ts',
         '!**/smoke/**/*.spec.ts',
       ],
-      dependencies: ['electron-smoke-tests'], // 渚濊禆鍐掔儫娴嬭瘯閫氳繃
+      dependencies: ['setup:cache', 'electron-smoke-tests'], // Depends on cache cleanup and smoke tests passing
       use: {
-        ...devices['Desktop Chrome'],
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
         launchOptions: {
           executablePath: undefined,
           args: [
-            '--disable-web-security',
-            '--allow-running-insecure-content',
-            '--offline', // E2E缃戠粶闅旂
+            // ✅ 移除扰动导航的flags: --disable-web-security, --allow-running-insecure-content, --offline
+            // 改用Playwright API在页面级别控制网络状态：page.context().setOffline(true)
           ],
           env: {
             NODE_ENV: 'test',
@@ -117,19 +137,28 @@ export default defineConfig({
 
     {
       name: 'electron-security-audit',
+      dependencies: ['setup:cache'], // Depends on cache cleanup
       testMatch: ['**/security/**/*.spec.ts', '**/security-*.spec.ts'],
       timeout: E2E_SECURITY_TIMEOUT_MS, // CI 首窗+协议映射更复杂
       use: {
-        trace: 'on-first-retry', // trace: 'on-first-retry' 鍙湪澶辫触鏃朵骇鍑?trace.zip
+        trace: 'on-first-retry',
+        launchOptions: {
+          executablePath: undefined, // ✅ 官方Electron启动方式
+          env: {
+            NODE_ENV: 'test',
+            CI: 'true',
+            SECURITY_TEST_MODE: 'true',
+          },
+        }, // trace: 'on-first-retry' 鍙湪澶辫触鏃朵骇鍑?trace.zip
       },
     },
 
     {
       name: 'electron-performance',
       testMatch: ['**/perf/**/*.spec.ts', '**/performance/**/*.spec.ts'],
-      dependencies: ['electron-smoke-tests'],
+      dependencies: ['setup:cache', 'electron-smoke-tests'], // Depends on cache cleanup and smoke tests
       use: {
-        ...devices['Desktop Chrome'],
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
         launchOptions: {
           executablePath: undefined,
           args: [
@@ -151,9 +180,9 @@ export default defineConfig({
     {
       name: 'framerate-stability',
       testMatch: ['**/framerate-stability.e2e.spec.ts'],
-      dependencies: ['electron-smoke-tests'], // 渚濊禆鍩虹鍐掔儫娴嬭瘯
+      dependencies: ['setup:cache', 'electron-smoke-tests'], // Depends on cache cleanup and smoke tests
       use: {
-        ...devices['Desktop Chrome'],
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
         launchOptions: {
           executablePath: undefined,
           args: [
@@ -169,8 +198,9 @@ export default defineConfig({
           env: {
             NODE_ENV: 'test',
             CI: 'true',
-            FRAMERATE_TEST_MODE: 'true', // 涓撻棬鏍囪
+            SECURITY_TEST_MODE: 'true', // Base env for cache consistency
             ELECTRON_RUN_AS_NODE: '0',
+            FRAMERATE_TEST_MODE: 'true', // Project-specific feature flag
           },
         },
       },
@@ -180,9 +210,9 @@ export default defineConfig({
     {
       name: 'scene-transition',
       testMatch: ['**/scene-transition.e2e.spec.ts'],
-      dependencies: ['electron-smoke-tests'], // 渚濊禆鍩虹鍐掔儫娴嬭瘯
+      dependencies: ['setup:cache', 'electron-smoke-tests'], // Depends on cache cleanup and smoke tests
       use: {
-        ...devices['Desktop Chrome'],
+        // ✅ Fixed: Remove Chrome browser config for Electron tests
         launchOptions: {
           executablePath: undefined,
           args: [
@@ -196,6 +226,7 @@ export default defineConfig({
           env: {
             NODE_ENV: 'test',
             CI: 'true',
+            SECURITY_TEST_MODE: 'true', // Base env for cache consistency
             SCENE_TRANSITION_TEST_MODE: 'true', // 涓撻棬鏍囪
             USER_TIMING_API_ENABLED: 'true',
             ELECTRON_RUN_AS_NODE: '0',

@@ -9,7 +9,7 @@ import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-// 默认入口路径常量
+// 默认入口路径常量 - dist-electron/package.json 指定 commonjs 类型
 const DEFAULT_ENTRY_PATH = resolve(process.cwd(), 'dist-electron', 'main.js');
 
 /**
@@ -45,7 +45,7 @@ function isBuildCacheValid(): boolean {
     if (!existsSync(BUILD_CACHE_FILE)) return false;
 
     const cacheInfo = JSON.parse(readFileSync(BUILD_CACHE_FILE, 'utf-8'));
-    const distPath = resolve(process.cwd(), 'dist-electron', 'main.js');
+    const distPath = resolve(process.cwd(), 'dist-electron', 'main.cjs');
 
     // 检查构建产物是否存在且缓存时间戳有效
     return (
