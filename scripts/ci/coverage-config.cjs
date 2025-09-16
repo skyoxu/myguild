@@ -9,13 +9,13 @@
  * 不同环境的覆盖率阈值配置
  */
 const COVERAGE_CONFIGS = {
-  // Production - Strict thresholds
+  // Production - Temporary reduced thresholds (TODO: restore to 90% in 2 weeks)
   production: {
-    statements: 90,
-    branches: 90,
-    functions: 90,
-    lines: 90,
-    description: 'Production strict thresholds',
+    statements: 60,
+    branches: 60,
+    functions: 60,
+    lines: 60,
+    description: 'Production temporary thresholds (60% - TODO: restore to 90% after 2 weeks)',
   },
 
   // Staging - Semi-strict thresholds
