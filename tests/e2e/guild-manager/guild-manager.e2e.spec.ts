@@ -53,7 +53,7 @@ test.describe('Guild Manager - Core Functionality', () => {
       );
       return meta?.getAttribute('content') || '';
     });
-    expect(cspHeader).toContain("default-src 'self'");
+    expect(cspHeader).toContain("default-src 'none'");
     expect(cspHeader).toContain("script-src 'self'");
   });
 

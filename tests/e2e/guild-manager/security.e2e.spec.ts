@@ -83,7 +83,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
 
     // 验证关键CSP策略存在
     const policies = securityConfigs.cspConfig.policies;
-    expect(policies.some(p => p.includes("default-src 'self'"))).toBe(true);
+    expect(policies.some(p => p.includes("default-src 'none'"))).toBe(true);
     expect(policies.some(p => p.includes("script-src 'self'"))).toBe(true);
     expect(policies.some(p => p.includes("object-src 'none'"))).toBe(true);
 
@@ -348,7 +348,7 @@ test.describe('Guild Manager - Electron Security Baseline', () => {
     console.log('CSP Policy:', cspInfo);
 
     // 验证关键 CSP 指令
-    expect(cspInfo).toContain("default-src 'self'");
+    expect(cspInfo).toContain("default-src 'none'");
     expect(cspInfo).toContain("script-src 'self'");
     expect(cspInfo).toContain("style-src 'self'");
 

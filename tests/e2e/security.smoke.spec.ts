@@ -240,7 +240,7 @@ test.describe('Electron安全基线验证套件', () => {
 
     // 验证关键CSP指令
     const requiredDirectives = [
-      "default-src 'self'",
+      "default-src 'none'",
       "object-src 'none'",
       "child-src 'none'",
       "frame-src 'none'",
