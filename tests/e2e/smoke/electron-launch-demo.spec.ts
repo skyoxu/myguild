@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
+import { ensureDomReady } from '../../helpers/ensureDomReady';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,9 +29,9 @@ test.describe('Electron应用基础功能', () => {
     console.log(`✅ Electron 应用启动成功，耗时: ${Date.now() - startTime}ms`);
 
     // ✅ 验收脚本：协议/路径自检断言（定位chrome-error://问题）
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
     const url = firstWindow.url();
-    expect(url.startsWith('file://') || url.startsWith('app://')).toBeTruthy();
+    expect(url.startsWith('app://')).toBeTruthy();
     expect(url.startsWith('chrome-error://')).toBeFalsy();
     console.log(`✅ URL协议验证通过: ${url}`);
 
@@ -189,7 +190,7 @@ test.describe('性能和响应性验证', () => {
     const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 等待应用完全加载
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     const launchTime = Date.now() - startTime;
 
@@ -204,7 +205,7 @@ test.describe('性能和响应性验证', () => {
   test('窗口响应性测试', async () => {
     console.log('🎯 开始窗口响应性测试...');
     const { app: electronApp, page: firstWindow } = await launchApp();
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     // 测试基本UI交互响应时间
     const startTime = Date.now();
@@ -233,11 +234,11 @@ test.describe('错误处理和稳定性', () => {
     const { app: electronApp, page: firstWindow } = await launchApp();
 
     // 验证应用稳定运行
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     // 模拟页面刷新（测试应用稳定性）
     await firstWindow.reload();
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     // 验证应用仍然正常
     const isVisible = await firstWindow.isVisible('body');
@@ -249,7 +250,7 @@ test.describe('错误处理和稳定性', () => {
   test('内存泄漏基础检查', async () => {
     console.log('🧠 开始内存泄漏检查测试...');
     const { app: electronApp, page: firstWindow } = await launchApp();
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     // 基础内存使用情况检查
     const memoryInfo = await firstWindow.evaluate(() => {

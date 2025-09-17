@@ -8,6 +8,7 @@ import { resolve, join } from 'node:path';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { ensureDomReady } from './ensureDomReady';
 
 // 默认入口路径常量 - dist-electron/package.json 指定 commonjs 类型
 const DEFAULT_ENTRY_PATH = resolve(process.cwd(), 'dist-electron', 'main.js');
@@ -211,7 +212,7 @@ export async function launchAppWithPage(
   });
   const page = await app.firstWindow();
 
-  await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+  await ensureDomReady(page, 15000);
   if (page.url().startsWith('chrome-error://')) {
     console.warn('[launch] chrome-error detected, attempting reload...');
     await page

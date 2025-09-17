@@ -57,19 +57,29 @@ export async function ensureDomReady(
   // 6. 额外等待确保navigation完全稳定
   await page.waitForTimeout(100);
 
-  // 7. 使用noWaitAfter避免隐式导航等待，直接检查body可见性
-  const bodyLocator = page.locator('body');
+  // 7. 直接检查body元素可见性，避免隐式导航等待
+  try {
+    const isBodyReady = await page.evaluate(() => {
+      const body = document.body;
+      if (!body) return false;
 
-  // 先确保元素存在
-  await bodyLocator.waitFor({
-    state: 'attached',
-    timeout: Math.min(timeout, 5000),
-  });
+      // 检查元素是否真正可见（不是display:none等）
+      const style = window.getComputedStyle(body);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
 
-  // 然后检查可见性，使用noWaitAfter避免navigation等待
-  const isVisible = await bodyLocator.isVisible();
-  if (!isVisible) {
-    throw new Error('Body element is not visible after DOM ready checks');
+    if (!isBodyReady) {
+      throw new Error('Body element is not ready after DOM ready checks');
+    }
+  } catch (error) {
+    console.warn(
+      '[ensureDomReady] Body visibility check failed:',
+      error.message
+    );
+    // 降级：只进行基础存在性检查
+    await page.waitForFunction(() => document.body !== null, {
+      timeout: Math.min(timeout, 3000),
+    });
   }
 }
 

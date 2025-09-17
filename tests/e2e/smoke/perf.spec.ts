@@ -19,7 +19,7 @@ test.beforeAll(async () => {
 
   // ✅ 验收脚本：协议/路径自检断言（定位chrome-error://问题）
   const url = page.url();
-  expect(url.startsWith('file://') || url.startsWith('app://')).toBeTruthy();
+  expect(url.startsWith('app://')).toBeTruthy();
   expect(url.startsWith('chrome-error://')).toBeFalsy();
   console.log(`✅ Perf测试URL协议验证通过: ${url}`);
 

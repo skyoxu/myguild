@@ -14,7 +14,7 @@ test.describe('统一启动Helper验证', () => {
     // 验证页面加载正常
     await page.waitForLoadState('domcontentloaded');
     const url = page.url();
-    expect(url.startsWith('app://') || url.startsWith('file://')).toBeTruthy();
+    expect(url.startsWith('app://')).toBeTruthy();
 
     // 验证页面准备就绪
     const readyState = await page.evaluate(() => document.readyState);

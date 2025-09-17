@@ -60,10 +60,8 @@ test.describe('导航行为验证', () => {
     // 核心断言2: 不应该落到chrome-error://
     expect(finalUrl.startsWith('chrome-error://')).toBeFalsy();
 
-    // 核心断言3: 应该保持安全的URL协议（file://或app://）
-    expect(
-      finalUrl.startsWith('file://') || finalUrl.startsWith('app://')
-    ).toBeTruthy();
+    // 核心断言3: 应该保持安全的URL协议（app://）
+    expect(finalUrl.startsWith('app://')).toBeTruthy();
 
     console.log('✅ 外部导航阻止验证通过 - 未落到chrome-error');
 
@@ -123,9 +121,7 @@ test.describe('导航行为验证', () => {
 
     // 验证当前协议是安全的
     const currentUrl = page.url();
-    expect(
-      currentUrl.startsWith('file://') || currentUrl.startsWith('app://')
-    ).toBeTruthy();
+    expect(currentUrl.startsWith('app://')).toBeTruthy();
     expect(currentUrl.startsWith('chrome-error://')).toBeFalsy();
 
     console.log('✅ 内部导航允许验证通过 - 协议安全');
@@ -183,8 +179,7 @@ test.describe('导航行为验证', () => {
     results.noChromError = !currentUrl.startsWith('chrome-error://');
 
     // 4. 验证协议安全
-    results.protocolSafe =
-      currentUrl.startsWith('file://') || currentUrl.startsWith('app://');
+    results.protocolSafe = currentUrl.startsWith('app://');
 
     console.log(`📊 综合验证结果:`);
     console.log(`   - 外部导航被阻止: ${results.externalBlocked}`);

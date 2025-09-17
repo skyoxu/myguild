@@ -32,17 +32,8 @@ test.beforeAll(async () => {
     console.log(`[Navigation] Frame navigated: ${frame.url()}`);
   });
 
-  // ✅ Use deterministic wait strategy instead of networkidle
-  await page.waitForURL(/index\.html|^app:\/\//, {
-    waitUntil: 'domcontentloaded',
-  });
-  await page.waitForLoadState('domcontentloaded');
-
-  // Enter stable rendering frames
-  await page.evaluate(
-    () =>
-      new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-  );
+  // ✅ Use stable DOM ready helper for consistent navigation waiting
+  await ensureDomReady(page);
 
   mainWindow = page;
 });

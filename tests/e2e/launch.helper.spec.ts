@@ -23,7 +23,7 @@ test('launchApp 使用正确的 _electron 导入（避免解构错误）', async
   // 验证页面加载正常
   await page.waitForLoadState('domcontentloaded');
   const url = page.url();
-  expect(url.startsWith('app://') || url.startsWith('file://')).toBeTruthy();
+  expect(url.startsWith('app://')).toBeTruthy();
 
   await app.close();
 });

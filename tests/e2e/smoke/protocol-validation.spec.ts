@@ -21,7 +21,7 @@ test.describe('协议验证专项测试', () => {
     console.log(`📋 当前URL: ${url}`);
 
     // 核心断言：URL必须是file://或app://协议
-    expect(url.startsWith('file://') || url.startsWith('app://')).toBeTruthy();
+    expect(url.startsWith('app://')).toBeTruthy();
 
     // 核心断言：URL不能是chrome-error://
     expect(url.startsWith('chrome-error://')).toBeFalsy();

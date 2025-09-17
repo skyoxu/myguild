@@ -14,6 +14,7 @@
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
 import { attemptAndAssertBlocked } from '../../helpers/nav-assert';
+import { ensureDomReady } from '../../helpers/ensureDomReady';
 
 let electronApp: ElectronApplication;
 let firstWindow: Page;
@@ -25,7 +26,7 @@ test.beforeAll(async () => {
   const { app, page } = await launchApp();
   electronApp = app;
   firstWindow = page;
-  await firstWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
+  await ensureDomReady(firstWindow, 15000);
 
   console.log('✅ Electron 应用启动完成');
 });

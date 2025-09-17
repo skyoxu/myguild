@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { ensureDomReady } from '../helpers/ensureDomReady';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,7 +29,7 @@ test.describe('游戏竖切端到端测试', () => {
     electronApp = app;
     firstWindow = page;
 
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
     console.log('✅ Electron 应用启动完成');
   });
 
@@ -273,7 +274,7 @@ test.describe('竖切性能和稳定性测试', () => {
     console.log('⏱️ 测试竖切性能基准');
 
     const { app: electronApp, page: firstWindow } = await launchApp();
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     const startTime = Date.now();
 
@@ -313,7 +314,7 @@ test.describe('竖切性能和稳定性测试', () => {
     console.log('🧠 测试竖切内存使用情况');
 
     const { app: electronApp, page: firstWindow } = await launchApp();
-    await firstWindow.waitForLoadState('domcontentloaded');
+    await ensureDomReady(firstWindow);
 
     // 记录初始内存
     const initialMemory = await firstWindow.evaluate(() => {
