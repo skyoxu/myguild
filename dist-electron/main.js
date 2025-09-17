@@ -260,28 +260,16 @@ function createSecureBrowserWindow() {
           if (process.env.VITE_DEV_SERVER_URL) {
             win.loadURL(process.env.VITE_DEV_SERVER_URL);
           } else {
-            const appPath = electron_1.app.getAppPath();
-            const projectRoot = appPath.endsWith('dist-electron')
-              ? (0, path_1.join)(appPath, '..')
-              : appPath;
-            const indexPath = (0, path_1.join)(
-              projectRoot,
-              'dist',
-              'index.html'
-            );
-            win.loadFile(indexPath);
+            const appUrl = 'app://bundle/index.html';
+            win.loadURL(appUrl);
           }
           return;
         }
-        // 生产环境通过loadFile重新加载，避免协议相关问题
+        // 生产环境通过 app:// 协议重新加载
         if (!process.env.VITE_DEV_SERVER_URL) {
-          const appPath = electron_1.app.getAppPath();
-          const projectRoot = appPath.endsWith('dist-electron')
-            ? (0, path_1.join)(appPath, '..')
-            : appPath;
-          const indexPath = (0, path_1.join)(projectRoot, 'dist', 'index.html');
-          console.log(`🔄 [did-fail-load] 尝试重新加载: ${indexPath}`);
-          win.loadFile(indexPath);
+          const appUrl = 'app://bundle/index.html';
+          console.log(`🔄 [did-fail-load] 尝试重新加载: ${appUrl}`);
+          win.loadURL(appUrl);
         }
       }
     }
@@ -417,7 +405,7 @@ function createWindow(is, ses) {
       );
     }
   );
-  // ✅ 修复chrome-error://问题：使用loadFile替代loadURL('app://')
+  // ✅ 启用 app:// 协议：开发环境仍用VITE服务器，生产环境用app://协议
   const isDev = !!process.env.VITE_DEV_SERVER_URL;
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     console.log(
@@ -425,14 +413,10 @@ function createWindow(is, ses) {
     );
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    // ✅ 生产环境：使用loadFile避免chrome-error://chromewebdata/问题
-    const appPath = electron_1.app.getAppPath();
-    const projectRoot = appPath.endsWith('dist-electron')
-      ? (0, path_1.join)(appPath, '..')
-      : appPath;
-    const indexPath = (0, path_1.join)(projectRoot, 'dist', 'index.html');
-    console.log(`📂 [loadFile] 生产环境加载文件: ${indexPath}`);
-    mainWindow.loadFile(indexPath);
+    // ✅ 生产环境：使用 app:// 协议加载页面
+    const appUrl = 'app://bundle/index.html';
+    console.log(`📂 [loadURL] 生产环境使用app://协议: ${appUrl}`);
+    mainWindow.loadURL(appUrl);
   }
 }
 // ❌ 移除（会在 app 未 ready 时访问 session）
