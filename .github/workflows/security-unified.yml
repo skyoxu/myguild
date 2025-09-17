@@ -413,15 +413,20 @@ jobs:
 
       - name: Verify and set Electron entry path
         run: |
-          $electronMain = "dist/win-unpacked/dist-electron/main.js"
-          if (Test-Path $electronMain) {
-            Write-Host "✅ Found Electron entry point: $electronMain"
-            # 设置环境变量供后续steps使用
-            echo "ELECTRON_MAIN_PATH=$electronMain" >> $env:GITHUB_ENV
+          # electron-builder 使用 asar 打包，验证可执行文件而不是 main.js
+          # Windows: ViteGame Studio.exe
+          # macOS: ViteGame Studio.app/Contents/MacOS/ViteGame Studio
+          # Linux: ViteGame Studio (AppImage/deb)
+          $electronExe = "dist/win-unpacked/ViteGame Studio.exe"
+          if (Test-Path $electronExe) {
+            Write-Host "✅ Found Electron executable: $electronExe"
+            # 设置环境变量供后续steps使用 (指向可执行文件)
+            echo "ELECTRON_MAIN_PATH=$electronExe" >> $env:GITHUB_ENV
             # 同时设置VITE_E2E_SMOKE以保持E2E_PERF配置兼容性
             echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
           } else {
-            Write-Host "❌ Electron entry point not found: $electronMain"
+            Write-Host "❌ Electron executable not found: $electronExe"
+            Write-Host "📁 Listing actual dist/win-unpacked contents:"
             Get-ChildItem dist/win-unpacked -Recurse -Name
             exit 1
           }
