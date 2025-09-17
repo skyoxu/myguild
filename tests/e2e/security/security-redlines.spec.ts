@@ -423,8 +423,10 @@ test.describe('🛡️ 综合红线验证', () => {
     for (const url of windowUrls) {
       console.log(`  - 测试窗口打开拦截: ${url}`);
       try {
-        await attemptAndAssertBlocked(firstWindow, () => {
-          window.open(url, '_blank');
+        await attemptAndAssertBlocked(firstWindow, async () => {
+          await firstWindow.evaluate(targetUrl => {
+            window.open(targetUrl, '_blank');
+          }, url);
         });
         windowOpenBlocks++;
       } catch (error) {
@@ -498,8 +500,10 @@ test.describe('🛡️ 综合红线验证', () => {
 
       // 窗口打开攻击测试
       console.log(`    测试窗口打开攻击...`);
-      await attemptAndAssertBlocked(firstWindow, () => {
-        window.open('https://malware.com');
+      await attemptAndAssertBlocked(firstWindow, async () => {
+        await firstWindow.evaluate(() => {
+          window.open('https://malware.com');
+        });
       });
 
       // 权限状态检查 - 不直接请求权限

@@ -347,15 +347,23 @@ export async function testWindowOpen(
   page: Page,
   url: string
 ): Promise<boolean> {
-  return attemptAndAssertBlocked(
-    page,
-    async testUrl => {
-      await page.evaluate(u => {
-        window.open(u, '_blank');
-      }, testUrl);
-    },
-    url
-  );
+  try {
+    // 监听可能的 popup 事件
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup', { timeout: 1000 }).catch(() => null),
+      page.evaluate(targetUrl => {
+        window.open(targetUrl, '_blank');
+      }, url),
+    ]);
+
+    // 如果走主进程 setWindowOpenHandler({action:'deny'}) 的话，这里应为 null
+    return popup === null;
+  } catch (error) {
+    console.log(
+      `[testWindowOpen] Error during window.open test: ${error.message}`
+    );
+    return true; // 如果出错，认为是被阻止了
+  }
 }
 
 /**

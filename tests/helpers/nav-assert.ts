@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 /** 触发可能导航/弹窗的动作，与导航事件做竞态，最终对"仍留在我方 URL"做断言。 */
 export async function attemptAndAssertBlocked(
@@ -68,4 +69,24 @@ export async function attemptAndAssertBlocked(
   ) {
     throw new Error(`navigation was not blocked, current url=${url}`);
   }
+}
+
+/** 专门用于测试 window.open 弹窗拦截的函数 */
+export async function attemptAndAssertWindowOpenBlocked(
+  page: Page,
+  url: string,
+  timeout = 1000
+): Promise<boolean> {
+  // 监听可能的 popup 事件
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup', { timeout }).catch(() => null),
+    page.evaluate(targetUrl => {
+      window.open(targetUrl, '_blank');
+    }, url),
+  ]);
+
+  // 如果走主进程 setWindowOpenHandler({action:'deny'}) 的话，这里应为 null
+  expect(popup).toBeNull();
+
+  return popup === null;
 }
