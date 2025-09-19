@@ -16,6 +16,9 @@ jobs:
   scene-transition-nightly:
     name: Scene Transition Nightly
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 30
     env:
       CI: 'true'

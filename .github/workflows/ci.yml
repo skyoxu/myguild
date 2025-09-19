@@ -54,6 +54,9 @@ jobs:
   workflow-guardian:
     name: 🛡️ Workflow Guardian Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 5
     # P0修复：job级别环境变量确保devDependencies正确安装
     env:
@@ -95,6 +98,9 @@ jobs:
   quality-gates:
     name: Quality Gates Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 10
     needs: workflow-guardian
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -142,6 +148,9 @@ jobs:
   unit-tests-core:
     name: Unit Tests (windows-latest, Node 20)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: workflow-guardian
     timeout-minutes: 15
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -177,6 +186,9 @@ jobs:
   coverage-gate:
     name: Coverage Gate
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: unit-tests-core
     timeout-minutes: 5
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -213,6 +225,9 @@ jobs:
   build-verification-core:
     name: Build Verification (windows-latest)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: unit-tests-core
     timeout-minutes: 10
     # P0修复：job级别环境变量确保devDependencies正确安装
@@ -338,6 +353,9 @@ jobs:
   unit-tests-extended:
     name: Unit Tests Extended - Windows Matrix
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: quality-gates
     timeout-minutes: 20
     # 仅在代码改动时触发，文档类变更跳过
@@ -400,6 +418,9 @@ jobs:
   electron-security-gate:
     name: Electron Security Gate
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: quality-gates
     timeout-minutes: 30
 
@@ -469,6 +490,9 @@ jobs:
   build-verification-extended:
     name: Build Verification Extended - Windows
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: unit-tests-extended
     timeout-minutes: 15
     # 仅在代码改动时触发，文档类变更跳过
@@ -549,6 +573,9 @@ jobs:
   dependency-audit:
     name: Dependency Security Audit
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: quality-gates
     timeout-minutes: 10
 
@@ -629,6 +656,9 @@ jobs:
   performance-benchmarks:
     name: Performance Benchmarks
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: build-verification-core
     timeout-minutes: 15
     # 仅在代码改动时触发
@@ -664,6 +694,9 @@ jobs:
   deployment-readiness:
     name: Deployment Readiness Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs:
       [
         build-verification-core,

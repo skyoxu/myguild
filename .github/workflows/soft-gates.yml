@@ -54,6 +54,9 @@ jobs:
   soft-gate-guardian:
     name: Soft Gate Guardian Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     # P0 fix: job-level environment variables ensure devDependencies are installed correctly
     env:
       NODE_ENV: development

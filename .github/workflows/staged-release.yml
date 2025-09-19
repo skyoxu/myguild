@@ -37,6 +37,9 @@ jobs:
   pre-check:
     name: Pre-flight Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     outputs:
       can_proceed: ${{ steps.validation.outputs.can_proceed }}
     steps:
@@ -49,6 +52,9 @@ jobs:
   e2e-perf-smoke:
     name: E2E Perf Smoke (Optional)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     if: ${{ inputs.run_e2e == 'true' }}
     needs: pre-check
     steps:
@@ -69,6 +75,9 @@ jobs:
   health-check:
     name: Release Health Check
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: pre-check
     steps:
       - run: Write-Output "Health check placeholder"

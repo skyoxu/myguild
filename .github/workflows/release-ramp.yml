@@ -336,6 +336,9 @@ jobs:
     needs: ramp
     if: always()
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development

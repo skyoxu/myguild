@@ -297,6 +297,9 @@ jobs:
   build-and-package:
     name: 🔨 Build & Package
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -359,6 +362,9 @@ jobs:
   e2e-security-test:
     name: 🛡️ E2E Security Tests
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
@@ -489,6 +495,9 @@ jobs:
   unified-security-gate:
     name: 🔒 Unified Security Gate
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development

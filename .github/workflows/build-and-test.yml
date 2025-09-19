@@ -193,6 +193,7 @@ jobs:
           retention-days: 7
       - name: Publish E2E perf P95 summary
         if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        shell: bash
         run: |
           if (Test-Path -LiteralPath 'test-results/test-results.json') {
             $json = Get-Content -Raw -LiteralPath 'test-results/test-results.json' | ConvertFrom-Json

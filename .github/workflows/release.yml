@@ -25,6 +25,9 @@ jobs:
   prepare:
     name: 准备
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     outputs:
       environment: ${{ steps.env.outputs.environment }}
     steps:
@@ -41,6 +44,9 @@ jobs:
   build:
     name: 构建
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: prepare
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +68,9 @@ jobs:
   summary:
     name: 汇总
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: build
     steps:
       - run: Write-Output "Release build completed"

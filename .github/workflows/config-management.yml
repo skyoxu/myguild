@@ -118,6 +118,9 @@ jobs:
   documentation-build:
     name: 鏂囨。鏋勫缓涓庡彂甯冨噯澶?    needs: config-validation-and-docs
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     if: github.ref == 'refs/heads/main'
 
     steps:

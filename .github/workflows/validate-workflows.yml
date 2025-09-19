@@ -31,6 +31,9 @@ jobs:
   actionlint-windows:
     name: Lint workflow YAML (actionlint, Windows)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint (Windows)
@@ -63,6 +66,9 @@ jobs:
   encoding-guard-windows:
     name: Enforce UTF-8 + LF for workflows (Windows)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4

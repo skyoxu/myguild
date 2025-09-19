@@ -33,6 +33,9 @@ concurrency:
 jobs:
   validate-tasks:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 15
 
     # Infrastructure-level optimization: retry strategy

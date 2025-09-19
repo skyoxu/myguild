@@ -253,6 +253,9 @@ jobs:
   web-vitals-test:
     name: Real Web Vitals Test (Optional)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     if: false # 默认禁用，需要时启用
 
     steps:
