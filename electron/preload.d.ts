@@ -1,4 +1,4 @@
-/* 预加载脚本API类型定义 */
+﻿/* 预加载脚本API类型定义 */
 import { ElectronAPI } from '@electron-toolkit/preload';
 
 declare global {

@@ -1,7 +1,6 @@
 name: Soft Gates (Quality Feedback)
 
-# 最小权限原则
-permissions:
+# Minimal permissions
   contents: read
   actions: read
 
@@ -37,7 +36,7 @@ on:
       - 'vitest.config.ts'
       - '.github/workflows/soft-gates.yml'
 
-  # 支持手动触发
+  # 鏀寔鎵嬪姩瑙﹀彂
   workflow_dispatch:
 
 env:
@@ -338,3 +337,4 @@ jobs:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+

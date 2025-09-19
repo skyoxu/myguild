@@ -1,4 +1,4 @@
-export type TickFn = (dt: number) => void | Promise<void>;
+﻿export type TickFn = (dt: number) => void | Promise<void>;
 
 export class GameLoop {
   private running = false;

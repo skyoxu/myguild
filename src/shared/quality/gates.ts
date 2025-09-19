@@ -1,4 +1,4 @@
-export interface SloGate {
+﻿export interface SloGate {
   key: 'crash_free' | 'tp95' | 'coverage';
   threshold: number;
   source: 'sentry' | 'benchmark' | 'coverage';

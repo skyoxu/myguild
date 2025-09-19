@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 大厅/启动页视觉回归测试
  * 通过 Playwright Screenshot 对比检测 UI 视觉变化
  */

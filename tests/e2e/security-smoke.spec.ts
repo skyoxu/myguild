@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
 
 test('安全护栏生效（CSP & 禁用 Node）', async () => {

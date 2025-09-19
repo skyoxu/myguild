@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { createGuildFlow } from '../../src/slices/mvp/flow';
 
 describe('08 MVP 纵切', () => {

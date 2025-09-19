@@ -1,10 +1,10 @@
-/**
+﻿/**
  * React 19 Actions验证E2E测试
  * 确保关键表单走Action路径而非传统状态管理
  * 防止"纸面升级"问题
  */
 import { test, expect, Page, ElectronApplication } from '@playwright/test';
-import { launchApp } from '../../helpers/launch';
+import { launchAppWithPage } from '../../helpers/launch';
 
 let electronApp: ElectronApplication;
 let mainWindow: Page;
@@ -12,9 +12,9 @@ let mainWindow: Page;
 test.beforeAll(async () => {
   console.log('[React19 Actions Test] 启动Electron应用...');
 
-  electronApp = await launchApp();
-
-  mainWindow = await electronApp.firstWindow();
+  const launched = await launchAppWithPage();
+  electronApp = launched.app;
+  mainWindow = launched.page;
   await mainWindow.waitForLoadState('domcontentloaded', { timeout: 10000 });
 });
 

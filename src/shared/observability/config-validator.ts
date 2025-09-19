@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 多环境配置验证器
  *
  * 用于验证development、staging、production环境的配置完整性和正确性

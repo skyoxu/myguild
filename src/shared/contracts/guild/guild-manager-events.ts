@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 公会管理器 CloudEvents 契约定义
  * 基于 CloudEvents v1.0 规范
  */

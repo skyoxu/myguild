@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Vitest 全局测试配置
  * 支持 TDD 开发模式
  * 已修复: ReferenceError window is not defined

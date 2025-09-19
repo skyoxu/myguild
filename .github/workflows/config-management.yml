@@ -1,8 +1,6 @@
-# GitHub Actions 工作流：配置管理与文档处理
-name: Configuration Management
+## Configuration management and documentation pipeline`nname: Configuration Management
 
-# 最小权限原则
-permissions:
+# Minimal permissions
   contents: read
   actions: read
 
@@ -22,95 +20,88 @@ on:
     branches: [main]
 
 env:
-  # 构建时配置（从 package.json 获取）
-  NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+  # 鏋勫缓鏃堕厤缃紙浠?package.json 鑾峰彇锛?  NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
   RELEASE_PREFIX: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
-# ==================== 并发控制 ====================
+# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   config-validation-and-docs:
-    name: 配置验证与文档处理
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    name: 閰嶇疆楠岃瘉涓庢枃妗ｅ鐞?    runs-on: windows-latest
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - name: Step
 
-      - name: 设置 Node.js
+      - name: Step
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: 安装依赖（加固版）
-        uses: ./.github/actions/npm-install
+      - name: Step
 
-      - name: 配置分层验证
+      - name: Step
         env:
-          # CI Secrets（敏感配置）
+          # CI Secrets锛堟晱鎰熼厤缃級
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          # 构建签名（仅生产环境）
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          # 鏋勫缓绛惧悕锛堜粎鐢熶骇鐜锛?          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          echo "🔧 初始化配置分层管理..."
+          echo "?.."
           npm run config:layers:validate
 
-      - name: 生成配置报告
+      - name: Step
         run: |
-          echo "📊 生成配置管理报告..."
+          echo "..."
           npm run config:layers:report > config-report.json
 
-      - name: Base 文档占位符处理（开发环境）
+      - name: Step
         if: github.ref != 'refs/heads/main'
         run: |
-          echo "🔄 开发环境：验证占位符但不替换..."
+          echo "?.."
           npm run config:substitute:validate
 
-      - name: Base 文档占位符替换（生产环境）
-        if: github.ref == 'refs/heads/main'
+      - name: Step
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: |
-          echo "🔄 生产环境：执行占位符替换..."
+          echo "..."
           npm run config:substitute:docs
 
-      - name: 配置完整性检查
-        run: |
-          echo "✅ 验证配置完整性..."
+      - name: Step
+          echo "??.."
           node -e "
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
 
-          // 验证必需字段
+          // 楠岃瘉蹇呴渶瀛楁
           const required = ['name', 'version'];
           const missing = required.filter(field => !pkg[field]);
 
           if (missing.length > 0) {
-            console.error('❌ package.json 缺少必需字段:', missing);
+            console.error('鉂?package.json 缂哄皯蹇呴渶瀛楁:', missing);
             process.exit(1);
           }
 
-          console.log('✅ package.json 配置验证通过');
-          console.log('📦 应用名称:', pkg.name);
-          console.log('🏷️ 版本:', pkg.version);
-          console.log('🏢 产品名称:', pkg.productName || '未设置');
+          console.log('鉁?package.json 閰嶇疆楠岃瘉閫氳繃');
+          console.log('馃摝 搴旂敤鍚嶇О:', pkg.name);
+          console.log('馃彿锔?鐗堟湰:', pkg.version);
+          console.log('馃彚 浜у搧鍚嶇О:', pkg.productName || '鏈缃?);
           "
 
-      - name: 上传配置报告
+      - name: Step
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -120,72 +111,63 @@ jobs:
             config-report.json
           retention-days: 30
 
-      # - name: Base 文档清洁性检查
-      #   run: |
-      #     echo "🧹 检查 Base 文档清洁性..."
+      # - name: Base 鏂囨。娓呮磥鎬ф鏌?      #   run: |
+      #     echo "?Base ?.."
       #     npm run guard:base
 
   documentation-build:
-    name: 文档构建与发布准备
-    needs: config-validation-and-docs
+    name: 鏂囨。鏋勫缓涓庡彂甯冨噯澶?    needs: config-validation-and-docs
     runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - name: Step
 
-      - name: 设置 Node.js
+      - name: Step
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: 安装依赖（加固版）
-        uses: ./.github/actions/npm-install
+      - name: Step
 
-      - name: 处理文档占位符
-        shell: bash
+      - name: Step
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           NODE_ENV: production
           RELEASE_PREFIX: prod
         run: |
-          echo "📚 生产环境文档处理..."
+          echo "..."
 
-          # 1. 执行配置分层初始化
-          npm run config:layers:init
+          # 1. 鎵ц閰嶇疆鍒嗗眰鍒濆鍖?          npm run config:layers:init
 
-          # 2. 导出配置到多种格式
-          npm run config:layers:export -- --format json --output dist/config
+          # 2. 瀵煎嚭閰嶇疆鍒板绉嶆牸寮?          npm run config:layers:export -- --format json --output dist/config
           npm run config:layers:export -- --format typescript --output src/generated/config
           npm run config:layers:export -- --format env --output .env.production
 
-          # 3. 处理文档占位符替换
-          npm run config:substitute:docs
+          # 3. 澶勭悊鏂囨。鍗犱綅绗︽浛鎹?          npm run config:substitute:docs
 
-          # 4. 验证替换结果
-          echo "✅ 验证文档处理结果..."
+          # 4. 楠岃瘉鏇挎崲缁撴灉
+          echo "?..."
           find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while IFS= read -r file; do
-            echo "⚠️ $file 仍包含未处理占位符:"
+            echo "$file?"
             grep -n "\${" "$file" || true
           done
 
-      - name: 构建产物检查
-        shell: bash
+      - name: Step
         run: |
-          echo "🔍 检查构建产物..."
-          ls -la dist/ || echo "dist/ 目录不存在"
-          ls -la src/generated/ || echo "src/generated/ 目录不存在"
+          echo "?.."
+          ls -la dist/ || echo "dist/ 鐩綍涓嶅瓨鍦?
+          ls -la src/generated/ || echo "src/generated/ 鐩綍涓嶅瓨鍦?
 
-          # 检查生成的配置文件
+          # 妫€鏌ョ敓鎴愮殑閰嶇疆鏂囦欢
           if [ -f "src/generated/config.ts" ]; then
-            echo "📄 生成的 TypeScript 配置:"
+            echo "?TypeScript :"
             head -20 src/generated/config.ts
           fi
 
-      - name: 上传构建产物
+      - name: Step
         uses: actions/upload-artifact@v4
         with:
           name: processed-documentation
@@ -195,3 +177,4 @@ jobs:
             src/generated/config*
             .env.production
           retention-days: 7
+

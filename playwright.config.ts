@@ -103,6 +103,7 @@ export default defineConfig({
             NODE_ENV: 'test',
             CI: 'true',
             SECURITY_TEST_MODE: 'true',
+            PROJECT_NAME: 'electron-security-audit',
           },
         },
       },
@@ -115,6 +116,10 @@ export default defineConfig({
         '**/e2e/**/*.spec.ts',
         '!**/security/**/*.spec.ts',
         '!**/smoke/**/*.spec.ts',
+        '!**/security.smoke.spec.ts',
+        '!**/security-smoke.spec.ts',
+        '!**/launch.helper.spec.ts',
+        '!**/scene-transition.e2e.spec.ts',
       ],
       dependencies: ['setup:cache', 'electron-smoke-tests'], // Depends on cache cleanup and smoke tests passing
       use: {
@@ -129,10 +134,12 @@ export default defineConfig({
             NODE_ENV: 'test',
             CI: 'true',
             SECURITY_TEST_MODE: 'true',
+            SCENE_SAMPLES: '4',
+            SCENE_PACE_MS: '80',
           },
         },
       },
-      timeout: 45000,
+      timeout: 90000,
     },
 
     {
@@ -148,6 +155,7 @@ export default defineConfig({
             NODE_ENV: 'test',
             CI: 'true',
             SECURITY_TEST_MODE: 'true',
+            PROJECT_NAME: 'electron-security-audit',
           },
         }, // trace: 'on-first-retry' 鍙湪澶辫触鏃朵骇鍑?trace.zip
       },

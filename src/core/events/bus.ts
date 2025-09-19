@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   DomainEvent as AppEvent,
   EventType as AppEventType,
   EventHandler,

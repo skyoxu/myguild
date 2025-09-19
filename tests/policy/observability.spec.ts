@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import * as Sentry from '@sentry/electron/main';
 import { initSentryMain } from '../../src/shared/observability/sentry-main';
 

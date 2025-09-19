@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+﻿import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /** 触发可能导航/弹窗的动作，与导航事件做竞态，最终对"仍留在我方 URL"做断言。 */

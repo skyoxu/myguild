@@ -1,4 +1,4 @@
-// tests/helpers/launch.ts
+﻿// tests/helpers/launch.ts
 import {
   _electron as electron,
   ElectronApplication,
@@ -46,11 +46,12 @@ function isBuildCacheValid(): boolean {
     if (!existsSync(BUILD_CACHE_FILE)) return false;
 
     const cacheInfo = JSON.parse(readFileSync(BUILD_CACHE_FILE, 'utf-8'));
-    const distPath = resolve(process.cwd(), 'dist-electron', 'main.cjs');
+    const distPathCjs = resolve(process.cwd(), 'dist-electron', 'main.cjs');
+    const distPathJs = resolve(process.cwd(), 'dist-electron', 'main.js');
 
     // 检查构建产物是否存在且缓存时间戳有效
     return (
-      existsSync(distPath) &&
+      (existsSync(distPathCjs) || existsSync(distPathJs)) &&
       cacheInfo.timestamp &&
       Date.now() - cacheInfo.timestamp < 1000 * 60 * 10
     ); // 10分钟有效期
@@ -253,7 +254,6 @@ export async function prepareWindowForInteraction(page: Page): Promise<Page> {
 
   if (process.env.CI === 'true' || process.env.NODE_ENV === 'test') {
     await page.evaluate(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).electronAPI?.bringToFront?.();
     });
     await page.evaluate(

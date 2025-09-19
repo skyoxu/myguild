@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+﻿import { test, expect, _electron as electron } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
 
 test.describe('统一启动Helper验证', () => {

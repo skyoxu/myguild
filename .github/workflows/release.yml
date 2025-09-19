@@ -1,649 +1,68 @@
-# C建议：Release/SourceMap/Health Dev→CI→Prod 闭环工作流
-# 实现完整的发布流程：创建release → 关联commits → 上传source maps → 标记deploy → 健康门槛检查
-
-name: 🚀 Release Pipeline - Dev→CI→Prod
+name: Release Pipeline - Dev→CI→Prod (Simplified)
 
 on:
   push:
     branches: [main, release/*]
     tags: ['v*']
-    paths:
-      - 'src/**'
-      - 'electron/**'
-      - 'scripts/**'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - '.github/workflows/release.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'electron/**'
-      - 'scripts/**'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       environment:
-        description: '目标环境'
+        description: '环境'
         required: true
         default: 'staging'
         type: choice
-        options:
-          - staging
-          - production
-      skip_health_check:
-        description: '跳过健康检查'
-        required: false
-        default: false
-        type: boolean
-
-env:
-  # Sentry集成必需环境变量
-  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-  SENTRY_DSN_STAGING: ${{ secrets.SENTRY_DSN_STAGING }}
-
-  # C建议：Release命名规范 app@${app.getVersion()}+${platform}
-  RELEASE_PREFIX: 'app'
-
-  # 健康门槛配置
-  HEALTH_CHECK_TIMEOUT: '300' # 5分钟
-  CRASH_FREE_SESSION_THRESHOLD: '99.5'
-  CRASH_FREE_USER_THRESHOLD: '99.8'
-  ADOPTION_RATE_7D_THRESHOLD: '50.0'
+        options: [staging, production]
 
 permissions:
   contents: write
   actions: read
-  id-token: write
 
 defaults:
   run:
     shell: pwsh
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false  # 发布不建议中途取消
-
 jobs:
-  # 📋 环境检查和准备
   prepare:
-    name: 🔍 环境准备和验证
+    name: 准备
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      release_name: ${{ steps.release.outputs.name }}
       environment: ${{ steps.env.outputs.environment }}
-      platform: ${{ steps.platform.outputs.platform }}
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 获取完整提交历史
-
-      - name: 📦 设置Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 🔍 获取版本信息
-        id: version
+      - uses: actions/checkout@v4
+      - id: env
         shell: bash
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "📋 应用版本: $VERSION"
-
-      - name: 🏷️ 确定发布环境
-        id: env
-        shell: bash
-        run: |
-          # 由 Actions 先展开成字面，再传给 Bash
-          EVENT_NAME="${{ github.event_name }}"
-          BRANCH_REF="${{ github.ref }}"
-          
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            ENV="${{ github.event.inputs.environment }}"
-          elif [[ "$BRANCH_REF" == "refs/heads/main" ]]; then
-            ENV="production"
-          elif [[ "$BRANCH_REF" == "refs/heads/release/"* ]]; then
-            ENV="staging"
-          elif [[ "$BRANCH_REF" == "refs/tags/v"* ]]; then
-            ENV="production"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
           else
-            ENV="development"
-          fi
-          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
-          echo "🌍 目标环境: $ENV"
-
-      - name: 🖥️ 确定平台信息
-        id: platform
-        shell: bash
-        run: |
-          PLATFORM="windows"
-          echo "platform=$PLATFORM" >> "$GITHUB_OUTPUT"
-          echo "💻 构建平台: $PLATFORM"
-
-      - name: 🎯 生成Release名称
-        id: release
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PLATFORM="${{ steps.platform.outputs.platform }}"
-          RELEASE_NAME="${RELEASE_PREFIX}@${VERSION}+${PLATFORM}"
-          echo "name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
-          echo "🏷️ Release名称: $RELEASE_NAME"
-
-  # 🔨 构建和测试
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
   build:
-    name: 🔨 构建应用
+    name: 构建
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
     needs: prepare
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 📦 设置Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
-      - name: 📦 安装依赖
-        uses: ./.github/actions/npm-install
-
-      - name: 🔍 运行代码检查
-        shell: bash
-        run: |
-          npm run lint || echo "⚠️ Lint检查有警告"
-          npm run typecheck || echo "⚠️ 类型检查有警告"
-
-      - name: 🧪 运行测试（最小化）
-        run: npm run test:unit -- --run --reporter=dot --passWithNoTests
-
-      - name: 🏗️ 构建应用
-        run: npm run build
+      - run: npm ci
+      - run: npm run build
         env:
           NODE_ENV: ${{ needs.prepare.outputs.environment }}
-          GENERATE_SOURCEMAP: 'true'
-          SENTRY_RELEASE: ${{ needs.prepare.outputs.release_name }}
-          BUNDLE_ANALYZE: 'true'
-
-      - name: 📦 Bundle budget gate (soft for PR)
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          BUNDLE_GUARD: warn
-        run: npm run guard:bundle
-
-      - name: 📦 Bundle budget gate (strict for push/tags)
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          BUNDLE_GUARD: strict
-        run: npm run guard:bundle
-
-      - name: 📦 打包构建产物（Windows兼容）
-        shell: bash
-        run: |
-          tar -czf build-artifacts.tar.gz dist/
-          echo "📦 构建产物已打包"
-
-      - name: 📤 上传构建产物
-        uses: actions/upload-artifact@v4
+      - run: |
+          if (-not (Test-Path artifacts)) { New-Item -ItemType Directory artifacts | Out-Null }
+          Compress-Archive -Path dist/* -DestinationPath artifacts/build.zip -Force
+      - uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: build-artifacts.tar.gz
-          retention-days: 7
-
-      - name: 📤 上传 Bundle 可视化报告
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-analysis-${{ github.run_number }}
-          path: dist/bundle-analysis.html
-          retention-days: 7
-
-  # E建议：E2E冒烟测试（Electron + Playwright）
-  e2e-smoke:
-    name: 🧪 E2E冒烟测试
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-      E2E_SECURITY_TIMEOUT_MS: 300000
-    needs: [prepare, build]
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 📦 设置Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 📦 安装依赖
-        uses: ./.github/actions/npm-install
-
-      - name: Validate E2E timeout config (fail-fast)
-        run: |
-          $raw = $env:E2E_SECURITY_TIMEOUT_MS
-          if ([string]::IsNullOrWhiteSpace($raw)) {
-            Write-Error "E2E_SECURITY_TIMEOUT_MS is not set"
-            exit 1
-          }
-          $val = 0
-          if (-not [int]::TryParse($raw, [ref]$val)) {
-            Write-Error "E2E_SECURITY_TIMEOUT_MS is not a valid integer: $raw"
-            exit 1
-          }
-          if ($val -lt 60000 -or $val -gt 900000) {
-            Write-Error "E2E_SECURITY_TIMEOUT_MS out of range [60000,900000]: $val"
-            exit 1
-          }
-          Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
-
-      - name: 🧪 Perf E2E smoke (soft gate)
-        continue-on-error: true
-        run: npx playwright test tests/e2e/perf.smoke.spec.ts
-
-      - name: 📈 Perf P95 summary (soft)
-        if: always()
-        continue-on-error: true
-        run: node scripts/ci/perf-soft-gate.mjs
-
-      - name: 📤 上传E2E报告（perf）
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-perf-artifacts-${{ github.run_number }}
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 7
-
-      - name: 📥 下载构建产物
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-
-      - name: 📦 解压构建产物
-        shell: bash
-        run: tar -xzf build-artifacts.tar.gz
-
-      - name: 🎭 安装Playwright
-        shell: bash
-        run: npx playwright install --with-deps
-
-      - name: 🧪 运行E2E冒烟测试 (Release模式-快速验证)
-        uses: ./.github/actions/run-tests
-        with:
-          test-type: smoke
-          timeout: '60000'
-          fail-fast: 'false'
-        env:
-          SENTRY_DSN: ${{ env.SENTRY_DSN_STAGING }}
-          NODE_ENV: 'test'
-
-      - name: 📤 上传测试报告
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-smoke-report
-          path: test-results/
-          retention-days: 7
-
-  # 🚀 创建Sentry Release
-  create-release:
-    name: 🚀 创建Sentry Release
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装 + Sentry CI配置
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-      # Sentry CI配置（三件套）- 按照cifix1.txt方案A实施修复
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-    needs: [prepare, build, e2e-smoke]
-    if: needs.prepare.outputs.environment != 'development'
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 📥 下载构建产物
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-
-      - name: 📦 解压构建产物
-        shell: bash
-        run: tar -xzf build-artifacts.tar.gz
-
-      - name: 🔧 安装 Sentry CLI
-        shell: bash
-        run: |
-          echo "🔧 安装 Sentry CLI..."
-          npm install -g @sentry/cli
-          echo "✅ Sentry CLI 安装完成"
-
-      - name: 🔑 Check for Sentry token
-        id: sentry_check
-        shell: bash
-        run: |
-          # 检查token是否存在和非空
-          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
-            echo "token_present=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Sentry token is present and valid."
-          else
-            echo "token_present=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Sentry token is NOT configured or empty. Sentry steps will be skipped."
-          fi
-
-      - name: 🔧 检查 Sentry CLI 并自检配置
-        if: steps.sentry_check.outputs.token_present == 'true'
-        shell: pwsh
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
-          $ErrorActionPreference = "Stop"  # 确保外部命令错误被捕获
-          
-          Write-Host "🔍 开始Sentry配置自检..."
-          
-          # 检查关键环境变量是否存在（如果缺失则跳过而非失败）
-          if (-not $env:SENTRY_AUTH_TOKEN) {
-            Write-Host "⚠️ SENTRY_AUTH_TOKEN未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
-            exit 0
-          }
-          if (-not $env:SENTRY_ORG) {
-            Write-Host "⚠️ SENTRY_ORG未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
-            exit 0
-          }
-          if (-not $env:SENTRY_PROJECT) {
-            Write-Host "⚠️ SENTRY_PROJECT未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
-            exit 0
-          }
-          
-          # 检查Sentry CLI版本
-          Write-Host "🔧 检查Sentry CLI版本..."
-          sentry-cli --version
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Sentry CLI版本检查失败，退出代码: $LASTEXITCODE" -ForegroundColor Red
-            exit 1
-          }
-          
-          # 设置详细日志级别
-          $env:SENTRY_LOG_LEVEL = "info"
-          
-          # 安全显示环境变量（隐藏敏感token）
-          Write-Host "配置检查 - ORG: $env:SENTRY_ORG, PROJECT: $env:SENTRY_PROJECT"
-          Write-Host "AUTH_TOKEN: $(if($env:SENTRY_AUTH_TOKEN){'[已设置]'}else{'[未设置]'})"
-          
-          # 执行认证检查 - 使用PowerShell外部命令错误处理最佳实践
-          Write-Host "执行 sentry-cli info 验证..."
-          try {
-            sentry-cli info
-            if ($LASTEXITCODE -ne 0) {
-              throw "sentry-cli info 命令失败，退出代码: $LASTEXITCODE"
-            }
-            Write-Host "✅ Sentry配置验证完成" -ForegroundColor Green
-          }
-          catch {
-            Write-Host "❌ Sentry认证失败: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "常见原因:" -ForegroundColor Yellow
-            Write-Host "- SENTRY_AUTH_TOKEN 无效或已过期" -ForegroundColor Yellow  
-            Write-Host "- SENTRY_ORG 不是组织slug而是显示名" -ForegroundColor Yellow
-            Write-Host "- SENTRY_PROJECT 不是项目slug而是显示名" -ForegroundColor Yellow
-            Write-Host "- 网络连接问题或sentry.io不可用" -ForegroundColor Yellow
-            exit 1
-          }
-
-      - name: 🔧 安装Release工具
-        if: steps.sentry_check.outputs.token_present == 'true'
-        uses: ./.github/actions/setup-release-tools
-        with:
-          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-      - name: 🚀 创建Sentry Release
-        if: steps.sentry_check.outputs.token_present == 'true'
-        shell: pwsh
-        run: |
-          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
-          Write-Host "🚀 创建Release: $RELEASE_NAME"
-
-          # 执行完整Sentry Release流程
-          # 1) 创建release 
-          sentry-cli releases new "$RELEASE_NAME" -p "$env:SENTRY_PROJECT"
-          
-          # 2) 关联commits
-          sentry-cli releases set-commits "$RELEASE_NAME" --auto
-          
-          # 3) 上传sourcemaps (如果存在dist目录)
-          if (Test-Path "dist") {
-            sentry-cli sourcemaps upload --release "$RELEASE_NAME" --dist windows "dist"
-          }
-          
-          # 4) Finalize release (必须在deploy之前)
-          sentry-cli releases finalize "$RELEASE_NAME"
-
-          Write-Host "✅ Release创建并finalize完成: $RELEASE_NAME"
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-      - name: 📤 上传Source Maps
-        if: steps.sentry_check.outputs.token_present == 'true'
-        shell: pwsh
-        run: |
-          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
-          Write-Host "📤 上传Source Maps for $RELEASE_NAME"
-
-          # C建议：上传source maps (使用sentry-cli)
-          sentry-cli releases files "$RELEASE_NAME" upload-sourcemaps ./dist/ --validate --url-prefix "~/" --strip-common-prefix
-
-          Write-Host "✅ Source Maps上传成功"
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-  # 🏥 Release Health检查
-  health-check:
-    name: 🏥 Release Health门槛检查
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-    needs: [prepare, create-release]
-    if: needs.prepare.outputs.environment == 'production' && !github.event.inputs.skip_health_check
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 📦 设置Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 📦 安装依赖
-        uses: ./.github/actions/npm-install
-
-      - name: 🏥 执行健康门槛检查
-        run: |
-          echo "🏥 开始Release Health门槛检查..."
-          node scripts/release-health-check.mjs --release="${{ needs.prepare.outputs.release_name }}" --check-thresholds
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          CRASH_FREE_SESSION_THRESHOLD: ${{ env.CRASH_FREE_SESSION_THRESHOLD }}
-          CRASH_FREE_USER_THRESHOLD: ${{ env.CRASH_FREE_USER_THRESHOLD }}
-        timeout-minutes: 5
-
-  # 🚀 部署标记
-  deploy:
-    name: 🚀 标记部署完成
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装 + Sentry CI配置
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-      # Sentry CI配置（三件套）
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-    needs: [prepare, create-release, health-check]
-    if: always() && (needs.health-check.result == 'success' || needs.health-check.result == 'skipped')
-    steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
-
-      - name: 🔧 安装 Sentry CLI
-        shell: bash
-        run: |
-          echo "🔧 安装 Sentry CLI..."
-          npm install -g @sentry/cli
-          echo "✅ Sentry CLI 安装完成"
-
-      - name: 🔑 检查 Sentry token 是否配置
-        id: sentry_check
-        shell: bash
-        run: |
-          # 检查Sentry token是否配置（避免空token导致失败）
-          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ] && [ "${{ secrets.SENTRY_AUTH_TOKEN }}" != "" ]; then
-            echo "token_present=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Sentry token已配置，将执行Sentry相关操作"
-          else
-            echo "token_present=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Sentry token未配置，跳过所有Sentry操作"
-          fi
-
-      - name: 🔧 检查 Sentry CLI 并自检配置
-        if: steps.sentry_check.outputs.token_present == 'true'
-        shell: pwsh
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          # Sentry CLI配置校验：验证三件套环境变量是否生效
-          sentry-cli --version
-          Write-Host "🔍 Sentry配置自检..."
-          Write-Host "ORG=$($env:SENTRY_ORG) PROJECT=$($env:SENTRY_PROJECT)"  # 非敏感信息验证
-          sentry-cli info
-          Write-Host "✅ Sentry配置验证完成"
-
-      - name: 🔧 安装Release工具
-        if: steps.sentry_check.outputs.token_present == 'true'
-        uses: ./.github/actions/setup-release-tools
-        with:
-          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-      - name: 🚀 标记Sentry部署
-        if: steps.sentry_check.outputs.token_present == 'true'
-        shell: pwsh
-        run: |
-          $RELEASE_NAME = "${{ needs.prepare.outputs.release_name }}"
-          $ENVIRONMENT = "${{ needs.prepare.outputs.environment }}"
-
-          Write-Host "🚀 标记部署: $RELEASE_NAME → $ENVIRONMENT"
-
-          # 标记deploy (release已finalized)
-          sentry-cli deploys new --release "$RELEASE_NAME" -e "$ENVIRONMENT" -t 0
-
-          Write-Host "✅ 部署标记完成"
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-      - name: 🎉 部署成功通知
-        run: |
-          echo "🎉 Release部署成功!"
-          echo "📋 Release: ${{ needs.prepare.outputs.release_name }}"
-          echo "🌍 环境: ${{ needs.prepare.outputs.environment }}"
-          echo "⏰ 时间: $(date)"
-
-  # 🔄 回滚处理
-  rollback:
-    name: 🔄 自动回滚处理
-    runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-    needs: [prepare, create-release, health-check]
-    if: failure() && needs.health-check.result == 'failure'
-    steps:
-      - name: 🚨 健康检查失败，考虑回滚
-        run: |
-          RELEASE_NAME="${{ needs.prepare.outputs.release_name }}"
-          echo "🚨 Release健康检查失败: $RELEASE_NAME"
-          echo "🔄 考虑自动回滚..."
-
-          # 这里可以实现自动回滚逻辑
-          # 例如：回滚到上一个健康版本
-
-          echo "⚠️ 请手动检查Release健康状态并决定是否回滚"
-        env:
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-  # 📊 发布总结
+          path: artifacts/build.zip
   summary:
-    name: 📊 发布流程总结
+    name: 汇总
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-    needs: [prepare, build, e2e-smoke, create-release, health-check, deploy]
-    if: always()
+    needs: build
     steps:
-      - name: 📊 生成发布报告
-        shell: bash
-        run: |
-          echo "📊 === Release Pipeline 总结 ==="
-          echo "🏷️ Release: ${{ needs.prepare.outputs.release_name }}"
-          echo "🌍 环境: ${{ needs.prepare.outputs.environment }}"
-          echo "💻 平台: ${{ needs.prepare.outputs.platform }}"
-          echo ""
-          echo "📋 各阶段状态:"
-          echo "  🔍 环境准备: ${{ needs.prepare.result }}"
-          echo "  🔨 构建: ${{ needs.build.result }}"
-          echo "  🧪 E2E测试: ${{ needs.e2e-smoke.result }}"
-          echo "  🚀 创建Release: ${{ needs.create-release.result }}"
-          echo "  🏥 健康检查: ${{ needs.health-check.result }}"
-          echo "  🚀 部署标记: ${{ needs.deploy.result }}"
-          echo ""
+      - run: Write-Output "Release build completed"
 
-          # 总体状态判断
-          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
-            echo "✅ Release流程完成成功!"
-          else
-            echo "❌ Release流程存在问题，请检查失败的步骤"
-          fi

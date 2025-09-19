@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { GATES } from '../../src/shared/quality/gates';
 
 describe('01 SLO→门禁映射', () => {

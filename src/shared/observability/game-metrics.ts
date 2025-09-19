@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/electron/renderer';
+﻿import * as Sentry from '@sentry/electron/renderer';
 
 // 游戏指标类型定义
 export interface GameMetricDefinition {

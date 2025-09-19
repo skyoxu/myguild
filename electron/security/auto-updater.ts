@@ -1,4 +1,4 @@
-/* 自动更新链路安全配置 */
+﻿/* 自动更新链路安全配置 */
 import { app, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';

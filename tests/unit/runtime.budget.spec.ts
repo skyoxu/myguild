@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Runtime budget and degradation threshold validation tests
  * Tests for 06-runtime-view-loops-state-machines-error-paths chapter contracts
  *

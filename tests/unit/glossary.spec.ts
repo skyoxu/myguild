@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Glossary SSoT Unit Tests
  *
  * Comprehensive test suite for the glossary contracts, validating

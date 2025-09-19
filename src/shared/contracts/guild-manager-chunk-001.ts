@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 公会管理器PRD分片1 - TypeScript契约定义
  * 基于CloudEvents 1.0标准和端口-适配器模式
  */

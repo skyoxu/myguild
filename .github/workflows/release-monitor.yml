@@ -1,7 +1,6 @@
-name: Release Monitor - 发布监控
+name: Release Monitor - 鍙戝竷鐩戞帶
 
-# 最小权限原则
-permissions:
+# Minimal permissions
   contents: read
   actions: write
 
@@ -11,16 +10,16 @@ defaults:
 
 on:
   schedule:
-    # 每 15 分钟监控一次发布健康度
+    # Monitor release health every 15 minutes
     - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       version:
-        description: '监控的应用版本（留空使用环境变量）'
+        description: '鐩戞帶鐨勫簲鐢ㄧ増鏈紙鐣欑┖浣跨敤鐜鍙橀噺锛?
         required: false
         type: string
       force_check:
-        description: '强制检查（忽略时间限制）'
+        description: '寮哄埗妫€鏌ワ紙蹇界暐鏃堕棿闄愬埗锛?
         required: false
         type: boolean
         default: false
@@ -34,7 +33,7 @@ env:
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
-# ==================== 并发控制 ====================
+# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -42,7 +41,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -52,24 +51,24 @@ jobs:
       actions: write
 
     steps:
-      - name: '🚀 Checkout repository'
+      - name: Step
         uses: actions/checkout@v4
 
-      - name: '📦 Setup Node.js'
+      - name: Step
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: '🔧 Install dependencies'
+      - name: Step
         uses: ./.github/actions/npm-install
         env:
           NPM_CONFIG_PRODUCTION: 'true'
 
-      - name: '🛠️ Install system tools'
+      - name: Step
         shell: pwsh
         run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
           if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
             Write-Host "Installing jq tool..."
             if (Get-Command choco -ErrorAction SilentlyContinue) {
@@ -82,40 +81,39 @@ jobs:
             Write-Host "jq already available"
           }
 
-      - name: '⏰ Check monitoring conditions'
+      - name: Step
         id: conditions
         shell: bash
         run: |
-          # 检查是否在工作时间（UTC 6:00 - 22:00，大致对应各时区的工作时间）
+          # 妫€鏌ユ槸鍚﹀湪宸ヤ綔鏃堕棿锛圲TC 6:00 - 22:00锛屽ぇ鑷村搴斿悇鏃跺尯鐨勫伐浣滄椂闂达級
           current_hour=$(date -u +%H)
           if [ "$current_hour" -lt 6 ] || [ "$current_hour" -gt 22 ]; then
             if [ "${{ inputs.force_check }}" != "true" ]; then
-              echo "🌙 非工作时间，跳过监控（设置 force_check=true 可强制执行）"
+              echo "?force_check=true"
               echo "should_monitor=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
           fi
 
-          # 检查是否有活跃的渐进发布
-          if [ ! -f "dist/latest.yml" ]; then
-            echo "📄 Feed 文件不存在，跳过监控"
+          # 妫€鏌ユ槸鍚︽湁娲昏穬鐨勬笎杩涘彂甯?          if [ ! -f "dist/latest.yml" ]; then
+            echo "Feed"
             echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # 检查 stagingPercentage
+          # 妫€鏌?stagingPercentage
           staging_pct=$(grep -E '^stagingPercentage:' dist/latest.yml | sed 's/stagingPercentage: *//' || echo "0")
           if [ "$staging_pct" = "0" ] || [ "$staging_pct" = "100" ]; then
-            echo "📊 当前分阶段发布为 ${staging_pct}%，跳过监控"
+            echo "馃搳 褰撳墠鍒嗛樁娈靛彂甯冧负 ${staging_pct}%锛岃烦杩囩洃鎺?
             echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "✅ 满足监控条件，开始健康检查"
+          echo "鉁?婊¤冻鐩戞帶鏉′欢锛屽紑濮嬪仴搴锋鏌?
           echo "should_monitor=true" >> "$GITHUB_OUTPUT"
           echo "staging_percentage=$staging_pct" >> "$GITHUB_OUTPUT"
 
-      - name: '🏥 Continuous health monitoring'
+      - name: Step
         id: health_monitor
         if: steps.conditions.outputs.should_monitor == 'true'
         env:
@@ -123,16 +121,15 @@ jobs:
         shell: bash
         run: |
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
-            echo "⚠️  SENTRY_AUTH_TOKEN 未配置，跳过健康监控"
+            echo "SENTRY_AUTH_TOKEN"
             echo "monitor_status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "🔍 监控版本 $APP_VERSION 的持续健康状态..."
-          echo "📊 当前分阶段发布: ${{ steps.conditions.outputs.staging_percentage }}%"
+          echo "$APP_VERSION?.."
+          echo "?${{ steps.conditions.outputs.staging_percentage }}%"
 
-          # 执行健康度检查
-          set +e
+          # 鎵ц鍋ュ悍搴︽鏌?          set +e
           health_result=$(DRY_RUN=true node scripts/release/auto-rollback.mjs)
           health_exit_code=$?
           set -e
@@ -140,20 +137,20 @@ jobs:
           echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
           echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
 
-          echo "📊 健康监控结果:"
+          echo ":"
           echo "$health_result" | jq '.'
 
           case $health_exit_code in
             0)
-              echo "✅ 持续健康监控：指标正常"
+              echo "鉁?鎸佺画鍋ュ悍鐩戞帶锛氭寚鏍囨甯?
               echo "monitor_status=healthy" >> "$GITHUB_OUTPUT"
               ;;
             42)
-              echo "🚨 持续健康监控：检测到健康问题"
+              echo ""
               echo "monitor_status=unhealthy" >> "$GITHUB_OUTPUT"
               
-              # 触发紧急回滚工作流
-              echo "🚨 触发紧急回滚..."
+              # 瑙﹀彂绱ф€ュ洖婊氬伐浣滄祦
+              echo "?.."
               curl -X POST \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 -H "Accept: application/vnd.github.v3+json" \
@@ -167,17 +164,16 @@ jobs:
                 }"
               ;;
             *)
-              echo "⚠️  健康监控遇到错误 (退出码: $health_exit_code)"
+              echo "(:$health_exit_code)"
               echo "monitor_status=error" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
-      - name: '📊 Update monitoring dashboard'
+      - name: Step
         if: steps.conditions.outputs.should_monitor == 'true'
         shell: bash
         run: |
-          # 创建或更新监控状态文件
-          mkdir -p .github/monitoring
+          # 鍒涘缓鎴栨洿鏂扮洃鎺х姸鎬佹枃浠?          mkdir -p .github/monitoring
 
           cat > .github/monitoring/latest-status.json << EOF
           {
@@ -191,25 +187,25 @@ jobs:
           }
           EOF
 
-          echo "📊 监控状态已更新"
+          echo ""
 
-      - name: '📢 Send health alert (if needed)'
+      - name: Step
         if: steps.health_monitor.outputs.monitor_status == 'unhealthy'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         shell: bash
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
-            echo "⚠️  WEBHOOK_URL 未配置，跳过通知"
+            echo "WEBHOOK_URL"
             exit 0
           fi
 
-          echo "🚨 发送健康告警通知..."
+          echo "..."
 
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{
-              \"text\": \"🚨 Release Health Alert\",
+              \"text\": \"馃毃 Release Health Alert\",
               \"attachments\": [{
                 \"color\": \"danger\",
                 \"fields\": [
@@ -222,7 +218,7 @@ jobs:
               }]
             }" || echo "Webhook notification failed (non-critical)"
 
-      - name: '💾 Commit monitoring data'
+      - name: Step
         if: steps.conditions.outputs.should_monitor == 'true'
         shell: bash
         run: |
@@ -231,57 +227,58 @@ jobs:
 
           if [ -f ".github/monitoring/latest-status.json" ]; then
             git add .github/monitoring/latest-status.json
-            git commit -m "📊 Release monitoring update: $APP_VERSION" \
+            git commit -m "馃搳 Release monitoring update: $APP_VERSION" \
               -m "Status: ${{ steps.health_monitor.outputs.monitor_status }}" \
               -m "Staging: ${{ steps.conditions.outputs.staging_percentage }}%" \
               -m "" \
-              -m "🤖 Automated monitoring data" || echo "No changes to commit"
+              -m "Automated monitoring data" || echo "No changes to commit"
             
             git push origin ${{ github.ref }} || echo "Push failed (non-critical)"
           fi
 
-      - name: '📋 Monitoring summary'
+      - name: Step
         if: always()
         shell: bash
         run: |
-          # 确保UTF-8编码输出
+          # 纭繚UTF-8缂栫爜杈撳嚭
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
           {
-            echo "## 📊 发布监控报告"
+            echo "##"
             echo ""
-            echo "**监控时间**: $(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
-            echo "**应用版本**: \`$APP_VERSION\`"
+            echo "****:$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+            echo "****: \`$APP_VERSION\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.conditions.outputs.should_monitor }}" = "true" ]; then
-            echo "**分阶段发布**: ${{ steps.conditions.outputs.staging_percentage }}%" >> "$GITHUB_STEP_SUMMARY"
+            echo "**?*:${{ steps.conditions.outputs.staging_percentage }}%" >> "$GITHUB_STEP_SUMMARY"
             
             status="${{ steps.health_monitor.outputs.monitor_status }}"
             case "$status" in
-              "healthy") status_icon="✅"; status_text="健康" ;;
-              "unhealthy") status_icon="🚨"; status_text="不健康 - 已触发回滚" ;;
-              "error") status_icon="⚠️"; status_text="监控错误" ;;
-              "skipped") status_icon="⏭️"; status_text="跳过" ;;
-              *) status_icon="❓"; status_text="未知" ;;
+              "healthy") status_icon="鉁?; status_text="鍋ュ悍" ;;
+              "unhealthy") status_icon="馃毃"; status_text="涓嶅仴搴?- 宸茶Е鍙戝洖婊? ;;
+              "error") status_icon="鈿狅笍"; status_text="鐩戞帶閿欒" ;;
+              "skipped") status_icon="鈴笍"; status_text="璺宠繃" ;;
+              *) status_icon="鉂?; status_text="鏈煡" ;;
             esac
             
-            echo "**健康状态**: $status_icon $status_text" >> "$GITHUB_STEP_SUMMARY"
+            echo "**?*:$status_icon$status_text" >> "$GITHUB_STEP_SUMMARY"
             
             if [ -n "${{ steps.health_monitor.outputs.health_result }}" ]; then
               {
                 echo ""
-                echo "### 📊 健康数据"
+                echo "###"
                 echo "\`\`\`json"
                 echo '${{ steps.health_monitor.outputs.health_result }}' | jq '.'
                 echo "\`\`\`"
               } >> "$GITHUB_STEP_SUMMARY"
             fi
           else
-            echo "**监控状态**: ⏭️ 跳过 (条件不满足)" >> "$GITHUB_STEP_SUMMARY"
+            echo "**?*: (?" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           {
             echo ""
-            echo "**下次检查**: $(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
+            echo "**?*:$(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
           } >> "$GITHUB_STEP_SUMMARY"
+

@@ -1,4 +1,4 @@
-export interface Guild {
+﻿export interface Guild {
   id: string;
   name: string;
   createdAt: number;

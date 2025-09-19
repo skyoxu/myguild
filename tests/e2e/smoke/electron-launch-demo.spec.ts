@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { launchApp } from '../../helpers/launch';
 import { ensureDomReady } from '../../helpers/ensureDomReady';
 import path from 'path';

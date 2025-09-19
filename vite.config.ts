@@ -44,7 +44,8 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 1024, // 1 MiB，仅调阈值是提示级；真正靠拆包
+    // 临时抬高阈值到 1500（按提案），减少提示噪音；真正约束靠预算 Gate
+    chunkSizeWarningLimit: 1500,
   },
   resolve: {
     alias: {

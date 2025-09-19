@@ -1,4 +1,4 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 /**
  * docs-scorer.mjs 性能测试
  * 验证大文档AST解析性能和缓存机制

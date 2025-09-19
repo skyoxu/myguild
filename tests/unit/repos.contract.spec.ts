@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Repository 契约测试 - Base-Clean 实现
  *
  * 测试目标：

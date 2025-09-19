@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 
 /**
  * 轮询 Preload 暴露的 eventLoopDelay 统计（仅测试/CI 启用）

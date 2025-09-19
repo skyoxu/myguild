@@ -1,4 +1,4 @@
-// G建议：PostHog 会话回放 & 开关管理可选扩展
+﻿// G建议：PostHog 会话回放 & 开关管理可选扩展
 // 与Sentry并存的"分析侧"补充
 
 import posthog from 'posthog-js';

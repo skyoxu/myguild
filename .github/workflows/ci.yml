@@ -61,33 +61,33 @@ jobs:
       NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔍 Actionlint 工作流语法检查
+      - name: Step
         uses: raven-actions/actionlint@v2
         with:
           actionlint_flags: "-color"
 
-      - name: 📦 设置 Node.js (守护脚本)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🔗 Needs 依赖校验
+      - name: Step
         shell: bash
         run: |
-          echo "🔍 校验所有工作流 needs 依赖完整性..."
+          echo "needs ..."
           node scripts/ci/workflow-guardian.mjs
 
-      - name: 🛡️ 分支保护规则同步检查
+      - name: Step
         shell: bash
         run: |
-          echo "🔍 检查分支保护规则与关键jobs一致性..."
+          echo "jobs..."
           node scripts/ci/branch-protection-guardian.mjs
         continue-on-error: true # 分支保护检查失败不阻断开发流程，但会记录问题
 
@@ -103,40 +103,40 @@ jobs:
       NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 ESLint 检查 (允许警告)
+      - name: Step
         run: npm run lint
         continue-on-error: true
 
-      - name: 🏗️ TypeScript 编译检查
+      - name: Step
         run: npm run typecheck
 
-      - name: 📊 可观测性门禁检查
+      - name: Step
         run: npm run ci:gate:sentry-up
         timeout-minutes: 2
         continue-on-error: true
 
-      - name: 🔧 工作流一致性检查
+      - name: Step
         run: npm run ci:gate:workflow
         timeout-minutes: 2
         continue-on-error: true
 
   # ==================== 安全扫描阶段 ====================
   # 注意：安全扫描已完全迁移到统一门禁系统 (security-unified.yml)
-  # CI工作流不再包含重复的安全检查jobs，避免状态检查冲突
+# Workflow
 
   # ==================== 稳定名核心作业（必需检查）====================
   unit-tests-core:
@@ -149,24 +149,24 @@ jobs:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🧪 运行单元测试（覆盖率）
+      - name: Step
         uses: ./.github/actions/run-tests
         with:
           test-type: coverage
         env:
           NODE_ENV: test
-      - name: 📤 上传覆盖率摘要
+      - name: Step
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -184,27 +184,27 @@ jobs:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
-      - name: 🔍 Coverage 脚本语法检查 (UTF-8 编码验证)
+      - name: Validate
         shell: bash
         run: |
-          echo "🔍 验证 coverage-config.cjs 语法和编码..."
+          echo "coverage-config.cjs ..."
           node --check scripts/ci/coverage-config.cjs
           node -e "require('./scripts/ci/coverage-config.cjs'); console.log('✅ 脚本语法和编码验证通过')"
-      - name: 📊 下载覆盖率报告
+      - name: Step
         uses: actions/download-artifact@v4
         with:
           name: coverage-summary
           path: coverage/
-      - name: 🔒 覆盖率门禁检查 (90% 硬门)
+      - name: Step
         run: node scripts/ci/coverage-gate.cjs
         env:
           COVERAGE_MODE: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
@@ -220,18 +220,18 @@ jobs:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
-      - name: 🏗️ 构建应用
+      - name: Build application
         run: npm run build
-      - name: 🔍 验证构建产物
+      - name: Validate
         shell: bash
         run: |
           ls -la dist/
@@ -244,28 +244,28 @@ jobs:
     needs: [unit-tests-core, coverage-gate, electron-security-gate]
     timeout-minutes: 5
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
-      - name: 🔑 Check for Sentry token
+      - name: Step
         id: sentry_check
         shell: bash
         run: |
           # 检查token是否存在和非空
           if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
             echo "token_present=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Sentry token is present and valid."
+            echo "Sentry token is present and valid."
           else
             echo "token_present=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Sentry token is NOT configured or empty. Sentry steps will be skipped."
+            echo "Sentry token is NOT configured or empty. Sentry steps will be skipped."
           fi
-      - name: 🔍 Sentry CLI配置检查
+      - name: Step
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'default-org' }}
@@ -279,19 +279,19 @@ jobs:
           # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
           $ErrorActionPreference = "Stop"  # 确保外部命令错误被捕获
           
-          Write-Host "🔍 开始Sentry配置自检..."
+          Write-Host "Sentry..."
           
           # 检查关键环境变量是否存在（如果缺失则跳过而非失败）
           if (-not $env:SENTRY_AUTH_TOKEN) {
-            Write-Host "⚠️ SENTRY_AUTH_TOKEN未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            Write-Host "SENTRY_AUTH_TOKENSentry CLI" -ForegroundColor Yellow
             exit 0
           }
           if (-not $env:SENTRY_ORG) {
-            Write-Host "⚠️ SENTRY_ORG未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            Write-Host "SENTRY_ORGSentry CLI" -ForegroundColor Yellow
             exit 0
           }
           if (-not $env:SENTRY_PROJECT) {
-            Write-Host "⚠️ SENTRY_PROJECT未配置，跳过Sentry CLI检查" -ForegroundColor Yellow
+            Write-Host "SENTRY_PROJECTSentry CLI" -ForegroundColor Yellow
             exit 0
           }
           
@@ -299,38 +299,38 @@ jobs:
           $env:SENTRY_LOG_LEVEL = "info"
           
           # 安全显示环境变量（隐藏敏感token）
-          Write-Host "配置检查 - ORG: $env:SENTRY_ORG, PROJECT: $env:SENTRY_PROJECT"
-          Write-Host "AUTH_TOKEN: $(if($env:SENTRY_AUTH_TOKEN){'[已设置]'}else{'[未设置]'})"
+          Write-Host "- ORG:$env:SENTRY_ORG, PROJECT:$env:SENTRY_PROJECT"
+          Write-Host "AUTH_TOKEN:$(if($env:SENTRY_AUTH_TOKEN){'[]'}else{'[]'})"
           
           # 执行认证检查 - 使用PowerShell外部命令错误处理最佳实践
-          Write-Host "执行 sentry-cli info 验证..."
+          Write-Host "sentry-cli info ..."
           try {
             sentry-cli info
             if ($LASTEXITCODE -ne 0) {
               throw "sentry-cli info 命令失败，退出代码: $LASTEXITCODE"
             }
-            Write-Host "✅ Sentry配置验证完成" -ForegroundColor Green
+            Write-Host "Sentry" -ForegroundColor Green
           }
           catch {
-            Write-Host "❌ Sentry认证失败: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "常见原因:" -ForegroundColor Yellow
-            Write-Host "  1. SENTRY_AUTH_TOKEN无效或已过期" -ForegroundColor Yellow
-            Write-Host "  2. SENTRY_ORG或SENTRY_PROJECT配置错误" -ForegroundColor Yellow
-            Write-Host "请检查GitHub Secrets中的Sentry配置" -ForegroundColor Yellow
+            Write-Host "Sentry:$($_.Exception.Message)" -ForegroundColor Red
+            Write-Host ":" -ForegroundColor Yellow
+            Write-Host "1. SENTRY_AUTH_TOKEN" -ForegroundColor Yellow
+            Write-Host "2. SENTRY_ORGSENTRY_PROJECT" -ForegroundColor Yellow
+            Write-Host "GitHub SecretsSentry" -ForegroundColor Yellow
             throw
           }
           
-          Write-Host "🏥 验证发布健康度..."
+          Write-Host "..."
           node scripts/release-health-gate.mjs
 
-      - name: ⚠️ Release Health Gate跳过（缺少secrets）
+      - name: Step
         if: steps.sentry_check.outputs.token_present == 'false'
         shell: bash
         run: |
-          echo "⚠️ SENTRY_AUTH_TOKEN未配置，跳过发布健康度检查"
-          echo "💡 在生产环境中请配置Sentry认证令牌以启用完整的发布健康度验证"
+          echo "SENTRY_AUTH_TOKEN"
+          echo "Sentry"
           echo "status=skipped" >> "$GITHUB_OUTPUT"
-      - name: ⚠️ Fork PR降级为警告
+      - name: Step
         if: ${{ github.event.pull_request.head.repo.fork && failure() }}
         run: 'echo "Fork PR: skipping hard gate due to missing secrets" && exit 0'
 
@@ -352,12 +352,12 @@ jobs:
         # Windows-focused strategy: single OS, multiple Node versions
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🔍 检查代码文件变更
+      - name: Step
         uses: tj-actions/changed-files@v44
         id: changed-files
         with:
@@ -377,20 +377,20 @@ jobs:
             *.md
             **/*.md
 
-      - name: 📦 设置 Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: ./.github/actions/npm-install
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: 🧪 运行单元测试
+      - name: Step
         if: steps.changed-files.outputs.any_changed == 'true'
         run: npm test
         env:
@@ -404,27 +404,27 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
       # Windows下无需安装xvfb，Electron可以直接运行
-      - name: 🖥️ 验证Windows环境支持
+      - name: Validate
         shell: bash
         run: |
-          echo "✅ Windows环境下的Electron原生支持"
+          echo "WindowsElectron"
           echo "Runner OS: $RUNNER_OS"
-          echo "Windows下无需xvfb，Electron可直接运行"
+          echo "WindowsxvfbElectron"
 
-      - name: 🛡️ 运行安全冒烟测试 (Windows原生)
+      - name: Step
         uses: ./.github/actions/run-tests
         with:
           test-type: security
@@ -432,16 +432,16 @@ jobs:
           CI: true
           # Windows下无需xvfb，Electron可直接运行
 
-      - name: 🔍 Electron安全基线校验
+      - name: Step
         shell: bash
         run: |
-          echo "🔍 执行Electron安全基线静态校验..."
+          echo "Electron..."
 
           # 预加载脚本安全校验
           if [ -f "scripts/validate-preload-security.mjs" ]; then
             node scripts/validate-preload-security.mjs
           else
-            echo "⚠️ 预加载安全校验脚本不存在，跳过检查"
+            echo ""
           fi
 
           # CSP一致性校验  
@@ -450,12 +450,12 @@ jobs:
           elif [ -f "scripts/scan_electron_safety.mjs" ]; then
             node scripts/scan_electron_safety.mjs
           else
-            echo "⚠️ CSP校验脚本不存在，跳过检查"
+            echo "CSP"
           fi
 
-          echo "✅ Electron安全基线校验完成"
+          echo "Electron"
 
-      - name: 📋 上传E2E测试报告
+      - name: Step
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -482,12 +482,12 @@ jobs:
         dummy: [1] # Placeholder for matrix syntax
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🔍 检查代码文件变更
+      - name: Step
         uses: tj-actions/changed-files@v44
         id: changed-files
         with:
@@ -507,24 +507,24 @@ jobs:
             *.md
             **/*.md
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: ./.github/actions/npm-install
         with:
           node-version: '20.x'
 
-      - name: 🏗️ 构建应用
+      - name: Build application
         if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build
 
-      - name: 🔍 验证构建产物
+      - name: Validate
         if: steps.changed-files.outputs.any_changed == 'true'
         shell: bash
         run: |
@@ -538,12 +538,12 @@ jobs:
             test -d dist/assets/
           fi
 
-      - name: 📦 Electron打包测试 (Windows专注)
+      - name: Step
         if: steps.changed-files.outputs.any_changed == 'true'
         shell: bash
         run: |
           # TODO: 配置Electron Builder后启用
-          echo "Electron打包测试 - 待配置完善"
+          echo "Electron -"
 
   # ==================== 依赖安全审计 ====================
   dependency-audit:
@@ -553,34 +553,34 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 🔍 Snyk安全扫描（若配置了Token）
+      - name: Step
         shell: bash
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -n "$SNYK_TOKEN" ]; then
-            echo "🔍 Installing and running Snyk CLI..."
+            echo "Installing and running Snyk CLI..."
             npm install -g snyk
             snyk test --severity-threshold=high --json > snyk-results.json || true
-            echo "✅ Snyk scan completed"
+            echo "Snyk scan completed"
           else
-            echo "⚠️ Skipping Snyk scan (no SNYK_TOKEN)"
+            echo "Skipping Snyk scan (no SNYK_TOKEN)"
           fi
 
-      - name: 📊 License合规检查
+      - name: Step
         shell: bash
         run: |
           npx license-checker --summary
@@ -594,31 +594,31 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: 📊 可观测性配置验证
+      - name: Validate
         uses: ./.github/actions/run-tests
         with:
           test-type: observability
 
-      - name: 📈 生成可观测性报告
+      - name: Step
         shell: pwsh
         run: |
           # P0修复：Windows runner使用PowerShell目录创建替代Linux mkdir -p
           New-Item -ItemType Directory -Path "reports" -Force
           npm run test:observability > reports/observability-verification.json
 
-      - name: 📋 上传可观测性报告
+      - name: Step
         uses: actions/upload-artifact@v4
         with:
           name: observability-report
@@ -636,29 +636,29 @@ jobs:
       contains(github.event.head_commit.message, '[skip-perf]') == false
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖（加固版）
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: ⚡ 事件循环延迟基准
+      - name: Step
         shell: bash
         run: |
           npx tsx scripts/benchmarks/event-loop-latency.ts
           # TODO: 配置性能回归阈值检查
 
-      - name: 📊 性能指标收集
+      - name: Step
         shell: bash
         run: |
           # TODO: 集成性能监控指标收集
-          echo "性能指标收集 - 待完善"
+          echo "-"
 
   # ==================== 部署就绪检查 ====================
   deployment-readiness:
@@ -674,34 +674,34 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: ✅ 所有检查通过
+      - name: Step
         shell: bash
         run: |
-          echo "🎉 所有质量门禁检查通过！"
-          echo "✅ 代码质量检查: 通过"
-          echo "✅ 安全扫描: 通过"
-          echo "✅ 单元测试: 通过"
-          echo "✅ E2E安全测试: 通过"
-          echo "✅ 构建验证: 通过"
-          echo "✅ 可观测性验证: 通过"
           echo ""
-          echo "🚀 项目已就绪，可以部署！"
+          echo ":"
+          echo ":"
+          echo ":"
+          echo "E2E:"
+          echo ":"
+          echo ":"
+          echo ""
+          echo ""
 
-      - name: 📊 生成部署清单
+      - name: Step
         shell: bash
         run: |
           {
-            echo "部署清单 - $(date)"
-            echo "- [x] 代码质量检查"
-            echo "- [x] 安全基线验证"
-            echo "- [x] 功能测试覆盖"
-            echo "- [x] 可观测性配置"
+            echo "-$(date)"
+            echo "- [x]"
+            echo "- [x]"
+            echo "- [x]"
+            echo "- [x]"
           } > deployment-checklist.md
 
-      - name: 📋 上传部署清单
+      - name: Step
         uses: actions/upload-artifact@v4
         with:
           name: deployment-checklist

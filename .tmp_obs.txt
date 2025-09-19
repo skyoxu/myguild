@@ -1,0 +1,294 @@
+﻿name: Observability Gate (Unified)
+
+# 鏈€灏忔潈闄愬師鍒?permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: pwsh
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'config/**'
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/observability-config-validation.js'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'config/**'
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/observability-config-validation.js'
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  # 鍏煎鎬э細浣跨敤鏄庣‘鐨刯ob鍚嶇О纭繚鍒嗘敮淇濇姢瑙勫垯鍏煎
+  observability-gate-development:
+    name: 馃攳 缁熶竴鍙娴嬫€ч厤缃獙璇?(Development)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+
+    steps:
+      - name: Checkout浠ｇ爜
+        uses: actions/checkout@v4
+
+      - name: 璁剧疆Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 瀹夎jq宸ュ叿
+        shell: pwsh
+        run: |
+          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
+
+      - name: 瀹夎渚濊禆锛堝姞鍥虹増锛?        uses: ./.github/actions/npm-install
+
+      - name: 纭繚鏃ュ織鐩綍瀛樺湪
+        run: mkdir -p logs
+
+      - name: 鎵ц缁熶竴鍙娴嬫€ч厤缃獙璇?        id: observability-check
+        run: |
+          echo "馃搳 寮€濮嬫墽琛岀粺涓€鍙娴嬫€ч厤缃獙璇?.."
+          node scripts/observability-config-validation.js
+          echo "validation-status=success" >> "$GITHUB_OUTPUT"
+        continue-on-error: false
+
+      - name: 涓婁紶楠岃瘉鎶ュ憡
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observability-validation-report
+          path: logs/observability-validation-report.json
+          retention-days: 30
+
+      - name: 杈撳嚭楠岃瘉鎽樿
+        if: always()
+        shell: bash
+        run: |
+          # 纭繚UTF-8缂栫爜杈撳嚭
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
+
+          if [ -f "logs/observability-validation-report.json" ]; then
+            # 鎻愬彇鍏抽敭淇℃伅
+            status=$(jq -r '.status' logs/observability-validation-report.json)
+            environments=$(jq -r '.summary.environments' logs/observability-validation-report.json)
+            errors=$(jq -r '.summary.errors' logs/observability-validation-report.json)
+            warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
+            
+            # 杈撳嚭楠岃瘉鎽樿鍒?Job Summary
+            {
+              echo '## 馃攳 鍙娴嬫€ч厤缃獙璇佺粨鏋?
+              echo ''
+              echo '### 馃搱 楠岃瘉鎽樿'
+              echo '| 鎸囨爣 | 鍊?|'
+              echo '|------|-----|'
+              echo "| 鐘舵€?| $status |"
+              echo "| 鐜鏁伴噺 | $environments |"
+              echo "| 閿欒鏁伴噺 | $errors |"
+              echo "| 璀﹀憡鏁伴噺 | $warnings |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            
+            # 濡傛灉鏈夐敊璇紝鏄剧ず閿欒璇︽儏
+            if [ "$errors" -gt 0 ]; then
+              {
+                echo ''
+                echo '### 鉂?鍙戠幇鐨勯敊璇?
+                jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            
+            # 濡傛灉鏈夎鍛婏紝鏄剧ず璀﹀憡璇︽儏
+            if [ "$warnings" -gt 0 ]; then
+              {
+                echo ''
+                echo '### 鈿狅笍 鍙戠幇鐨勮鍛?
+                jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            {
+              echo '## 馃攳 鍙娴嬫€ч厤缃獙璇佺粨鏋?
+              echo ''
+              echo '鈿狅笍 鏃犳硶鎵惧埌楠岃瘉鎶ュ憡鏂囦欢'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 楠岃瘉閫氳繃妫€鏌?        if: success()
+        run: |
+          echo "鉁?缁熶竴鍙娴嬫€ч厤缃獙璇侀€氳繃"
+          echo "鎵€鏈夌幆澧冪殑鍙娴嬫€ч厤缃潎绗﹀悎ADR-0003鏍囧噯"
+
+      - name: 楠岃瘉澶辫触澶勭悊
+        if: failure()
+        shell: bash
+        run: |
+          echo "鉂?缁熶竴鍙娴嬫€ч厤缃獙璇佸け璐?
+          echo ""
+          echo "馃攳 鍙兘鐨勫師鍥狅細"
+          echo "1. Sentry DSN鏍煎紡涓嶆纭紙搴斾负: https://key@org.ingest.sentry.io/projectId锛?
+          echo "2. 閰嶇疆鏂囦欢缂哄け蹇呴渶瀛楁锛坰entry.dsn, logging.level绛夛級"
+          echo "3. 閰嶇疆鏂囦欢JSON鏍煎紡閿欒"
+          echo ""
+          echo "馃搵 瑙ｅ喅姝ラ锛?
+          echo "1. 妫€鏌?config/development.json, config/staging.json, config/production.json"
+          echo "2. 纭繚Sentry DSN浣跨敤姝ｇ‘鏍煎紡锛堟敮鎸佸瓧姣嶆暟瀛楃粍鍚堬級"
+          echo "3. 楠岃瘉鎵€鏈夊繀闇€瀛楁瀹屾暣鎬?
+          echo "4. 鍙傝€?ADR-0003 鍙娴嬫€ф爣鍑?
+          echo ""
+          if [ -f "logs/observability-validation-report.json" ]; then
+            echo "馃搳 璇︾粏閿欒淇℃伅锛?
+            jq -r '.errors[]' logs/observability-validation-report.json || echo "鏃犳硶瑙ｆ瀽閿欒璇︽儏"
+          else
+            echo "鈿狅笍 楠岃瘉鎶ュ憡鏂囦欢涓嶅瓨鍦紝妫€鏌ヨ剼鏈槸鍚︽甯告墽琛?
+          fi
+          echo ""
+          echo "馃搧 璇︾粏鎶ュ憡璇锋煡鐪?observability-validation-report artifact"
+          exit 1
+
+  # 鏉′欢渚濊禆妫€鏌ワ細浠呭湪閰嶇疆鏂囦欢鍙樻洿鏃惰繍琛岄澶栭獙璇?  observability-gate-production:
+    name: 鎵╁睍閰嶇疆楠岃瘉
+    runs-on: windows-latest
+    if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
+    needs: observability-gate-development
+    timeout-minutes: 5
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+
+    steps:
+      - name: Checkout浠ｇ爜
+        uses: actions/checkout@v4
+
+      - name: 璁剧疆Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 瀹夎jq宸ュ叿
+        shell: pwsh
+        run: |
+          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
+
+      - name: 楠岃瘉Sentry闆嗘垚閰嶇疆
+        run: |
+          echo "馃洝锔?楠岃瘉Sentry闆嗘垚閰嶇疆..."
+
+          # 妫€鏌ュ繀瑕佺殑鐜鍙橀噺閰嶇疆绀轰緥
+          if ! grep -q "SENTRY_DSN" config/development.json; then
+            echo "鈿狅笍 development.json涓湭鎵惧埌SENTRY_DSN閰嶇疆绀轰緥"
+          fi
+
+          # 妫€鏌elease閰嶇疆
+          if ! grep -q "release" config/production.json; then
+            echo "鈿狅笍 production.json涓湭鎵惧埌release閰嶇疆"
+          fi
+
+          echo "鉁?Sentry闆嗘垚閰嶇疆妫€鏌ュ畬鎴?
+
+      - name: 楠岃瘉鏃ュ織閰嶇疆涓€鑷存€?        shell: bash
+        run: |
+          echo "馃摑 楠岃瘉鏃ュ織閰嶇疆涓€鑷存€?.."
+
+          # 妫€鏌ユ墍鏈夌幆澧冪殑鏃ュ織绾у埆璁剧疆
+          for env in development staging production; do
+            config_file="config/${env}.json"
+            if [ -f "$config_file" ]; then
+              log_level=$(jq -r '.logging.level // "info"' "$config_file")
+              echo "鐜 $env 鐨勬棩蹇楃骇鍒? $log_level"
+            fi
+          done
+
+          echo "鉁?鏃ュ織閰嶇疆涓€鑷存€ф鏌ュ畬鎴?
+
+  # Staging鐜鍙娴嬫€ф鏌?  observability-gate-staging:
+    name: 馃攳 Staging鐜鍙娴嬫€ч獙璇?    runs-on: windows-latest
+    needs: observability-gate-development
+    timeout-minutes: 5
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+
+    steps:
+      - name: Checkout浠ｇ爜
+        uses: actions/checkout@v4
+
+      - name: 璁剧疆Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 瀹夎jq宸ュ叿
+        shell: pwsh
+        run: |
+          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
+          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing jq tool..."
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+              choco install jq -y --no-progress
+            } else {
+              Write-Host "Chocolatey not available, trying winget..."
+              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
+            }
+          } else {
+            Write-Host "jq already available"
+          }
+
+      - name: Staging鐜閰嶇疆妫€鏌?        shell: bash
+        run: |
+          echo "馃幁 楠岃瘉Staging鐜閰嶇疆..."
+
+          # 妫€鏌taging閰嶇疆鏂囦欢
+          if [ -f "config/staging.json" ]; then
+            echo "鉁?鎵惧埌staging閰嶇疆鏂囦欢"
+            # 鍩烘湰閰嶇疆楠岃瘉
+            jq empty config/staging.json && echo "鉁?staging.json鏍煎紡姝ｇ‘"
+          else
+            echo "鈿狅笍 鏈壘鍒皊taging閰嶇疆鏂囦欢锛屼娇鐢ㄩ粯璁ら厤缃?
+          fi
+
+          echo "鉁?Staging鐜閰嶇疆妫€鏌ュ畬鎴?
+
+# ==================== 骞跺彂鎺у埗 ====================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+

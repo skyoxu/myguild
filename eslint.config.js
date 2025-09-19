@@ -22,6 +22,7 @@ export default tseslint.config([
       'tests_08_templates',
       'configs',
       'docs',
+
       '__snapshots__',
       '**/*.d.ts',
       'src/shared/contracts/**',
@@ -356,6 +357,8 @@ export default tseslint.config([
     rules: {
       'max-lines-per-function': ['warn', { max: 350 }],
       complexity: ['warn', 35],
+      // 测试文件允许使用 any（短期豁免，避免将警告当作失败）
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off', // 测试文件有很多mock变量
       'no-console': 'off', // 测试允许console
     },

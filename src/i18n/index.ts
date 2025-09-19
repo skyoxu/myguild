@@ -1,4 +1,4 @@
-type Dict = Record<string, string>;
+﻿type Dict = Record<string, string>;
 const zh: Dict = { 'app.title': '我的游戏', 'guild.create': '创建公会' };
 const en: Dict = { 'app.title': 'My Game', 'guild.create': 'Create Guild' };
 

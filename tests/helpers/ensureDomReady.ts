@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 统一的DOM就绪等待语义helper - 解决Playwright导航完成检测问题
  *
  * 用于确保Electron应用的DOM已完全加载并可用于断言，

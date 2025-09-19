@@ -1,0 +1,51 @@
+name: Nightly Scene Transition (Hard Gate)
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # UTC 02:00
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  scene-transition-nightly:
+    name: Scene Transition Nightly
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      E2E_SECURITY_TIMEOUT_MS: 300000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Build (for Electron E2E)
+        run: npm run build
+        env:
+          VITE_E2E_SMOKE: 'true'
+      - name: Run scene-transition (Full Sampling, Hard Gate)
+        run: npm run test:e2e:scene-transition
+      - name: Collect traces
+        if: always()
+        run: npm run collect:traces
+      - name: Upload perf logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-logs-nightly
+          path: |
+            logs/perf/
+            logs/playwright-traces/
+          retention-days: 14
+

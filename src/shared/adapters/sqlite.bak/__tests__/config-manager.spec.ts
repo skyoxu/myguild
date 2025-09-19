@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SqliteConfigManager单元测试
  * 测试SQLite配置管理器的各种功能
  */

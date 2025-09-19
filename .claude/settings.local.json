@@ -146,7 +146,11 @@
       "Bash(then rm -rf \"$TEMP/playwright-transform-cache\")",
       "Bash(else echo \"TEMP 缓存不存在\")",
       "Bash(ELECTRON_ENABLE_LOGGING=1 DEBUG=electron* npx playwright test tests/e2e/smoke/electron-launch-demo.spec.ts --project=electron-smoke-tests --reporter=line --timeout=30000 --max-failures=1)",
-      "Bash(do cp \"$f\" \"$f%.js.cjs\")"
+      "Bash(do cp \"$f\" \"$f%.js.cjs\")",
+      "Bash(if exist \"node_modules\" rmdir /S /Q \"node_modules\")",
+      "Bash(if exist \"package-lock.json\" del \"package-lock.json\")",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)"
     ],
     "deny": [],
     "ask": [],

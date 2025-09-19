@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+﻿import { test, expect, _electron as electron } from '@playwright/test';
 import { testLocationNavigation, testWindowOpen } from '../../helpers/launch';
 
 test('外部导航阻止 - 不应落到 chrome-error', async () => {

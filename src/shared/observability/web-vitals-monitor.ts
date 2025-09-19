@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Web Vitals监控系统 - Electron环境适配
  *
  * 监控核心Web性能指标：

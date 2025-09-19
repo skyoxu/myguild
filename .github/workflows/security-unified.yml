@@ -124,14 +124,14 @@ jobs:
         id: electronegativity
         shell: bash
         run: |
-          echo "🔍 Running Electronegativity security scan..."
-          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "⚠️ Scan completed but with warnings"
+          echo "Running Electronegativity security scan..."
+          electronegativity --input . --output electronegativity-scan.csv --verbose false --electron-version 37.0.0 || echo "Scan completed but with warnings"
 
           if [ -f electronegativity-scan.csv ]; then
-            echo "✅ Electronegativity scan completed"
+            echo "Electronegativity scan completed"
             echo "electronegativity-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ Electronegativity scan failed"
+            echo "Electronegativity scan failed"
             echo "electronegativity-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
@@ -139,14 +139,14 @@ jobs:
         id: npm-audit
         shell: bash
         run: |
-          echo "🔍 Running npm audit..."
+          echo "Running npm audit..."
           npm audit --audit-level high --json > npm-audit-results.json || true
 
           if [ -f npm-audit-results.json ]; then
-            echo "✅ npm audit completed"
+            echo "npm audit completed"
             echo "npm-audit-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ npm audit failed"
+            echo "npm audit failed"
             echo "npm-audit-status=failed" >> "$GITHUB_OUTPUT"
           fi
 
@@ -157,13 +157,13 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -n "$SNYK_TOKEN" ]; then
-            echo "🔍 Running Snyk scan..."
+            echo "Running Snyk scan..."
             snyk test --json > snyk-results.json || true
             snyk monitor || true
-            echo "✅ Snyk scan completed"
+            echo "Snyk scan completed"
             echo "snyk-status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "⚠️ Skipping Snyk scan (no SNYK_TOKEN)"
+            echo "Skipping Snyk scan (no SNYK_TOKEN)"
             echo "snyk-status=skipped" >> "$GITHUB_OUTPUT"
           fi
 
@@ -173,12 +173,12 @@ jobs:
           Write-Host "Installing TruffleHog via Chocolatey..."
           choco install trufflehog -y --no-progress
           trufflehog --version
-          Write-Host "✅ TruffleHog installation completed"
+          Write-Host "TruffleHog installation completed"
 
       - name: Check for secret leaks (Windows native)
         shell: pwsh
         run: |
-          Write-Host "🔍 Running TruffleHog secret scan..."
+          Write-Host "Running TruffleHog secret scan..."
           
           # PR scenario: use git incremental scan (faster and more accurate)
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
@@ -202,19 +202,19 @@ jobs:
           # Strict exit code handling
           $code = $LASTEXITCODE
           if ($code -eq 0) {
-            Write-Host "✅ No verified secrets found"
+            Write-Host "No verified secrets found"
           } elseif ($code -eq 183) {
-            Write-Host "❌ Verified secrets found, see $scanFile"
+            Write-Host "Verified secrets found, see$scanFile"
             # Output found content for debugging
             if (Test-Path $scanFile) {
               $content = Get-Content $scanFile -Raw
               if ($content -and $content.Trim() -ne "") {
-                Write-Host "🚨 Detected verified secret leaks"
+                Write-Host "Detected verified secret leaks"
               }
             }
             exit 1
           } else {
-            Write-Host "❌ TruffleHog scan error (exit $code)"
+            Write-Host "TruffleHog scan error (exit$code)"
             exit $code
           }
 
@@ -223,7 +223,7 @@ jobs:
         shell: bash
         continue-on-error: false
         run: |
-          echo "📊 Aggregating static security scan results..."
+          echo "Aggregating static security scan results..."
 
           CRITICAL_COUNT=0
           HIGH_COUNT=0
@@ -255,7 +255,7 @@ jobs:
             echo "Snyk - Critical: $SNYK_CRITICAL, High: $SNYK_HIGH"
           fi
 
-          echo "📊 Static scan summary:"
+          echo "Static scan summary:"
           echo "  Critical total: $CRITICAL_COUNT"
           echo "  High total: $HIGH_COUNT"
 
@@ -266,17 +266,17 @@ jobs:
           # ADR-0002 hard failure logic: Critical=0, High≤3
           if [ "$CRITICAL_COUNT" -gt 0 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
-            echo "❌ [Hard Failure] Found $CRITICAL_COUNT Critical-level security issues, ADR-0002 requires zero"
-            echo "🚨 Gate will force failure, merge prohibited"
+            echo "[Hard Failure] Found$CRITICAL_COUNTCritical-level security issues, ADR-0002 requires zero"
+            echo "Gate will force failure, merge prohibited"
             exit 1
           elif [ "$HIGH_COUNT" -gt 3 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
-            echo "❌ [Hard Failure] Found $HIGH_COUNT High-level security issues, ADR-0002 allows maximum 3"
-            echo "🚨 Gate will force failure, merge prohibited"
+            echo "[Hard Failure] Found$HIGH_COUNTHigh-level security issues, ADR-0002 allows maximum 3"
+            echo "Gate will force failure, merge prohibited"
             exit 1
           else
             echo "status=pass" >> "$GITHUB_OUTPUT"
-            echo "✅ Static security scan passes ADR-0002 baseline requirements"
+            echo "Static security scan passes ADR-0002 baseline requirements"
           fi
 
       - name: Upload static scan reports
@@ -336,12 +336,12 @@ jobs:
           # GitHub Actions expects dist/win-unpacked/
           ACTUAL_OUTPUT=$(find release -name "win-unpacked" -type d | head -1)
           if [ -n "$ACTUAL_OUTPUT" ]; then
-            echo "✅ Found electron-builder output: $ACTUAL_OUTPUT"
+            echo "Found electron-builder output:$ACTUAL_OUTPUT"
             mkdir -p dist/win-unpacked
             cp -r "$ACTUAL_OUTPUT"/* dist/win-unpacked/
-            echo "✅ Adapted artifact path for GitHub Actions: dist/win-unpacked/"
+            echo "Adapted artifact path for GitHub Actions: dist/win-unpacked/"
           else
-            echo "❌ electron-builder output not found in release/ directory"
+            echo "electron-builder output not found in release/ directory"
             find release -type f -name "*.exe" || true
             exit 1
           fi
@@ -419,14 +419,14 @@ jobs:
           # Linux: ViteGame Studio (AppImage/deb)
           $electronExe = "dist/win-unpacked/ViteGame Studio.exe"
           if (Test-Path $electronExe) {
-            Write-Host "✅ Found Electron executable: $electronExe"
+            Write-Host "Found Electron executable:$electronExe"
             # 设置环境变量供后续steps使用 (指向可执行文件)
             echo "ELECTRON_MAIN_PATH=$electronExe" >> $env:GITHUB_ENV
             # 同时设置VITE_E2E_SMOKE以保持E2E_PERF配置兼容性
             echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
           } else {
-            Write-Host "❌ Electron executable not found: $electronExe"
-            Write-Host "📁 Listing actual dist/win-unpacked contents:"
+            Write-Host "Electron executable not found:$electronExe"
+            Write-Host "Listing actual dist/win-unpacked contents:"
             Get-ChildItem dist/win-unpacked -Recurse -Name
             exit 1
           }
@@ -436,13 +436,13 @@ jobs:
         id: e2e-test-smoke
         shell: bash
         run: |
-          echo "🛡️ (PR) Running security smoke subset..."
+          echo "(PR) Running security smoke subset..."
           if cross-env SECURITY_TEST_MODE=true CI=true \
              npx playwright test --project=electron-security-audit --grep @smoke --reporter=github,line --trace=on-first-retry; then
-            echo "✅ E2E security smoke passed"
+            echo "E2E security smoke passed"
             echo "status=pass" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ E2E security smoke failed"
+            echo "E2E security smoke failed"
             echo "status=failed" >> "$GITHUB_OUTPUT"
           fi
       - name: Run E2E security tests (Full)
@@ -450,16 +450,29 @@ jobs:
         id: e2e-test-full
         shell: bash
         run: |
-          echo "🛡️ (Full) Running complete E2E security tests..."
+          echo "(Full) Running complete E2E security tests..."
           if npm run test:e2e:security; then
-            echo "✅ E2E security tests passed"
+            echo "E2E security tests passed"
             echo "status=pass" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ E2E security tests failed"
+            echo "E2E security tests failed"
             echo "status=failed" >> "$GITHUB_OUTPUT"
           fi
         env:
           CI: true
+
+      - name: Collect Playwright traces to logs/
+        if: always()
+        run: npm run collect:traces
+
+      - name: Upload Playwright traces (logs/playwright-traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: logs/playwright-traces/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload E2E test reports
         uses: actions/upload-artifact@v4
@@ -512,18 +525,18 @@ jobs:
         continue-on-error: false
         shell: bash
         run: |
-          echo "🔐 Starting unified security gate check..."
+          echo "Starting unified security gate check..."
 
           # ADR-0002 hard failure check: static scan must pass
           if [ "${{ needs.security-scan.result }}" != "success" ]; then
-            echo "❌ [Hard Failure] Static security scan failed, violates ADR-0002 security baseline"
-            echo "🚨 Critical or High security issues block merge"
+            echo "[Hard Failure] Static security scan failed, violates ADR-0002 security baseline"
+            echo "Critical or High security issues block merge"
             exit 1
           fi
 
           # Use our security gate wrapper script (ESM module compatible)
           if ! npm run guard:security; then
-            echo "❌ [Hard Failure] Security gate wrapper script check failed"
+            echo "[Hard Failure] Security gate wrapper script check failed"
             exit 1
           fi
         env:
@@ -540,7 +553,7 @@ jobs:
       - name: Generate unified security report
         shell: bash
         run: |
-          echo "📊 Generating unified security gate report..."
+          echo "Generating unified security gate report..."
 
           # Create comprehensive report containing all results
           cat > logs/unified-security-report.json << EOF
@@ -579,14 +592,14 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             {
-              echo "## ⚠️ Security Notice"
+              echo "## Security Notice"
               echo "This PR uses a SOFT gate for E2E security checks (non-blocking)."
               echo "Please review smoke results and fix before merging to main where HARD gate applies."
               echo ""
             } >> "$GITHUB_STEP_SUMMARY"
           else
             {
-              echo "## 🔒 Security Notice"
+              echo "## Security Notice"
               echo "This branch uses a HARD gate for E2E security checks (blocking on failure)."
               echo ""
             } >> "$GITHUB_STEP_SUMMARY"
@@ -611,9 +624,9 @@ jobs:
             {
               echo "**ADR-0002 Violation**: Static security scan failed baseline requirements"
               echo "- Critical security issues: ${critical_count} (required: 0)"
-              echo "- High security issues: ${high_count} (required: ≤3)"
+              echo "- High security issues:${high_count}(required: 3)"
               echo ""
-              echo "🚨 **This PR is hard-blocked from merging, must fix all security issues**"
+              echo "**This PR is hard-blocked from merging, must fix all security issues**"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
@@ -622,11 +635,11 @@ jobs:
             {
               echo "**ADR-0002 Violation**: E2E security tests failed"
               echo "Please check Electron security configuration:"
-              echo "- nodeIntegration=false ✓"
-              echo "- contextIsolation=true ✓"
-              echo "- sandbox=true ✓"
+              echo "- nodeIntegration=false"
+              echo "- contextIsolation=true"
+              echo "- sandbox=true"
               echo ""
-              echo "🚨 **This PR is hard-blocked from merging, must fix Electron security config**"
+              echo "**This PR is hard-blocked from merging, must fix Electron security config**"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
@@ -634,9 +647,9 @@ jobs:
             result_title="### ✅ Security Gate Passed"
             {
               echo "**ADR-0002 Compliant**: All security checks passed, meets strict security baseline requirements"
-              echo "- Critical security issues: 0 ✓"
-              echo "- High security issues: ${high_count} (≤3) ✓"
-              echo "- E2E security tests: Passed ✓"
+              echo "- Critical security issues: 0"
+              echo "- High security issues:${high_count}(3)"
+              echo "- E2E security tests: Passed"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=0
@@ -644,9 +657,9 @@ jobs:
           
           # Write all content to Summary at once
           {
-            echo "## 🔐 Unified Security Gate Results"
+            echo "## Unified Security Gate Results"
             echo ""
-            echo "### 📊 Check Summary"
+            echo "### Check Summary"
             echo "| Check Item | Status | Result |"
             echo "|---------|------|------|"
             echo "| Static Security Scan | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${critical_count}, High: ${high_count} |"

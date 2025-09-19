@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { measureEventLoopLag } from '../../scripts/benchmarks/event-loop-latency';
 
 describe('09 EventLoop 延迟', () => {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @fileoverview 可观测性指标契约测试
  * @description 基于 03-可观测性(Sentry+日志)-v2.md 的测试用例
  * @references ADR-0003, ADR-0005

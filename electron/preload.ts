@@ -1,4 +1,4 @@
-import { contextBridge } from 'electron';
+﻿import { contextBridge } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
 // 验证上下文隔离是否正确启用
@@ -82,6 +82,27 @@ if (process.contextIsolated) {
             lastInterceptAt: new Date().toISOString(),
             interceptCount: 0,
           }),
+        })
+      );
+
+      // 参数校验测试占位（仅测试模式）：避免扩大攻击面
+      contextBridge.exposeInMainWorld(
+        '__PARAM_VALIDATION__',
+        Object.freeze({
+          // 简单示例：校验并回显 message 字段（本地轻量守卫，避免跨项目导入）
+          safeEcho(payload: unknown): string {
+            if (
+              payload === null ||
+              typeof payload !== 'object' ||
+              Array.isArray(payload)
+            ) {
+              throw new TypeError('payload must be a plain object');
+            }
+            const msg = (payload as any).message;
+            if (typeof msg !== 'string')
+              throw new TypeError('message must be a string');
+            return String(msg);
+          },
         })
       );
     }

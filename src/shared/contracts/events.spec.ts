@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 事件契约单元测试
  *
  * 基于04-system-context-c4-event-flows-v2.md验收清单

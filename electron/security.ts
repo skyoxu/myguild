@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Electron安全基线实现 - 三层拦截与沙箱策略
  * 实现ADR-0002规定的安全防护措施
  *
@@ -8,6 +8,30 @@
  * 3. CSP响应头层：Content Security Policy + COOP/COEP/Permissions Policy
  */
 import { BrowserWindow, session, app, shell } from 'electron';
+// 轻量参数校验（占位）：与 ADR-0002 保持一致
+function assertBrowserWindow(win: unknown): asserts win is BrowserWindow {
+  if (!win || typeof (win as any).webContents?.on !== 'function') {
+    throw new TypeError('hardenWindow: invalid BrowserWindow instance');
+  }
+}
+function assertSession(
+  sesArg: unknown
+): asserts sesArg is typeof session.defaultSession {
+  if (
+    !sesArg ||
+    typeof (sesArg as any).webRequest?.onHeadersReceived !== 'function'
+  ) {
+    throw new TypeError('Security: invalid session provided');
+  }
+}
+export function _isAllowedNavigation(url: string): boolean {
+  const allowedProtocols = ['app://', 'file://'];
+  const allowedDomains = ['localhost', '127.0.0.1'];
+  return (
+    allowedProtocols.some(p => url.startsWith(p)) ||
+    allowedDomains.some(d => url.includes(d))
+  );
+}
 
 /**
  * 第一层：安全BrowserWindow配置
@@ -48,17 +72,13 @@ export function hardenWindow(
   window: BrowserWindow,
   ses: typeof session.defaultSession
 ): void {
+  assertBrowserWindow(window);
+  assertSession(ses);
   // 1. 窗口/弹窗拦截
   window.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[Security] 窗口打开请求被拦截: ${url}`);
 
-    // 只允许内部协议或白名单域名
-    const allowedProtocols = ['app://', 'file://'];
-    const allowedDomains = ['localhost', '127.0.0.1']; // 开发时允许
-
-    const isAllowed =
-      allowedProtocols.some(protocol => url.startsWith(protocol)) ||
-      allowedDomains.some(domain => url.includes(domain));
+    const isAllowed = _isAllowedNavigation(url);
 
     if (isAllowed) {
       return { action: 'allow' };
@@ -128,6 +148,7 @@ export function hardenWindow(
 export function installSecurityHeaders(
   ses: typeof session.defaultSession
 ): void {
+  assertSession(ses);
   ses.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = details.responseHeaders || {};
 
@@ -180,6 +201,7 @@ export function installSecurityHeaders(
  * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
 export function setupCSPReporting(ses: typeof session.defaultSession): void {
+  assertSession(ses);
   ses.webRequest.onBeforeRequest((details, callback) => {
     // 监控可疑的请求模式 - 避免使用javascript:协议字符串
     const url = details.url.toLowerCase();
@@ -205,6 +227,7 @@ export function setupCSPReporting(ses: typeof session.defaultSession): void {
  * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
 export function initializeSecurity(ses: typeof session.defaultSession): void {
+  assertSession(ses);
   console.log('[Security] 初始化Electron安全基线...');
 
   // 安装全局安全头

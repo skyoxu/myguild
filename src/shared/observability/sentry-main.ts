@@ -1,4 +1,4 @@
-import { app, session } from 'electron';
+﻿import { app, session } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';

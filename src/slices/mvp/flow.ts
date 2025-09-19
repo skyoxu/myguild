@@ -1,4 +1,4 @@
-import { InMemoryGuildRepo } from '../../infra/repo/memory/inmemory';
+﻿import { InMemoryGuildRepo } from '../../infra/repo/memory/inmemory';
 import type { Guild } from '../../shared/contracts';
 
 export async function createGuildFlow(name: string) {

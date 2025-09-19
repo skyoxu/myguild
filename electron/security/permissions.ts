@@ -1,4 +1,4 @@
-/* 统一权限与导航策略中间件 */
+﻿/* 统一权限与导航策略中间件 */
 import { BrowserWindow, session, shell } from 'electron';
 
 interface SecurityConfig {

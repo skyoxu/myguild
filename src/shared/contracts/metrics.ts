@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @fileoverview 可观测性指标契约定义
  * @description 基于 03-可观测性(Sentry+日志)-v2.md 的 TypeScript 契约实现
  * @references ADR-0003 (可观测性与 Release Health), ADR-0005 (质量门禁)

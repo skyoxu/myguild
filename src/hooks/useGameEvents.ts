@@ -1,4 +1,4 @@
-/**
+﻿/**
  * React Hook for Game Event Communication
  * 为React组件提供与Phaser游戏引擎的事件通信能力
  */

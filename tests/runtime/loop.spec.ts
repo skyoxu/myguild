@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import { GameLoop } from '../../src/runtime/loop';
 import { StateMachine } from '../../src/runtime/state';
 

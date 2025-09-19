@@ -1,5 +1,6 @@
 'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
+exports._isAllowedNavigation = _isAllowedNavigation;
 exports.createSecureBrowserWindow = createSecureBrowserWindow;
 exports.hardenWindow = hardenWindow;
 exports.installSecurityHeaders = installSecurityHeaders;
@@ -17,6 +18,25 @@ exports.getSecurityHealthCheck = getSecurityHealthCheck;
  * 3. CSP响应头层：Content Security Policy + COOP/COEP/Permissions Policy
  */
 const electron_1 = require('electron');
+// 轻量参数校验（占位）：与 ADR-0002 保持一致
+function assertBrowserWindow(win) {
+  if (!win || typeof win.webContents?.on !== 'function') {
+    throw new TypeError('hardenWindow: invalid BrowserWindow instance');
+  }
+}
+function assertSession(sesArg) {
+  if (!sesArg || typeof sesArg.webRequest?.onHeadersReceived !== 'function') {
+    throw new TypeError('Security: invalid session provided');
+  }
+}
+function _isAllowedNavigation(url) {
+  const allowedProtocols = ['app://', 'file://'];
+  const allowedDomains = ['localhost', '127.0.0.1'];
+  return (
+    allowedProtocols.some(p => url.startsWith(p)) ||
+    allowedDomains.some(d => url.includes(d))
+  );
+}
 /**
  * 第一层：安全BrowserWindow配置
  * 确保所有窗口都遵循严格的安全基线
@@ -47,15 +67,12 @@ function createSecureBrowserWindow(options = {}) {
  * ✅ 按cifix1.txt建议：通过参数传入Session，避免访问window.webContents.session
  */
 function hardenWindow(window, ses) {
+  assertBrowserWindow(window);
+  assertSession(ses);
   // 1. 窗口/弹窗拦截
   window.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[Security] 窗口打开请求被拦截: ${url}`);
-    // 只允许内部协议或白名单域名
-    const allowedProtocols = ['app://', 'file://'];
-    const allowedDomains = ['localhost', '127.0.0.1']; // 开发时允许
-    const isAllowed =
-      allowedProtocols.some(protocol => url.startsWith(protocol)) ||
-      allowedDomains.some(domain => url.includes(domain));
+    const isAllowed = _isAllowedNavigation(url);
     if (isAllowed) {
       return { action: 'allow' };
     }
@@ -112,6 +129,7 @@ function hardenWindow(window, ses) {
  * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
 function installSecurityHeaders(ses) {
+  assertSession(ses);
   ses.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = details.responseHeaders || {};
     // Content Security Policy - 核心安全策略
@@ -154,6 +172,7 @@ function installSecurityHeaders(ses) {
  * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
 function setupCSPReporting(ses) {
+  assertSession(ses);
   ses.webRequest.onBeforeRequest((details, callback) => {
     // 监控可疑的请求模式 - 避免使用javascript:协议字符串
     const url = details.url.toLowerCase();
@@ -175,6 +194,7 @@ function setupCSPReporting(ses) {
  * ✅ 按cifix1.txt建议：通过参数传入Session，在ready后调用
  */
 function initializeSecurity(ses) {
+  assertSession(ses);
   console.log('[Security] 初始化Electron安全基线...');
   // 安装全局安全头
   installSecurityHeaders(ses);

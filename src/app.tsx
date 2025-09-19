@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+﻿import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useWebVitals } from './hooks/useWebVitals';
 import { startLongTaskMonitor } from '@/shared/observability/longtask-monitor';
 import { useEventLoopDelayMonitor } from '@/hooks/useEventLoopDelay';

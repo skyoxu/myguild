@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 游戏状态事件集成Hook
  * 结合useGameEvents和useGameState，提供完整的事件与状态管理集成
  */

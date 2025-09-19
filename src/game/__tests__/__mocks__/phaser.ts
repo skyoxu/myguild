@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phaser 3 Mock for testing
  */
 

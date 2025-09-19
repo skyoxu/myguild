@@ -131,6 +131,8 @@ async function validateAllWorkflows() {
 
   const results = [];
   let hasErrors = false;
+  let foundSceneTransitionRunner = false;
+  let foundScheduledSceneTransition = false;
 
   for (const filePath of workflowFiles) {
     const fileName = path.relative(path.join(__dirname, '..', '..'), filePath);
@@ -180,6 +182,27 @@ async function validateAllWorkflows() {
 
     results.push(result);
 
+    // 场景转换项目必跑检查（允许多种触发方式）
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const okPatterns = [
+        /npm\s+run\s+test:e2e(\s|$)/i,
+        /npm\s+run\s+test:e2e:scene-transition/i,
+        /npx\s+playwright\s+test[^\n]*--project[^\n]*scene-transition/i,
+        /playwright\s+test[^\n]*--project[^\n]*scene-transition/i,
+        /npm\s+run\s+guard:ci/i,
+      ];
+      if (okPatterns.some(r => r.test(raw))) {
+        foundSceneTransitionRunner = true;
+      }
+
+      // 夜间/周任务：若包含 schedule，则该文件也必须触发 scene-transition
+      const hasSchedule = /\bon\s*:\s*[\s\S]*?schedule\s*:/i.test(raw);
+      if (hasSchedule && okPatterns.some(r => r.test(raw))) {
+        foundScheduledSceneTransition = true;
+      }
+    } catch (_) {}
+
     if (result.status === 'valid') {
       console.log(
         `  ✅ 验证通过 (${result.jobCount} jobs, ${result.dependencyCount} dependencies)`
@@ -207,6 +230,29 @@ async function validateAllWorkflows() {
     `❌ 失败: ${results.filter(r => r.status === 'failed').length} 个文件`
   );
   console.log(`📋 详细报告: ${reportPath}`);
+
+  // 全局必跑项：scene-transition 项目必须在任一工作流中被执行
+  if (!foundSceneTransitionRunner) {
+    hasErrors = true;
+    console.log('\n❌ 必跑检查未通过: 未检测到 scene-transition 项目的执行入口');
+    console.log('   允许的写法示例:');
+    console.log('   - npm run test:e2e');
+    console.log('   - npm run test:e2e:scene-transition');
+    console.log("   - npx playwright test --project='scene-transition'");
+    console.log('   - npm run guard:ci (链内包含 test:e2e)');
+  }
+
+  // 夜间/周任务：若任一 workflow 含 schedule，则至少一个带 schedule 的 workflow 应执行 scene-transition
+  const anyHasSchedule = getAllWorkflowFiles()
+    .map(f => fs.readFileSync(f, 'utf8'))
+    .some(raw => /\bon\s*:\s*[\s\S]*?schedule\s*:/i.test(raw));
+  if (anyHasSchedule && !foundScheduledSceneTransition) {
+    hasErrors = true;
+    console.log('\n❌ 夜间/周任务检查未通过: 含有 schedule 的工作流未检测到 scene-transition 执行');
+    console.log('   请在定时任务工作流中添加以下任一命令:');
+    console.log('   - npm run test:e2e:scene-transition');
+    console.log("   - npx playwright test --project='scene-transition'");
+  }
 
   if (hasErrors) {
     console.log('\n💡 建议操作:');

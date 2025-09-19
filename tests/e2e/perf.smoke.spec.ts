@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Perf smoke (minimal) — Electron + Playwright
  * Focus: basic app boot and interaction P95 with stable sampling.
  */

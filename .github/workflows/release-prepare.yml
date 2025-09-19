@@ -1,7 +1,6 @@
-name: Release Preparation - 发布准备
+name: Release Preparation - 鍙戝竷鍑嗗
 
-# 最小权限原则
-permissions:
+# Minimal permissions
   contents: write
   actions: read
 
@@ -13,16 +12,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '发布版本号 (语义化版本)'
+        description: '鍙戝竷鐗堟湰鍙?(璇箟鍖栫増鏈?'
         required: true
         type: string
       artifact_path:
-        description: '应用文件路径'
+        description: '搴旂敤鏂囦欢璺緞'
         required: false
         type: string
         default: 'dist/app.exe'
       create_feeds:
-        description: '创建所有平台的 feed 文件'
+        description: '鍒涘缓鎵€鏈夊钩鍙扮殑 feed 鏂囦欢'
         required: false
         type: boolean
         default: true
@@ -31,15 +30,15 @@ env:
   SENTRY_ORG: ${{ vars.SENTRY_ORG || 'your-org' }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || 'vitegame' }}
 
-# ==================== 并发控制 ====================
+# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false # 发布准备不可中断
+  cancel-in-progress: false # 鍙戝竷鍑嗗涓嶅彲涓柇
 
 jobs:
   prepare:
     runs-on: windows-latest
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -48,26 +47,26 @@ jobs:
       contents: write
 
     steps:
-      - name: '🚀 Checkout repository'
+      - name: Step
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: '📦 Setup Node.js'
+      - name: Step
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: '🔧 Install dependencies'
+      - name: Step
         uses: ./.github/actions/npm-install
         env:
           NPM_CONFIG_PRODUCTION: 'true'
 
-      - name: '🛠️ Install system tools'
+      - name: Step
         shell: pwsh
         run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
+          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
           if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
             Write-Host "Installing jq tool..."
             if (Get-Command choco -ErrorAction SilentlyContinue) {
@@ -85,21 +84,20 @@ jobs:
         run: |
           version="${{ inputs.version }}"
           if ! echo "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'; then
-            echo "❌ Invalid version format: $version"
+            echo "?Invalid version format:$version"
             echo "Expected semantic version (e.g., 1.2.3, 1.2.3-beta.1)"
             exit 1
           fi
-          echo "✅ Version format valid: $version"
+          echo "?Version format valid:$version"
 
-      - name: '📋 Add version to manifest'
+      - name: Step
         id: manifest
         shell: bash
         run: |
           artifact_path="${{ inputs.artifact_path }}"
 
-          # 检查文件是否存在（仅在非测试模式下）
-          if [ "${{ github.event_name }}" != "workflow_dispatch" ] || [ -f "$artifact_path" ]; then
-            echo "📦 添加版本 ${{ inputs.version }} 到清单..."
+          # 妫€鏌ユ枃浠舵槸鍚﹀瓨鍦紙浠呭湪闈炴祴璇曟ā寮忎笅锛?          if [ "${{ github.event_name }}" != "workflow_dispatch" ] || [ -f "$artifact_path" ]; then
+            echo "${{ inputs.version }} ?.."
             
             result=$(node scripts/release/manage-manifest.mjs add \
               --version="${{ inputs.version }}" \
@@ -107,19 +105,19 @@ jobs:
               --manifest="artifacts/manifest.json")
             
             echo "manifest_result=$result" >> "$GITHUB_OUTPUT"
-            echo "✅ 版本已添加到清单"
+            echo "?"
             echo "$result" | jq '.'
           else
-            echo "⚠️  应用文件不存在: $artifact_path"
-            echo "创建占位清单条目用于测试..."
+            echo "?$artifact_path"
+            echo "..."
             
-            # 创建测试占位条目
+            # 鍒涘缓娴嬭瘯鍗犱綅鏉＄洰
             mkdir -p artifacts
             if [ ! -f "artifacts/manifest.json" ]; then
               echo '{}' > artifacts/manifest.json
             fi
             
-            # 模拟添加版本数据
+            # 妯℃嫙娣诲姞鐗堟湰鏁版嵁
             cat > temp_version.json << EOF
           {
             "path": "$(basename "$artifact_path")",
@@ -136,7 +134,7 @@ jobs:
           }
           EOF
             
-            # 合并到清单 - 安全读取JSON文件避免SC2086
+            # 鍚堝苟鍒版竻鍗?- 瀹夊叏璇诲彇JSON鏂囦欢閬垮厤SC2086
             data_content=$(cat temp_version.json)
             jq --arg version "${{ inputs.version }}" \
                --argjson data "$data_content" \
@@ -145,35 +143,34 @@ jobs:
             rm temp_version.json
             
             echo "manifest_result={\"ok\":true,\"version\":\"${{ inputs.version }}\",\"test_mode\":true}" >> "$GITHUB_OUTPUT"
-            echo "✅ 占位版本条目已创建"
+            echo "鉁?鍗犱綅鐗堟湰鏉＄洰宸插垱寤?
           fi
 
-      - name: '📄 Create feed file (Windows-only)'
+      - name: Step
         if: inputs.create_feeds
         shell: bash
         run: |
           version="${{ inputs.version }}"
 
-          echo "📄 创建 electron-updater feed 文件..."
+          echo "electron-updater feed ..."
 
-          # 确保 dist 目录存在
+          # 纭繚 dist 鐩綍瀛樺湪
           mkdir -p dist
 
-          # 从清单获取版本数据
-          version_data=$(jq -r --arg version "$version" '.[$version]' artifacts/manifest.json)
+          # 浠庢竻鍗曡幏鍙栫増鏈暟鎹?          version_data=$(jq -r --arg version "$version" '.[$version]' artifacts/manifest.json)
 
           if [ "$version_data" = "null" ]; then
-            echo "❌ 版本 $version 在清单中不存在"
+            echo "鉂?鐗堟湰 $version 鍦ㄦ竻鍗曚腑涓嶅瓨鍦?
             exit 1
           fi
 
-          # 提取版本信息
+          # 鎻愬彇鐗堟湰淇℃伅
           path=$(echo "$version_data" | jq -r '.path')
           sha512=$(echo "$version_data" | jq -r '.sha512')
           size=$(echo "$version_data" | jq -r '.size')
           release_date=$(echo "$version_data" | jq -r '.releaseDate')
 
-          # 创建基础 feed 内容
+          # 鍒涘缓鍩虹 feed 鍐呭
           create_feed() {
             local platform=$1
             local feed_file="dist/latest${platform:+-$platform}.yml"
@@ -191,38 +188,37 @@ jobs:
           size: $size
           EOF
             
-            echo "✅ 创建 $feed_file"
+            echo "?$feed_file"
           }
 
-          # 创建各平台 feed 文件
+          # 鍒涘缓鍚勫钩鍙?feed 鏂囦欢
           create_feed ""        # latest.yml (Windows)
           # Windows-only: removed macOS/Linux feeds
 
-          echo "📄 所有 feed 文件创建完成"
+          echo "?feed"
 
-      - name: '🔍 Validate manifest'
+      - name: Step
         run: |
-          echo "🔍 验证版本清单格式..."
+          echo "..."
           node scripts/release/manage-manifest.mjs validate
-          echo "✅ 清单验证通过"
+          echo "?"
 
-      - name: '📊 Display preparation summary'
+      - name: Step
         shell: bash
         run: |
-          # 确保UTF-8编码输出
+          # 纭繚UTF-8缂栫爜杈撳嚭
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          # 使用单一重定向来优化性能（修复 SC2129）
-          {
-            echo "## 📦 发布准备完成"
+          # 浣跨敤鍗曚竴閲嶅畾鍚戞潵浼樺寲鎬ц兘锛堜慨澶?SC2129锛?          {
+            echo "##"
             echo ""
-            echo "| 项目 | 值 |"
+            echo "| | ?|"
             echo "|------|-----|"
-            echo "| 版本 | \`${{ inputs.version }}\` |"
-            echo "| 应用文件 | \`${{ inputs.artifact_path }}\` |"
-            echo "| 创建 Feed 文件 | ${{ inputs.create_feeds && '✅ 是' || '❌ 否' }} |"
+            echo "| | \`${{ inputs.version }}\` |"
+            echo "| | \`${{ inputs.artifact_path }}\` |"
+            echo "| Feed |${{ inputs.create_feeds && '鉁?鏄? || '鉂?鍚? }} |"
             echo ""
-            echo "### 📋 版本清单状态"
+            echo "### 馃搵 鐗堟湰娓呭崟鐘舵€?
             echo "\`\`\`json"
             node scripts/release/manage-manifest.mjs list | jq '.'
             echo "\`\`\`"
@@ -231,7 +227,7 @@ jobs:
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
             {
               echo ""
-              echo "### 📄 创建的 Feed 文件"
+              echo "### ?Feed"
               echo "- \`dist/latest.yml\` (Windows)"
               echo "- \`dist/latest-mac.yml\` (macOS)"  
               echo "- \`dist/latest-linux.yml\` (Linux)"
@@ -240,43 +236,44 @@ jobs:
 
           {
             echo ""
-            echo "### 🎯 下一步"
-            echo "1. 运行 **Release Ramp** 工作流开始渐进发布"
-            echo "2. 从 5% → 25% → 50% → 100% 逐步放量"
-            echo "3. 每个阶段都会自动进行健康度检查"
+            echo "### 馃幆 涓嬩竴姝?
+            echo "1. 杩愯 **Release Ramp** 宸ヤ綔娴佸紑濮嬫笎杩涘彂甯?
+            echo "2. ?5% ?25% ?50% ?100%"
+            echo "3. 姣忎釜闃舵閮戒細鑷姩杩涜鍋ュ悍搴︽鏌?
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: '💾 Commit changes'
+      - name: Step
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 检查是否有变更
+          # 妫€鏌ユ槸鍚︽湁鍙樻洿
           if git diff --quiet && git diff --cached --quiet; then
-            echo "📝 无变更需要提交"
+            echo "馃摑 鏃犲彉鏇撮渶瑕佹彁浜?
             exit 0
           fi
 
-          # 提交变更
+          # 鎻愪氦鍙樻洿
           git add artifacts/manifest.json
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
             git add dist/latest*.yml
           fi
 
-          git commit -m "📦 Release preparation: v${{ inputs.version }}" \
+          git commit -m "馃摝 Release preparation: v${{ inputs.version }}" \
             -m "Version: ${{ inputs.version }}" \
             -m "Artifact: ${{ inputs.artifact_path }}" \
             -m "Feed files: ${{ inputs.create_feeds }}" \
             -m "" \
-            -m "🤖 Generated by GitHub Actions" \
+            -m "馃 Generated by GitHub Actions" \
             -m "Workflow: ${{ github.workflow }}" \
             -m "Run: ${{ github.run_number }}"
 
-          echo "✅ 变更已提交"
+          echo "鉁?鍙樻洿宸叉彁浜?
 
-      - name: '🚀 Push changes'
+      - name: Step
         run: |
-          echo "📤 推送变更到远程仓库..."
+          echo "..."
           git push origin ${{ github.ref }}
-          echo "✅ 发布准备完成"
+          echo "?"
+

@@ -1,4 +1,4 @@
-import { launchApp } from 'helpers/launch';
+﻿import { launchApp } from 'helpers/launch';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';

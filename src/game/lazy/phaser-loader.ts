@@ -1,4 +1,4 @@
-export async function loadPhaser() {
+﻿export async function loadPhaser() {
   const phaser = await import('phaser');
   return phaser;
 }

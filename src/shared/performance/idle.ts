@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 非阻塞排程工具：优先使用 requestIdleCallback，其次双 rAF，最后 setTimeout(0)
  */
 

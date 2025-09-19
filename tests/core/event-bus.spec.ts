@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import type { AppEvent } from '../../src/core/events/types';
 import { InMemoryEventBus } from '../../src/core/events/bus';
 

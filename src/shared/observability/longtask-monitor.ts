@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 渲染线程长任务监控（Long Tasks / Event Loop blocking）
  * - 使用 PerformanceObserver 订阅 'longtask'
  * - 聚合上报到控制台（后续可接入 Sentry Performance）

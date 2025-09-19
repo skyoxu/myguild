@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 公会管理器安全基线测试
  * 验证 Electron 安全配置和 CSP 合规性
  */
@@ -21,200 +21,210 @@ test.afterAll(async () => {
 });
 
 test.describe('Guild Manager - Electron Security Baseline', () => {
-  test('should verify webPreferences configuration at main process level', async () => {
-    const { electronApp } = testApp;
+  // 分组：主进程与策略暴露（ADR-0002/0005）
+  test.describe('Main Process & Policy Exposure', () => {
+    test('should verify webPreferences configuration at main process level', async () => {
+      const { electronApp } = testApp;
 
-    // 直接从主进程验证安全配置
-    const securityConfig = await electronApp.evaluate(({}) => {
-      return (global as any).__SECURITY_PREFS__ || null;
+      // 直接从主进程验证安全配置
+      const securityConfig = await electronApp.evaluate(({}) => {
+        return (global as any).__SECURITY_PREFS__ || null;
+      });
+
+      // 验证安全配置已正确暴露
+      expect(securityConfig).toBeTruthy();
+      expect(securityConfig.sandbox).toBe(true);
+      expect(securityConfig.contextIsolation).toBe(true);
+      expect(securityConfig.nodeIntegration).toBe(false);
+      expect(securityConfig.webSecurity).toBe(true);
+      expect(securityConfig.windowId).toBeDefined();
+      expect(securityConfig.createdAt).toBeDefined();
+
+      console.log('Main Process Security Config:', securityConfig);
     });
 
-    // 验证安全配置已正确暴露
-    expect(securityConfig).toBeTruthy();
-    expect(securityConfig.sandbox).toBe(true);
-    expect(securityConfig.contextIsolation).toBe(true);
-    expect(securityConfig.nodeIntegration).toBe(false);
-    expect(securityConfig.webSecurity).toBe(true);
-    expect(securityConfig.windowId).toBeDefined();
-    expect(securityConfig.createdAt).toBeDefined();
+    test('should expose comprehensive security configuration for testing', async () => {
+      const { electronApp } = testApp;
 
-    console.log('Main Process Security Config:', securityConfig);
-  });
+      // 获取所有暴露的安全配置
+      const securityConfigs = await electronApp.evaluate(({}) => {
+        return {
+          securityPrefs: (global as any).__SECURITY_PREFS__,
+          policyConfig: (global as any).__SECURITY_POLICY_CONFIG__,
+          cspConfig: (global as any).__CSP_CONFIG__,
+          securityHandlers: (global as any).__SECURITY_HANDLERS__,
+        };
+      });
 
-  test('should expose comprehensive security configuration for testing', async () => {
-    const { electronApp } = testApp;
+      // 验证基础安全配置
+      expect(securityConfigs.securityPrefs).toBeTruthy();
+      expect(securityConfigs.securityPrefs.sandbox).toBe(true);
+      expect(securityConfigs.securityPrefs.contextIsolation).toBe(true);
+      expect(securityConfigs.securityPrefs.nodeIntegration).toBe(false);
+      expect(securityConfigs.securityPrefs.webSecurity).toBe(true);
 
-    // 获取所有暴露的安全配置
-    const securityConfigs = await electronApp.evaluate(({}) => {
-      return {
-        securityPrefs: (global as any).__SECURITY_PREFS__,
-        policyConfig: (global as any).__SECURITY_POLICY_CONFIG__,
-        cspConfig: (global as any).__CSP_CONFIG__,
-        securityHandlers: (global as any).__SECURITY_HANDLERS__,
-      };
-    });
+      // 验证安全策略管理器配置
+      expect(securityConfigs.policyConfig).toBeTruthy();
+      expect(securityConfigs.policyConfig.config).toBeTruthy();
+      expect(securityConfigs.policyConfig.testMode).toBe(true);
+      expect(typeof securityConfigs.policyConfig.isProduction).toBe('boolean');
 
-    // 验证基础安全配置
-    expect(securityConfigs.securityPrefs).toBeTruthy();
-    expect(securityConfigs.securityPrefs.sandbox).toBe(true);
-    expect(securityConfigs.securityPrefs.contextIsolation).toBe(true);
-    expect(securityConfigs.securityPrefs.nodeIntegration).toBe(false);
-    expect(securityConfigs.securityPrefs.webSecurity).toBe(true);
+      // 验证策略配置结构
+      const config = securityConfigs.policyConfig.config;
+      expect(config.allowedOrigins).toBeDefined();
+      expect(config.allowedPermissions).toBeDefined();
+      expect(config.allowedNavigationDomains).toBeDefined();
+      expect(config.allowedExternalDomains).toBeDefined();
 
-    // 验证安全策略管理器配置
-    expect(securityConfigs.policyConfig).toBeTruthy();
-    expect(securityConfigs.policyConfig.config).toBeTruthy();
-    expect(securityConfigs.policyConfig.testMode).toBe(true);
-    expect(typeof securityConfigs.policyConfig.isProduction).toBe('boolean');
+      // 验证CSP配置
+      expect(securityConfigs.cspConfig).toBeTruthy();
+      expect(securityConfigs.cspConfig.enabled).toBe(true);
+      expect(securityConfigs.cspConfig.policies).toBeDefined();
+      expect(Array.isArray(securityConfigs.cspConfig.policies)).toBe(true);
+      expect(securityConfigs.cspConfig.nonceGeneration).toBe(true);
 
-    // 验证策略配置结构
-    const config = securityConfigs.policyConfig.config;
-    expect(config.allowedOrigins).toBeDefined();
-    expect(config.allowedPermissions).toBeDefined();
-    expect(config.allowedNavigationDomains).toBeDefined();
-    expect(config.allowedExternalDomains).toBeDefined();
+      // 验证关键CSP策略存在
+      const policies = securityConfigs.cspConfig.policies;
+      expect(policies.some(p => p.includes("default-src 'none'"))).toBe(true);
+      expect(policies.some(p => p.includes("script-src 'self'"))).toBe(true);
+      expect(policies.some(p => p.includes("object-src 'none'"))).toBe(true);
 
-    // 验证CSP配置
-    expect(securityConfigs.cspConfig).toBeTruthy();
-    expect(securityConfigs.cspConfig.enabled).toBe(true);
-    expect(securityConfigs.cspConfig.policies).toBeDefined();
-    expect(Array.isArray(securityConfigs.cspConfig.policies)).toBe(true);
-    expect(securityConfigs.cspConfig.nonceGeneration).toBe(true);
+      // 验证安全处理器配置
+      expect(securityConfigs.securityHandlers).toBeTruthy();
+      expect(securityConfigs.securityHandlers.permissionHandler.enabled).toBe(
+        true
+      );
+      expect(securityConfigs.securityHandlers.navigationHandler.enabled).toBe(
+        true
+      );
+      expect(securityConfigs.securityHandlers.windowOpenHandler.enabled).toBe(
+        true
+      );
+      expect(securityConfigs.securityHandlers.webRequestFiltering.enabled).toBe(
+        true
+      );
 
-    // 验证关键CSP策略存在
-    const policies = securityConfigs.cspConfig.policies;
-    expect(policies.some(p => p.includes("default-src 'none'"))).toBe(true);
-    expect(policies.some(p => p.includes("script-src 'self'"))).toBe(true);
-    expect(policies.some(p => p.includes("object-src 'none'"))).toBe(true);
-
-    // 验证安全处理器配置
-    expect(securityConfigs.securityHandlers).toBeTruthy();
-    expect(securityConfigs.securityHandlers.permissionHandler.enabled).toBe(
-      true
-    );
-    expect(securityConfigs.securityHandlers.navigationHandler.enabled).toBe(
-      true
-    );
-    expect(securityConfigs.securityHandlers.windowOpenHandler.enabled).toBe(
-      true
-    );
-    expect(securityConfigs.securityHandlers.webRequestFiltering.enabled).toBe(
-      true
-    );
-
-    // 验证处理器配置详情
-    expect(securityConfigs.securityHandlers.windowOpenHandler.policy).toBe(
-      'deny-new-windows-redirect-external'
-    );
-    expect(securityConfigs.securityHandlers.navigationHandler.events).toContain(
-      'will-navigate'
-    );
-    expect(securityConfigs.securityHandlers.navigationHandler.events).toContain(
-      'will-attach-webview'
-    );
-
-    console.log('Comprehensive Security Configuration:', {
-      webPrefs: securityConfigs.securityPrefs,
-      policyConfigKeys: Object.keys(securityConfigs.policyConfig.config),
-      cspPolicies: securityConfigs.cspConfig.policies.length,
-      handlersEnabled: Object.keys(securityConfigs.securityHandlers).filter(
-        key => securityConfigs.securityHandlers[key].enabled !== undefined
-      ).length,
-    });
-  });
-
-  test('should verify security policy environment-specific configuration', async () => {
-    const { electronApp } = testApp;
-
-    // 获取环境相关的安全配置
-    const environmentConfig = await electronApp.evaluate(({}) => {
-      const policyConfig = (global as any).__SECURITY_POLICY_CONFIG__;
-      if (!policyConfig) return null;
-
-      const config = policyConfig.config;
-      return {
-        isProduction: policyConfig.isProduction,
-        allowedOrigins: config.allowedOrigins,
-        allowedPermissions: config.allowedPermissions,
-        allowedNavigationDomains: config.allowedNavigationDomains,
-        allowedExternalDomains: config.allowedExternalDomains,
-        originCount: config.allowedOrigins.length,
-        permissionCount: config.allowedPermissions.length,
-      };
-    });
-
-    expect(environmentConfig).toBeTruthy();
-
-    // 验证环境相关配置的合理性
-    if (environmentConfig.isProduction) {
-      // 生产环境应该更严格
-      expect(environmentConfig.allowedPermissions.length).toBe(0); // 生产环境不允许任何特殊权限
-      expect(environmentConfig.allowedNavigationDomains.length).toBe(0); // 不允许外部导航
-    } else {
-      // 开发环境可以相对宽松
-      expect(environmentConfig.allowedOrigins).toContain('file://'); // 允许本地文件
+      // 验证处理器配置详情
+      expect(securityConfigs.securityHandlers.windowOpenHandler.policy).toBe(
+        'deny-new-windows-redirect-external'
+      );
       expect(
-        environmentConfig.allowedOrigins.some(
-          origin => origin.includes('localhost') || origin.includes('127.0.0.1')
-        )
-      ).toBe(true);
-    }
+        securityConfigs.securityHandlers.navigationHandler.events
+      ).toContain('will-navigate');
+      expect(
+        securityConfigs.securityHandlers.navigationHandler.events
+      ).toContain('will-attach-webview');
 
-    // 验证基本安全要求
-    expect(environmentConfig.allowedOrigins).toContain('file://'); // 必须允许本地文件协议
-    expect(environmentConfig.allowedExternalDomains).toContain('github.com'); // 必须允许GitHub
-    expect(environmentConfig.allowedExternalDomains).toContain(
-      'docs.electron.com'
-    ); // 必须允许官方文档
-
-    console.log(
-      `Environment Security Config (${environmentConfig.isProduction ? 'Production' : 'Development'}):`,
-      {
-        origins: environmentConfig.originCount,
-        permissions: environmentConfig.permissionCount,
-        allowedPermissions: environmentConfig.allowedPermissions,
-      }
-    );
-  });
-
-  test('should verify BrowserWindow webPreferences are properly configured', async () => {
-    const { electronApp } = testApp;
-
-    // 从主进程获取当前窗口的实际webPreferences配置
-    const windowConfig = await electronApp.evaluate(({ BrowserWindow }) => {
-      const windows = BrowserWindow.getAllWindows();
-
-      if (windows.length === 0) {
-        return null;
-      }
-
-      const mainWindow = windows[0];
-      const webPrefs = mainWindow.webContents.getWebPreferences();
-
-      return {
-        windowCount: windows.length,
-        windowId: mainWindow.id,
-        webPreferences: {
-          sandbox: webPrefs.sandbox,
-          contextIsolation: webPrefs.contextIsolation,
-          nodeIntegration: webPrefs.nodeIntegration,
-          webSecurity: webPrefs.webSecurity,
-          preload: webPrefs.preload,
-        },
-      };
+      console.log('Comprehensive Security Configuration:', {
+        webPrefs: securityConfigs.securityPrefs,
+        policyConfigKeys: Object.keys(securityConfigs.policyConfig.config),
+        cspPolicies: securityConfigs.cspConfig.policies.length,
+        handlersEnabled: Object.keys(securityConfigs.securityHandlers).filter(
+          key => securityConfigs.securityHandlers[key].enabled !== undefined
+        ).length,
+      });
     });
+  }); // 结束 Main Process & Policy Exposure 小组
 
-    // 验证窗口配置正确
-    expect(windowConfig).toBeTruthy();
-    expect(windowConfig.windowCount).toBeGreaterThan(0);
-    expect(windowConfig.webPreferences.sandbox).toBe(true);
-    expect(windowConfig.webPreferences.contextIsolation).toBe(true);
-    expect(windowConfig.webPreferences.nodeIntegration).toBe(false);
-    expect(windowConfig.webPreferences.webSecurity).toBe(true);
-    expect(windowConfig.webPreferences.preload).toBeTruthy();
+  // 分组：环境相关配置（ADR-0002）
+  test.describe('Environment Configuration', () => {
+    test('should verify security policy environment-specific configuration', async () => {
+      const { electronApp } = testApp;
 
-    console.log('BrowserWindow WebPreferences:', windowConfig);
-  });
+      // 获取环境相关的安全配置
+      const environmentConfig = await electronApp.evaluate(({}) => {
+        const policyConfig = (global as any).__SECURITY_POLICY_CONFIG__;
+        if (!policyConfig) return null;
+
+        const config = policyConfig.config;
+        return {
+          isProduction: policyConfig.isProduction,
+          allowedOrigins: config.allowedOrigins,
+          allowedPermissions: config.allowedPermissions,
+          allowedNavigationDomains: config.allowedNavigationDomains,
+          allowedExternalDomains: config.allowedExternalDomains,
+          originCount: config.allowedOrigins.length,
+          permissionCount: config.allowedPermissions.length,
+        };
+      });
+
+      expect(environmentConfig).toBeTruthy();
+
+      // 验证环境相关配置的合理性
+      if (environmentConfig.isProduction) {
+        // 生产环境应该更严格
+        expect(environmentConfig.allowedPermissions.length).toBe(0); // 生产环境不允许任何特殊权限
+        expect(environmentConfig.allowedNavigationDomains.length).toBe(0); // 不允许外部导航
+      } else {
+        // 开发环境可以相对宽松
+        expect(environmentConfig.allowedOrigins).toContain('file://'); // 允许本地文件
+        expect(
+          environmentConfig.allowedOrigins.some(
+            origin =>
+              origin.includes('localhost') || origin.includes('127.0.0.1')
+          )
+        ).toBe(true);
+      }
+
+      // 验证基本安全要求
+      expect(environmentConfig.allowedOrigins).toContain('file://'); // 必须允许本地文件协议
+      expect(environmentConfig.allowedExternalDomains).toContain('github.com'); // 必须允许GitHub
+      expect(environmentConfig.allowedExternalDomains).toContain(
+        'docs.electron.com'
+      ); // 必须允许官方文档
+
+      console.log(
+        `Environment Security Config (${environmentConfig.isProduction ? 'Production' : 'Development'}):`,
+        {
+          origins: environmentConfig.originCount,
+          permissions: environmentConfig.permissionCount,
+          allowedPermissions: environmentConfig.allowedPermissions,
+        }
+      );
+    });
+  }); // 结束 Environment Configuration 小组
+
+  // 分组：BrowserWindow WebPreferences（ADR-0002）
+  test.describe('BrowserWindow Preferences', () => {
+    test('should verify BrowserWindow webPreferences are properly configured', async () => {
+      const { electronApp } = testApp;
+
+      // 从主进程获取当前窗口的实际webPreferences配置
+      const windowConfig = await electronApp.evaluate(({ BrowserWindow }) => {
+        const windows = BrowserWindow.getAllWindows();
+
+        if (windows.length === 0) {
+          return null;
+        }
+
+        const mainWindow = windows[0];
+        const webPrefs = mainWindow.webContents.getWebPreferences();
+
+        return {
+          windowCount: windows.length,
+          windowId: mainWindow.id,
+          webPreferences: {
+            sandbox: webPrefs.sandbox,
+            contextIsolation: webPrefs.contextIsolation,
+            nodeIntegration: webPrefs.nodeIntegration,
+            webSecurity: webPrefs.webSecurity,
+            preload: webPrefs.preload,
+          },
+        };
+      });
+
+      // 验证窗口配置正确
+      expect(windowConfig).toBeTruthy();
+      expect(windowConfig.windowCount).toBeGreaterThan(0);
+      expect(windowConfig.webPreferences.sandbox).toBe(true);
+      expect(windowConfig.webPreferences.contextIsolation).toBe(true);
+      expect(windowConfig.webPreferences.nodeIntegration).toBe(false);
+      expect(windowConfig.webPreferences.webSecurity).toBe(true);
+      expect(windowConfig.webPreferences.preload).toBeTruthy();
+
+      console.log('BrowserWindow WebPreferences:', windowConfig);
+    });
+  }); // 结束 BrowserWindow Preferences 小组
 
   test('should enforce nodeIntegration=false', async () => {
     const { page } = testApp;

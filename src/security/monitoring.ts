@@ -1,4 +1,4 @@
-/* 安全监控和告警系统 */
+﻿/* 安全监控和告警系统 */
 
 interface SecurityEvent {
   timestamp: Date;

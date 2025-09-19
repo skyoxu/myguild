@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Electron 应用冒烟测试套件
  * 对应 07 章 - E2E 基线（Playwright × Electron）
  *

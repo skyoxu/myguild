@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 游戏域事件定义
  * 符合 CLAUDE.md 事件命名规则：${DOMAIN_PREFIX}.<entity>.<action>
  */

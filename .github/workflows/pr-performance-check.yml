@@ -23,8 +23,7 @@ on:
         description: 'PR number to analyze'
         required: true
         type: string
-
-# 最小权限原则 - 顶层只读权限
+# Minimal permissions
 permissions:
   contents: read
   actions: read
@@ -125,6 +124,69 @@ jobs:
           node scripts/bundle-size-check.mjs
         continue-on-error: true
 
+      - name: Collect Playwright traces to logs/
+        if: always()
+        run: npm run collect:traces
+
+      - name: Upload Playwright traces (logs/playwright-traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: logs/playwright-traces/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Comment PR with Playwright traces summary
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const base = path.join(process.cwd(), 'logs', 'playwright-traces');
+            function latestDateDir() {
+              if (!fs.existsSync(base)) return null;
+              const dirs = fs.readdirSync(base).filter(d => {
+                try { return fs.statSync(path.join(base, d)).isDirectory(); } catch { return false; }
+              }).sort().reverse();
+              return dirs[0] ? path.join(base, dirs[0]) : null;
+            }
+            function loadManifest(dir) {
+              if (!dir) return null;
+              const file = path.join(dir, 'trace-manifest.json');
+              if (!fs.existsSync(file)) return null;
+              try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+            }
+            const dir = latestDateDir();
+            const manifest = loadManifest(dir);
+            if (!manifest || !Array.isArray(manifest.entries) || !manifest.entries.length) {
+              core.notice('No trace manifest found to comment');
+              return;
+            }
+            const rel = p => path.relative(process.cwd(), p).replace(/\\/g, '/');
+            const head = manifest.entries.slice(0, 10).map((e, i) => `- ${i+1}. ${rel(e.target)} (${Math.round((e.size||0)/1024)} kB)`);
+            const example = rel(manifest.entries[0].target);
+            const body = [
+              '### 🎭 Playwright Traces (auto-collected)',
+              '',
+              '**How to replay (locally):**',
+              '1. Download the "playwright-traces" artifact from this workflow run',
+              `2. Run: \`npx playwright show-trace ${example}\``,
+              '',
+              '**Latest traces (top 10):**',
+              ...head,
+            ].join('\n');
+            const pr = context.payload.pull_request?.number;
+            if (!pr) { core.notice('No PR context available'); return; }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body,
+            });
+
       - name: Post PR comment
         if: github.event_name == 'pull_request'
         continue-on-error: true # PR评论失败不应阻断性能检查流程
@@ -137,7 +199,7 @@ jobs:
           PR_NUMBER="${{ github.event.number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
           node scripts/pr-integration.mjs comment "${PR_NUMBER}" || {
-            echo "⚠️ PR评论发布失败（可能是API限流），但性能检查继续"
+            echo "PRAPI"
             exit 0
           }
 
@@ -153,7 +215,7 @@ jobs:
           PR_NUMBER="${{ inputs.pr_number }}"
           echo "Posting performance report to PR #${PR_NUMBER}..."
           node scripts/pr-integration.mjs comment "${PR_NUMBER}" || {
-            echo "⚠️ PR评论发布失败（可能是API限流），但性能检查继续"
+            echo "PRAPI"
             exit 0
           }
 
@@ -179,13 +241,13 @@ jobs:
 
           # 如果有critical问题，失败构建
           if echo "$ANALYSIS_RESULT" | grep -q '"critical":[1-9]'; then
-            echo "❌ Critical performance regressions detected!"
+            echo "Critical performance regressions detected!"
             echo "This PR introduces performance regressions that exceed critical thresholds."
             echo "Please review the changes and optimize before merging."
             exit 1
           fi
 
-          echo "✅ Performance gates passed!"
+          echo "Performance gates passed!"
 
   # 可选：运行实际的Web Vitals测试（需要配置Playwright等工具）
   web-vitals-test:
@@ -230,8 +292,7 @@ jobs:
           name: web-vitals-results-${{ github.run_number }}
           path: data/web-vitals/
           retention-days: 7
-
-# ==================== 并发控制 ====================
+# Concurrency control
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

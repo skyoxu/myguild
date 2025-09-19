@@ -1,4 +1,4 @@
-/**
+﻿/**
  * React Hook for Web Vitals监控
  *
  * 提供React组件级别的性能监控能力：

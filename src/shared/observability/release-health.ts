@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/electron/main';
+﻿import * as Sentry from '@sentry/electron/main';
 import { app } from 'electron';
 
 // Release Health门槛配置

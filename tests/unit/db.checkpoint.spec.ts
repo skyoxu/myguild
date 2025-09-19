@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SQLite WAL Checkpoint 功能单元测试
  *
  * 验证 checkpoint 脚本的核心功能：

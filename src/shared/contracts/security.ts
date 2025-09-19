@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Electron安全基线契约定义
  * 对应文档：02-安全基线(Electron)-v2.md
  * 引用ADR: ADR-0002 (Electron安全基线), ADR-0005 (质量门禁)

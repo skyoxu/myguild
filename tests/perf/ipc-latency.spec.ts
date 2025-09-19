@@ -1,4 +1,4 @@
-import { launchApp } from '../helpers/launch';
+﻿import { launchApp } from '../helpers/launch';
 
 test('IPC 往返基线（开发机）', async () => {
   const { app, page: win } = await launchApp();

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, protocol, net, shell } from 'electron';
+﻿import { app, BrowserWindow, session, protocol, net, shell } from 'electron';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { secureAutoUpdater } from './security/auto-updater';

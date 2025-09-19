@@ -28,7 +28,7 @@ jobs:
         id: build-check
         run: |
           if ((Test-Path -LiteralPath 'dist') -and (Test-Path -LiteralPath 'dist-electron')) {
-            Write-Host "✅ Build artifacts verified: dist/ and dist-electron/ directories exist"
+            Write-Host "Build artifacts verified: dist/ and dist-electron/ directories exist"
             echo "artifacts-available=true" >> $env:GITHUB_OUTPUT
           } else {
             Write-Error "❌ Build artifacts missing: dist/ or dist-electron/ not found"
@@ -125,9 +125,9 @@ jobs:
       - name: Verify downloaded artifacts
         if: steps.changes-e2e.outputs.any_changed == 'true'
         run: |
-          Write-Host "📦 Verifying downloaded build artifacts..."
+          Write-Host "Verifying downloaded build artifacts..."
           if ((Test-Path -LiteralPath 'dist') -and (Test-Path -LiteralPath 'dist-electron')) {
-            Write-Host "✅ Build artifacts downloaded successfully:"
+            Write-Host "Build artifacts downloaded successfully:"
             Write-Host "   - dist/ directory exists"
             Write-Host "   - dist-electron/ directory exists"
             if (Test-Path -LiteralPath 'dist-electron/main.js') {
@@ -176,6 +176,21 @@ jobs:
       - name: Run perf smoke (Electron)
         if: steps.changes-e2e.outputs.any_changed == 'true'
         run: npm run test:e2e:perf-smoke
+      - name: Run scene-transition (Electron)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm run test:e2e:scene-transition
+      - name: Collect Playwright traces
+        if: always()
+        run: npm run collect:traces
+      - name: Upload perf logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-logs
+          path: |
+            logs/perf/
+            logs/playwright-traces/
+          retention-days: 7
       - name: Publish E2E perf P95 summary
         if: always() && steps.changes-e2e.outputs.any_changed == 'true'
         run: |
@@ -216,11 +231,74 @@ jobs:
               """
               Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
             } else {
-              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No E2E durations found to compute P95."
-            }
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No E2E durations found to compute P95."
+        }
           } else {
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No Playwright JSON report at test-results/test-results.json."
           }
+
+      - name: Collect Playwright traces to logs/
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm run collect:traces
+
+      - name: Upload Playwright traces (logs/playwright-traces)
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: logs/playwright-traces/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Comment PR with Playwright traces summary
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const base = path.join(process.cwd(), 'logs', 'playwright-traces');
+            function latestDateDir() {
+              if (!fs.existsSync(base)) return null;
+              const dirs = fs.readdirSync(base).filter(d => {
+                try { return fs.statSync(path.join(base, d)).isDirectory(); } catch { return false; }
+              }).sort().reverse();
+              return dirs[0] ? path.join(base, dirs[0]) : null;
+            }
+            function loadManifest(dir) {
+              if (!dir) return null;
+              const file = path.join(dir, 'trace-manifest.json');
+              if (!fs.existsSync(file)) return null;
+              try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+            }
+            const dir = latestDateDir();
+            const manifest = loadManifest(dir);
+            if (!manifest || !Array.isArray(manifest.entries) || !manifest.entries.length) {
+              core.notice('No trace manifest found to comment');
+              return;
+            }
+            const rel = p => path.relative(process.cwd(), p).replace(/\\/g, '/');
+            const head = manifest.entries.slice(0, 10).map((e, i) => `- ${i+1}. ${rel(e.target)} (${Math.round((e.size||0)/1024)} kB)`);
+            const example = rel(manifest.entries[0].target);
+            const body = [
+              '### 🎭 Playwright Traces (auto-collected)',
+              '',
+              '**How to replay (locally):**',
+              '1. Download the "playwright-traces" artifact from this workflow run',
+              `2. Run: \`npx playwright show-trace ${example}\``,
+              '',
+              '**Latest traces (top 10):**',
+              ...head,
+            ].join('\n');
+            const pr = context.payload.pull_request?.number;
+            if (!pr) { core.notice('No PR context available'); return; }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body,
+            });
       - name: Upload Playwright artifacts
         if: failure() && steps.changes-e2e.outputs.any_changed == 'true'
         uses: actions/upload-artifact@v4

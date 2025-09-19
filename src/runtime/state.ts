@@ -1,4 +1,4 @@
-export type AppState = 'boot' | 'loading' | 'running' | 'paused' | 'error';
+﻿export type AppState = 'boot' | 'loading' | 'running' | 'paused' | 'error';
 
 export class StateMachine {
   private state: AppState = 'boot';

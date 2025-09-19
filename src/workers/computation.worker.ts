@@ -1,4 +1,4 @@
-// 计算密集任务Worker（示例）：将重逻辑从主线程移出
+﻿// 计算密集任务Worker（示例）：将重逻辑从主线程移出
 // 在渲染侧：new Worker(new URL('./computation.worker.ts', import.meta.url), { type: 'module' })
 
 self.onmessage = (e: MessageEvent) => {

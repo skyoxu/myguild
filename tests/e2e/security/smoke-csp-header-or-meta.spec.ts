@@ -1,4 +1,4 @@
-// tests/e2e/security/smoke-csp-header-or-meta.spec.ts
+﻿// tests/e2e/security/smoke-csp-header-or-meta.spec.ts
 import { test, expect } from '@playwright/test';
 import { launchAppWithPage } from '../../helpers/launch';
 

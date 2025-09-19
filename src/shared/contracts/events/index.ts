@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 应用事件类型定义
  * 符合 CLAUDE.md 事件命名规则：${DOMAIN_PREFIX}.<entity>.<action>
  */

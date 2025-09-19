@@ -1,4 +1,4 @@
-export type AppEvent =
+﻿export type AppEvent =
   | { type: 'guild.create'; name: string }
   | { type: 'guild.rename'; id: string; name: string }
   | { type: 'inventory.add'; itemId: string; qty: number };

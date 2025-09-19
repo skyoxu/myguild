@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Guild Manager - 最小化实现以满足E2E测试需求
  * 符合ADR-0002安全基线和citest/ciinfo.md规则
  */

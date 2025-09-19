@@ -6,7 +6,7 @@
  * - initial index+vendor 合计: ≤ 400 kB (gzip)
  */
 import { createGzip } from 'node:zlib';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIST = 'dist';
@@ -88,6 +88,7 @@ async function main() {
   const mode = (process.env.BUNDLE_GUARD || '').toLowerCase();
   const soft = mode === 'warn' || mode === 'soft';
   let failed = false;
+  const summaryLines = [];
   for (const r of results) {
     const ratio = (r.gzip / r.limit) * 100;
     const line = `${r.name}: ${Math.round(r.gzip / 1024)} kB gzip (limit ${Math.round(r.limit / 1024)} kB) -> ${ratio.toFixed(1)}%`;
@@ -101,12 +102,47 @@ async function main() {
     } else {
       console.log('[bundle-budget] OK  ', line, r.file ? `file=${r.file}` : '');
     }
+    summaryLines.push(`${r.name}\t${(r.gzip/1024).toFixed(1)}kB\tlimit ${(r.limit/1024).toFixed(0)}kB\tfile=${r.file || ''}`);
+  }
+
+  // Persist report under logs/ with date/subdir (Windows-friendly, no symlink)
+  try {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateDir = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const baseDir = process.env.BUNDLE_BUDGET_LOG_DIR || join('logs', 'bundle-budget');
+    const outDir = join(baseDir, dateDir);
+    mkdirSync(outDir, { recursive: true });
+
+    const report = {
+      timestamp: now.toISOString(),
+      mode: mode || 'hard',
+      soft,
+      assetsDir: ASSETS,
+      failed,
+      results: results.map(r => ({ ...r })),
+    };
+    const jsonPath = join(outDir, `bundle-budget-${ts}.json`);
+    const txtPath = join(outDir, `bundle-budget-${ts}.txt`);
+    writeFileSync(jsonPath, JSON.stringify(report, null, 2), 'utf-8');
+    writeFileSync(
+      txtPath,
+      [
+        `[bundle-budget] ${now.toISOString()} mode=${mode || 'hard'} soft=${soft} failed=${failed}`,
+        ...summaryLines,
+      ].join('\n'),
+      'utf-8'
+    );
+    console.log(`[bundle-budget] Report saved to ${jsonPath}`);
+  } catch (e) {
+    console.warn('[bundle-budget] Failed to write logs/', e?.message || e);
   }
 
   if (failed) {
     if (soft) {
       console.warn(
-        '[bundle-budget] Soft mode active (warn) – not failing the job'
+        '[bundle-budget] Soft mode active (warn) — not failing the job'
       );
     } else {
       process.exit(1);

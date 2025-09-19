@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+﻿import { contextBridge, ipcRenderer } from 'electron';
 // Node-only: event loop delay monitor (test/CI only)
 let eldApi: any = null;
 try {

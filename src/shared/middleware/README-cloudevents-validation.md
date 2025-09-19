@@ -1,4 +1,4 @@
-# CloudEvents实时验证中间件使用指南
+﻿# CloudEvents实时验证中间件使用指南
 
 这个中间件提供了CloudEvents的实时验证能力，确保所有事件都符合CloudEvents 1.0规范。
 

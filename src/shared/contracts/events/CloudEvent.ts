@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CloudEvent 基础接口定义
  * 基于 CloudEvents v1.0 规范实现
  * https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md

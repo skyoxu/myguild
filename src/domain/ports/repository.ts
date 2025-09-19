@@ -1,4 +1,4 @@
-import type { Guild, InventoryItem } from '../models';
+﻿import type { Guild, InventoryItem } from '../models';
 
 export interface GuildRepository {
   create(name: string): Promise<Guild>;

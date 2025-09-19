@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { v4 as uuid } from 'uuid';
 import type { SecurityGlobalInitEvent } from '@/shared/contracts/events';
 

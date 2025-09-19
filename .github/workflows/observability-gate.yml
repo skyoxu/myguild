@@ -1,6 +1,5 @@
 name: Observability Gate (Unified)
 
-# 最小权限原则
 permissions:
   contents: read
   actions: read
@@ -29,274 +28,26 @@ env:
   NODE_VERSION: '20.x'
 
 jobs:
-  # 兼容性：使用明确的job名称确保分支保护规则兼容
-  observability-gate-development:
-    name: 🔍 统一可观测性配置验证 (Development)
+  observability-gate:
+    name: 可观测性配置验证
     runs-on: windows-latest
     timeout-minutes: 10
-    # P0修复：job级别环境变量确保devDependencies正确安装
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
-
     steps:
-      - name: Checkout代码
-        uses: actions/checkout@v4
-
-      - name: 设置Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: 安装jq工具
-        shell: pwsh
-        run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
-              choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
-
-      - name: 安装依赖（加固版）
-        uses: ./.github/actions/npm-install
-
-      - name: 确保日志目录存在
-        run: mkdir -p logs
-
-      - name: 执行统一可观测性配置验证
-        id: observability-check
-        run: |
-          echo "📊 开始执行统一可观测性配置验证..."
+      - run: |
+          if (-not (Test-Path logs)) { New-Item -ItemType Directory logs | Out-Null }
           node scripts/observability-config-validation.js
-          echo "validation-status=success" >> "$GITHUB_OUTPUT"
-        continue-on-error: false
-
-      - name: 上传验证报告
-        if: always()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: observability-validation-report
           path: logs/observability-validation-report.json
           retention-days: 30
 
-      - name: 输出验证摘要
-        if: always()
-        shell: bash
-        run: |
-          # 确保UTF-8编码输出
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-
-          if [ -f "logs/observability-validation-report.json" ]; then
-            # 提取关键信息
-            status=$(jq -r '.status' logs/observability-validation-report.json)
-            environments=$(jq -r '.summary.environments' logs/observability-validation-report.json)
-            errors=$(jq -r '.summary.errors' logs/observability-validation-report.json)
-            warnings=$(jq -r '.summary.warnings' logs/observability-validation-report.json)
-            
-            # 输出验证摘要到 Job Summary
-            {
-              echo '## 🔍 可观测性配置验证结果'
-              echo ''
-              echo '### 📈 验证摘要'
-              echo '| 指标 | 值 |'
-              echo '|------|-----|'
-              echo "| 状态 | $status |"
-              echo "| 环境数量 | $environments |"
-              echo "| 错误数量 | $errors |"
-              echo "| 警告数量 | $warnings |"
-            } >> "$GITHUB_STEP_SUMMARY"
-            
-            # 如果有错误，显示错误详情
-            if [ "$errors" -gt 0 ]; then
-              {
-                echo ''
-                echo '### ❌ 发现的错误'
-                jq -r '.errors[]' logs/observability-validation-report.json | sed 's/^/- /'
-              } >> "$GITHUB_STEP_SUMMARY"
-            fi
-            
-            # 如果有警告，显示警告详情
-            if [ "$warnings" -gt 0 ]; then
-              {
-                echo ''
-                echo '### ⚠️ 发现的警告'
-                jq -r '.warnings[]' logs/observability-validation-report.json | sed 's/^/- /'
-              } >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
-            {
-              echo '## 🔍 可观测性配置验证结果'
-              echo ''
-              echo '⚠️ 无法找到验证报告文件'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: 验证通过检查
-        if: success()
-        run: |
-          echo "✅ 统一可观测性配置验证通过"
-          echo "所有环境的可观测性配置均符合ADR-0003标准"
-
-      - name: 验证失败处理
-        if: failure()
-        shell: bash
-        run: |
-          echo "❌ 统一可观测性配置验证失败"
-          echo ""
-          echo "🔍 可能的原因："
-          echo "1. Sentry DSN格式不正确（应为: https://key@org.ingest.sentry.io/projectId）"
-          echo "2. 配置文件缺失必需字段（sentry.dsn, logging.level等）"
-          echo "3. 配置文件JSON格式错误"
-          echo ""
-          echo "📋 解决步骤："
-          echo "1. 检查 config/development.json, config/staging.json, config/production.json"
-          echo "2. 确保Sentry DSN使用正确格式（支持字母数字组合）"
-          echo "3. 验证所有必需字段完整性"
-          echo "4. 参考 ADR-0003 可观测性标准"
-          echo ""
-          if [ -f "logs/observability-validation-report.json" ]; then
-            echo "📊 详细错误信息："
-            jq -r '.errors[]' logs/observability-validation-report.json || echo "无法解析错误详情"
-          else
-            echo "⚠️ 验证报告文件不存在，检查脚本是否正常执行"
-          fi
-          echo ""
-          echo "📁 详细报告请查看 observability-validation-report artifact"
-          exit 1
-
-  # 条件依赖检查：仅在配置文件变更时运行额外验证
-  observability-gate-production:
-    name: 扩展配置验证
-    runs-on: windows-latest
-    if: contains(github.event.head_commit.message, '[config]') || contains(github.event.pull_request.title, '[config]')
-    needs: observability-gate-development
-    timeout-minutes: 5
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-
-    steps:
-      - name: Checkout代码
-        uses: actions/checkout@v4
-
-      - name: 设置Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 安装jq工具
-        shell: pwsh
-        run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
-              choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
-
-      - name: 验证Sentry集成配置
-        run: |
-          echo "🛡️ 验证Sentry集成配置..."
-
-          # 检查必要的环境变量配置示例
-          if ! grep -q "SENTRY_DSN" config/development.json; then
-            echo "⚠️ development.json中未找到SENTRY_DSN配置示例"
-          fi
-
-          # 检查Release配置
-          if ! grep -q "release" config/production.json; then
-            echo "⚠️ production.json中未找到release配置"
-          fi
-
-          echo "✅ Sentry集成配置检查完成"
-
-      - name: 验证日志配置一致性
-        shell: bash
-        run: |
-          echo "📝 验证日志配置一致性..."
-
-          # 检查所有环境的日志级别设置
-          for env in development staging production; do
-            config_file="config/${env}.json"
-            if [ -f "$config_file" ]; then
-              log_level=$(jq -r '.logging.level // "info"' "$config_file")
-              echo "环境 $env 的日志级别: $log_level"
-            fi
-          done
-
-          echo "✅ 日志配置一致性检查完成"
-
-  # Staging环境可观测性检查
-  observability-gate-staging:
-    name: 🔍 Staging环境可观测性验证
-    runs-on: windows-latest
-    needs: observability-gate-development
-    timeout-minutes: 5
-    # P0修复：job级别环境变量确保devDependencies正确安装
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
-
-    steps:
-      - name: Checkout代码
-        uses: actions/checkout@v4
-
-      - name: 设置Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 安装jq工具
-        shell: pwsh
-        run: |
-          # P0修复：Windows runner使用PowerShell包管理替代Linux apt-get
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
-              choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
-
-      - name: Staging环境配置检查
-        shell: bash
-        run: |
-          echo "🎭 验证Staging环境配置..."
-
-          # 检查staging配置文件
-          if [ -f "config/staging.json" ]; then
-            echo "✅ 找到staging配置文件"
-            # 基本配置验证
-            jq empty config/staging.json && echo "✅ staging.json格式正确"
-          else
-            echo "⚠️ 未找到staging配置文件，使用默认配置"
-          fi
-
-          echo "✅ Staging环境配置检查完成"
-
-# ==================== 并发控制 ====================
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true

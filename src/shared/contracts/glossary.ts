@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Glossary SSoT (Single Source of Truth) Contract
  *
  * This file provides TypeScript contracts for the project glossary,

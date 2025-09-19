@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Runtime performance contracts for dual-loop coordination
  * Supports React UI + Phaser Game loop with 60fps≈16.7ms frame budget
  *

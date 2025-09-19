@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Repository Pattern Contracts - Base-Clean Implementation
  *
  * 提供通用的数据访问层接口，支持多种存储适配器。

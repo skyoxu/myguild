@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/electron/renderer';
+﻿import * as Sentry from '@sentry/electron/renderer';
 
 declare global {
   interface Window {

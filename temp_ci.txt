@@ -2,103 +2,103 @@
     timeout-minutes: 10
 
     steps:
-      - name: 📥 检出代�?
+      - name: 馃摜 妫€鍑轰唬鐮?
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: 馃摝 璁剧疆 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
+      - name: 馃敡 瀹夎渚濊禆
         run: npm ci
 
-      - name: 📊 可观测性配置验�?
+      - name: 馃搳 鍙娴嬫€ч厤缃獙璇?
         run: npm run test:observability
 
-      - name: 📈 生成可观测性报�?
+      - name: 馃搱 鐢熸垚鍙娴嬫€ф姤鍛?
         run: |
           mkdir -p reports
           npm run test:observability > reports/observability-verification.json
 
-      - name: 📋 上传可观测性报�?
+      - name: 馃搵 涓婁紶鍙娴嬫€ф姤鍛?
         uses: actions/upload-artifact@v4
         with:
           name: observability-report
           path: reports/
           retention-days: 7
 
-  # ==================== 性能基准测试 ====================
+  # ==================== 鎬ц兘鍩哄噯娴嬭瘯 ====================
   performance-benchmarks:
-    name: 性能基准测试
+    name: 鎬ц兘鍩哄噯娴嬭瘯
     runs-on: ubuntu-latest
     needs: build-verification
     timeout-minutes: 15
 
     steps:
-      - name: 📥 检出代�?
+      - name: 馃摜 妫€鍑轰唬鐮?
         uses: actions/checkout@v4
 
-      - name: 📦 设置 Node.js
+      - name: 馃摝 璁剧疆 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: 🔧 安装依赖
+      - name: 馃敡 瀹夎渚濊禆
         run: npm ci
 
-      - name: �?事件循环延迟基准
+      - name: 鈿?浜嬩欢寰幆寤惰繜鍩哄噯
         run: |
           node scripts/benchmarks/event-loop-latency.ts
-          # TODO: 配置性能回归阈值检�?
+          # TODO: 閰嶇疆鎬ц兘鍥炲綊闃堝€兼鏌?
 
-      - name: 📊 性能指标收集
+      - name: 馃搳 鎬ц兘鎸囨爣鏀堕泦
         run: |
-          # TODO: 集成性能监控指标收集
-          echo "性能指标收集 - 待完�?
+          # TODO: 闆嗘垚鎬ц兘鐩戞帶鎸囨爣鏀堕泦
+          echo "鎬ц兘鎸囨爣鏀堕泦 - 寰呭畬鍠?
 
-  # ==================== 部署就绪检�?====================
+  # ==================== 閮ㄧ讲灏辩华妫€鏌?====================
   deployment-readiness:
-    name: 部署就绪检�?
+    name: 閮ㄧ讲灏辩华妫€鏌?
     runs-on: ubuntu-latest
     needs: [build-verification, e2e-security-tests, observability-verification]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
 
     steps:
-      - name: 📥 检出代�?
+      - name: 馃摜 妫€鍑轰唬鐮?
         uses: actions/checkout@v4
 
-      - name: �?所有检查通过
+      - name: 鉁?鎵€鏈夋鏌ラ€氳繃
         run: |
-          echo "🎉 所有质量门禁检查通过�?
-          echo "�?代码质量检�? 通过"
-          echo "�?安全扫描: 通过"
-          echo "�?单元测试: 通过"
-          echo "�?E2E安全测试: 通过"
-          echo "�?构建验证: 通过"
-          echo "�?可观测性验�? 通过"
+          echo "馃帀 鎵€鏈夎川閲忛棬绂佹鏌ラ€氳繃锛?
+          echo "鉁?浠ｇ爜璐ㄩ噺妫€鏌? 閫氳繃"
+          echo "鉁?瀹夊叏鎵弿: 閫氳繃"
+          echo "鉁?鍗曞厓娴嬭瘯: 閫氳繃"
+          echo "鉁?E2E瀹夊叏娴嬭瘯: 閫氳繃"
+          echo "鉁?鏋勫缓楠岃瘉: 閫氳繃"
+          echo "鉁?鍙娴嬫€ч獙璇? 閫氳繃"
           echo ""
-          echo "🚀 项目已就绪，可以部署�?
+          echo "馃殌 椤圭洰宸插氨缁紝鍙互閮ㄧ讲锛?
 
-      - name: 📊 生成部署清单
+      - name: 馃搳 鐢熸垚閮ㄧ讲娓呭崟
         run: |
-          echo "部署清单 - $(date)" > deployment-checklist.md
-          echo "- [x] 代码质量检�? >> deployment-checklist.md
-          echo "- [x] 安全基线验证" >> deployment-checklist.md
-          echo "- [x] 功能测试覆盖" >> deployment-checklist.md
-          echo "- [x] 可观测性配�? >> deployment-checklist.md
+          echo "閮ㄧ讲娓呭崟 - $(date)" > deployment-checklist.md
+          echo "- [x] 浠ｇ爜璐ㄩ噺妫€鏌? >> deployment-checklist.md
+          echo "- [x] 瀹夊叏鍩虹嚎楠岃瘉" >> deployment-checklist.md
+          echo "- [x] 鍔熻兘娴嬭瘯瑕嗙洊" >> deployment-checklist.md
+          echo "- [x] 鍙娴嬫€ч厤缃? >> deployment-checklist.md
 
-      - name: 📋 上传部署清单
+      - name: 馃搵 涓婁紶閮ㄧ讲娓呭崟
         uses: actions/upload-artifact@v4
         with:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 90
 
-# ==================== 并发控制 ====================
+# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

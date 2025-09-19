@@ -1,4 +1,4 @@
-export type HeavyTaskResult = { result: number; duration: number };
+﻿export type HeavyTaskResult = { result: number; duration: number };
 
 export function createComputationWorker() {
   const worker = new Worker(
