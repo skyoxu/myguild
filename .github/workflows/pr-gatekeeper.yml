@@ -1,80 +1,91 @@
-name: PR Status Gatekeeper - Windows CI瀹堟姢
+name: PR Status Gatekeeper - Windows CI
+# Windows CI gatekeeper workflow
 
-# 涓撴敞Windows CI鐜鐨勫垎鏀繚鎶ゅ畧闂ㄥ憳
-# 鑱氬悎鎵€鏈夊叧閿綔涓氱姸鎬侊紝绠€鍖栧垎鏀繚鎶よ鍒欑鐞?
 on:
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
 
 env:
-  # 瀹堥棬鍛樿交閲忕骇杩愯鐜
   GATEKEEPER_TIMEOUT: 5
 
 permissions:
   contents: read
   actions: read
 
-# ==================== 骞跺彂鎺у埗 ====================
+# ==================== Concurrency Control ====================
 concurrency:
   group: gatekeeper-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ==================== 鐘舵€佹鏌ヨ仛鍚堝櫒 ====================
-  # 姝ゅ伐浣滄祦浣滀负"瀹堥棬鍛?锛岀瓑寰呭叾浠栧伐浣滄祦涓殑鍏抽敭浣滀笟瀹屾垚
-  # GitHub Actions浼氳嚜鍔ㄦ娴嬪悓涓€PR瑙﹀彂鐨勫叾浠栧伐浣滄祦鐘舵€?
+  # ==================== Main Gatekeeper Job ====================
+  # Primary job for GitHub Actions status check
   windows-ci-gatekeeper:
     name: Windows CI Status Check
-    runs-on: ubuntu-latest # 杞婚噺绾ф鏌ヤ娇鐢ㄤ究瀹渞unner
-    timeout-minutes: 30 # 缁欏叾浠栧伐浣滄祦鍏呰冻瀹屾垚鏃堕棿
+    runs-on: ubuntu-latest # Using Ubuntu runner for efficiency
+    timeout-minutes: 30 # Reasonable timeout for CI checks
 
-    # 璺宠繃鑽夌PR浠ヤ紭鍖栨€ц兘
+    # Only run on non-draft PRs
     if: github.event.pull_request.draft == false
 
     steps:
-      - name: Step
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Step
+      - name: Wait for "Unified Security Gate" check
+        uses: actions/github-script@v7
         with:
-          ref: ${{ github.ref }}
-          check-name: Unified Security Gate
-          wait-interval: 30
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const ref = context.ref;
+            const target = 'Unified Security Gate';
+            const timeoutMs = 10 * 60 * 1000;
+            const start = Date.now();
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            while (Date.now() - start < timeoutMs) {
+              const { data } = await github.rest.checks.listForRef({ owner, repo, ref });
+              const cr = data.check_runs.find(c => c.name === target);
+              core.info(`Waiting for check: ${target} (found=${!!cr && cr.status}/${cr?.conclusion || 'pending'})`);
+              if (cr && ['success','neutral','skipped'].includes(cr.conclusion)) return;
+              if (cr && ['failure','timed_out','cancelled','action_required'].includes(cr.conclusion)) {
+                core.setFailed(`${target} concluded: ${cr.conclusion}`);
+                return;
+              }
+              await sleep(30000);
+            }
+            core.setFailed(`Timeout waiting for ${target}`);
 
-      - name: Step
-        with:
-          ref: ${{ github.ref }}
-          check-name: Unified Security Gate
-          wait-interval: 30
-
-      - name: Step
+      - name: Generate PR summary
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## 馃洝锔?PR瀹堥棬鍛樻鏌ュ畬鎴?
-          ### 鉁?Windows CI鏍稿績浣滀笟鐘舵€?          - **鏋勫缓娴嬭瘯**: 鉁?閫氳繃 (Build and Test)
-          - **瀹夊叏缁熶竴**: 鉁?閫氳繃 (馃殾 缁熶竴瀹夊叏闂ㄧ)
+          ## PR Status Summary
+          ### Windows CI Status
+          - **Status**: Windows-focused CI (Build and Test)
+          - **Environment**: Windows CI with security gates
 
-          ### 馃搳 妫€鏌ユ憳瑕?          - **鐜**: Windows-focused CI
-          - **鐘舵€?*: 鎵€鏈夊叧閿鏌ュ凡閫氳繃
-          - **鏃堕棿**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-          - **浼樺寲**: P2闃舵 - 鍒嗘敮淇濇姢瑙勫垯绠€鍖?
+          ### Details
+          - **Focus**: Windows-focused CI
+          - **Security**: Unified security gate validation
+          - **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **Priority**: P2 - Critical CI validation
           ---
-          *姝ゆ鏌ヨ仛鍚堜簡鎵€鏈夊繀闇€鐨刉indows CI浣滀笟鐘舵€侊紝鍙綔涓哄垎鏀繚鎶ょ殑鍗曚竴妫€鏌ョ偣*
+          *This gatekeeper ensures Windows CI completion before PR merge*
           EOF
 
-  # ==================== 鍙€夊寮烘鏌?====================
+  # ==================== Health Check Job ====================
   workflow-health-check:
     name: Workflow Health Check
-    runs-on: ubuntu-latest # 杞婚噺绾ф鏌ュ彲鐢ㄦ洿渚垮疁鐨剅unner
+    runs-on: ubuntu-latest # Using Ubuntu runner for health check
     timeout-minutes: 2
 
     steps:
-      - name: Step
+      - name: Health status report
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
-          ## 馃攳 Gatekeeper鍋ュ悍鐘舵€?          - 宸ヤ綔娴佺増鏈? v1.0
-          - 妫€鏌ユ椂闂? $(date -u)
-          - 浼樺寲鐘舵€? P2闃舵瀹屾垚
+          ## Workflow Health Status
+          - **Version**: v1.0
+          - **Health Check Time**: $(date -u)
+          - **Priority**: P2 - Critical validation
           EOF
-

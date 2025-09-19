@@ -1,4 +1,4 @@
-name: Release Pipeline - Dev→CI→Prod (Simplified)
+name: Release Pipeline - Dev to CI to Prod (Simplified)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: '环境'
+        description: 'Environment'
         required: true
         default: 'staging'
         type: choice
@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   prepare:
-    name: 准备
+    name: Prepare
     runs-on: windows-latest
     defaults:
       run:
@@ -41,8 +41,10 @@ jobs:
             echo "environment=production" >> "$GITHUB_OUTPUT"
           else
             echo "environment=staging" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
-    name: 构建
+    name: Build
     runs-on: windows-latest
     defaults:
       run:
@@ -66,7 +68,7 @@ jobs:
           name: build-artifacts
           path: artifacts/build.zip
   summary:
-    name: 汇总
+    name: Summary
     runs-on: windows-latest
     defaults:
       run:
@@ -74,4 +76,3 @@ jobs:
     needs: build
     steps:
       - run: Write-Output "Release build completed"
-
