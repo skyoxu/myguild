@@ -69,10 +69,7 @@ npm run lint
 
 After initialization, the project will have:
 
-- `index.html` - Main HTML entry point
 - `src/` - Source code directory
-  - `main.js` or `main.ts` - Application entry point
-  - `style.css` - Global styles
 - `public/` - Static assets
 - `package.json` - Dependencies and scripts
 - `docs/adr/` - ADR文件目录
@@ -370,6 +367,8 @@ docs/
 - **ADR-0008-deployment-release**：部署发布 (CI/CD, 分阶段发布, 回滚策略)
 - **ADR-0009-cross-platform**：跨平台 (Windows/macOS/Linux 支持, 原生集成)
 - **ADR-0010-internationalization**：国际化 (多语言支持, 本地化流程, 文本资源管理)
+- **ADR-0011-windows-only-platform-and-ci**：确立Windows-only平台策略
+- **ADR-0015-performance-budgets-and-gates**：定义性能预算与门禁统一标准，包括P95阈值、Bundle大小限制和首屏优化策略
 
 > 任何章节/Story 若改变上述口径，**必须**新增或 Supersede 对应 ADR。
 
