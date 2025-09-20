@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "gamedev-vitegame",
   "productName": "ViteGame",
   "description": "A desktop game built with Electron, React 19, Phaser 3, Vite, and TypeScript.",
@@ -77,6 +77,12 @@
     "test:e2e:scene-transition": "playwright test --project=scene-transition",
     "guard:scene-transition": "node scripts/perf/scene-transition-gate.mjs",
     "guard:cloudevents": "node scripts/perf/cloudevents-performance-gate.mjs",
+    "config:layers:init": "node scripts/config-layers.mjs init",
+    "config:layers:export": "node scripts/config-layers.mjs export",
+    "config:layers:validate": "node scripts/config-layers.mjs validate",
+    "config:layers:report": "node scripts/config-layers.mjs report",
+    "config:substitute:validate": "node scripts/config-substitution.mjs --validate",
+    "config:substitute:docs": "node scripts/config-substitution.mjs --docs-only",
     "guard:sentry": "node scripts/observability-config-validation.js",
     "guard:quality": "node scripts/quality_gates.mjs",
     "guard:health": "node scripts/ci/release-health-gate.mjs",
@@ -220,3 +226,4 @@
     ]
   }
 }
+
