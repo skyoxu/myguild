@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "gamedev-vitegame",
   "productName": "ViteGame",
   "description": "A desktop game built with Electron, React 19, Phaser 3, Vite, and TypeScript.",
