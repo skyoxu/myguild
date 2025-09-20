@@ -37,7 +37,7 @@ on:
       - 'vitest.config.ts'
       - '.github/workflows/soft-gates.yml'
 
-  # 鏀寔鎵嬪姩瑙﹀彂
+  # Manual trigger support
   workflow_dispatch:
 
 env:

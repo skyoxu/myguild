@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment'
+        description: 'Environment'
         required: true
         default: 'staging'
         type: choice
@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   prepare:
-    name: Prepare
+    name: Prepare
     runs-on: windows-latest
     defaults:
       run:

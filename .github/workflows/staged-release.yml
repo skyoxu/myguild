@@ -18,17 +18,17 @@ on:
         default: false
         type: boolean
       staging_percentage:
-        description: '发布百分比 (5, 25, 50, 100)'
+        description: 'Release percentage (5, 25, 50, 100)'
         required: true
         default: '5'
         type: choice
         options: ['5','25','50','100']
       version:
-        description: '发布版本号'
+        description: 'Release version number'
         required: true
         type: string
       skip_health_check:
-        description: '跳过健康检查(仅临时)' 
+        description: 'Skip health check (temporary only)' 
         required: false
         default: false
         type: boolean

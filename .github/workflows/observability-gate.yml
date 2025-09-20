@@ -29,7 +29,7 @@ env:
 
 jobs:
   observability-gate:
-    name: 可观测性配置验证
+    name: Observability Config Validation
     runs-on: windows-latest
     defaults:
       run:

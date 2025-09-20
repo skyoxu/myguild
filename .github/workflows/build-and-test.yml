@@ -31,7 +31,7 @@ jobs:
             Write-Host "Build artifacts verified: dist/ and dist-electron/ directories exist"
             echo "artifacts-available=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Error "鉂?Build artifacts missing: dist/ or dist-electron/ not found"
+            Write-Error "[FAIL] Build artifacts missing: dist/ or dist-electron/ not found"
             echo "artifacts-available=false" >> $env:GITHUB_OUTPUT
             exit 1
           }
@@ -133,11 +133,11 @@ jobs:
             if (Test-Path -LiteralPath 'dist-electron/main.js') {
               Write-Host "   - main.js entry point found"
             } else {
-              Write-Error "鉂?main.js entry point not found in dist-electron/"
+              Write-Error "[FAIL] main.js entry point not found in dist-electron/"
               exit 1
             }
           } else {
-            Write-Error "鉂?Downloaded artifacts missing: dist/ or dist-electron/ not found"
+            Write-Error "[FAIL] Downloaded artifacts missing: dist/ or dist-electron/ not found"
             exit 1
           }
       - name: Validate E2E timeout config (fail-fast)
@@ -283,7 +283,7 @@ jobs:
             const head = manifest.entries.slice(0, 10).map((e, i) => `- ${i+1}. ${rel(e.target)} (${Math.round((e.size||0)/1024)} kB)`);
             const example = rel(manifest.entries[0].target);
             const body = [
-              '### 馃幁 Playwright Traces (auto-collected)',
+              '### [TRACE] Playwright Traces (auto-collected)',
               '',
               '**How to replay (locally):**',
               '1. Download the "playwright-traces" artifact from this workflow run',
