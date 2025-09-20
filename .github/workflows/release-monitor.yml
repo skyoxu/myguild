@@ -1,6 +1,6 @@
 name: Release Monitor - 鍙戝竷鐩戞帶
 
-# Minimal permissions
+permissions:
   contents: read
   actions: write
 
@@ -15,11 +15,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '鐩戞帶鐨勫簲鐢ㄧ増鏈紙鐣欑┖浣跨敤鐜鍙橀噺锛?
+        description: '鐩戞帶鐨勫簲鐢ㄧ増鏈紙鐣欑┖浣跨敤鐜鍙橀噺锛?'
         required: false
         type: string
       force_check:
-        description: '寮哄埗妫€鏌ワ紙蹇界暐鏃堕棿闄愬埗锛?
+        description: '寮哄埗妫€鏌ワ紙蹇界暐鏃堕棿闄愬埗锛?'
         required: false
         type: boolean
         default: false

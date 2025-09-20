@@ -50,9 +50,6 @@ concurrency:
 jobs:
   emergency_rollback:
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
     # Install dev dependencies for this job to access necessary scripts
     env:
       NODE_ENV: development

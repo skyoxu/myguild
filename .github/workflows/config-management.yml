@@ -1,6 +1,6 @@
-## Configuration management and documentation pipeline`nname: Configuration Management
+name: Configuration Management
 
-# Minimal permissions
+permissions:
   contents: read
   actions: read
 
@@ -30,7 +30,8 @@ concurrency:
 
 jobs:
   config-validation-and-docs:
-    name: 閰嶇疆楠岃瘉涓庢枃妗ｅ鐞?    runs-on: windows-latest
+    name: 配置验证与文档处理
+    runs-on: windows-latest
     # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
@@ -116,7 +117,8 @@ jobs:
       #     npm run guard:base
 
   documentation-build:
-    name: 鏂囨。鏋勫缓涓庡彂甯冨噯澶?    needs: config-validation-and-docs
+    name: 文档构建与发布准备
+    needs: config-validation-and-docs
     runs-on: windows-latest
     defaults:
       run:

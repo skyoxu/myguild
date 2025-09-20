@@ -1,6 +1,6 @@
 name: Release Preparation - 鍙戝竷鍑嗗
 
-# Minimal permissions
+permissions:
   contents: write
   actions: read
 
