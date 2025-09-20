@@ -401,18 +401,17 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: Validate
+        id: observability
         uses: ./.github/actions/run-tests
         with:
           test-type: observability
 
-      - name: Run observability tests
-        run: node scripts/ci/run-observability-tests.mjs
-
-      - name: Step
+      - name: Upload observability report
+        if: ${{ always() && hashFiles('logs/observability-verification.json') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: observability-report
-          path: reports/
+          path: logs/observability-verification.json
           retention-days: 14
 
   # ==================== Performance Benchmarks ====================
@@ -477,7 +476,6 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
 
 
 

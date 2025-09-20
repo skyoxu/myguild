@@ -79,6 +79,21 @@ test.describe('Electron安全基线验证', () => {
 
   // 分组：预加载/白名单 API（ADR-0002/0004）
   test.describe('Preload Whitelist API', () => {
+    let electronApp: ElectronApplication;
+    let page: Page;
+
+    test.beforeAll(async () => {
+      const { app, page: window } = await launchApp();
+      electronApp = app;
+      page = window;
+      await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+      const url = page.url();
+      expect(url.startsWith('chrome-error://')).toBeFalsy();
+    });
+
+    test.afterAll(async () => {
+      await electronApp.close();
+    });
     test('应该只暴露白名单API', async () => {
       const apiValidation = await page.evaluate(() => {
         const electronAPI = (window as any).electronAPI;
