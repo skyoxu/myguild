@@ -100,23 +100,24 @@ jobs:
         run: |
           echo "..."
 
-          # 妫€鏌?feed 鏂囦欢
+          # Check feed file
           if [ ! -f "${{ inputs.feed_file }}" ]; then
-            echo "?Feed ?${{ inputs.feed_file }}"
+            echo "Error: Feed file not found: ${{ inputs.feed_file }}"
             exit 1
           fi
 
-          # 妫€鏌ョ増鏈竻鍗曟枃浠?          if [ ! -f "artifacts/manifest.json" ]; then
-            echo "?? artifacts/manifest.json"
-            echo "npm run release:manifest:add"
+          # Check version manifest file
+          if [ ! -f "artifacts/manifest.json" ]; then
+            echo "Error: Missing artifacts/manifest.json"
+            echo "Please run: npm run release:manifest:add"
             exit 1
           fi
 
-          # 楠岃瘉娓呭崟鏍煎紡
-          echo "..."
+          # Validate manifest format
+          echo "Validating manifest format..."
           node scripts/release/manage-manifest.mjs validate
 
-          echo "?"
+          echo "Validation complete."
 
       - name: Step
         run: |
@@ -171,15 +172,16 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         shell: bash
         run: |
-          echo "?$APP_VERSION?Release Health..."
+          echo "Checking $APP_VERSION Release Health..."
 
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
-            echo "鈿狅笍  SENTRY_AUTH_TOKEN 鏈厤缃紝璺宠繃鍋ュ悍妫€鏌?
+            echo "Warning: SENTRY_AUTH_TOKEN not configured, skipping health check"
             echo "health_status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # 鎵ц鍋ュ悍搴︽鏌?          set +e  # 鍏佽鍛戒护澶辫触浠ヤ究鎹曡幏閫€鍑虹爜
+          # Execute health degree check
+          set +e  # Allow command failure to capture exit code
           health_result=$(node scripts/release/auto-rollback.mjs)
           health_exit_code=$?
           set -e
@@ -187,20 +189,21 @@ jobs:
           echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
           echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
 
-          echo "?"
+          echo "Health check results:"
           echo "$health_result" | jq '.'
 
           case $health_exit_code in
             0)
-              echo "? -"
+              echo "Health check passed - continuing release"
               echo "health_status=passed" >> "$GITHUB_OUTPUT"
               ;;
             42)
-              echo "??-"
+              echo "Health check failed - triggering rollback"
               echo "health_status=failed" >> "$GITHUB_OUTPUT"
-              exit 42  # 浼犳挱鐗规畩閫€鍑虹爜浠ヨЕ鍙戝洖婊?              ;;
+              exit 42  # Propagate special exit code to trigger rollback
+              ;;
             *)
-              echo "?(:$health_exit_code)"
+              echo "Health check error (exit code: $health_exit_code)"
               echo "health_status=error" >> "$GITHUB_OUTPUT"
               exit $health_exit_code
               ;;
@@ -212,11 +215,12 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          echo "..."
+          echo "Executing automated rollback..."
 
           rollback_reason="Automated rollback: Release health below threshold (stage: ${{ inputs.stage }}%)"
 
-          # 鎵ц瀹屾暣鍥炴粴娴佺▼锛堢揣鎬ュ仠姝?+ 鐗堟湰鍥為€€锛?          rollback_result=$(node scripts/release/execute-rollback.mjs \
+          # Execute complete rollback process (emergency stop + version rollback)
+          rollback_result=$(node scripts/release/execute-rollback.mjs \
             --feed="${{ inputs.feed_file }}" \
             --previous-version="$PREV_GA_VERSION" \
             --manifest="artifacts/manifest.json" \
@@ -225,38 +229,38 @@ jobs:
 
           echo "rollback_result=$rollback_result" >> "$GITHUB_OUTPUT"
 
-          echo ":"
+          echo "Rollback result:"
           echo "$rollback_result" | jq '.'
 
-          echo "?"
+          echo "Setting rollback status..."
 
-          # 璁剧疆鍥炴粴鐘舵€佺敤浜庡悗缁楠?          echo "rollback_executed=true" >> "$GITHUB_OUTPUT"
+          # Set rollback status for subsequent verification
 
       - name: Step
         id: commit
         shell: bash
         run: |
-          # 閰嶇疆 Git
+          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 妫€鏌ユ槸鍚︽湁鍙樻洿
+          # Check if there are changes
           if git diff --quiet "${{ inputs.feed_file }}"; then
-            echo "Feed"
+            echo "No changes in feed file"
             echo "committed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # 鍒涘缓鎻愪氦娑堟伅
+          # Create commit message
           if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
-            commit_msg="馃毃 Auto rollback: ${{ inputs.feed_file }} 鈫?$PREV_GA_VERSION (health check failed at ${{ inputs.stage }}%)"
+            commit_msg="🚨 Auto rollback: ${{ inputs.feed_file }} → $PREV_GA_VERSION (health check failed at ${{ inputs.stage }}%)"
             commit_type="rollback"
           else
-            commit_msg="馃搱 Release ramp: ${{ inputs.feed_file }} 鈫?${{ inputs.stage }}% staging"
+            commit_msg="📈 Release ramp: ${{ inputs.feed_file }} → ${{ inputs.stage }}% staging"
             commit_type="ramp"
           fi
 
-          # 鎵ц鎻愪氦
+          # Execute commit
           git add "${{ inputs.feed_file }}"
           git commit -m "$commit_msg" \
             -m "Stage: ${{ inputs.stage }}%" \
@@ -267,8 +271,9 @@ jobs:
             -m "Workflow: ${{ github.workflow }}" \
             -m "Run: ${{ github.run_number }}"
 
-          echo "?$commit_msg"
-          # 浣跨敤鍗曚竴閲嶅畾鍚戜紭鍖栨€ц兘锛堜慨澶?SC2129锛?          {
+          echo "Committing: $commit_msg"
+          # Use single redirection for performance optimization (fix SC2129)
+          {
             echo "committed=true"
             echo "commit_type=$commit_type"
             echo "commit_sha=$(git rev-parse HEAD)"
@@ -277,26 +282,26 @@ jobs:
       - name: Step
         if: steps.commit.outputs.committed == 'true'
         run: |
-          echo "..."
+          echo "Pushing changes to repository..."
           git push origin ${{ github.ref }}
-          echo "鍙樻洿宸叉帹閫?
+          echo "Changes have been pushed."
 
       - name: Ramp summary
         shell: bash
         run: |
           summary_file="${GITHUB_STEP_SUMMARY}"
           {
-            echo "## 鍒嗛樁娈靛彂甯冪粨鏋?
+            echo "## Release Ramp Results"
             echo ""
-            echo "- ****:${{ inputs.stage }}%"
-            echo "- **?*:${{ github.actor }}"
+            echo "- **Stage**: ${{ inputs.stage }}%"
+            echo "- **Actor**: ${{ github.actor }}"
           } >> "${summary_file}"
 
-          # 娣诲姞鍋ュ悍妫€鏌ヨ鎯咃紙濡傛灉鏈夛級
+          # Add health check details (if available)
           if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
             {
               echo ''
-              echo '### 馃彞 鍋ュ悍妫€鏌ヨ鎯?
+              echo '### 🍞 Health Check Details'
               echo '```json'
             } >> "$GITHUB_STEP_SUMMARY"
             {
@@ -305,9 +310,10 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          # 涓嬩竴姝ュ缓璁?          {
+          # Next step recommendations
+          {
             echo ""
-            echo "### 馃幆 涓嬩竴姝ュ缓璁?
+            echo "### 🔄 Next Step Recommendations"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$health_status" = "passed" ] && [ "${{ inputs.stage }}" != "100" ]; then
@@ -316,23 +322,23 @@ jobs:
               "25") next_stage="50" ;;
               "50") next_stage="100" ;;
             esac
-            echo "- ??**${next_stage}%**" >> "$GITHUB_STEP_SUMMARY"
-            echo "- 10-15" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Continue to **${next_stage}%** stage" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Wait 10-15 minutes before next stage" >> "$GITHUB_STEP_SUMMARY"
           elif [ "$health_status" = "failed" ]; then
             {
-              echo "- **?*"
-              echo "-"
-              echo "- 鑰冭檻闄嶇骇鍙戝竷绛栫暐鎴栧鍔犳洿澶氭祴璇曡鐩?
+              echo "- **Health check failed - immediate action required**"
+              echo "- Review release metrics and error reports"
+              echo "- Consider downgrade strategy or add more test coverage"
             } >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ inputs.stage }}" = "100" ] && [ "$health_status" = "passed" ]; then
             {
-              echo "- **娓愯繘鍙戝竷瀹屾垚锛?* 搴旂敤宸插叏閲忓彂甯?
+              echo "- **Gradual release completed!** Application is fully deployed"
               echo "- Release Health"
-              echo "- 鍙€冭檻鏇存柊 \`PREV_GA_VERSION\` 鐜鍙橀噺涓哄綋鍓嶇増鏈?
+              echo "- Consider updating PREV_GA_VERSION environment variable to current version"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # 鍚庣画宸ヤ綔娴侊細閫氱煡銆佺洃鎺х瓑
+  # Post-release actions: notifications, monitoring, etc.
   post_actions:
     needs: ramp
     if: always()
@@ -351,22 +357,23 @@ jobs:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         shell: bash
         run: |
-          # 鏍规嵁缁撴灉鏋勫缓閫氱煡娑堟伅
+          # Build notification message based on results
           if [ "${{ needs.ramp.outputs.rollback_executed }}" = "true" ]; then
-            status="馃毃 Rollback Executed"
+            status="🚨 Rollback Executed"
             color="danger"
             message="Release ramp failed health check at ${{ needs.ramp.outputs.stage }}% and was automatically rolled back"
           elif [ "${{ needs.ramp.outputs.health_passed }}" = "true" ]; then
-            status="鉁?Stage ${{ needs.ramp.outputs.stage }}% Complete"
+            status="✅ Stage ${{ needs.ramp.outputs.stage }}% Complete"
             color="good"
             message="Release ramp to ${{ needs.ramp.outputs.stage }}% completed successfully with healthy metrics"
           else
-            status="鈿狅笍  Stage ${{ needs.ramp.outputs.stage }}% - No Health Check"
+            status="⚠️ Stage ${{ needs.ramp.outputs.stage }}% - No Health Check"
             color="warning" 
             message="Release ramp to ${{ needs.ramp.outputs.stage }}% completed (health check skipped)"
           fi
 
-          # 鍙戦€侀€氱煡锛堢畝鍖栫殑 webhook 璋冪敤锛?          curl -X POST "$WEBHOOK_URL" \
+          # Send notification (simplified webhook call)
+          curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{
               \"text\": \"$status\",

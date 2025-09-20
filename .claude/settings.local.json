@@ -151,7 +151,15 @@
       "Bash(if exist \"package-lock.json\" del \"package-lock.json\")",
       "Bash(git branch:*)",
       "Bash(git remote:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(while IFS= read -r line)",
+      "Bash(yamllint:*)",
+      "Bash(do echo \"=== 检查 $file ===\")",
+      "Bash(Get-ChildItem .github/workflows/*.yml)",
+      "Bash(Select-Object -First 2 })",
+      "Bash(while read file)",
+      "Bash(xxd:*)",
+      "Bash(head:*)"
     ],
     "deny": [],
     "ask": [],

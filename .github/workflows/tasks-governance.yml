@@ -70,21 +70,26 @@ jobs:
           npm config set prefer-offline true
         # 鑻ヤ綘浠撳簱 .npmrc 纭啓浜?production=true锛屼篃鑳借涓嬮潰 env 瑕嗙洊
 
-      # 瀹夎渚濊禆锛堝姟蹇呭寘鍚?dev锛?      - name: Install deps (include dev)
+      # Install dependencies (must include dev)
+      - name: Install deps (include dev)
         shell: bash
         env:
-          NPM_CONFIG_PRODUCTION: "false"  # 瑕嗙洊浠讳綍 production=true
-          NODE_ENV: "development"         # 閬垮厤 NODE_ENV=production 瑙﹀彂鐪佺暐 dev
+          NPM_CONFIG_PRODUCTION: "false"  # Override any production=true
+          NODE_ENV: "development"         # Avoid NODE_ENV=production triggering dev skip
         run: npm ci --no-audit --no-fund
 
-      # 楠岃瘉 ESLint锛堢幇鍦ㄥ簲璇ヨ兘鎵惧埌锛?      - name: Verify ESLint availability
+      # Verify ESLint (should now be findable)
+      - name: Verify ESLint availability
         shell: bash
         run: npx -y eslint --version
 
       # 鑻?overlay-map 鍙嚜鍔ㄧ敓鎴愶紝鍏堥噸寤哄苟寮哄埗"宸叉彁浜や竴鑷?
-      # 纭繚Windows鐜鎸塋F褰掍竴鍖?      - if: startsWith(runner.os, 'Windows')
+#       Ensure Windows environment uses LF normalization
+      - name: Configure Git line endings (Windows)
+        if: startsWith(runner.os, 'Windows')
         run: git config --global core.autocrlf input
-      - run: node scripts/build-overlay-map.mjs
+      - name: Build overlay map
+        run: node scripts/build-overlay-map.mjs
       - name: ensure overlay-map committed
         shell: bash
         run: |

@@ -232,8 +232,8 @@ jobs:
               """
               Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
             } else {
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No E2E durations found to compute P95."
-        }
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No E2E durations found to compute P95."
+            }
           } else {
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "No Playwright JSON report at test-results/test-results.json."
           }

@@ -353,9 +353,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: electron-app-windows
-          # 鎸夌収citest/ciinfo.md瑙勫垯锛屼娇鐢ㄦ爣鍑嗚緭鍑鸿矾寰?          path: dist/win-unpacked/
+          # Following citest/ciinfo.md rules, use standard output path
+          path: dist/win-unpacked/
           if-no-files-found: error
-          retention-days: 1  # 鐭湡artifact锛屼粎鐢ㄤ簬褰撳墠workflow
+          retention-days: 1  # Short-term artifact, only for current workflow
 
   # Stage 3: E2E Security Tests (downloads pre-built artifact)
   e2e-security-test:

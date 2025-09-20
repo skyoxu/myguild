@@ -1,6 +1,7 @@
 name: Soft Gates (Quality Feedback)
 
 # Minimal permissions
+permissions:
   contents: read
   actions: read
 
