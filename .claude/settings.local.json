@@ -159,7 +159,8 @@
       "Bash(Select-Object -First 2 })",
       "Bash(while read file)",
       "Bash(xxd:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(set SECURITY_TEST_MODE=true)"
     ],
     "deny": [],
     "ask": [],
