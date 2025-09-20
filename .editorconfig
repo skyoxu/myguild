@@ -7,8 +7,8 @@ root = true
 [*]
 indent_style = space
 indent_size = 2
-end_of_line = crlf
-charset = utf-8-bom
+end_of_line = lf
+charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
@@ -33,14 +33,15 @@ trim_trailing_whitespace = false
 [package.json]
 indent_size = 2
 
-# CI/CD files
-[*.{yml,yaml}]
-indent_size = 2
-
-# Windows PowerShell scripts
+# Windows PowerShell scripts (需要BOM和CRLF)
 [*.ps1]
 end_of_line = crlf
 charset = utf-8-bom
+
+# YAML/YML files (统一无BOM+LF)
+[*.{yml,yaml}]
+end_of_line = lf
+charset = utf-8
 
 # Bash/Unix shell scripts（避免 shebang 受 BOM/CRLF 影响）
 [*.sh]

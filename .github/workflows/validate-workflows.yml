@@ -1,4 +1,4 @@
-﻿name: Validate Workflows & Guards
+name: Validate Workflows & Guards
 
 on:
   pull_request:

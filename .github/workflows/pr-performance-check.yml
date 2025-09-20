@@ -1,4 +1,4 @@
-﻿name: PR Performance Check
+name: PR Performance Check
 
 on:
   pull_request:
