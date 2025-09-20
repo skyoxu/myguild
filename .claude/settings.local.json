@@ -150,7 +150,8 @@
       "Bash(if exist \"node_modules\" rmdir /S /Q \"node_modules\")",
       "Bash(if exist \"package-lock.json\" del \"package-lock.json\")",
       "Bash(git branch:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": [],
