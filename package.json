@@ -5,6 +5,7 @@
   "author": "ViteGame Studio",
   "private": true,
   "version": "0.1.4",
+  "_trigger_ci": "Trigger CI/CD pipeline activation"，
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
