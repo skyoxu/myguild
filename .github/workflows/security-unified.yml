@@ -1,4 +1,4 @@
-﻿name: Security Gate (Unified)
+name: Security Gate (Unified)
 
 # Minimal permissions principle
 permissions:
@@ -51,7 +51,7 @@ jobs:
   # Stage 1: Static Security Scan (fast, parallel execution)
   # Compatibility: Keep job names compatible with existing branch protection rules
   security-scan:
-    name: 馃攳 Static Security Scan (Unified)
+    name: Static Security Scan (Unified)
     runs-on: windows-latest
     # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
@@ -263,7 +263,7 @@ jobs:
           echo "critical-count=$CRITICAL_COUNT" >> "$GITHUB_OUTPUT"
           echo "high-count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
 
-          # ADR-0002 hard failure logic: Critical=0, High鈮?
+          # ADR-0002 hard failure logic: Critical=0, High ?
           if [ "$CRITICAL_COUNT" -gt 0 ]; then
             echo "status=failed" >> "$GITHUB_OUTPUT"
             echo "[Hard Failure] Found$CRITICAL_COUNTCritical-level security issues, ADR-0002 requires zero"
@@ -295,7 +295,7 @@ jobs:
 
   # Stage 2: Build and Package Application (separate from tests for artifact reuse)
   build-and-package:
-    name: 馃敤 Build & Package
+    name: Build & Package
     runs-on: windows-latest
     defaults:
       run:
@@ -360,7 +360,7 @@ jobs:
 
   # Stage 3: E2E Security Tests (downloads pre-built artifact)
   e2e-security-test:
-    name: 馃洝锔?E2E Security Tests
+    name: E2E Security Tests
     runs-on: windows-latest
     defaults:
       run:
@@ -419,16 +419,17 @@ jobs:
 
       - name: Verify and set Electron entry path
         run: |
-          # electron-builder 浣跨敤 asar 鎵撳寘锛岄獙璇佸彲鎵ц鏂囦欢鑰屼笉鏄?main.js
+          # electron-builder uses asar; verify executable instead of main.js
           # Windows: ViteGame Studio.exe
           # macOS: ViteGame Studio.app/Contents/MacOS/ViteGame Studio
           # Linux: ViteGame Studio (AppImage/deb)
           $electronExe = "dist/win-unpacked/ViteGame Studio.exe"
           if (Test-Path $electronExe) {
             Write-Host "Found Electron executable:$electronExe"
-            # 璁剧疆鐜鍙橀噺渚涘悗缁璼teps浣跨敤 (鎸囧悜鍙墽琛屾枃浠?
+            # Set environment variables for later steps (executable path)
             echo "ELECTRON_MAIN_PATH=$electronExe" >> $env:GITHUB_ENV
-            # 鍚屾椂璁剧疆VITE_E2E_SMOKE浠ヤ繚鎸丒2E_PERF閰嶇疆鍏煎鎬?            echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
+            # Also set VITE_E2E_SMOKE to keep E2E performance compatibility
+            echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
           } else {
             Write-Host "Electron executable not found:$electronExe"
             Write-Host "Listing actual dist/win-unpacked contents:"
@@ -492,7 +493,7 @@ jobs:
 
   # Stage 3: Unified Security Gate Decision
   unified-security-gate:
-    name: 馃敀 Unified Security Gate
+    name: Unified Security Gate
     runs-on: windows-latest
     defaults:
       run:
@@ -624,7 +625,7 @@ jobs:
           
           # Determine result status and message
           if [ "$scan_result" != "success" ]; then
-            result_title="### 鉂?Security Gate Hard Failure"
+            result_title="### Security Gate Hard Failure"
             {
               echo "**ADR-0002 Violation**: Static security scan failed baseline requirements"
               echo "- Critical security issues: ${critical_count} (required: 0)"
@@ -635,7 +636,7 @@ jobs:
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
           elif [ "$e2e_status" = "failed" ]; then
-            result_title="### 鉂?Security Gate Hard Failure"
+            result_title="### Security Gate Hard Failure"
             {
               echo "**ADR-0002 Violation**: E2E security tests failed"
               echo "Please check Electron security configuration:"
@@ -648,7 +649,7 @@ jobs:
             result_message=$(cat /tmp/result_msg.txt)
             exit_code=1
           else
-            result_title="### 鉁?Security Gate Passed"
+            result_title="### Security Gate Passed"
             {
               echo "**ADR-0002 Compliant**: All security checks passed, meets strict security baseline requirements"
               echo "- Critical security issues: 0"
@@ -695,34 +696,34 @@ jobs:
                            'Security Check';
             const truncatedTitle = rawTitle.length > 100 ? 
                                  rawTitle.substring(0, 97) + '...' : rawTitle;
-            const title = `馃攼 Unified Security Gate Failure - ${truncatedTitle}`;
+            const title = `Unified Security Gate Failure - ${truncatedTitle}`;
 
             const body = `
-            ## 馃毃 Unified Security Gate Failure Report
+            ## Unified Security Gate Failure Report
 
             **Commit**: ${context.sha}
             **Branch**: ${context.ref}
             **Workflow**: ${context.workflow}
             **Run ID**: ${context.runId}
 
-            ### 馃搳 Check Results
+            ### Check Results
             - **Static scan status**: ${{ needs.security-scan.outputs.scan-status }}
             - **Critical issues**: ${{ needs.security-scan.outputs.critical-count }}
             - **High issues**: ${{ needs.security-scan.outputs.high-count }}
             - **E2E test status**: ${{ needs.e2e-security-test.outputs.e2e-status }}
 
-            ### 馃摑 Items to check
+            ### Items to check
             - [ ] Fix all Critical-level security issues
             - [ ] Check Electron security config (nodeIntegration=false, contextIsolation=true)
             - [ ] Verify CSP security policy
             - [ ] Check IPC channel security
             - [ ] Verify preload script security
 
-            ### 馃敆 Related links
+            ### Related links
             - [View detailed logs](${context.payload.repository.html_url}/actions/runs/${context.runId})
             - [Download security reports](${context.payload.repository.html_url}/actions/runs/${context.runId}#artifacts)
 
-            ### 鈿狅笍 Notice
+            ### Notice
             **Security gate failure means the application has security risks, please fix immediately before release!**
 
             > This Issue was auto-created by GitHub Actions - based on ADR-0002 unified security gate standards
@@ -772,7 +773,7 @@ jobs:
                   owner,
                   repo,
                   issue_number,
-                  body: `### 馃攧 New security gate failure\n\n**Time**: ${new Date().toISOString()}\n**Commit**: ${context.sha.substring(0, 8)}\n**Branch**: ${context.ref.replace('refs/heads/', '')}\n\nFor details see [run logs](${context.payload.repository.html_url}/actions/runs/${context.runId})`
+                  body: `### New security gate failure\n\n**Time**: ${new Date().toISOString()}\n**Commit**: ${context.sha.substring(0, 8)}\n**Branch**: ${context.ref.replace('refs/heads/', '')}\n\nFor details see [run logs](${context.payload.repository.html_url}/actions/runs/${context.runId})`
                 });
                 console.log(`Added comment to existing Issue #${issue_number}`);
               } else {
