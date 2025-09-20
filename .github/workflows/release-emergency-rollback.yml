@@ -136,7 +136,7 @@ jobs:
         run: node scripts/ci/git-conditional-commit-single-file.mjs
         env:
           FILE_PATH: dist/latest.yml
-          MESSAGE: Emergency rollback: v${{ env.PREV_GA_VERSION }}
+          MESSAGE: "Emergency rollback: v${{ env.PREV_GA_VERSION }}"
 
       - name: Push emergency changes
         run: node scripts/ci/git-push-current-branch.mjs

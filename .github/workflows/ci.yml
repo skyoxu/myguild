@@ -259,8 +259,8 @@ jobs:
         run: node scripts/ci/sentry-verify.mjs
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG || '\'default-org'\' }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || '\'bc660-desktop'\' }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'default-org' }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || 'bc660-desktop' }}
       - name: Step
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -272,12 +272,17 @@ jobs:
         if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: node scripts/ci/release-health-gate.mjs
+
+  # ==================== Extended Tests Matrix ====================
+  extended-tests-matrix:
+    name: Extended Tests Matrix
+    runs-on: windows-latest
     defaults:
       run:
         shell: pwsh
     needs: quality-gates
     timeout-minutes: 20
-     if: |
+    if: |
       contains(github.event.head_commit.message, '[skip-extended]') == false &&
       github.event_name != 'schedule'
 
@@ -357,7 +362,8 @@ jobs:
 
       # Windows runner does not require xvfb for Electron
       - name: Validate
-        run: Write-Host "Windows runner detected ($env:RUNNER_OS); Electron smoke runs without xvfb"
+        run: |
+          Write-Host "Windows runner detected ($env:RUNNER_OS); Electron smoke runs without xvfb"
           echo "Runner OS: $RUNNER_OS"
 
       - name: Step
@@ -418,7 +424,7 @@ jobs:
         shell: pwsh
     needs: build-verification-core
     timeout-minutes: 15
-     if: |
+    if: |
       contains(github.event.head_commit.message, '[skip-perf]') == false
 
     steps:
