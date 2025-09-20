@@ -160,7 +160,8 @@
       "Bash(while read file)",
       "Bash(xxd:*)",
       "Bash(head:*)",
-      "Bash(set SECURITY_TEST_MODE=true)"
+      "Bash(set SECURITY_TEST_MODE=true)",
+      "Bash(.actionlint.exe .github/workflows/validate-workflows.yml)"
     ],
     "deny": [],
     "ask": [],
