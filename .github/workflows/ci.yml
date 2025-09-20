@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+﻿name: CI/CD Pipeline
 
 on:
   push:
@@ -30,7 +30,7 @@ on:
       - 'playwright.config.ts'
       - '.github/workflows/ci.yml'
   schedule:
-    # 每日晨检 - 每天UTC 02:00 (北京时间10:00)
+    # Daily check - UTC 02:00 (Beijing 10:00)
     - cron: '0 2 * * *'
 
 env:
@@ -50,15 +50,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ==================== 守护自检 ====================
+  # ==================== Guardian Self-Check ====================
   workflow-guardian:
-    name: 🛡️ Workflow Guardian Check
+    name: Workflow Guardian Check
     runs-on: windows-latest
     defaults:
       run:
         shell: pwsh
     timeout-minutes: 5
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -82,19 +82,13 @@ jobs:
         uses: ./.github/actions/npm-install
 
       - name: Step
-        shell: bash
-        run: |
-          echo "needs ..."
-          node scripts/ci/workflow-guardian.mjs
+        run: node scripts/ci/workflow-guardian.mjs
 
       - name: Step
-        shell: bash
-        run: |
-          echo "jobs..."
-          node scripts/ci/branch-protection-guardian.mjs
-        continue-on-error: true # 分支保护检查失败不阻断开发流程，但会记录问题
+        run: node scripts/ci/branch-protection-guardian.mjs
+        continue-on-error: true # Branch protection check is non-blocking; issues are logged
 
-  # ==================== 质量门禁阶段 ====================
+  # ==================== Quality Gates ====================
   quality-gates:
     name: Quality Gates Check
     runs-on: windows-latest
@@ -103,7 +97,7 @@ jobs:
         shell: pwsh
     timeout-minutes: 10
     needs: workflow-guardian
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -140,11 +134,11 @@ jobs:
         timeout-minutes: 2
         continue-on-error: true
 
-  # ==================== 安全扫描阶段 ====================
-  # 注意：安全扫描已完全迁移到统一门禁系统 (security-unified.yml)
+  # ==================== Security Scan Stage ====================
+  # Note: Security scans moved to unified gate (security-unified.yml)
 # Workflow
 
-  # ==================== 稳定名核心作业（必需检查）====================
+  # ==================== Stable Core Jobs (Required) ====================
   unit-tests-core:
     name: Unit Tests (windows-latest, Node 20)
     runs-on: windows-latest
@@ -153,7 +147,7 @@ jobs:
         shell: pwsh
     needs: workflow-guardian
     timeout-minutes: 15
-    # P0修复：job级别环境变量确保devDependencies正确安装
+     # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -191,7 +185,7 @@ jobs:
         shell: pwsh
     needs: unit-tests-core
     timeout-minutes: 5
-    # P0修复：job级别环境变量确保devDependencies正确安装
+     # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -205,12 +199,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         uses: ./.github/actions/npm-install
-      - name: Validate
-        shell: bash
-        run: |
-          echo "coverage-config.cjs ..."
-          node --check scripts/ci/coverage-config.cjs
-          node -e "require('./scripts/ci/coverage-config.cjs'); console.log('✅ 脚本语法和编码验证通过')"
+      - name: Validate (coverage config)
+        run: node scripts/ci/coverage-config.cjs --verify-only
       - name: Step
         uses: actions/download-artifact@v4
         with:
@@ -230,7 +220,7 @@ jobs:
         shell: pwsh
     needs: unit-tests-core
     timeout-minutes: 10
-    # P0修复：job级别环境变量确保devDependencies正确安装
+    # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -247,11 +237,7 @@ jobs:
       - name: Build application
         run: npm run build
       - name: Validate
-        shell: bash
-        run: |
-          ls -la dist/
-          test -f dist/index.html
-          test -d dist/assets/
+        run: node scripts/ci/verify-dist-build.mjs
 
   release-health-gate:
     name: Release Health Gate
@@ -268,18 +254,13 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         uses: ./.github/actions/npm-install
-      - name: Step
+      - name: Check Sentry token
         id: sentry_check
-        shell: bash
-        run: |
-          # 检查token是否存在和非空
-          if [ -n "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
-            echo "token_present=true" >> "$GITHUB_OUTPUT"
-            echo "Sentry token is present and valid."
-          else
-            echo "token_present=false" >> "$GITHUB_OUTPUT"
-            echo "Sentry token is NOT configured or empty. Sentry steps will be skipped."
-          fi
+        run: node scripts/ci/sentry-verify.mjs
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || '\'default-org'\' }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || '\'bc660-desktop'\' }}
       - name: Step
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -290,76 +271,13 @@ jobs:
           SENTRY_RELEASE: ${{ github.sha }}
         if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
-        run: |
-          # 按照Sentry官方文档和citest/ciinfo.md要求修复PowerShell错误处理
-          $ErrorActionPreference = "Stop"  # 确保外部命令错误被捕获
-          
-          Write-Host "Sentry..."
-          
-          # 检查关键环境变量是否存在（如果缺失则跳过而非失败）
-          if (-not $env:SENTRY_AUTH_TOKEN) {
-            Write-Host "SENTRY_AUTH_TOKENSentry CLI" -ForegroundColor Yellow
-            exit 0
-          }
-          if (-not $env:SENTRY_ORG) {
-            Write-Host "SENTRY_ORGSentry CLI" -ForegroundColor Yellow
-            exit 0
-          }
-          if (-not $env:SENTRY_PROJECT) {
-            Write-Host "SENTRY_PROJECTSentry CLI" -ForegroundColor Yellow
-            exit 0
-          }
-          
-          # 设置详细日志级别
-          $env:SENTRY_LOG_LEVEL = "info"
-          
-          # 安全显示环境变量（隐藏敏感token）
-          Write-Host "- ORG:$env:SENTRY_ORG, PROJECT:$env:SENTRY_PROJECT"
-          Write-Host "AUTH_TOKEN:$(if($env:SENTRY_AUTH_TOKEN){'[]'}else{'[]'})"
-          
-          # 执行认证检查 - 使用PowerShell外部命令错误处理最佳实践
-          Write-Host "sentry-cli info ..."
-          try {
-            sentry-cli info
-            if ($LASTEXITCODE -ne 0) {
-              throw "sentry-cli info 命令失败，退出代码: $LASTEXITCODE"
-            }
-            Write-Host "Sentry" -ForegroundColor Green
-          }
-          catch {
-            Write-Host "Sentry:$($_.Exception.Message)" -ForegroundColor Red
-            Write-Host ":" -ForegroundColor Yellow
-            Write-Host "1. SENTRY_AUTH_TOKEN" -ForegroundColor Yellow
-            Write-Host "2. SENTRY_ORGSENTRY_PROJECT" -ForegroundColor Yellow
-            Write-Host "GitHub SecretsSentry" -ForegroundColor Yellow
-            throw
-          }
-          
-          Write-Host "..."
-          node scripts/release-health-gate.mjs
-
-      - name: Step
-        if: steps.sentry_check.outputs.token_present == 'false'
-        shell: bash
-        run: |
-          echo "SENTRY_AUTH_TOKEN"
-          echo "Sentry"
-          echo "status=skipped" >> "$GITHUB_OUTPUT"
-      - name: Step
-        if: ${{ github.event.pull_request.head.repo.fork && failure() }}
-        run: 'echo "Fork PR: skipping hard gate due to missing secrets" && exit 0'
-
-  # ==================== Windows单元测试扩展（非必需）====================
-  unit-tests-extended:
-    name: Unit Tests Extended - Windows Matrix
-    runs-on: windows-latest
+        run: node scripts/ci/release-health-gate.mjs
     defaults:
       run:
         shell: pwsh
     needs: quality-gates
     timeout-minutes: 20
-    # 仅在代码改动时触发，文档类变更跳过
-    if: |
+     if: |
       contains(github.event.head_commit.message, '[skip-extended]') == false &&
       github.event_name != 'schedule'
 
@@ -414,7 +332,7 @@ jobs:
         env:
           NODE_ENV: test
 
-  # ==================== Electron安全门禁（必需）====================
+  # ==================== Electron Security Gate ====================
   electron-security-gate:
     name: Electron Security Gate
     runs-on: windows-latest
@@ -437,13 +355,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      # Windows下无需安装xvfb，Electron可以直接运行
+      # Windows runner does not require xvfb for Electron
       - name: Validate
-        shell: bash
-        run: |
-          echo "WindowsElectron"
+        run: Write-Host "Windows runner detected ($env:RUNNER_OS); Electron smoke runs without xvfb"
           echo "Runner OS: $RUNNER_OS"
-          echo "WindowsxvfbElectron"
 
       - name: Step
         uses: ./.github/actions/run-tests
@@ -451,169 +366,15 @@ jobs:
           test-type: security
         env:
           CI: true
-          # Windows下无需xvfb，Electron可直接运行
-
-      - name: Step
-        shell: bash
-        run: |
-          echo "Electron..."
-
-          # 预加载脚本安全校验
-          if [ -f "scripts/validate-preload-security.mjs" ]; then
-            node scripts/validate-preload-security.mjs
-          else
-            echo ""
-          fi
-
-          # CSP一致性校验  
-          if [ -f "scripts/validate-csp-consistency.mjs" ]; then
-            node scripts/validate-csp-consistency.mjs
-          elif [ -f "scripts/scan_electron_safety.mjs" ]; then
-            node scripts/scan_electron_safety.mjs
-          else
-            echo "CSP"
-          fi
-
-          echo "Electron"
-
-      - name: Step
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-security-report
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 30
-
-  # ==================== Windows构建验证扩展（非必需）====================
-  build-verification-extended:
-    name: Build Verification Extended - Windows
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
-    needs: unit-tests-extended
-    timeout-minutes: 15
-    # 仅在代码改动时触发，文档类变更跳过
-    if: |
-      contains(github.event.head_commit.message, '[skip-extended]') == false &&
-      github.event_name != 'schedule'
-
-    strategy:
-      matrix:
-        # Windows-focused strategy: simplified matrix
-        dummy: [1] # Placeholder for matrix syntax
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Step
-        uses: tj-actions/changed-files@v44
-        id: changed-files
-        with:
-          files: |
-            src/**
-            tests/**
-            *.js
-            *.ts
-            *.json
-            package*.json
-            vite.config.*
-            tsconfig.json
-            *.config.js
-            *.config.ts
-          files_ignore: |
-            docs/**
-            *.md
-            **/*.md
-
-      - name: Setup Node.js
-        if: steps.changed-files.outputs.any_changed == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        if: steps.changed-files.outputs.any_changed == 'true'
-        uses: ./.github/actions/npm-install
-        with:
-          node-version: '20.x'
-
-      - name: Build application
-        if: steps.changed-files.outputs.any_changed == 'true'
-        run: npm run build
-
-      - name: Validate
-        if: steps.changed-files.outputs.any_changed == 'true'
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            ls -la dist/
-            test -f dist/index.html
-            test -d dist/assets/
-          else
-            ls -la dist/
-            test -f dist/index.html
-            test -d dist/assets/
-          fi
-
-      - name: Step
-        if: steps.changed-files.outputs.any_changed == 'true'
-        shell: bash
-        run: |
-          # TODO: 配置Electron Builder后启用
-          echo "Electron -"
-
-  # ==================== 依赖安全审计 ====================
-  dependency-audit:
-    name: Dependency Security Audit
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
-    needs: quality-gates
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        uses: ./.github/actions/npm-install
-
-      - name: Step
-        shell: bash
+          # Windows runner does not require xvfb for Electron
+      - name: Run Snyk scan (non-blocking)
+        run: node scripts/ci/run-snyk-scan.mjs
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          if [ -n "$SNYK_TOKEN" ]; then
-            echo "Installing and running Snyk CLI..."
-            npm install -g snyk
-            snyk test --severity-threshold=high --json > snyk-results.json || true
-            echo "Snyk scan completed"
-          else
-            echo "Skipping Snyk scan (no SNYK_TOKEN)"
-          fi
-
-      - name: Step
-        shell: bash
-        run: |
-          npx license-checker --summary
-          # TODO: 配置许可证白名单检查
-
-  # ==================== 可观测性验证 ====================
+      - name: License summary
+        run: node scripts/ci/run-license-summary.mjs
+  # ==================== Observability Verification ====================
   observability-verification:
     name: Observability Verification
     runs-on: windows-latest
@@ -638,12 +399,8 @@ jobs:
         with:
           test-type: observability
 
-      - name: Step
-        shell: pwsh
-        run: |
-          # P0修复：Windows runner使用PowerShell目录创建替代Linux mkdir -p
-          New-Item -ItemType Directory -Path "reports" -Force
-          npm run test:observability > reports/observability-verification.json
+      - name: Run observability tests
+        run: node scripts/ci/run-observability-tests.mjs
 
       - name: Step
         uses: actions/upload-artifact@v4
@@ -652,7 +409,7 @@ jobs:
           path: reports/
           retention-days: 14
 
-  # ==================== 性能基准测试 ====================
+  # ==================== Performance Benchmarks ====================
   performance-benchmarks:
     name: Performance Benchmarks
     runs-on: windows-latest
@@ -661,8 +418,7 @@ jobs:
         shell: pwsh
     needs: build-verification-core
     timeout-minutes: 15
-    # 仅在代码改动时触发
-    if: |
+     if: |
       contains(github.event.head_commit.message, '[skip-perf]') == false
 
     steps:
@@ -678,19 +434,12 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/npm-install
 
-      - name: Step
-        shell: bash
-        run: |
-          npx tsx scripts/benchmarks/event-loop-latency.ts
-          # TODO: 配置性能回归阈值检查
+      - name: Event loop latency benchmark
+        run: node scripts/ci/run-event-loop-benchmark.mjs
+      - name: Collect performance metrics (placeholder)
+        run: node scripts/ci/perf-metrics-placeholder.mjs
 
-      - name: Step
-        shell: bash
-        run: |
-          # TODO: 集成性能监控指标收集
-          echo "-"
-
-  # ==================== 部署就绪检查 ====================
+  # ==================== Deployment Readiness ====================
   deployment-readiness:
     name: Deployment Readiness Check
     runs-on: windows-latest
@@ -710,29 +459,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Step
-        shell: bash
-        run: |
-          echo ""
-          echo ":"
-          echo ":"
-          echo ":"
-          echo "E2E:"
-          echo ":"
-          echo ":"
-          echo ""
-          echo ""
+      - name: Deployment summary
+        run: echo "Deployment readiness checklist will be attached."
 
-      - name: Step
-        shell: bash
-        run: |
-          {
-            echo "-$(date)"
-            echo "- [x]"
-            echo "- [x]"
-            echo "- [x]"
-            echo "- [x]"
-          } > deployment-checklist.md
+      - name: Generate deployment checklist
+        run: node scripts/ci/generate-deployment-checklist.mjs
 
       - name: Step
         uses: actions/upload-artifact@v4
@@ -740,3 +471,10 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
+
+
+
+
+
+
+

@@ -45,9 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: validation
-        shell: bash
-        run: |
-          echo "can_proceed=true" >> "$GITHUB_OUTPUT"
+        run: node scripts/ci/precheck-can-proceed.mjs
 
   e2e-perf-smoke:
     name: E2E Perf Smoke (Optional)
@@ -81,4 +79,3 @@ jobs:
     needs: pre-check
     steps:
       - run: Write-Output "Health check placeholder"
-

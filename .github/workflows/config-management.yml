@@ -20,19 +20,17 @@ on:
     branches: [main]
 
 env:
-  # 鏋勫缓鏃堕厤缃紙浠?package.json 鑾峰彇锛?  NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+  NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
   RELEASE_PREFIX: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
-# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   config-validation-and-docs:
-    name: 配置验证与文档处理
+    name: Config Validation and Docs
     runs-on: windows-latest
-    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -52,58 +50,30 @@ jobs:
 
       - name: Validate config layers
         env:
-          # CI Secrets锛堟晱鎰熼厤缃級
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          # 鏋勫缓绛惧悕锛堜粎鐢熶骇鐜锛?          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          echo "?.."
-          npm run config:layers:validate
+        run: npm run config:layers:validate
 
       - name: Generate config report
-        run: |
-          echo "..."
-          npm run config:layers:report > config-report.json
+        run: npm run config:layers:report > config-report.json
 
-      - name: Validate config substitution
+      - name: Validate config substitution (non-main)
         if: github.ref != 'refs/heads/main'
-        run: |
-          echo "?.."
-          npm run config:substitute:validate
+        run: npm run config:substitute:validate
 
       - name: Generate config docs
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        run: |
-          echo "..."
-          npm run config:substitute:docs
+        run: npm run config:substitute:docs
 
       - name: Validate package.json
-        run: |
-          echo "??.."
-          node -e "
-          const fs = require('fs');
-          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
-
-          // 楠岃瘉蹇呴渶瀛楁
-          const required = ['name', 'version'];
-          const missing = required.filter(field => !pkg[field]);
-
-          if (missing.length > 0) {
-            console.error('鉂?package.json 缂哄皯蹇呴渶瀛楁:', missing);
-            process.exit(1);
-          }
-
-          console.log('鉁?package.json 閰嶇疆楠岃瘉閫氳繃');
-          console.log('馃摝 搴旂敤鍚嶇О:', pkg.name);
-          console.log('馃彿锔?鐗堟湰:', pkg.version);
-          console.log('馃彚 浜у搧鍚嶇О:', pkg.productName || '鏈缃?);
-          "
+        run: node scripts/ci/validate-package-json.mjs
 
       - name: Upload config reports
         uses: actions/upload-artifact@v4
@@ -113,14 +83,9 @@ jobs:
           path: |
             logs/
             config-report.json
-          retention-days: 30
-
-      # - name: Base 鏂囨。娓呮磥鎬ф鏌?      #   run: |
-      #     echo "?Base ?.."
-      #     npm run guard:base
 
   documentation-build:
-    name: 文档构建与发布准备
+    name: Docs Build and Publish Readiness
     needs: config-validation-and-docs
     runs-on: windows-latest
     defaults:
@@ -147,35 +112,10 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           NODE_ENV: production
           RELEASE_PREFIX: prod
-        run: |
-          echo "..."
-
-          # 1. 鎵ц閰嶇疆鍒嗗眰鍒濆鍖?          npm run config:layers:init
-
-          # 2. 瀵煎嚭閰嶇疆鍒板绉嶆牸寮?          npm run config:layers:export -- --format json --output dist/config
-          npm run config:layers:export -- --format typescript --output src/generated/config
-          npm run config:layers:export -- --format env --output .env.production
-
-          # 3. 澶勭悊鏂囨。鍗犱綅绗︽浛鎹?          npm run config:substitute:docs
-
-          # 4. 楠岃瘉鏇挎崲缁撴灉
-          echo "?..."
-          find docs/architecture/base -name "*.md" -exec grep -l "\${" {} \; | while IFS= read -r file; do
-            echo "$file?"
-            grep -n "\${" "$file" || true
-          done
+        run: node scripts/ci/process-config-and-docs.mjs
 
       - name: Verify generated files
-        run: |
-          echo "?.."
-          ls -la dist/ || echo "dist/ 鐩綍涓嶅瓨鍦?
-          ls -la src/generated/ || echo "src/generated/ 鐩綍涓嶅瓨鍦?
-
-          # 妫€鏌ョ敓鎴愮殑閰嶇疆鏂囦欢
-          if [ -f "src/generated/config.ts" ]; then
-            echo "?TypeScript :"
-            head -20 src/generated/config.ts
-          fi
+        run: node scripts/ci/verify-generated-files.mjs
 
       - name: Upload documentation
         uses: actions/upload-artifact@v4
@@ -187,4 +127,3 @@ jobs:
             src/generated/config*
             .env.production
           retention-days: 7
-

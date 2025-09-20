@@ -1,4 +1,4 @@
-name: Release Ramp - Gradual Release and Auto Rollback
+name: Release Ramp
 
 permissions:
   contents: write
@@ -12,47 +12,40 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: '鍒嗛樁娈靛彂甯冪櫨鍒嗘瘮'
+        description: 'Gradual rollout percentage'
         required: true
         type: choice
         options: ['5', '25', '50', '100']
         default: '5'
       feed_file:
-        description: 'Feed 鏂囦欢璺緞'
+        description: 'Feed file path'
         required: false
         type: choice
         options:
           - 'dist/latest.yml'
-          - 'dist/latest-mac.yml'
-          - 'dist/latest-linux.yml'
         default: 'dist/latest.yml'
       skip_health_check:
-        description: '璺宠繃鍋ュ悍搴︽鏌?(浠呯敤浜庢祴璇?'
+        description: 'Skip health check (testing only)'
         required: false
         type: boolean
         default: false
 
 env:
-  # Sentry 閰嶇疆
   SENTRY_ORG: ${{ vars.SENTRY_ORG || 'your-org' }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || 'vitegame' }}
   APP_VERSION: ${{ vars.APP_VERSION || github.ref_name }}
   PREV_GA_VERSION: ${{ vars.PREV_GA_VERSION || '0.0.9' }}
-
-  # 鍋ュ悍搴﹂槇鍊?  THRESHOLD_CF_USERS: ${{ vars.THRESHOLD_CF_USERS || '0.995' }}
+  THRESHOLD_CF_USERS: ${{ vars.THRESHOLD_CF_USERS || '0.995' }}
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
-
-  # 閫氱煡閰嶇疆
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
-# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false # 鍒嗛樁娈靛彂甯冧笉鍙腑鏂?
+  cancel-in-progress: false
+
 jobs:
   ramp:
     runs-on: windows-latest
-    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -67,325 +60,106 @@ jobs:
       rollback_executed: ${{ steps.rollback.outcome == 'success' }}
 
     steps:
-      - name: Step
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          # 鑾峰彇瀹屾暣鍘嗗彶浠ヤ究鎻愪氦
           fetch-depth: 0
 
-      - name: Step
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Step
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
         env:
           NPM_CONFIG_PRODUCTION: 'true'
 
-      - name: Step
-        shell: pwsh
-        run: |
-          # Windows runner 宸查瑁?jq锛屾鏌ュ彲鐢ㄦ€?          if (Get-Command jq -ErrorAction SilentlyContinue) {
-            Write-Host "鉁?jq 宸插彲鐢?
-            jq --version
-          } else {
-            Write-Host "jq chocolatey"
-            choco install jq -y
-          }
+      - name: Ensure jq installed (Windows)
+        run: node scripts/ci/install-jq-windows.mjs
 
-      - name: Step
-        shell: bash
-        run: |
-          echo "..."
+      - name: Validate inputs and manifest
+        run: node scripts/ci/release-ramp-validate-inputs.mjs
+        env:
+          FEED_FILE: ${{ inputs.feed_file }}
 
-          # Check feed file
-          if [ ! -f "${{ inputs.feed_file }}" ]; then
-            echo "Error: Feed file not found: ${{ inputs.feed_file }}"
-            exit 1
-          fi
+      - name: Append context summary
+        run: node scripts/ci/release-ramp-summary.mjs
+        env:
+          STAGE: ${{ inputs.stage }}
+          FEED_FILE: ${{ inputs.feed_file }}
+          APP_VERSION: ${{ env.APP_VERSION }}
+          PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+          THRESHOLD_CF_USERS: ${{ env.THRESHOLD_CF_USERS }}
+          THRESHOLD_CF_SESSIONS: ${{ env.THRESHOLD_CF_SESSIONS }}
 
-          # Check version manifest file
-          if [ ! -f "artifacts/manifest.json" ]; then
-            echo "Error: Missing artifacts/manifest.json"
-            echo "Please run: npm run release:manifest:add"
-            exit 1
-          fi
-
-          # Validate manifest format
-          echo "Validating manifest format..."
-          node scripts/release/manage-manifest.mjs validate
-
-          echo "Validation complete."
-
-      - name: Step
-        run: |
-          echo ":"
-          echo "- :${{ inputs.stage }}%"
-          echo "- Feed :${{ inputs.feed_file }}"
-          echo "- :$APP_VERSION"
-          echo "- :$PREV_GA_VERSION"
-          echo "- Sentry :$SENTRY_ORG/$SENTRY_PROJECT"
-          echo "- ?${{ inputs.skip_health_check }}"
-
-          echo ""
-          echo "?"
-          echo "  - Crash-Free Users: $THRESHOLD_CF_USERS (99.5%)"
-          echo "  - Crash-Free Sessions: $THRESHOLD_CF_SESSIONS (99.5%)"
-
-          echo ""
-          echo ":"
-          node scripts/release/manage-manifest.mjs list
-
-      - name: Step
+      - name: Patch staging percentage
         id: staging
-        run: |
-          echo "?${{ inputs.stage }}%..."
+        run: node scripts/ci/release-ramp-patch-staging.mjs
+        env:
+          FEED_FILE: ${{ inputs.feed_file }}
+          STAGE: ${{ inputs.stage }}
 
-          result=$(node scripts/release/patch-staging-percentage.mjs "${{ inputs.feed_file }}" "${{ inputs.stage }}")
-          echo "staging_result=$result" >> "$GITHUB_OUTPUT"
-
-          echo "?"
-          echo "$result" | jq '.'
-
-      - name: Step
+      - name: Wait for health signals
         if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
-        run: |
-          echo "? Sentry ..."
-          echo "鍒嗛樁娈靛彂甯冮渶瑕佹椂闂磋鏂扮増鏈鐢ㄦ埛鎺ユ敹骞朵骇鐢熼仴娴嬫暟鎹?
+        run: node scripts/ci/release-ramp-wait-window.mjs
+        env:
+          STAGE: ${{ inputs.stage }}
 
-          # 鏍规嵁鍙戝竷鐧惧垎姣旇皟鏁寸瓑寰呮椂闂?          case "${{ inputs.stage }}" in
-            "25") wait_minutes=5 ;;
-            "50") wait_minutes=8 ;;
-            "100") wait_minutes=10 ;;
-            *) wait_minutes=3 ;;
-          esac
-
-          echo "?${wait_minutes}..."
-          sleep $((wait_minutes * 60))
-
-      - name: Step
+      - name: Health check
         id: health_check
         if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        shell: bash
-        run: |
-          echo "Checking $APP_VERSION Release Health..."
+        run: node scripts/ci/release-ramp-health-check.mjs
 
-          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
-            echo "Warning: SENTRY_AUTH_TOKEN not configured, skipping health check"
-            echo "health_status=skipped" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Execute health degree check
-          set +e  # Allow command failure to capture exit code
-          health_result=$(node scripts/release/auto-rollback.mjs)
-          health_exit_code=$?
-          set -e
-
-          echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
-          echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
-
-          echo "Health check results:"
-          echo "$health_result" | jq '.'
-
-          case $health_exit_code in
-            0)
-              echo "Health check passed - continuing release"
-              echo "health_status=passed" >> "$GITHUB_OUTPUT"
-              ;;
-            42)
-              echo "Health check failed - triggering rollback"
-              echo "health_status=failed" >> "$GITHUB_OUTPUT"
-              exit 42  # Propagate special exit code to trigger rollback
-              ;;
-            *)
-              echo "Health check error (exit code: $health_exit_code)"
-              echo "health_status=error" >> "$GITHUB_OUTPUT"
-              exit $health_exit_code
-              ;;
-          esac
-
-      - name: Step
+      - name: Execute rollback if needed
         id: rollback
         if: failure() && steps.health_check.outputs.health_exit_code == '42'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        run: |
-          echo "Executing automated rollback..."
+          FEED_FILE: ${{ inputs.feed_file }}
+          PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
+        run: node scripts/ci/release-ramp-rollback.mjs
 
-          rollback_reason="Automated rollback: Release health below threshold (stage: ${{ inputs.stage }}%)"
-
-          # Execute complete rollback process (emergency stop + version rollback)
-          rollback_result=$(node scripts/release/execute-rollback.mjs \
-            --feed="${{ inputs.feed_file }}" \
-            --previous-version="$PREV_GA_VERSION" \
-            --manifest="artifacts/manifest.json" \
-            --reason="$rollback_reason" \
-            $([ -n "$WEBHOOK_URL" ] && echo "--notify"))
-
-          echo "rollback_result=$rollback_result" >> "$GITHUB_OUTPUT"
-
-          echo "Rollback result:"
-          echo "$rollback_result" | jq '.'
-
-          echo "Setting rollback status..."
-
-          # Set rollback status for subsequent verification
-
-      - name: Step
+      - name: Commit feed changes
         id: commit
-        shell: bash
-        run: |
-          # Configure Git
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        run: node scripts/ci/git-conditional-commit-single-file.mjs
+        env:
+          FILE_PATH: ${{ inputs.feed_file }}
+          MESSAGE: Release ramp: ${{ inputs.feed_file }} to ${{ inputs.stage }}% staging
 
-          # Check if there are changes
-          if git diff --quiet "${{ inputs.feed_file }}"; then
-            echo "No changes in feed file"
-            echo "committed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Create commit message
-          if [ "${{ steps.rollback.outputs.rollback_executed }}" = "true" ]; then
-            commit_msg="🚨 Auto rollback: ${{ inputs.feed_file }} → $PREV_GA_VERSION (health check failed at ${{ inputs.stage }}%)"
-            commit_type="rollback"
-          else
-            commit_msg="📈 Release ramp: ${{ inputs.feed_file }} → ${{ inputs.stage }}% staging"
-            commit_type="ramp"
-          fi
-
-          # Execute commit
-          git add "${{ inputs.feed_file }}"
-          git commit -m "$commit_msg" \
-            -m "Stage: ${{ inputs.stage }}%" \
-            -m "App Version: $APP_VERSION" \
-            -m "Feed: ${{ inputs.feed_file }}" \
-            -m "" \
-            -m "Generated by GitHub Actions workflow" \
-            -m "Workflow: ${{ github.workflow }}" \
-            -m "Run: ${{ github.run_number }}"
-
-          echo "Committing: $commit_msg"
-          # Use single redirection for performance optimization (fix SC2129)
-          {
-            echo "committed=true"
-            echo "commit_type=$commit_type"
-            echo "commit_sha=$(git rev-parse HEAD)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Step
+      - name: Push changes
         if: steps.commit.outputs.committed == 'true'
-        run: |
-          echo "Pushing changes to repository..."
-          git push origin ${{ github.ref }}
-          echo "Changes have been pushed."
+        run: node scripts/ci/git-push-current-branch.mjs
 
       - name: Ramp summary
-        shell: bash
-        run: |
-          summary_file="${GITHUB_STEP_SUMMARY}"
-          {
-            echo "## Release Ramp Results"
-            echo ""
-            echo "- **Stage**: ${{ inputs.stage }}%"
-            echo "- **Actor**: ${{ github.actor }}"
-          } >> "${summary_file}"
+        run: node scripts/ci/release-ramp-append-summary.mjs
+        env:
+          STAGE: ${{ inputs.stage }}
+          HEALTH_RESULT: ${{ steps.health_check.outputs.health_result }}
+          HEALTH_STATUS: ${{ steps.health_check.outputs.health_status }}
 
-          # Add health check details (if available)
-          if [ -n "${{ steps.health_check.outputs.health_result }}" ]; then
-            {
-              echo ''
-              echo '### 🍞 Health Check Details'
-              echo '```json'
-            } >> "$GITHUB_STEP_SUMMARY"
-            {
-              echo '${{ steps.health_check.outputs.health_result }}' | jq '.'
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Next step recommendations
-          {
-            echo ""
-            echo "### 🔄 Next Step Recommendations"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$health_status" = "passed" ] && [ "${{ inputs.stage }}" != "100" ]; then
-            case "${{ inputs.stage }}" in
-              "5") next_stage="25" ;;
-              "25") next_stage="50" ;;
-              "50") next_stage="100" ;;
-            esac
-            echo "- Continue to **${next_stage}%** stage" >> "$GITHUB_STEP_SUMMARY"
-            echo "- Wait 10-15 minutes before next stage" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$health_status" = "failed" ]; then
-            {
-              echo "- **Health check failed - immediate action required**"
-              echo "- Review release metrics and error reports"
-              echo "- Consider downgrade strategy or add more test coverage"
-            } >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ inputs.stage }}" = "100" ] && [ "$health_status" = "passed" ]; then
-            {
-              echo "- **Gradual release completed!** Application is fully deployed"
-              echo "- Release Health"
-              echo "- Consider updating PREV_GA_VERSION environment variable to current version"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-  # Post-release actions: notifications, monitoring, etc.
   post_actions:
     needs: ramp
     if: always()
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
-    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
     steps:
-      - name: Step
+      - name: Notify webhook
         if: env.WEBHOOK_URL != ''
+        run: node scripts/ci/release-ramp-notify-webhook.mjs
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        shell: bash
-        run: |
-          # Build notification message based on results
-          if [ "${{ needs.ramp.outputs.rollback_executed }}" = "true" ]; then
-            status="🚨 Rollback Executed"
-            color="danger"
-            message="Release ramp failed health check at ${{ needs.ramp.outputs.stage }}% and was automatically rolled back"
-          elif [ "${{ needs.ramp.outputs.health_passed }}" = "true" ]; then
-            status="✅ Stage ${{ needs.ramp.outputs.stage }}% Complete"
-            color="good"
-            message="Release ramp to ${{ needs.ramp.outputs.stage }}% completed successfully with healthy metrics"
-          else
-            status="⚠️ Stage ${{ needs.ramp.outputs.stage }}% - No Health Check"
-            color="warning" 
-            message="Release ramp to ${{ needs.ramp.outputs.stage }}% completed (health check skipped)"
-          fi
-
-          # Send notification (simplified webhook call)
-          curl -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"text\": \"$status\",
-              \"attachments\": [{
-                \"color\": \"$color\",
-                \"fields\": [
-                  {\"title\": \"App Version\", \"value\": \"${{ env.APP_VERSION }}\", \"short\": true},
-                  {\"title\": \"Stage\", \"value\": \"${{ needs.ramp.outputs.stage }}%\", \"short\": true},
-                  {\"title\": \"Repository\", \"value\": \"${{ github.repository }}\", \"short\": true},
-                  {\"title\": \"Workflow\", \"value\": \"${{ github.workflow }}\", \"short\": true}
-                ],
-                \"text\": \"$message\"
-              }]
-            }" || echo "Webhook notification failed (non-critical)"
+          STAGE: ${{ needs.ramp.outputs.stage }}
+          HEALTH_PASSED: ${{ needs.ramp.outputs.health_passed }}
+          ROLLBACK_EXECUTED: ${{ needs.ramp.outputs.rollback_executed }}
+          APP_VERSION: ${{ env.APP_VERSION }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW: ${{ github.workflow }}
 

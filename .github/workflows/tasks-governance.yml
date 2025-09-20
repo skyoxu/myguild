@@ -25,7 +25,6 @@ on:
   push:
     branches: [main]
 
-# ==================== 骞跺彂鎺у埗 ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -38,7 +37,6 @@ jobs:
         shell: pwsh
     timeout-minutes: 15
 
-    # Infrastructure-level optimization: retry strategy
     strategy:
       fail-fast: false
       matrix:
@@ -47,64 +45,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Infrastructure optimization: shallow clone for faster checkout
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          # Infrastructure optimization: enhanced caching strategy
           cache-dependency-path: |
             package-lock.json
             package.json
 
-      # 鐭 npm 閰嶇疆锛堝彧褰卞搷褰撳墠 CI 鏈猴級
       - name: Normalize npm config on Windows
-        shell: bash
-        run: |
-          # 閬垮厤"鐢熶骇妯″紡"璇激 devDependencies
-          npm config delete production || true
-          # 鏇挎崲宸插簾寮冪殑 cache-min
-          npm config delete cache-min || true
-          npm config set prefer-offline true
-        # 鑻ヤ綘浠撳簱 .npmrc 纭啓浜?production=true锛屼篃鑳借涓嬮潰 env 瑕嗙洊
+        run: node scripts/ci/npm-normalize-windows.mjs
 
-      # Install dependencies (must include dev)
       - name: Install deps (include dev)
         shell: bash
         env:
-          NPM_CONFIG_PRODUCTION: "false"  # Override any production=true
-          NODE_ENV: "development"         # Avoid NODE_ENV=production triggering dev skip
+          NPM_CONFIG_PRODUCTION: "false"
+          NODE_ENV: "development"
         run: npm ci --no-audit --no-fund
 
-      # Verify ESLint (should now be findable)
       - name: Verify ESLint availability
         shell: bash
         run: npx -y eslint --version
 
-      # 鑻?overlay-map 鍙嚜鍔ㄧ敓鎴愶紝鍏堥噸寤哄苟寮哄埗"宸叉彁浜や竴鑷?
-#       Ensure Windows environment uses LF normalization
       - name: Configure Git line endings (Windows)
         if: startsWith(runner.os, 'Windows')
         run: git config --global core.autocrlf input
+
       - name: Build overlay map
         run: node scripts/build-overlay-map.mjs
-      - name: ensure overlay-map committed
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Checking overlay-map.json for changes..."
-          if git diff --exit-code scripts/overlay-map.json; then
-            echo "?overlay-map.json is up to date"
-          else
-            echo "?overlay-map.json has changes:"
-            git diff scripts/overlay-map.json
-            echo "Please commit the updated overlay-map.json"
-            exit 1
-          fi
 
-      # 瀵屽寲浠诲姟 & 缁撴瀯/寮曠敤鏍￠獙锛圓jv + 鑷畾涔夋牎楠岋級
+      - name: ensure overlay-map committed
+        run: node scripts/ci/ensure-file-unchanged.mjs scripts/overlay-map.json
+
       - run: node scripts/enrich-tasks.mjs --tasks .taskmaster/tasks/tasks.json --map scripts/overlay-map.json
       - run: node scripts/validate-task-links.mjs --tasks .taskmaster/tasks/tasks.json
 

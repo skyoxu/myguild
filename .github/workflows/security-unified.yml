@@ -523,7 +523,7 @@ jobs:
             },
             "e2e_test": {
               "status": "${{ needs.e2e-security-aggregate.outputs.e2e-status }}",
-              "executed": "${{ needs.e2e-security-test.result != 'skipped' }}"
+              "executed": "${{ needs.e2e-security-aggregate.result != 'skipped' }}"
             },
             "overall_status": "$([ "${{ needs.security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-aggregate.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
           }
@@ -617,7 +617,7 @@ jobs:
             echo "| Check Item | Status | Result |"
             echo "|---------|------|------|"
             echo "| Static Security Scan | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${critical_count}, High: ${high_count} |"
-            echo "| E2E Security Tests | ${e2e_status} | ${{ needs.e2e-security-test.result != 'skipped' && 'Executed' || 'Skipped (Critical issues exist)' }} |"
+            echo "| E2E Security Tests | ${e2e_status} | ${{ needs.e2e-security-aggregate.result != 'skipped' && 'Executed' || 'Skipped (Critical issues exist)' }} |"
             gate_label=$([ "${{ github.event_name }}" = "pull_request" ] && echo "Soft" || echo "Hard")
             echo "| E2E Gate | ${gate_label} | Mode: PR=Soft / Main=Hard |"
             echo ""

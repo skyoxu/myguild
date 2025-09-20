@@ -18,51 +18,14 @@ jobs:
     steps:
       - name: Parse branches
         id: parse
-        shell: bash
-        run: |
-          BRANCHES="${{ github.event.inputs.branches }}"
-          BRANCHES=$(echo "$BRANCHES" | tr ',' '\n' | sed 's/^\s*//;s/\s*$//' | sed '/^$/d')
-          {
-            echo "branches<<EOF"
-            echo "$BRANCHES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+        run: node scripts/ci/parse-branches.mjs
+        env:
+          INPUT_BRANCHES: ${{ github.event.inputs.branches }}
 
       - name: Update branch protection (require encoding-guard)
-        uses: actions/github-script@v7
-        with:
-          # NOTE: Provide an admin-scoped token via repo/organization secret ADMIN_TOKEN
-          # The default GITHUB_TOKEN usually cannot modify branch protections.
-          github-token: ${{ secrets.ADMIN_TOKEN }}
-          script: |
-            const branches = `\n${{ steps.parse.outputs.branches }}\n`.split('\n').filter(Boolean);
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            const requiredContext = "Validate Workflows & Guards / Enforce UTF-8 + LF for workflows";
-
-            for (const branch of branches) {
-              core.info(`Updating protection for ${owner}/${repo}@${branch}`);
-              // Get existing protection if any (ignore 404)
-              try {
-                await github.rest.repos.updateBranchProtection({
-                  owner,
-                  repo,
-                  branch,
-                  required_status_checks: {
-                    strict: true,
-                    contexts: [requiredContext],
-                  },
-                  enforce_admins: true,
-                  required_pull_request_reviews: {
-                    required_approving_review_count: 1
-                  },
-                  restrictions: null,
-                });
-                core.info(`✔ Required status check set: ${requiredContext}`);
-              } catch (e) {
-                core.setFailed(`Failed to update protection for ${branch}: ${e.message}`);
-                throw e;
-              }
-            }
+        run: node scripts/ci/update-branch-protection.mjs
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          BRANCHES: ${{ steps.parse.outputs.branches }}
+          REQUIRED_CONTEXT: Validate Workflows & Guards / Enforce UTF-8 + LF for workflows
 

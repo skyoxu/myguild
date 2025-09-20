@@ -121,20 +121,7 @@ jobs:
             package.json
 
       - name: Install jq tool
-        shell: pwsh
-        run: |
-          # Infrastructure optimization: Windows-compatible package installation
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
-              choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
+        run: node scripts/ci/install-jq-windows.mjs
 
       - name: Install dependencies (using enhanced npm-install action)
         uses: ./.github/actions/npm-install
@@ -143,43 +130,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Ensure logs directory exists
-        shell: pwsh
-        run: |
-          if (-not (Test-Path "logs")) {
-            New-Item -ItemType Directory -Path "logs" -Force
-          }
+        run: node scripts/ci/ensure-logs-dir.mjs
 
       - name: Execute soft gates check
         id: soft-gates
-        run: |
-          echo "Starting soft gates quality check..."
+        run: node scripts/ci/run-soft-gates.mjs
 
-          # Execute soft gates script (never fails)
-          node scripts/soft-gate-reporter.js || {
-            echo "Soft gates script execution error, but not blocking the flow"
-            echo "soft-gate-score=50" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-status=neutral" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-title=Soft gates execution error" >> "$GITHUB_OUTPUT"
-            echo "soft-gate-summary=Issues encountered during execution, please check logs" >> "$GITHUB_OUTPUT"
-            exit 0
-          }
-
-          echo "Soft gates check completed"
-
-      - name: Read soft gates output
-        id: read-outputs
-        shell: bash
-        run: |
-          # If no soft gates results in GITHUB_OUTPUT, set default values
-          if ! grep -q "soft-gate-score=" "$GITHUB_OUTPUT" 2>/dev/null; then
-            {
-              echo "soft-gate-score=75"
-              echo "soft-gate-status=neutral"
-              echo "soft-gate-title=Quality Score: 75/100"
-              echo "soft-gate-summary=Soft gates check completed"
-              echo "soft-gate-details=All quality check items have been executed"
-            } >> "$GITHUB_OUTPUT"
-          fi
+      # Read soft gates output no longer needed: run-soft-gates sets defaults when missing
 
       - name: Upload soft gates report
         uses: actions/upload-artifact@v4
@@ -275,70 +232,13 @@ jobs:
 
       - name: Output to GitHub Step Summary
         if: always()
-        shell: bash
-        run: |
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-
-          {
-            echo "## Soft Gates Quality Check Results"
-            echo ""
-
-          if [ -f "logs/soft-gate-report.json" ]; then
-            overall_score=$(jq -r '.overallScore // 75' logs/soft-gate-report.json)
-            total_gates=$(jq -r '.summary.totalGates // 0' logs/soft-gate-report.json)
-            success_count=$(jq -r '.summary.successCount // 0' logs/soft-gate-report.json)
-            warning_count=$(jq -r '.summary.warningCount // 0' logs/soft-gate-report.json)
-            error_count=$(jq -r '.summary.errorCount // 0' logs/soft-gate-report.json)
-            
-            echo "### Quality Score: ${overall_score}/100"
-            echo ""
-            echo "| Check Item | Count |"
-            echo "|---------|------|"
-            echo "| Total Checks | $total_gates |"
-            echo "| Success | $success_count |"
-            echo "| Warning | $warning_count |"
-            echo "| Error | $error_count |"
-            echo ""
-            
-            if [ "$warning_count" -gt 0 ] || [ "$error_count" -gt 0 ]; then
-              echo "### Feedback Details"
-              echo ""
-              jq -r '.feedback[]?.message // empty' logs/soft-gate-report.json | while read -r feedback; do
-                echo "- $feedback"
-              done
-              echo ""
-            fi
-            
-            recommendations=$(jq -r '.recommendations // [] | length' logs/soft-gate-report.json)
-            if [ "$recommendations" -gt 0 ]; then
-              echo "### Improvement Suggestions"
-              echo ""
-              jq -r '.recommendations[] // empty' logs/soft-gate-report.json | while read -r rec; do
-                echo "- $rec"
-              done
-              echo ""
-            fi
-          else
-            echo "### Unable to generate detailed report"
-            echo "Soft gates check completed, but report file is missing."
-            echo ""
-          fi
-
-          echo "---"
-          echo "*Soft gates provide quality feedback but do not block merge - Based on ADR-0005 quality gates standards*"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: node scripts/ci/soft-gates-summary.mjs
 
       - name: Soft gates always succeed
         if: always()
-        run: |
-          echo "Soft gates check completed"
-          echo "Quality score generated and provided via neutral status feedback"
-          echo "Soft gates do not block process, build continues"
-          exit 0
+        run: echo "Soft gates completed"
 
 # ==================== Concurrency Control ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-

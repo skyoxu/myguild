@@ -67,14 +67,12 @@ jobs:
 
     steps:
       - name: 'Emergency rollback initiated'
-        shell: bash
-        run: |
-          echo "=== Emergency rollback initiated ==="
-          echo "Details:"
-          echo "  - Reason: ${{ inputs.reason }}"
-          echo "  - Target version: $PREV_GA_VERSION"
-          echo "  - Feed files: ${{ inputs.feed_files }}"
-          echo "  - Triggered by: ${{ inputs.triggered_by }}"
+        run: node scripts/ci/rollback-init-summary.mjs
+        env:
+          REASON: ${{ inputs.reason }}
+          TARGET_VERSION: ${{ env.PREV_GA_VERSION }}
+          FEED_FILES: ${{ inputs.feed_files }}
+          TRIGGERED_BY: ${{ inputs.triggered_by }}
 
       - name: 'Checkout repository'
         uses: actions/checkout@v4
@@ -92,276 +90,63 @@ jobs:
         env:
           NPM_CONFIG_PRODUCTION: 'true'
 
-      - name: 'Install system tools'
-        shell: bash
-        run: |
-          # Install jq tool on Windows runner using cross-platform approach
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "Installing jq tool..."
-            if command -v choco >/dev/null 2>&1; then
-              choco install jq -y --no-progress
-            elif command -v winget >/dev/null 2>&1; then
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            else
-              echo "Warning: Neither choco nor winget available, manual jq installation may be required"
-            fi
-          else
-            echo "jq already available"
-          fi
+      - name: Install system tools (jq)
+        run: node scripts/ci/install-jq-windows.mjs
 
-      - name: 'Pre-rollback validation'
-        shell: bash
-        run: |
-          echo "Validating rollback prerequisites..."
+      - name: Pre-rollback validation
+        run: node scripts/ci/emergency-rollback-validate.mjs
 
-          # Check manifest file exists
-          if [ ! -f "artifacts/manifest.json" ]; then
-            echo "Error: Manifest file does not exist"
-            exit 1
-          fi
-
-          # Check target version exists in manifest
-          if ! jq -e --arg version "$PREV_GA_VERSION" '.[$version]' artifacts/manifest.json > /dev/null; then
-            echo "Error: Target version $PREV_GA_VERSION not found in manifest"
-            echo "Available versions:"
-            jq -r 'keys[]' artifacts/manifest.json
-            exit 1
-          fi
-
-          echo "Validation completed successfully"
-          echo "Target version: $PREV_GA_VERSION"
-
-      - name: 'Execute rollback for all feeds'
+      - name: Execute rollback for all feeds
         if: inputs.feed_files == 'all'
         id: rollback_all
-        shell: bash
-        run: |
-          echo "Executing rollback for all feed files..."
+        run: node scripts/ci/emergency-rollback-all.mjs
+        env:
+          PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REASON: ${{ inputs.reason }}
 
-          rollback_results="[]"
-
-          for feed_file in "dist/latest.yml" "dist/latest-mac.yml" "dist/latest-linux.yml"; do
-            if [ -f "$feed_file" ]; then
-              echo "Processing $feed_file..."
-              
-              # Prepare notify flag for ShellCheck compliance (fixes SC2086)
-              notify_flag=""
-              if [ -n "${WEBHOOK_URL:-}" ]; then
-                notify_flag="--notify"
-              fi
-
-              set +e
-              result=$(node scripts/release/execute-rollback.mjs \
-                --feed="$feed_file" \
-                --previous-version="$PREV_GA_VERSION" \
-                --manifest="artifacts/manifest.json" \
-                --reason="${{ inputs.reason }}" \
-                "$notify_flag")
-              rollback_exit_code=$?
-              set -e
-              
-              if [ "$rollback_exit_code" -eq 0 ]; then
-                echo "Successfully rolled back $feed_file"
-                rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": true, \"result\": \"$result\"}" '. + [$item]')
-              else
-                echo "Failed to rollback $feed_file (exit code: $rollback_exit_code)"
-                rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": false, \"error\": \"Exit code $rollback_exit_code\"}" '. + [$item]')
-              fi
-            else
-              echo "Warning: $feed_file does not exist, skipping"
-              rollback_results=$(echo "$rollback_results" | jq --argjson item "{\"feed\": \"$feed_file\", \"success\": true, \"skipped\": true}" '. + [$item]')
-            fi
-          done
-
-          printf "rollback_results=%s\n" "${rollback_results}" >> "$GITHUB_OUTPUT"
-          echo "All feed files processed successfully"
-
-      - name: 'Execute rollback for single feed'
+      - name: Execute rollback for single feed
         if: inputs.feed_files != 'all'
         id: rollback_single
-        shell: bash
-        run: |
-          feed_file="${{ inputs.feed_files }}"
-          echo "Executing rollback for $feed_file..."
-
-          if [ ! -f "$feed_file" ]; then
-            echo "Error: Feed file does not exist: $feed_file"
-            exit 1
-          fi
-
-          # Prepare notify flag for ShellCheck compliance (fixes SC2086)
-          notify_flag=""
-          if [ -n "${WEBHOOK_URL:-}" ]; then
-            notify_flag="--notify"
-          fi
-
-          result=$(node scripts/release/execute-rollback.mjs \
-            --feed="$feed_file" \
-            --previous-version="$PREV_GA_VERSION" \
-            --manifest="artifacts/manifest.json" \
-            --reason="${{ inputs.reason }}" \
-            "$notify_flag")
-
-          printf "rollback_result=%s\n" "${result}" >> "$GITHUB_OUTPUT"
-          echo "Successfully rolled back $feed_file"
-
-      - name: 'Stop all running release workflows'
-        shell: bash
-        run: |
-          echo "Stopping all running release workflows..."
-
-          # Find running release workflows
-          running_workflows=$(gh run list \
-            --repo "${{ github.repository }}" \
-            --status in_progress \
-            --workflow "Release Ramp" \
-            --json databaseId,headBranch \
-            --jq '.[].databaseId')
-
-          if [ -n "$running_workflows" ]; then
-            echo "Found running release workflows, cancelling..."
-            # Convert string to array for safe iteration (fixes SC2086)
-            IFS=' ' read -ra workflow_array <<< "$running_workflows"
-            for run_id in "${workflow_array[@]}"; do
-              echo "Cancelling workflow run: $run_id"
-              gh run cancel "$run_id" --repo "${{ github.repository }}" || echo "Failed to cancel (non-critical)"
-            done
-          else
-            echo "No running release workflows found"
-          fi
+        run: node scripts/ci/emergency-rollback-single.mjs
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEED_FILE: ${{ inputs.feed_files }}
+          PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
+          REASON: ${{ inputs.reason }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
-      - name: 'Send emergency notification'
+      - name: Stop running release ramp workflows
+        run: node scripts/ci/stop-running-release-workflows.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Send emergency notification
         if: always()
+        run: node scripts/ci/emergency-rollback-notify.mjs
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        shell: bash
-        run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "Warning: WEBHOOK_URL not configured, skipping notification"
-            exit 0
-          fi
+          PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
+          FEED_FILES: ${{ inputs.feed_files }}
+          TRIGGERED_BY: ${{ inputs.triggered_by }}
+          REPOSITORY: ${{ github.repository }}
+          REASON: ${{ inputs.reason }}
 
-          echo "Sending emergency notification..."
+      - name: Commit rollback changes
+        run: node scripts/ci/git-conditional-commit-single-file.mjs
+        env:
+          FILE_PATH: dist/latest.yml
+          MESSAGE: Emergency rollback: v${{ env.PREV_GA_VERSION }}
 
-          # Determine notification status
-          if [ "${{ steps.rollback_all.outcome }}" = "success" ] || [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            status="Emergency Rollback Completed"
-            color="warning"
-            message="Emergency rollback to version $PREV_GA_VERSION has been executed successfully."
-          else
-            status="Emergency Rollback Failed"
-            color="danger"
-            message="Emergency rollback attempt failed. Manual intervention required."
-          fi
-
-          curl -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"text\": \"$status\",
-              \"attachments\": [{
-                \"color\": \"$color\",
-                \"fields\": [
-                  {\"title\": \"Target Version\", \"value\": \"$PREV_GA_VERSION\", \"short\": true},
-                  {\"title\": \"Feed Files\", \"value\": \"${{ inputs.feed_files }}\", \"short\": true},
-                  {\"title\": \"Triggered By\", \"value\": \"${{ inputs.triggered_by }}\", \"short\": true},
-                  {\"title\": \"Repository\", \"value\": \"${{ github.repository }}\", \"short\": true},
-                  {\"title\": \"Reason\", \"value\": \"${{ inputs.reason }}\", \"short\": false}
-                ],
-                \"text\": \"$message\"
-              }]
-            }" || echo "Webhook notification failed (non-critical)"
-
-      - name: 'Commit rollback changes'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Check if there are changes to commit
-          if git diff --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          # Add rollback changes
-          git add dist/latest*.yml 2>/dev/null || true
-
-          if ! git diff --cached --quiet; then
-            git commit -m "EMERGENCY ROLLBACK: v$PREV_GA_VERSION" \
-              -m "Reason: ${{ inputs.reason }}" \
-              -m "Triggered by: ${{ inputs.triggered_by }}" \
-              -m "Feed files: ${{ inputs.feed_files }}" \
-              -m "" \
-              -m "Warning: CRITICAL: Production rollback executed" \
-              -m "Alert: Automated emergency response" \
-              -m "Workflow: ${{ github.workflow }}" \
-              -m "Run: ${{ github.run_number }}"
-            
-            echo "Successfully committed rollback changes"
-          fi
-
-      - name: 'Push emergency changes'
-        shell: bash
-        run: |
-          echo "Pushing emergency changes..."
-          git push origin ${{ github.ref }}
-          echo "Successfully pushed rollback changes"
+      - name: Push emergency changes
+        run: node scripts/ci/git-push-current-branch.mjs
 
       - name: Rollback summary
         if: always()
-        shell: bash
-        run: |
-          summary_file="${GITHUB_STEP_SUMMARY}"
-          {
-            echo "## Emergency Rollback Summary"
-            echo ""
-            echo "- **Target Version**: ${{ inputs.target_version || env.PREV_GA_VERSION }}"
-            echo "- **Requested By**: ${{ github.actor }}"
-            echo ""
-            echo "### Execution Steps"
-            echo "1. Validated prerequisites successfully"
-            echo "2. Executed rollback operations"
-            echo "3. Committed rollback changes"
-          } >> "${summary_file}"
-
-          # Add rollback results
-          if [ "${{ steps.rollback_all.outcome }}" = "success" ]; then
-            {
-              echo ''
-              echo '### All Feed Files Results'
-              echo '```json'
-            } >> "$GITHUB_STEP_SUMMARY"
-            {
-              echo '${{ steps.rollback_all.outputs.rollback_results }}' | jq .
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ steps.rollback_single.outcome }}" = "success" ]; then
-            {
-              echo ''
-              echo '### Single Feed Results'
-              echo '```json'
-            } >> "$GITHUB_STEP_SUMMARY"
-            {
-              echo '${{ steps.rollback_single.outputs.rollback_result }}' | jq .
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          {
-            echo ""
-            echo "### Next Steps"
-            echo "1. Monitor system stability and performance"
-            echo "2. Analyze root cause of the issue"
-            echo "3. Prepare hotfix or new release as needed"
-            echo "4. Update incident documentation"
-            echo "5. Review and improve emergency response procedures"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "${{ inputs.triggered_by }}" = "monitor" ]; then
-            {
-              echo ""
-              echo "Note: This rollback was triggered automatically by monitoring systems"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: node scripts/ci/emergency-rollback-summary.mjs
+        env:
+          TARGET_VERSION: ${{ inputs.target_version || env.PREV_GA_VERSION }}
+          REQUESTED_BY: ${{ github.actor }}
+          ROLLBACK_RESULTS: ${{ steps.rollback_all.outputs.rollback_results }}
+          ROLLBACK_RESULT: ${{ steps.rollback_single.outputs.rollback_result }}
+          TRIGGERED_BY: ${{ inputs.triggered_by }}

@@ -10,7 +10,6 @@ defaults:
 
 on:
   schedule:
-    # Monitor release health every 15 minutes
     - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
@@ -33,7 +32,6 @@ env:
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
-# ==================== Concurrency Control ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,7 +39,6 @@ concurrency:
 jobs:
   monitor:
     runs-on: windows-latest
-    # P0 Fix: Job-level environment variables ensure devDependencies are correctly installed
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -51,235 +48,51 @@ jobs:
       actions: write
 
     steps:
-      - name: Step
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Step
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Step
+      - name: Install dependencies
         uses: ./.github/actions/npm-install
         env:
           NPM_CONFIG_PRODUCTION: 'true'
 
-      - name: Step
-        shell: pwsh
-        run: |
-          # P0 Fix: Windows runner uses PowerShell package management to replace linux apt-get
-          if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-            Write-Host "Installing jq tool..."
-            if (Get-Command choco -ErrorAction SilentlyContinue) {
-              choco install jq -y --no-progress
-            } else {
-              Write-Host "Chocolatey not available, trying winget..."
-              winget install stedolan.jq --accept-source-agreements --accept-package-agreements
-            }
-          } else {
-            Write-Host "jq already available"
-          }
+      - name: Ensure jq installed (Windows)
+        run: node scripts/ci/install-jq-windows.mjs
 
-      - name: Step
+      - name: Evaluate monitoring conditions
         id: conditions
-        shell: bash
-        run: |
-          # Check if within working hours (UTC 6:00 - 22:00, roughly corresponds to working hours in various time zones)
-          current_hour=$(date -u +%H)
-          if [ "$current_hour" -lt 6 ] || [ "$current_hour" -gt 22 ]; then
-            if [ "${{ inputs.force_check }}" != "true" ]; then
-              echo "?force_check=true"
-              echo "should_monitor=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-          fi
+        run: node scripts/ci/release-monitor-conditions.mjs
+        env:
+          FORCE_CHECK: ${{ inputs.force_check }}
 
-          # Check if there is active gradual release
-          if [ ! -f "dist/latest.yml" ]; then
-            echo "Feed"
-            echo "should_monitor=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Check stagingPercentage
-          staging_pct=$(grep -E '^stagingPercentage:' dist/latest.yml | sed 's/stagingPercentage: *//' || echo "0")
-          if [ "$staging_pct" = "0" ] || [ "$staging_pct" = "100" ]; then
-            echo "📊 Current staged release is ${staging_pct}%, skipping monitoring"
-            echo "should_monitor=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "✅ Monitoring conditions met, starting health check"
-          echo "should_monitor=true" >> "$GITHUB_OUTPUT"
-          echo "staging_percentage=$staging_pct" >> "$GITHUB_OUTPUT"
-
-      - name: Step
+      - name: Release health monitor
         id: health_monitor
         if: steps.conditions.outputs.should_monitor == 'true'
+        run: node scripts/ci/release-health-monitor.mjs
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        shell: bash
-        run: |
-          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
-            echo "SENTRY_AUTH_TOKEN"
-            echo "monitor_status=skipped" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          echo "$APP_VERSION?.."
-          echo "?${{ steps.conditions.outputs.staging_percentage }}%"
-
-          # Execute health check
-          health_result=$(DRY_RUN=true node scripts/release/auto-rollback.mjs)
-          health_exit_code=$?
-          set -e
-
-          echo "health_result=$health_result" >> "$GITHUB_OUTPUT"
-          echo "health_exit_code=$health_exit_code" >> "$GITHUB_OUTPUT"
-
-          echo ":"
-          echo "$health_result" | jq '.'
-
-          case $health_exit_code in
-            0)
-              echo "✅ Continuous health monitoring: metrics normal"
-              echo "monitor_status=healthy" >> "$GITHUB_OUTPUT"
-              ;;
-            42)
-              echo ""
-              echo "monitor_status=unhealthy" >> "$GITHUB_OUTPUT"
-              
-              # Trigger emergency rollback workflow
-              echo "?.."
-              curl -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/workflows/release-emergency-rollback.yml/dispatches" \
-                -d "{
-                  \"ref\": \"${{ github.ref }}\",
-                  \"inputs\": {
-                    \"reason\": \"Continuous monitoring detected health degradation\",
-                    \"triggered_by\": \"monitor\"
-                  }
-                }"
-              ;;
-            *)
-              echo "(:$health_exit_code)"
-              echo "monitor_status=error" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
-      - name: Step
+      - name: Write monitoring status file
         if: steps.conditions.outputs.should_monitor == 'true'
-        shell: bash
-        run: |
-          # Create or update monitoring status file
+        run: node scripts/ci/write-monitoring-status.mjs
+        env:
+          APP_VERSION: ${{ env.APP_VERSION }}
+          STAGING_PERCENTAGE: ${{ steps.conditions.outputs.staging_percentage }}
+          HEALTH_STATUS: ${{ steps.health_monitor.outputs.monitor_status }}
+          HEALTH_RESULT: ${{ steps.health_monitor.outputs.health_result }}
 
-          cat > .github/monitoring/latest-status.json << EOF
-          {
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
-            "version": "$APP_VERSION",
-            "staging_percentage": ${{ steps.conditions.outputs.staging_percentage }},
-            "health_status": "${{ steps.health_monitor.outputs.monitor_status }}",
-            "health_data": ${{ steps.health_monitor.outputs.health_result || 'null' }},
-            "workflow_run": "${{ github.run_number }}",
-            "next_check": "$(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
-          }
-          EOF
-
-          echo ""
-
-      - name: Step
+      - name: Notify webhook on unhealthy
         if: steps.health_monitor.outputs.monitor_status == 'unhealthy'
+        run: node scripts/ci/post-webhook-alert.mjs
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        shell: bash
-        run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "WEBHOOK_URL"
-            exit 0
-          fi
-
-          echo "..."
-
-          curl -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"text\": \"馃毃 Release Health Alert\",
-              \"attachments\": [{
-                \"color\": \"danger\",
-                \"fields\": [
-                  {\"title\": \"App Version\", \"value\": \"$APP_VERSION\", \"short\": true},
-                  {\"title\": \"Staging %\", \"value\": \"${{ steps.conditions.outputs.staging_percentage }}%\", \"short\": true},
-                  {\"title\": \"Status\", \"value\": \"Health degradation detected\", \"short\": false},
-                  {\"title\": \"Action\", \"value\": \"Emergency rollback triggered\", \"short\": false}
-                ],
-                \"text\": \"Continuous monitoring detected health issues. Emergency rollback has been initiated.\"
-              }]
-            }" || echo "Webhook notification failed (non-critical)"
-
-      - name: Step
-        if: steps.conditions.outputs.should_monitor == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [ -f ".github/monitoring/latest-status.json" ]; then
-            git add .github/monitoring/latest-status.json
-            git commit -m "📊 Release monitoring update: $APP_VERSION" \
-              -m "Status: ${{ steps.health_monitor.outputs.monitor_status }}" \
-              -m "Staging: ${{ steps.conditions.outputs.staging_percentage }}%" \
-              -m "" \
-              -m "Automated monitoring data" || echo "No changes to commit"
-            
-            git push origin ${{ github.ref }} || echo "Push failed (non-critical)"
-          fi
-
-      - name: Step
-        if: always()
-        shell: bash
-        run: |
-          # 纭繚UTF-8缂栫爜杈撳嚭
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-          {
-            echo "##"
-            echo ""
-            echo "****:$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
-            echo "****: \`$APP_VERSION\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "${{ steps.conditions.outputs.should_monitor }}" = "true" ]; then
-            echo "**?*:${{ steps.conditions.outputs.staging_percentage }}%" >> "$GITHUB_STEP_SUMMARY"
-            
-            status="${{ steps.health_monitor.outputs.monitor_status }}"
-            case "$status" in
-              "healthy") status_icon="✅"; status_text="Healthy" ;;
-              "unhealthy") status_icon="🚨"; status_text="Unhealthy - Rollback triggered" ;;
-              "error") status_icon="⚠️"; status_text="Monitoring error" ;;
-              "skipped") status_icon="⏸️"; status_text="Skipped" ;;
-              *) status_icon="❓"; status_text="Unknown" ;;
-            esac
-            
-            echo "**?*:$status_icon$status_text" >> "$GITHUB_STEP_SUMMARY"
-            
-            if [ -n "${{ steps.health_monitor.outputs.health_result }}" ]; then
-              {
-                echo ""
-                echo "###"
-                echo "\`\`\`json"
-                echo '${{ steps.health_monitor.outputs.health_result }}' | jq '.'
-                echo "\`\`\`"
-              } >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
-            echo "**?*: (?" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          {
-            echo ""
-            echo "**?*:$(date -u -d '+15 minutes' +%Y-%m-%dT%H:%M:%S.000Z)"
-          } >> "$GITHUB_STEP_SUMMARY"
+          APP_VERSION: ${{ env.APP_VERSION }}
+          STAGING_PERCENTAGE: ${{ steps.conditions.outputs.staging_percentage }}
 

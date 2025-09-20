@@ -33,15 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: env
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
-            echo "environment=production" >> "$GITHUB_OUTPUT"
-          else
-            echo "environment=staging" >> "$GITHUB_OUTPUT"
-          fi
+        run: node scripts/ci/detect-release-environment.mjs
+        env:
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
 
   build:
     name: Build
@@ -60,9 +55,7 @@ jobs:
       - run: npm run build
         env:
           NODE_ENV: ${{ needs.prepare.outputs.environment }}
-      - run: |
-          if (-not (Test-Path artifacts)) { New-Item -ItemType Directory artifacts | Out-Null }
-          Compress-Archive -Path dist/* -DestinationPath artifacts/build.zip -Force
+      - run: node scripts/ci/archive-build-artifacts.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: build-artifacts

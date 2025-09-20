@@ -44,13 +44,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - run: |
-          if (-not (Test-Path logs)) { New-Item -ItemType Directory logs | Out-Null }
-          node scripts/observability-config-validation.js
+      - run: node scripts/ci/run-observability-validation.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: observability-validation-report
           path: logs/observability-validation-report.json
           retention-days: 30
-
