@@ -356,6 +356,7 @@ jobs:
         with:
           name: electron-app-windows
           path: dist/win-unpacked/
+        continue-on-error: true
 
       - name: Verify and set Electron entry path
         run: |
@@ -363,40 +364,21 @@ jobs:
           # Windows: ViteGame Studio.exe
           # macOS: ViteGame Studio.app/Contents/MacOS/ViteGame Studio
           # Linux: ViteGame Studio (AppImage/deb)
-          $electronExe = "dist/win-unpacked/ViteGame Studio.exe"
-          if (Test-Path $electronExe) {
-            Write-Host "Found Electron executable:$electronExe"
-            # Set environment variables for later steps (executable path)
-            echo "ELECTRON_MAIN_PATH=$electronExe" >> $env:GITHUB_ENV
-            # Also set VITE_E2E_SMOKE to keep E2E performance compatibility
-            echo "VITE_E2E_SMOKE=true" >> $env:GITHUB_ENV
-          } else {
-            Write-Host "Electron executable not found:$electronExe"
-            Write-Host "Listing actual dist/win-unpacked contents:"
-            Get-ChildItem dist/win-unpacked -Recurse -Name
-            exit 1
-          }
+          node scripts/ci/set-electron-env.mjs
 
       - name: Run E2E security tests (PR Smoke, sharded)
         if: github.event_name == 'pull_request'
-        shell: bash
-        env:
-          PROJECT_NAME: electron-security-audit
-          SECURITY_TEST_MODE: 'true'
-          CI: 'true'
-        run: |
-          echo "(PR) Running security smoke subset, shard ${{ matrix.shard }}/4..."
-          npx playwright test --project=electron-security-audit --grep @smoke --reporter=github,line --trace=on-first-retry --shard=${{ matrix.shard }}/4
+        run: >-
+          node scripts/ci/run-tests.mjs
+          --test-type security
+          --shard "${{ matrix.shard }}/4"
+          --grep "@smoke"
       - name: Run E2E security tests (Full, sharded)
         if: github.event_name != 'pull_request'
-        shell: bash
-        env:
-          PROJECT_NAME: electron-security-audit
-          SECURITY_TEST_MODE: 'true'
-          CI: 'true'
-        run: |
-          echo "(Full) Running complete E2E security tests, shard ${{ matrix.shard }}/4..."
-          npx playwright test --project=electron-security-audit --reporter=github,line --trace=on-first-retry --shard=${{ matrix.shard }}/4
+        run: >-
+          node scripts/ci/run-tests.mjs
+          --test-type security
+          --shard "${{ matrix.shard }}/4"
 
       - name: Collect Playwright traces to logs/
         if: always()

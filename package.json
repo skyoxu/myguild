@@ -63,6 +63,7 @@
     "overlay:gen": "node scripts/build-overlay-map.mjs",
     "overlay:check": "git diff --exit-code -- scripts/overlay-map.json",
     "observability:test": "node scripts/verify-observability.js",
+    "test:observability": "npm run observability:test",
     "ci:gate:sentry-up": "node scripts/verify-observability.js",
     "ci:gate:workflow": "node scripts/ci/workflow-consistency-check.mjs",
     "pr:performance": "node scripts/pr-integration.mjs analyze",
@@ -226,4 +227,3 @@
     ]
   }
 }
-

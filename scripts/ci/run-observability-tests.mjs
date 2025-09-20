@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 fs.mkdirSync('reports', { recursive: true });
-const r = spawnSync('npm', ['run', 'test:observability'], { encoding: 'utf8', shell: process.platform === 'win32' });
+// Prefer the canonical script name; alias exists for backward compatibility
+const r = spawnSync('npm', ['run', 'observability:test'], { encoding: 'utf8', shell: process.platform === 'win32' });
 try { fs.writeFileSync('reports/observability-verification.json', r.stdout || '', 'utf8'); } catch {}
 process.exit(r.status ?? 0);
-

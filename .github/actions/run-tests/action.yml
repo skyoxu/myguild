@@ -1,9 +1,9 @@
 name: 'Run Tests'
-description: '统一执行项目测试（单元、E2E、安全、覆盖率等）'
+description: 'Unified test runner for unit, E2E, security, coverage, smoke, and observability'
 
 inputs:
   test-type:
-    description: '测试类型'
+    description: 'Test type'
     required: true
     type: choice
     default: 'unit'
@@ -15,126 +15,51 @@ inputs:
       - smoke
       - observability
   timeout:
-    description: '测试超时时间(ms)'
+    description: 'Timeout in milliseconds'
     required: false
     default: '300000'
   fail-fast:
-    description: '测试失败是否立即失败'
+    description: 'Fail fast on first error'
     required: false
     default: 'true'
   reporter:
-    description: '测试报告格式'
+    description: 'Reporter format'
     required: false
     default: 'default'
   output-file:
-    description: '测试结果输出文件'
+    description: 'Output file path for results'
     required: false
 
 outputs:
   test-result:
-    description: '测试执行结果'
+    description: 'Test execution result'
     value: ${{ steps.test.outputs.result }}
   test-report:
-    description: '测试报告路径'
+    description: 'Test report path'
     value: ${{ steps.test.outputs.report_path }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Run tests
-
+    - name: Run tests (Node wrapper)
       id: test
-      shell: bash
-      run: |
-        set -e
-
-        TEST_TYPE="${{ inputs.test-type }}"
-        TIMEOUT="${{ inputs.timeout }}"
-        FAIL_FAST="${{ inputs.fail-fast }}"
-        REPORTER="${{ inputs.reporter }}"
-        OUTPUT_FILE="${{ inputs.output-file }}"
-
-        echo "🧪 开始执行 ${TEST_TYPE} 测试..."
-        echo "⏱️ 超时设置: ${TIMEOUT}ms"
-        echo "🚨 快速失败: ${FAIL_FAST}"
-
-        # Electron E2E 预检：若缺少构建产物则先构建（适用于 e2e / security / smoke）
-        if [ "$TEST_TYPE" = "e2e" ] || [ "$TEST_TYPE" = "security" ] || [ "$TEST_TYPE" = "smoke" ]; then
-          if [ ! -f "dist-electron/main.js" ]; then
-            echo "⚠️ dist-electron/main.js 缺失，执行构建..."
-            npm run build
-          fi
-        fi
-
-        # 构建测试命令
-        case "$TEST_TYPE" in
-          unit)
-            TEST_CMD="npm run test:unit"
-            if [ "$REPORTER" != "default" ]; then
-              TEST_CMD="$TEST_CMD -- --reporter=$REPORTER"
-            fi
-            ;;
-          coverage)
-            TEST_CMD="npm run test:coverage"
-            ;;
-          e2e)
-            TEST_CMD="npm run test:e2e"
-            if [ "$TIMEOUT" != "300000" ]; then
-              TEST_CMD="$TEST_CMD --timeout=$TIMEOUT"
-            fi
-            ;;
-          security)
-            TEST_CMD="npm run test:e2e:security"
-            ;;
-          smoke)
-            TEST_CMD="npm run test:e2e:smoke"
-            if [ "$TIMEOUT" != "300000" ]; then
-              TEST_CMD="$TEST_CMD --timeout=$TIMEOUT"
-            fi
-            ;;
-          observability)
-            TEST_CMD="npm run test:observability"
-            ;;
-          *)
-            echo "❌ 未知的测试类型: $TEST_TYPE"
-            exit 1
-            ;;
-        esac
-
-        # 执行测试
-        if [ "$FAIL_FAST" = "false" ]; then
-          if $TEST_CMD; then
-            echo "result=success" >> $GITHUB_OUTPUT
-            echo "✅ ${TEST_TYPE} 测试通过"
-          else
-            echo "result=failure" >> $GITHUB_OUTPUT
-            echo "⚠️ ${TEST_TYPE} 测试失败，但不阻塞流程"
-          fi
-        else
-          $TEST_CMD
-          echo "result=success" >> $GITHUB_OUTPUT
-          echo "✅ ${TEST_TYPE} 测试通过"
-        fi
-
-        # 输出报告文件路径
-        if [ -n "$OUTPUT_FILE" ] && [ -f "$OUTPUT_FILE" ]; then
-          echo "report_path=$OUTPUT_FILE" >> $GITHUB_OUTPUT
-        elif [ -d "test-results/" ]; then
-          echo "report_path=test-results/" >> $GITHUB_OUTPUT
-        elif [ -d "coverage/" ]; then
-          echo "report_path=coverage/" >> $GITHUB_OUTPUT
-        else
-          echo "report_path=" >> $GITHUB_OUTPUT
-        fi
+      shell: pwsh
+      run: >-
+        node scripts/ci/run-tests.mjs
+        --test-type "${{ inputs.test-type }}"
+        --timeout "${{ inputs.timeout }}"
+        --fail-fast "${{ inputs.fail-fast }}"
+        --reporter "${{ inputs.reporter }}"
+        --output-file "${{ inputs.output-file }}"
 
     - name: Print summary
-      shell: bash
+      shell: pwsh
       run: |
-        if [ "${{ steps.test.outputs.result }}" = "success" ]; then
-          echo "✅ 测试状态: 通过"
-        else
-          echo "⚠️ 测试状态: 失败"
-        fi
-        if [ -n "${{ steps.test.outputs.report_path }}" ]; then
-          echo "📄 报告路径: ${{ steps.test.outputs.report_path }}"
-        fi
+        if ('${{ steps.test.outputs.result }}' -eq 'success') {
+          Write-Host '[tests] Status: PASS'
+        } else {
+          Write-Host '[tests] Status: FAIL'
+        }
+        if ('${{ steps.test.outputs.report_path }}' -ne '') {
+          Write-Host "[tests] Report path: ${{ steps.test.outputs.report_path }}"
+        }

@@ -8,6 +8,12 @@ on:
       - 'scripts/ci/workflow-consistency-check.mjs'
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Manual trigger reason'
+        required: false
+        type: string
     paths:
       - '.github/workflows/**'
       - 'scripts/ci/workflow-consistency-check.mjs'
