@@ -1,15 +1,12 @@
-Run actions/upload-artifact@v4
-Multiple search paths detected. Calculating the least common ancestor of all paths
-The least common ancestor is D:\a\myguild\myguild. This will be the root directory of the artifact
-With the provided path, there will be 4 files uploaded
-Artifact name is valid!
-Root directory input is valid!
-Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (409) Conflict: an artifact with this name already exists on the workflow run
-
-Run actions/upload-artifact@v4
-Multiple search paths detected. Calculating the least common ancestor of all paths
-The least common ancestor is D:\a\myguild\myguild. This will be the root directory of the artifact
-With the provided path, there will be 4 files uploaded
-Artifact name is valid!
-Root directory input is valid!
-Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (409) Conflict: an artifact with this name already exists on the workflow run
+Prepare all required actions
+Run ./.github/actions/run-tests
+Run set -e
+🧪 开始执行 observability 测试...
+⏱️ 超时设置: 300000ms
+🚨 快速失败: true
+npm error Missing script: "test:observability"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: C:\npm\cache\_logs\2025-09-20T12_43_17_135Z-debug-0.log
+Error: Process completed with exit code 1.

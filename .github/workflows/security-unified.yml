@@ -499,35 +499,37 @@ jobs:
 
           echo "Unified security gate pre-checks passed (static scan + E2E outputs)"
 
-      - name: Download all security reports
+      - name: Download E2E results (merged)
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          pattern: e2e-security-test-results-shard-*
+          merge-multiple: true
+          path: artifacts/e2e-results
+
+      - name: Download Playwright traces (merged)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-traces-shard-*
+          merge-multiple: true
+          path: artifacts/playwright-traces
+
+      - name: Download static scan reports
+        uses: actions/download-artifact@v4
+        with:
+          name: static-security-reports
+          path: artifacts/static
 
       - name: Generate unified security report
-        shell: bash
-        run: |
-          echo "Generating unified security gate report..."
-
-          # Create comprehensive report containing all results
-          cat > logs/unified-security-report.json << EOF
-          {
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "git_sha": "$GITHUB_SHA",
-            "git_ref": "$GITHUB_REF_NAME",
-            "workflow_run": "$GITHUB_RUN_ID",
-            "static_scan": {
-              "status": "${{ needs.security-scan.outputs.scan-status }}",
-              "critical_count": ${{ needs.security-scan.outputs.critical-count }},
-              "high_count": ${{ needs.security-scan.outputs.high-count }}
-            },
-            "e2e_test": {
-              "status": "${{ needs.e2e-security-aggregate.outputs.e2e-status }}",
-              "executed": "${{ needs.e2e-security-aggregate.result != 'skipped' }}"
-            },
-            "overall_status": "$([ "${{ needs.security-scan.outputs.critical-count }}" = "0" ] && [ "${{ needs.e2e-security-aggregate.outputs.e2e-status }}" != "failed" ] && echo "PASS" || echo "FAIL")"
-          }
-          EOF
+        run: node scripts/ci/generate-unified-security-report.mjs
+        env:
+          CRITICAL_COUNT: ${{ needs.security-scan.outputs.critical-count }}
+          HIGH_COUNT: ${{ needs.security-scan.outputs.high-count }}
+          SCAN_STATUS: ${{ needs.security-scan.outputs.scan-status }}
+          E2E_STATUS: ${{ needs.e2e-security-aggregate.outputs.e2e-status }}
+          E2E_EXECUTED: ${{ needs.e2e-security-aggregate.result != 'skipped' }}
+          GIT_SHA: ${{ github.sha }}
+          GIT_REF: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
 
       - name: Upload unified security report
         uses: actions/upload-artifact@v4
@@ -752,4 +754,3 @@ jobs:
                 // Log error but don't block workflow
               }
             }
-
