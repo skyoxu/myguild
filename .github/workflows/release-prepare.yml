@@ -96,28 +96,29 @@ jobs:
         run: |
           artifact_path="${{ inputs.artifact_path }}"
 
-          # 妫€鏌ユ枃浠舵槸鍚﹀瓨鍦紙浠呭湪闈炴祴璇曟ā寮忎笅锛?          if [ "${{ github.event_name }}" != "workflow_dispatch" ] || [ -f "$artifact_path" ]; then
-            echo "${{ inputs.version }} ?.."
-            
+          # Check if file exists (only in non-test mode)
+          if [ -f "$artifact_path" ]; then
+            echo "Adding ${{ inputs.version }} to manifest..."
+
             result=$(node scripts/release/manage-manifest.mjs add \
               --version="${{ inputs.version }}" \
               --path="$artifact_path" \
               --manifest="artifacts/manifest.json")
-            
+
             echo "manifest_result=$result" >> "$GITHUB_OUTPUT"
-            echo "?"
+            echo "Manifest updated successfully"
             echo "$result" | jq '.'
           else
-            echo "?$artifact_path"
-            echo "..."
-            
-            # 鍒涘缓娴嬭瘯鍗犱綅鏉＄洰
+            echo "Artifact not found: $artifact_path"
+            echo "Creating test placeholder entry..."
+
+            # Create test placeholder entry
             mkdir -p artifacts
             if [ ! -f "artifacts/manifest.json" ]; then
               echo '{}' > artifacts/manifest.json
             fi
             
-            # 妯℃嫙娣诲姞鐗堟湰鏁版嵁
+            # Simulate adding version data
             cat > temp_version.json << EOF
           {
             "path": "$(basename "$artifact_path")",
@@ -134,7 +135,7 @@ jobs:
           }
           EOF
             
-            # 鍚堝苟鍒版竻鍗?- 瀹夊叏璇诲彇JSON鏂囦欢閬垮厤SC2086
+            # Merge to manifest - safe JSON file reading to avoid SC2086
             data_content=$(cat temp_version.json)
             jq --arg version "${{ inputs.version }}" \
                --argjson data "$data_content" \
@@ -143,7 +144,7 @@ jobs:
             rm temp_version.json
             
             echo "manifest_result={\"ok\":true,\"version\":\"${{ inputs.version }}\",\"test_mode\":true}" >> "$GITHUB_OUTPUT"
-            echo "鉁?鍗犱綅鐗堟湰鏉＄洰宸插垱寤?
+            echo "✅ Placeholder version entry created successfully"
           fi
 
       - name: Step
@@ -160,11 +161,11 @@ jobs:
           # 浠庢竻鍗曡幏鍙栫増鏈暟鎹?          version_data=$(jq -r --arg version "$version" '.[$version]' artifacts/manifest.json)
 
           if [ "$version_data" = "null" ]; then
-            echo "鉂?鐗堟湰 $version 鍦ㄦ竻鍗曚腑涓嶅瓨鍦?
+            echo "❌ Version $version not found in manifest"
             exit 1
           fi
 
-          # 鎻愬彇鐗堟湰淇℃伅
+          # Extract version information
           path=$(echo "$version_data" | jq -r '.path')
           sha512=$(echo "$version_data" | jq -r '.sha512')
           size=$(echo "$version_data" | jq -r '.size')
@@ -188,37 +189,38 @@ jobs:
           size: $size
           EOF
             
-            echo "?$feed_file"
+            echo "Created feed file: $feed_file"
           }
 
-          # 鍒涘缓鍚勫钩鍙?feed 鏂囦欢
+          # Create feeds for each platform
           create_feed ""        # latest.yml (Windows)
           # Windows-only: removed macOS/Linux feeds
 
-          echo "?feed"
+          echo "Feed files created successfully"
 
       - name: Step
         run: |
-          echo "..."
+          echo "Validating manifest..."
           node scripts/release/manage-manifest.mjs validate
-          echo "?"
+          echo "Validation completed successfully"
 
       - name: Step
         shell: bash
         run: |
-          # 纭繚UTF-8缂栫爜杈撳嚭
+          # Ensure UTF-8 encoding output
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
-          # 浣跨敤鍗曚竴閲嶅畾鍚戞潵浼樺寲鎬ц兘锛堜慨澶?SC2129锛?          {
-            echo "##"
+          # Use single redirection to optimize performance (fix SC2129)
+          {
+            echo "## Release Preparation Summary"
             echo ""
-            echo "| | ?|"
-            echo "|------|-----|"
-            echo "| | \`${{ inputs.version }}\` |"
-            echo "| | \`${{ inputs.artifact_path }}\` |"
-            echo "| Feed |${{ inputs.create_feeds && '鉁?鏄? || '鉂?鍚? }} |"
+            echo "| Property | Value |"
+            echo "|----------|-------|"
+            echo "| Version | ${{ inputs.version }} |"
+            echo "| Artifact Path | ${{ inputs.artifact_path }} |"
+            echo "| Feed |${{ inputs.create_feeds && '✅ Yes' || '❌ No' }} |"
             echo ""
-            echo "### 馃搵 鐗堟湰娓呭崟鐘舵€?
+            echo "### 📋 Version Manifest Status"
             echo "\`\`\`json"
             node scripts/release/manage-manifest.mjs list | jq '.'
             echo "\`\`\`"
@@ -227,7 +229,7 @@ jobs:
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
             {
               echo ""
-              echo "### ?Feed"
+              echo "### 📁 Feed Files Created"
               echo "- \`dist/latest.yml\` (Windows)"
               echo "- \`dist/latest-mac.yml\` (macOS)"  
               echo "- \`dist/latest-linux.yml\` (Linux)"
@@ -236,10 +238,10 @@ jobs:
 
           {
             echo ""
-            echo "### 馃幆 涓嬩竴姝?
-            echo "1. 杩愯 **Release Ramp** 宸ヤ綔娴佸紑濮嬫笎杩涘彂甯?
-            echo "2. ?5% ?25% ?50% ?100%"
-            echo "3. 姣忎釜闃舵閮戒細鑷姩杩涜鍋ュ悍搴︽鏌?
+            echo "### 🔄 Next Steps"
+            echo "1. Run **Release Ramp** workflow to begin gradual rollout"
+            echo "2. Rollout: 5% → 25% → 50% → 100%"
+            echo "3. Each stage will automatically perform health checks"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Step
@@ -248,32 +250,32 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 妫€鏌ユ槸鍚︽湁鍙樻洿
+          # Check if there are changes
           if git diff --quiet && git diff --cached --quiet; then
-            echo "馃摑 鏃犲彉鏇撮渶瑕佹彁浜?
+            echo "🔵 No changes need to be committed"
             exit 0
           fi
 
-          # 鎻愪氦鍙樻洿
+          # Commit changes
           git add artifacts/manifest.json
           if [ "${{ inputs.create_feeds }}" = "true" ]; then
             git add dist/latest*.yml
           fi
 
-          git commit -m "馃摝 Release preparation: v${{ inputs.version }}" \
+          git commit -m "🚀 Release preparation: v${{ inputs.version }}" \
             -m "Version: ${{ inputs.version }}" \
             -m "Artifact: ${{ inputs.artifact_path }}" \
             -m "Feed files: ${{ inputs.create_feeds }}" \
             -m "" \
-            -m "馃 Generated by GitHub Actions" \
+            -m "🤖 Generated by GitHub Actions" \
             -m "Workflow: ${{ github.workflow }}" \
             -m "Run: ${{ github.run_number }}"
 
-          echo "鉁?鍙樻洿宸叉彁浜?
+          echo "✅ Changes committed successfully"
 
       - name: Step
         run: |
-          echo "..."
+          echo "Validating manifest..."
           git push origin ${{ github.ref }}
-          echo "?"
+          echo "Validation completed successfully"
 

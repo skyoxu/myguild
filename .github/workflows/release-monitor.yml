@@ -1,4 +1,4 @@
-name: Release Monitor - 鍙戝竷鐩戞帶
+name: Release Monitor
 
 permissions:
   contents: read
@@ -15,11 +15,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '鐩戞帶鐨勫簲鐢ㄧ増鏈紙鐣欑┖浣跨敤鐜鍙橀噺锛?'
+        description: "Monitor application version (leave empty to use environment variable)"
         required: false
         type: string
       force_check:
-        description: '寮哄埗妫€鏌ワ紙蹇界暐鏃堕棿闄愬埗锛?'
+        description: 'Force check (ignore time limits)'
         required: false
         type: boolean
         default: false
@@ -33,7 +33,7 @@ env:
   THRESHOLD_CF_SESSIONS: ${{ vars.THRESHOLD_CF_SESSIONS || '0.995' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
-# ==================== 骞跺彂鎺у埗 ====================
+# ==================== Concurrency Control ====================
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,7 +41,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: windows-latest
-    # P0淇锛歫ob绾у埆鐜鍙橀噺纭繚devDependencies姝ｇ‘瀹夎
+    # P0 Fix: Job-level environment variables ensure devDependencies are correctly installed
     env:
       NODE_ENV: development
       NPM_CONFIG_PRODUCTION: 'false'
@@ -68,7 +68,7 @@ jobs:
       - name: Step
         shell: pwsh
         run: |
-          # P0淇锛歐indows runner浣跨敤PowerShell鍖呯鐞嗘浛浠inux apt-get
+          # P0 Fix: Windows runner uses PowerShell package management to replace linux apt-get
           if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
             Write-Host "Installing jq tool..."
             if (Get-Command choco -ErrorAction SilentlyContinue) {
@@ -85,7 +85,7 @@ jobs:
         id: conditions
         shell: bash
         run: |
-          # 妫€鏌ユ槸鍚﹀湪宸ヤ綔鏃堕棿锛圲TC 6:00 - 22:00锛屽ぇ鑷村搴斿悇鏃跺尯鐨勫伐浣滄椂闂达級
+          # Check if within working hours (UTC 6:00 - 22:00, roughly corresponds to working hours in various time zones)
           current_hour=$(date -u +%H)
           if [ "$current_hour" -lt 6 ] || [ "$current_hour" -gt 22 ]; then
             if [ "${{ inputs.force_check }}" != "true" ]; then
@@ -95,21 +95,22 @@ jobs:
             fi
           fi
 
-          # 妫€鏌ユ槸鍚︽湁娲昏穬鐨勬笎杩涘彂甯?          if [ ! -f "dist/latest.yml" ]; then
+          # Check if there is active gradual release
+          if [ ! -f "dist/latest.yml" ]; then
             echo "Feed"
             echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # 妫€鏌?stagingPercentage
+          # Check stagingPercentage
           staging_pct=$(grep -E '^stagingPercentage:' dist/latest.yml | sed 's/stagingPercentage: *//' || echo "0")
           if [ "$staging_pct" = "0" ] || [ "$staging_pct" = "100" ]; then
-            echo "馃搳 褰撳墠鍒嗛樁娈靛彂甯冧负 ${staging_pct}%锛岃烦杩囩洃鎺?
+            echo "📊 Current staged release is ${staging_pct}%, skipping monitoring"
             echo "should_monitor=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "鉁?婊¤冻鐩戞帶鏉′欢锛屽紑濮嬪仴搴锋鏌?
+          echo "✅ Monitoring conditions met, starting health check"
           echo "should_monitor=true" >> "$GITHUB_OUTPUT"
           echo "staging_percentage=$staging_pct" >> "$GITHUB_OUTPUT"
 
@@ -129,7 +130,7 @@ jobs:
           echo "$APP_VERSION?.."
           echo "?${{ steps.conditions.outputs.staging_percentage }}%"
 
-          # 鎵ц鍋ュ悍搴︽鏌?          set +e
+          # Execute health check
           health_result=$(DRY_RUN=true node scripts/release/auto-rollback.mjs)
           health_exit_code=$?
           set -e
@@ -142,14 +143,14 @@ jobs:
 
           case $health_exit_code in
             0)
-              echo "鉁?鎸佺画鍋ュ悍鐩戞帶锛氭寚鏍囨甯?
+              echo "✅ Continuous health monitoring: metrics normal"
               echo "monitor_status=healthy" >> "$GITHUB_OUTPUT"
               ;;
             42)
               echo ""
               echo "monitor_status=unhealthy" >> "$GITHUB_OUTPUT"
               
-              # 瑙﹀彂绱ф€ュ洖婊氬伐浣滄祦
+              # Trigger emergency rollback workflow
               echo "?.."
               curl -X POST \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -173,7 +174,7 @@ jobs:
         if: steps.conditions.outputs.should_monitor == 'true'
         shell: bash
         run: |
-          # 鍒涘缓鎴栨洿鏂扮洃鎺х姸鎬佹枃浠?          mkdir -p .github/monitoring
+          # Create or update monitoring status file
 
           cat > .github/monitoring/latest-status.json << EOF
           {
@@ -227,7 +228,7 @@ jobs:
 
           if [ -f ".github/monitoring/latest-status.json" ]; then
             git add .github/monitoring/latest-status.json
-            git commit -m "馃搳 Release monitoring update: $APP_VERSION" \
+            git commit -m "📊 Release monitoring update: $APP_VERSION" \
               -m "Status: ${{ steps.health_monitor.outputs.monitor_status }}" \
               -m "Staging: ${{ steps.conditions.outputs.staging_percentage }}%" \
               -m "" \
@@ -255,11 +256,11 @@ jobs:
             
             status="${{ steps.health_monitor.outputs.monitor_status }}"
             case "$status" in
-              "healthy") status_icon="鉁?; status_text="鍋ュ悍" ;;
-              "unhealthy") status_icon="馃毃"; status_text="涓嶅仴搴?- 宸茶Е鍙戝洖婊? ;;
-              "error") status_icon="鈿狅笍"; status_text="鐩戞帶閿欒" ;;
-              "skipped") status_icon="鈴笍"; status_text="璺宠繃" ;;
-              *) status_icon="鉂?; status_text="鏈煡" ;;
+              "healthy") status_icon="✅"; status_text="Healthy" ;;
+              "unhealthy") status_icon="🚨"; status_text="Unhealthy - Rollback triggered" ;;
+              "error") status_icon="⚠️"; status_text="Monitoring error" ;;
+              "skipped") status_icon="⏸️"; status_text="Skipped" ;;
+              *) status_icon="❓"; status_text="Unknown" ;;
             esac
             
             echo "**?*:$status_icon$status_text" >> "$GITHUB_STEP_SUMMARY"

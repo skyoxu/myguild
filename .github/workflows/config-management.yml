@@ -38,17 +38,19 @@ jobs:
       NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
-      - name: Step
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Step
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Step
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Step
+      - name: Validate config layers
         env:
           # CI Secrets锛堟晱鎰熼厤缃級
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -62,18 +64,18 @@ jobs:
           echo "?.."
           npm run config:layers:validate
 
-      - name: Step
+      - name: Generate config report
         run: |
           echo "..."
           npm run config:layers:report > config-report.json
 
-      - name: Step
+      - name: Validate config substitution
         if: github.ref != 'refs/heads/main'
         run: |
           echo "?.."
           npm run config:substitute:validate
 
-      - name: Step
+      - name: Generate config docs
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -81,7 +83,8 @@ jobs:
           echo "..."
           npm run config:substitute:docs
 
-      - name: Step
+      - name: Validate package.json
+        run: |
           echo "??.."
           node -e "
           const fs = require('fs');
@@ -102,7 +105,7 @@ jobs:
           console.log('馃彚 浜у搧鍚嶇О:', pkg.productName || '鏈缃?);
           "
 
-      - name: Step
+      - name: Upload config reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -126,17 +129,19 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Step
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Step
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Step
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Step
+      - name: Process config and docs
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -160,7 +165,7 @@ jobs:
             grep -n "\${" "$file" || true
           done
 
-      - name: Step
+      - name: Verify generated files
         run: |
           echo "?.."
           ls -la dist/ || echo "dist/ 鐩綍涓嶅瓨鍦?
@@ -172,7 +177,7 @@ jobs:
             head -20 src/generated/config.ts
           fi
 
-      - name: Step
+      - name: Upload documentation
         uses: actions/upload-artifact@v4
         with:
           name: processed-documentation

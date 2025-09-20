@@ -1,6 +1,6 @@
 name: tasks-governance
 
-# Minimal permissions
+permissions:
   contents: read
   actions: read
 

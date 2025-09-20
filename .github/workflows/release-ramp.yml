@@ -1,5 +1,6 @@
-name: Release Ramp - 娓愯繘鍙戝竷涓庤嚜鍔ㄥ洖婊?
-# Minimal permissions
+name: Release Ramp - Gradual Release and Auto Rollback
+
+permissions:
   contents: write
   actions: write
 
