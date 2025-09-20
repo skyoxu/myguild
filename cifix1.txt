@@ -1,108 +1,15 @@
-❌ [actionlint] Results expand for details...
-  Error: .github/workflows/build-and-test.yml:193:0: could not parse as YAML: yaml: line 193: did not find expected key [syntax-check]
-      |
-  193 |           retention-days: 7
-      | 
-  Error: .github/workflows/release-ramp.yml:100:9: shellcheck reported issue in this script: SC1089:error:13:1: Parsing stopped here. Is this keyword correctly matched up? [shellcheck]
-      |
-  100 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:173:9: shellcheck reported issue in this script: SC1009:info:4:3: The mentioned syntax error was in this simple command [shellcheck]
-      |
-  173 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:173:9: shellcheck reported issue in this script: SC1078:warning:4:8: Did you forget to close this double quoted string? [shellcheck]
-      |
-  173 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:173:9: shellcheck reported issue in this script: SC1079:info:5:8: This is actually an end quote, but due to next char it looks suspect [shellcheck]
-      |
-  173 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:173:9: shellcheck reported issue in this script: SC1073:error:31:50: Couldn't parse this double quoted string. Fix to allow more checks [shellcheck]
-      |
-  173 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:173:9: shellcheck reported issue in this script: SC1072:error:36:1: Expected end of double quoted string. Fix any mentioned problems and try again [shellcheck]
-      |
-  173 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:238:9: shellcheck reported issue in this script: SC1089:error:37:1: Parsing stopped here. Is this keyword correctly matched up? [shellcheck]
-      |
-  238 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1078:warning:3:8: Did you forget to close this double quoted string? [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1079:info:4:8: This is actually an end quote, but due to next char it looks suspect [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1078:warning:10:57: Did you forget to close this double quoted string? [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1079:info:19:8: This is actually an end quote, but due to next char it looks suspect [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1078:warning:39:10: Did you forget to close this double quoted string? [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1079:info:40:8: This is actually an end quote, but due to next char it looks suspect [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1009:info:45:5: The mentioned syntax error was in this simple command [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1078:warning:45:10: Did you forget to close this double quoted string? [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1079:info:46:8: This is actually an end quote, but due to next char it looks suspect [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1073:error:46:29: Couldn't parse this double quoted string. Fix to allow more checks [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:286:9: shellcheck reported issue in this script: SC1072:error:49:1: Expected end of double quoted string. Fix any mentioned problems and try again [shellcheck]
-      |
-  286 |         run: |
-      |         ^~~~
-  Error: .github/workflows/release-ramp.yml:353:9: shellcheck reported issue in this script: SC2215:warning:17:3: This flag is used as a command name. Bad line break or missing [ .. ]? [shellcheck]
-      |
-  353 |         run: |
-      |         ^~~~
-  Error: .github/workflows/security-unified.yml:353:15: missing input "path" which is required by action "actions/upload-artifact@v4". all required inputs are "path" [action]
-      |
-  353 |         uses: actions/upload-artifact@v4
-      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~
-  Error: .github/workflows/soft-gates.yml:3:0: could not parse as YAML: yaml: line 3: did not find expected key [syntax-check]
-    |
-  3 | # Minimal permissions
-    | 
-  Error: .github/workflows/tasks-governance.yml:74:9: key "shell" is duplicated in element of "steps" section. previously defined at line:64,col:9 [syntax-check]
-     |
-  74 |         shell: bash
-     |         ^~~~~~
-  Error: .github/workflows/tasks-governance.yml:78:9: key "run" is duplicated in element of "steps" section. previously defined at line:65,col:9 [syntax-check]
-     |
-  78 |         run: npm ci --no-audit --no-fund
-     |         ^~~~
-  Error: .github/workflows/tasks-governance.yml:81:9: key "shell" is duplicated in element of "steps" section. previously defined at line:64,col:9 [syntax-check]
-     |
-  81 |         shell: bash
-     |         ^~~~~~
-  Error: .github/workflows/tasks-governance.yml:82:9: key "run" is duplicated in element of "steps" section. previously defined at line:65,col:9 [syntax-check]
-     |
-  82 |         run: npx -y eslint --version
-     |         ^~~~
-  Error: .github/workflows/tasks-governance.yml:86:9: key "run" is duplicated in element of "steps" section. previously defined at line:65,col:9 [syntax-check]
-     |
-  86 |         run: git config --global core.autocrlf input
+Run actions/upload-artifact@v4
+Multiple search paths detected. Calculating the least common ancestor of all paths
+The least common ancestor is D:\a\myguild\myguild. This will be the root directory of the artifact
+With the provided path, there will be 4 files uploaded
+Artifact name is valid!
+Root directory input is valid!
+Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (409) Conflict: an artifact with this name already exists on the workflow run
+
+Run actions/upload-artifact@v4
+Multiple search paths detected. Calculating the least common ancestor of all paths
+The least common ancestor is D:\a\myguild\myguild. This will be the root directory of the artifact
+With the provided path, there will be 4 files uploaded
+Artifact name is valid!
+Root directory input is valid!
+Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (409) Conflict: an artifact with this name already exists on the workflow run
