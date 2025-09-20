@@ -184,16 +184,16 @@ jobs:
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
             Write-Host "PR mode: performing incremental git scan (base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }})"
             # Use PowerShell to call bash for git commands (avoid Windows path issues)
-            bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified,unknown --only-verified --fail --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
+            # Fail only on verified findings to reduce false positives
+            bash -c "trufflehog git '${{ github.event.pull_request.base.sha }}' '${{ github.sha }}' --results=verified --fail --json" | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
             $scanFile = "trufflehog-pr.json"
           } else {
             Write-Host "Main branch mode: performing full filesystem scan"
             # 1) Reduce noise: use exclusion list to skip binary files and build artifacts
-            # 2) Correct failure condition: only fail on verified secrets, unverified secrets as warnings only
+            # 2) Fail only on verified secrets (ignore unknown)
             trufflehog filesystem . `
               --exclude-paths .trufflehog-exclude.txt `
-              --results=verified,unknown `
-              --only-verified `
+              --results=verified `
               --fail `
               --json | Out-File -FilePath "trufflehog-scan.json" -Encoding UTF8
             $scanFile = "trufflehog-scan.json"

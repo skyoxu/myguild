@@ -14,9 +14,6 @@ on:
         description: 'Manual trigger reason'
         required: false
         type: string
-    paths:
-      - '.github/workflows/**'
-      - 'scripts/ci/workflow-consistency-check.mjs'
 
 permissions:
   contents: read
