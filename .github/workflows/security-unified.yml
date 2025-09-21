@@ -184,7 +184,7 @@ jobs:
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
             Write-Host "PR mode: performing incremental git scan (base: ${{ github.event.pull_request.base.sha }} -> head: ${{ github.sha }})"
             # Windows-only: invoke TruffleHog directly without bash wrapper
-            trufflehog git . --since-commit=${{ github.event.pull_request.base.sha }} --only-verified --fail --json | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
+            trufflehog git file://. --since-commit=${{ github.event.pull_request.base.sha }} --only-verified --fail --json | Out-File -FilePath "trufflehog-pr.json" -Encoding UTF8
             $scanFile = "trufflehog-pr.json"
           } else {
             Write-Host "Main branch mode: performing full filesystem scan"
