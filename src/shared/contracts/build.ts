@@ -1,6 +1,8 @@
 ﻿/**
  * 构建与质量门禁相关的类型定义
  * 对应 07 章架构文档的契约接口
+ *
+ * @version 1.0.1 - 添加性能检查工作流测试注释
  */
 
 export interface QualityGateConfig {
