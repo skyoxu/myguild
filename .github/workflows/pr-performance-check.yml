@@ -11,9 +11,6 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/pr-performance-check.yml'
-      - '!docs/**'
-      - '!**.md'
-      - '!.github/workflows/validate-workflows.yml'
 
   workflow_dispatch:
     inputs:
