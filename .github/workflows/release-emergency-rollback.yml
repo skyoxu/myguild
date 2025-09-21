@@ -39,7 +39,7 @@ on:
         default: 'manual'
 
 env:
-  PREV_GA_VERSION: ${{ inputs.target_version || vars.PREV_GA_VERSION || '0.0.9' }}
+  PREV_GA_VERSION: ${{ vars.PREV_GA_VERSION || '0.0.9' }}
   WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
 # Concurrency control to prevent conflicts
@@ -70,7 +70,7 @@ jobs:
         run: node scripts/ci/rollback-init-summary.mjs
         env:
           REASON: ${{ inputs.reason }}
-          TARGET_VERSION: ${{ env.PREV_GA_VERSION }}
+          TARGET_VERSION: ${{ inputs.target_version || env.PREV_GA_VERSION }}
           FEED_FILES: ${{ inputs.feed_files }}
           TRIGGERED_BY: ${{ inputs.triggered_by }}
 
@@ -136,7 +136,7 @@ jobs:
         run: node scripts/ci/git-conditional-commit-single-file.mjs
         env:
           FILE_PATH: dist/latest.yml
-          MESSAGE: "Emergency rollback: v${{ env.PREV_GA_VERSION }}"
+          MESSAGE: "Emergency rollback: v${{ inputs.target_version || env.PREV_GA_VERSION }}"
 
       - name: Push emergency changes
         run: node scripts/ci/git-push-current-branch.mjs
