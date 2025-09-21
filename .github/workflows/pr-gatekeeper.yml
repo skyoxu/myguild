@@ -37,7 +37,7 @@ jobs:
         run: node scripts/ci/wait-for-check.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_CHECK_NAME: Unified Security Gate
+          TARGET_CHECK_NAME: Security Gate (Unified) / Unified Security Gate
           TIMEOUT_MS: '1800000'
 
       - name: Generate and post PR summary
