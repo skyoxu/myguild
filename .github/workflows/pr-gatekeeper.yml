@@ -40,21 +40,21 @@ jobs:
           TARGET_CHECK_NAME: Unified Security Gate
           TIMEOUT_MS: '600000'
 
-      - name: Generate PR summary
-        run: node scripts/ci/append-summary.mjs
-        env:
-          SUMMARY_MD_CONTENT: |
-            ## PR Status Summary
-            ### Windows CI Status
-            - **Status**: Windows-focused CI (Build and Test)
-            - **Environment**: Windows CI with security gates
-
-            ### Details
-            - **Focus**: Windows-focused CI
-            - **Security**: Unified security gate validation
-            - **Priority**: P2 - Critical CI validation
-            ---
-            *This gatekeeper ensures Windows CI completion before PR merge*
+      - name: Generate and post PR summary
+        run: |
+          {
+            echo "## PR Status Summary"
+            echo "### Windows CI Status"
+            echo "- **Status**: Windows-focused CI (Build and Test)"
+            echo "- **Environment**: Windows CI with security gates"
+            echo ""
+            echo "### Details"
+            echo "- **Focus**: Windows-focused CI"
+            echo "- **Security**: Unified security gate validation"
+            echo "- **Priority**: P2 - Critical CI validation"
+            echo "---"
+            echo "*This gatekeeper ensures Windows CI completion before PR merge*"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ==================== Health Check Job ====================
   workflow-health-check:
