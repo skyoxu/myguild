@@ -64,10 +64,10 @@ jobs:
 
     steps:
       - name: Health status report
-        run: node scripts/ci/append-summary.mjs
-        env:
-          SUMMARY_MD_CONTENT: |
-            ## Workflow Health Status
-            - **Version**: v1.0
-            - **Health Check Time**: UTC
-            - **Priority**: P2 - Critical validation
+        run: |
+          {
+            echo "## Workflow Health Status"
+            echo "- **Version**: v1.0"
+            echo "- **Health Check Time**: UTC"
+            echo "- **Priority**: P2 - Critical validation"
+          } >> "$GITHUB_STEP_SUMMARY"
