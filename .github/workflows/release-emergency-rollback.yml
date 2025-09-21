@@ -66,6 +66,11 @@ jobs:
       # Production environment protection for emergency rollback
 
     steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: 'Emergency rollback initiated'
         run: node scripts/ci/rollback-init-summary.mjs
         env:
@@ -73,11 +78,6 @@ jobs:
           TARGET_VERSION: ${{ inputs.target_version || env.PREV_GA_VERSION }}
           FEED_FILES: ${{ inputs.feed_files }}
           TRIGGERED_BY: ${{ inputs.triggered_by }}
-
-      - name: 'Checkout repository'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: 'Setup Node.js'
         uses: actions/setup-node@v4
