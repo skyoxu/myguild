@@ -24,7 +24,7 @@ jobs:
   windows-ci-gatekeeper:
     name: Windows CI Status Check
     runs-on: ubuntu-latest # Using Ubuntu runner for efficiency
-    timeout-minutes: 30 # Reasonable timeout for CI checks
+    timeout-minutes: 35 # Extended timeout to accommodate security gate duration
 
     # Only run on non-draft PRs
     if: github.event.pull_request.draft == false
@@ -38,7 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_CHECK_NAME: Unified Security Gate
-          TIMEOUT_MS: '600000'
+          TIMEOUT_MS: '1800000'
 
       - name: Generate and post PR summary
         run: |
