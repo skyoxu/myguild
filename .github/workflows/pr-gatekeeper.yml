@@ -12,6 +12,7 @@ env:
 permissions:
   contents: read
   actions: read
+  checks: read
 
 # ==================== Concurrency Control ====================
 concurrency:
@@ -24,7 +25,7 @@ jobs:
   windows-ci-gatekeeper:
     name: Windows CI Status Check
     runs-on: ubuntu-latest # Using Ubuntu runner for efficiency
-    timeout-minutes: 30 # Reasonable timeout for CI checks
+    timeout-minutes: 35 # Extended timeout to accommodate security gate duration
 
     # Only run on non-draft PRs
     if: github.event.pull_request.draft == false
@@ -33,12 +34,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Ensure logs directory exists
+        run: |
+          mkdir -p logs/ci
+
       - name: Wait for "Unified Security Gate" check
         run: node scripts/ci/wait-for-check.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_CHECK_NAME: Unified Security Gate
-          TIMEOUT_MS: '600000'
+          TARGET_CHECK_NAME: Security Gate (Unified) / Unified Security Gate
+          TARGET_JOB_NAME: Unified Security Gate
+          TARGET_WORKFLOW_NAME: Security Gate (Unified)
+          OPTIONAL: 'true' # 若安全工作流未触发（路径过滤/草稿PR等），跳过等待
+          TIMEOUT_MS: '1800000'
 
       - name: Generate and post PR summary
         run: |
