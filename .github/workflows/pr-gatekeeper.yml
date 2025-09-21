@@ -45,7 +45,7 @@ jobs:
           TARGET_CHECK_NAME: Security Gate (Unified) / Unified Security Gate
           TARGET_JOB_NAME: Unified Security Gate
           TARGET_WORKFLOW_NAME: Security Gate (Unified)
-          OPTIONAL: 'true' # 若安全工作流未触发（路径过滤/草稿PR等），跳过等待
+          OPTIONAL: 'true' # Skip if security workflow not triggered (path filters/draft PR etc)
           TIMEOUT_MS: '1800000'
 
       - name: Generate and post PR summary
