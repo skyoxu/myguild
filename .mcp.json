@@ -5,7 +5,7 @@
       "command": "npx",
       "args": ["-y", "zen-mcp-server-199bio"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
         "GEMINI_API_KEY": "${GOOGLE_API_KEY}",
@@ -42,7 +42,7 @@
       "command": "npx",
       "args": ["-y", "--package=task-master-ai", "task-master-ai"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
         "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}",
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
@@ -58,7 +58,7 @@
       "command": "serena",
       "args": ["start-mcp-server", "--project", "vitegame"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-api03-yTsI1CmLDB5jPjFvzu0cXMJEFepCWpTF3UeP7uXrb2nv4sSn1R2_8gO7JhMvcISCUloyuG0ovr5jfR9NvCsl4w"
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
       }
     },
     "brave-search": {

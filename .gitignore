@@ -31,8 +31,15 @@ build/
 dev-debug.log
 # Dependency directories
 node_modules/
-# Environment variables
+# Environment variables and sensitive files
 .env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+.claude/settings.local.json
+.sentryclirc
 .vscode
 # OS specific
 
