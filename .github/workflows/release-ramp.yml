@@ -77,8 +77,10 @@ jobs:
 
       - name: Install dependencies
         uses: ./.github/actions/npm-install
+        # Must install devDependencies (scripts depend on js-yaml, etc.); do not prune for production
         env:
-          NPM_CONFIG_PRODUCTION: 'true'
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: 'false'
 
       - name: Ensure jq installed (Windows)
         run: node scripts/ci/install-jq-windows.mjs
@@ -202,4 +204,3 @@ jobs:
           APP_VERSION: ${{ env.APP_VERSION }}
           REPOSITORY: ${{ github.repository }}
           WORKFLOW: ${{ github.workflow }}
-
