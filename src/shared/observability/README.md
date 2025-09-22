@@ -28,7 +28,7 @@ src/shared/observability/
 ├── sentry-renderer.ts          # 渲染进程Sentry配置 (tracesSampleRate: 0.2)
 ├── release-health.ts           # Release Health管理器
 ├── game-metrics.ts             # 游戏指标管理器
-├── metrics-integration.ts      # 统一集成入口
+├── metrics-integration.ts      # 统一集成入口（仅主侧示例，renderer 请使用 .renderer）
 ├── monitoring-example.ts       # 使用示例代码
 └── README.md                   # 本文档
 ```
@@ -56,7 +56,8 @@ NODE_ENV=production  # 或 staging, development
 在 `electron/main.ts` 中：
 
 ```typescript
-import { initializeMainProcessMonitoring } from '../src/shared/observability/metrics-integration';
+// main process only
+import { initializeMainProcessMonitoring } from '../src/shared/observability/metrics-integration.main';
 
 async function createWindow() {
   // 🎯 初始化主进程监控（包含Release Health）
@@ -74,7 +75,8 @@ async function createWindow() {
 在 `src/App.tsx` 中：
 
 ```typescript
-import { initializeRendererProcessMonitoring } from './shared/observability/metrics-integration';
+// renderer only
+import { initializeRendererProcessMonitoring } from './shared/observability/metrics-integration.renderer';
 
 function App() {
   useEffect(() => {
@@ -94,7 +96,7 @@ function App() {
 ### 关卡加载时长指标
 
 ```typescript
-import { recordLevelLoadTime } from './shared/observability/metrics-integration';
+import { recordLevelLoadTime } from './shared/observability/metrics-integration.renderer';
 
 // 🎯 按您的示例格式发送指标
 const loadMs = 1500; // 加载耗时
@@ -107,7 +109,7 @@ recordLevelLoadTime(loadMs, levelId);
 ### 战斗回合耗时指标
 
 ```typescript
-import { recordBattleRoundTime } from './shared/observability/metrics-integration';
+import { recordBattleRoundTime } from './shared/observability/metrics-integration.renderer';
 
 const roundMs = 2300; // 回合耗时
 const battleType = 'boss'; // 战斗类型
@@ -126,7 +128,7 @@ import {
   recordAssetLoadTime,
   recordMemoryUsage,
   recordGameError,
-} from './shared/observability/metrics-integration';
+} from './shared/observability/metrics-integration.renderer';
 
 // AI决策耗时
 recordAIDecisionTime(500, 'smart-ai', 'high');

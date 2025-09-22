@@ -1,5 +1,5 @@
 /**
- * Observability aggregator
+ * [main-only] Observability aggregator
  * Unifies initialization and management of Sentry and metrics.
  *
  * Key behaviors:

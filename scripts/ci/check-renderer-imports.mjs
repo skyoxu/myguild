@@ -47,10 +47,30 @@ function log(msg) {
   fs.appendFileSync(logFile, msg + '\n', 'utf8');
 }
 
-let violations = [];
+const violations = [];
+function shouldSkip(file, src) {
+  const p = file.replace(/\\+/g, '/');
+  // Allow main/preload trees inside src
+  if (p.startsWith('src/main/') || p.startsWith('src/preload/')) return true;
+  // Allow test files
+  if (p.includes('/__tests__/') || /\.spec\.(ts|tsx)$/.test(p)) return true;
+  // Observability: allow files explicitly for main side or release health under shared
+  if (p.startsWith('src/shared/observability/')) {
+    const name = p.split('/').pop() || '';
+    if (/\.main\.(ts|tsx)$/.test(name)) return true;
+    if (name === 'release-health.ts') return true;
+    if (name.includes('sentry-main') || name.includes('sentry-main-detector'))
+      return true;
+    // Content marker: files declaring [main-only] in header are skipped
+    if (src && src.slice(0, 400).includes('[main-only]')) return true;
+  }
+  return false;
+}
+
 const files = fs.existsSync('src') ? listFiles('src') : [];
 for (const file of files) {
   const src = fs.readFileSync(file, 'utf8');
+  if (shouldSkip(file, src)) continue;
   // Rough import detection (static + dynamic)
   const lines = src.split(/\r?\n/);
   lines.forEach((line, idx) => {

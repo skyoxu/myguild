@@ -1,11 +1,11 @@
-﻿/**
+/**
  * Sentry Dashboard
  *
  * 28.4
  * 5Dashboard////
  */
 
-import type { SystemHealth } from './resilience-manager';
+import type { SystemHealth } from './resilience-manager.main';
 
 // PRD1
 export type PRDModule =

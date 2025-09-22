@@ -1,4 +1,4 @@
-﻿/**
+/**
  *
  *
  * developmentstagingproduction
@@ -212,6 +212,7 @@ const ENVIRONMENT_SCHEMAS: Record<Environment, EnvironmentConfigSchema> = {
 };
 
 /**
+ * [main-only] Runs in Electron main process.
  *
  */
 export class ConfigValidator {

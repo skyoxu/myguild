@@ -1,4 +1,4 @@
-﻿/**
+/**
  *
  *
  *
@@ -13,11 +13,11 @@ import {
   configValidator,
   type ConfigValidationResult,
   type Environment,
-} from './config-validator';
+} from './config-validator.main';
 import {
   loggingHealthChecker,
   type LoggingHealthResult,
-} from './logging-health-checker';
+} from './logging-health-checker.main';
 
 //
 export interface ObservabilityGateResult {

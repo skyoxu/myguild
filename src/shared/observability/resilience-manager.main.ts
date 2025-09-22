@@ -1,4 +1,4 @@
-﻿/**
+/**
  *
  *
  *
@@ -162,6 +162,7 @@ const DEFAULT_RESILIENCE_CONFIG: ResilienceConfig = {
 };
 
 /**
+ * [main-only] Runs in Electron main process.
  *
  */
 export class ResilienceManager {

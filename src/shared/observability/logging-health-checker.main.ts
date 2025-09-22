@@ -1,4 +1,4 @@
-﻿/**
+/**
  *
  *
  *
@@ -89,6 +89,7 @@ const DEFAULT_HEALTH_OPTIONS: LoggingHealthOptions = {
 };
 
 /**
+ * [main-only] Runs in Electron main process.
  *
  */
 export class LoggingHealthChecker {

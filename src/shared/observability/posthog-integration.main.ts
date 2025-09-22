@@ -1,6 +1,7 @@
-﻿// GPostHog  &
+// GPostHog  &
 // Sentry""
 
+/* [main-only] Runs in Electron main process */
 import posthog from 'posthog-js';
 import { app } from 'electron';
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  *
  *
  * Electron + React + Phaser
@@ -86,7 +86,7 @@ export class LevelLoader {
       const { gameMetrics } = await import('./metrics-integration');
       gameMetrics.recordLevelLoadSuccess(levelId);
 
-      console.log(`✅ 关卡${levelId}加载完成，耗时${loadTime}ms`);
+      console.log(`? �ؿ�${levelId}������ɣ���ʱ${loadTime}ms`);
       return true;
     } catch (error) {
       const loadTime = Date.now() - startTime;
@@ -95,7 +95,7 @@ export class LevelLoader {
       const { gameMetrics } = await import('./metrics-integration');
       gameMetrics.recordLevelLoadFailure(levelId, error.name, error.message);
 
-      console.error(`❌ 关卡${levelId}加载失败，耗时${loadTime}ms`, error);
+      console.error(`? �ؿ�${levelId}����ʧ�ܣ���ʱ${loadTime}ms`, error);
       throw error;
     }
   }
@@ -165,7 +165,7 @@ export class BattleManager {
         playerCount
       );
 
-      console.log(`⚔️ 战斗回合${this.currentRound}完成，耗时${roundTime}ms`);
+      console.log(`?? ս���غ�${this.currentRound}��ɣ���ʱ${roundTime}ms`);
       return true;
     } catch (error) {
       const roundTime = Date.now() - startTime;
@@ -174,7 +174,7 @@ export class BattleManager {
       const { recordGameError } = await import('./metrics-integration');
       recordGameError('battle-round-error', 'high', 'battle-manager');
 
-      console.error(`❌ 战斗回合${this.currentRound}执行失败`, error);
+      console.error(`? ս���غ�${this.currentRound}ִ��ʧ��`, error);
       throw error;
     }
   }
@@ -202,7 +202,7 @@ export class BattleManager {
       rounds: this.currentRound.toString(),
     });
 
-    console.log(`🏆 战斗结束: ${result}, 共${this.currentRound}回合`);
+    console.log(`?? ս������: ${result}, ��${this.currentRound}�غ�`);
   }
 }
 
@@ -230,9 +230,7 @@ export class UIPerformanceMonitor {
       );
 
       if (renderTime > 100) {
-        console.warn(
-          `⚠️ 组件${componentName}渲染耗时${renderTime}ms，可能需要优化`
-        );
+        console.warn(`?? ���${componentName}��Ⱦ��ʱ${renderTime}ms��������Ҫ�Ż�`);
       }
 
       return result;
@@ -261,7 +259,7 @@ export class UIPerformanceMonitor {
       });
 
       if (delay > 200) {
-        console.warn(`⚠️ ${component}的${action}操作响应延迟${delay}ms`);
+        console.warn(`?? ${component}��${action}������Ӧ�ӳ�${delay}ms`);
       }
     };
   }
@@ -298,7 +296,7 @@ export function GameLevelComponent({ levelId }: { levelId: string }) {
     'GameLevelComponent',
     () => (
       <div data-testid="game-level-root">
-        <h2>关卡 {levelId}</h2>
+        <h2>�ؿ� {levelId}</h2>
         <button onClick={loadLevel} disabled={loading}>
           {loading ? '...' : ''}
         </button>
@@ -325,7 +323,7 @@ export class SystemMonitor {
         //
         if (usedMB > 200) {
           // 200MB
-          console.warn(`⚠️ 渲染进程内存使用${usedMB}MB，请注意内存泄漏`);
+          console.warn(`?? ��Ⱦ�����ڴ�ʹ��${usedMB}MB����ע���ڴ�й©`);
 
           const { recordGameError } = require('./metrics-integration');
           recordGameError('high-memory-usage', 'medium', 'renderer-process');
@@ -388,7 +386,7 @@ export async function validateMonitoringIntegration(): Promise<boolean> {
     const allHealthy = Object.values(status).every(s => s === true);
 
     console.log(' :', status);
-    console.log(`${allHealthy ? '' : ''} 监控系统${allHealthy ? '' : ''}`);
+    console.log(`${allHealthy ? '' : ''} ���ϵͳ${allHealthy ? '' : ''}`);
 
     return allHealthy;
   } catch (error) {

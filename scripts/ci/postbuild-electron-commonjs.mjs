@@ -86,3 +86,34 @@ function duplicateAllJsToCjs() {
 
 ensureCommonJsPackage();
 duplicateAllJsToCjs();
+
+// Remove legacy top-level entry files to avoid stale entry usage
+try {
+  const legacyFiles = [
+    'main.js',
+    'main.cjs',
+    'preload.js',
+    'preload.cjs',
+    'security.js',
+    'security.cjs',
+  ].map(n => join(DIST_ELECTRON, n));
+  let removed = 0;
+  for (const f of legacyFiles) {
+    try {
+      if (existsSync(f)) {
+        // Avoid removing files inside the new electron/ subfolder
+        if (
+          !f.includes(
+            `${join(DIST_ELECTRON, 'electron')}${require('path').sep}`
+          )
+        ) {
+          require('fs').rmSync(f, { force: true });
+          removed++;
+        }
+      }
+    } catch {}
+  }
+  if (removed > 0) {
+    console.log(`[postbuild] cleaned legacy top-level entries: ${removed}`);
+  }
+} catch {}

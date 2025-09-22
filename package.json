@@ -17,6 +17,7 @@
     "lint:tests": "eslint \"tests/**/*.{ts,tsx,js,mjs}\" --max-warnings 300",
     "lint:baseline": "node scripts/eslint-baseline-gate.mjs",
     "lint:workflows": "node scripts/ci/validate-all-workflows.cjs",
+    "guard:clean": "node scripts/ci/clean-file-caches.cjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "format:observability": "prettier \"src/shared/observability/**/*.{ts,tsx}\" --write",
@@ -131,7 +132,7 @@
     "quality:bundle:build": "node scripts/quality/bundle-analyzer.mjs",
     "quality:deps": "node scripts/quality/dependency-security.mjs",
     "quality:perf": "node scripts/quality/performance-gates.mjs",
-    "guard:ci": "npm run obs:maintain && npm run guard:ci-self-check && npm run typecheck && npm run lint && npm run lint:baseline && npm run lint:workflows && npm run guard:encoding && npm run guard:bom && npm run guard:workflow-deps && npm run guard:entry && npm run test:unit && npm run security:audit:gate && npm run guard:electron && npm run test:e2e:arch-check && npm run test:e2e:framerate && npm run guard:framerate && npm run test:e2e:scene-transition && npm run guard:scene-transition && npm run guard:cloudevents && npm run guard:sentry && npm run test:e2e && npm run collect:traces && npm run guard:quality && npm run guard:health && npm run guard:base && npm run guard:version && npm run docs:score:gate && npm run guard:adr && npm run guard:csp && npm run guard:bundle && npm run guard:web-vitals:hybrid && npm run guard:performance && npm run guard:db && npm run db:checkpoint:truncate && npm run observability:test && npm run pr:performance && npm run quality:bundle:build && npm run quality:deps && npm run quality:perf",
+    "guard:ci": "npm run guard:clean && npm run obs:maintain && npm run guard:ci-self-check && npm run typecheck && npm run lint && npm run lint:baseline && npm run lint:workflows && npm run guard:encoding && npm run guard:bom && npm run guard:workflow-deps && npm run guard:entry && npm run test:unit && npm run security:audit:gate && npm run guard:electron && npm run test:e2e:arch-check && npm run test:e2e:framerate && npm run guard:framerate && npm run test:e2e:scene-transition && npm run guard:scene-transition && npm run guard:cloudevents && npm run guard:sentry && npm run test:e2e && npm run collect:traces && npm run guard:quality && npm run guard:health && npm run guard:base && npm run guard:version && npm run docs:score:gate && npm run guard:adr && npm run guard:csp && npm run guard:bundle && npm run guard:web-vitals:hybrid && npm run guard:performance && npm run guard:db && npm run db:checkpoint:truncate && npm run observability:test && npm run pr:performance && npm run quality:bundle:build && npm run quality:deps && npm run quality:perf",
     "sanitize:ascii": "node scripts/sanitize-ascii.mjs"
   },
   "dependencies": {
