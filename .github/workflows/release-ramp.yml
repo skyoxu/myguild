@@ -9,6 +9,10 @@ defaults:
     shell: pwsh
 
 on:
+  workflow_run:
+    workflows: ["Release Prepare"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       stage:
