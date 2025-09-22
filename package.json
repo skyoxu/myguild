@@ -79,6 +79,8 @@
     "test:e2e:scene-transition": "playwright test --project=scene-transition",
     "guard:scene-transition": "node scripts/perf/scene-transition-gate.mjs",
     "guard:cloudevents": "node scripts/perf/cloudevents-performance-gate.mjs",
+    "mcp:context7": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/mcp/start-context7.ps1 -Transport stdio",
+    "mcp:context7:http": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/mcp/start-context7.ps1 -Transport http -Port 3037",
     "config:layers:init": "node scripts/config-layers.mjs init",
     "config:layers:export": "node scripts/config-layers.mjs export",
     "config:layers:validate": "node scripts/config-layers.mjs validate",
