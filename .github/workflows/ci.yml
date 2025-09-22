@@ -219,7 +219,9 @@ jobs:
     name: SonarCloud Analysis (free tier)
     runs-on: ubuntu-latest
     needs: unit-tests-core
-    if: ${{ secrets.SONAR_TOKEN != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     timeout-minutes: 15
     steps:
       - name: Checkout code
@@ -238,18 +240,16 @@ jobs:
         env:
           NODE_ENV: test
       - name: SonarCloud Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@v2.3
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           # Provide org/project via args from Secrets; config file handles paths/exclusions
           args: >-
             -Dsonar.organization=${{ secrets.SONAR_ORG }}
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
       - name: Wait for Quality Gate
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-quality-gate-action@v1.1.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           timeout-minutes: 10
       - name: Sonar summary
