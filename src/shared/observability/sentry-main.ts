@@ -33,7 +33,8 @@ const SENTRY_CONFIGS: Record<
     environment: 'production',
     sampleRate: 1.0, // Production environment 100% error collection
     // NOTE: tracesSampleRate is not used when tracesSampler is provided; keep for completeness.
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.02') || 0.02,
+    tracesSampleRate:
+      Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.02') || 0.02,
     autoSessionTracking: true, // Enable Release Health
     enableTracing: true,
     release: `app@${app.getVersion?.() ?? 'unknown'}+${process.platform}`,
@@ -187,7 +188,9 @@ export function initSentryMain(): Promise<boolean> {
           try {
             const logsDir = join(process.cwd(), 'logs', 'observability');
             if (!existsSync(logsDir)) {
-              try { mkdirSync(logsDir, { recursive: true }); } catch {}
+              try {
+                mkdirSync(logsDir, { recursive: true });
+              } catch {}
             }
             const logFile = join(logsDir, 'sentry-init-main-latest.log');
             const baseRate = config.dynamicSampling.baseSampleRate;
