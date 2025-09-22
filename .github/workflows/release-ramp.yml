@@ -134,7 +134,7 @@ jobs:
         run: node scripts/ci/git-conditional-commit-single-file.mjs
         env:
           FILE_PATH: ${{ inputs.feed_file || 'dist/latest.yml' }}
-          MESSAGE: 'Release ramp: ${{ inputs.feed_file || 'dist/latest.yml' }} to ${{ inputs.stage || '5' }}% staging'
+          MESSAGE: "Release ramp: ${{ inputs.feed_file || 'dist/latest.yml' }} to ${{ inputs.stage || '5' }}% staging"
 
       - name: Push changes
         if: steps.commit.outputs.committed == 'true'
