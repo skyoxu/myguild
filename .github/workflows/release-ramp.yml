@@ -123,18 +123,18 @@ jobs:
         run: |
           $feedFile = "${{ inputs.feed_file || 'dist/latest.yml' }}"
           if (-not (Test-Path "$feedFile")) {
-            Write-Output "❌ Feed file not found: $feedFile"
+            Write-Output "ERROR: Feed file not found: $feedFile"
             Write-Output "Available files in dist/:"
             if (Test-Path "dist/") { Get-ChildItem "dist/" -Name }
             Write-Output "Attempting to regenerate feed file..."
             $env:VERSION = "${{ steps.version.outputs.latest_version }}"
             node scripts/ci/create-electron-feeds.mjs
             if (-not (Test-Path "$feedFile")) {
-              Write-Output "❌ Failed to generate feed file after retry"
+              Write-Output "ERROR: Failed to generate feed file after retry"
               exit 1
             }
           }
-          Write-Output "✅ Feed file verified: $feedFile"
+          Write-Output "SUCCESS: Feed file verified: $feedFile"
 
       - name: Patch staging percentage
         id: staging
