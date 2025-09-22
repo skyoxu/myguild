@@ -301,6 +301,62 @@ export function sendGameMetric(
   }
 }
 
+/** Report level load time metric (renderer) */
+export function reportLevelLoadTime(loadMs: number, levelId: string): void {
+  try {
+    // Use breadcrumb for lightweight metrics
+    Sentry.addBreadcrumb({
+      message: `metric.level.load.ms`,
+      level: 'info',
+      data: {
+        value: loadMs,
+        levelId,
+        source: 'renderer',
+        environment: determineEnvironment(),
+      },
+    });
+
+    console.log(
+      `level load time metric sent: ${loadMs}ms for level ${levelId}`
+    );
+  } catch (error) {
+    console.warn(
+      'reportLevelLoadTime failed:',
+      (error as any)?.message || error
+    );
+  }
+}
+
+/** Report battle round time metric (renderer) */
+export function reportBattleRoundTime(
+  roundMs: number,
+  battleType: string,
+  round: number
+): void {
+  try {
+    // Use breadcrumb for lightweight metrics
+    Sentry.addBreadcrumb({
+      message: `metric.battle.round.ms`,
+      level: 'info',
+      data: {
+        value: roundMs,
+        battleType,
+        round: round.toString(),
+        source: 'renderer',
+        environment: determineEnvironment(),
+      },
+    });
+
+    console.log(
+      `battle round time metric sent: ${roundMs}ms for ${battleType} round ${round}`
+    );
+  } catch (error) {
+    console.warn(
+      'reportBattleRoundTime failed:',
+      (error as any)?.message || error
+    );
+  }
+}
+
 // React integration placeholder (kept for future route tracing)
 import React from 'react';
-
