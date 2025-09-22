@@ -25,17 +25,35 @@ if (!data) {
 fs.mkdirSync('dist', { recursive: true });
 
 const feedFile = path.join('dist', 'latest.yml');
+// Create electron-updater compatible YAML structure
+const feedData = {
+  version: version,
+  files: [
+    {
+      url: data.path,
+      sha512: data.sha512,
+      size: data.size
+    }
+  ],
+  path: data.path,
+  sha512: data.sha512,
+  releaseDate: data.releaseDate,
+  stagingPercentage: 0,
+  size: data.size
+};
+
+// Generate clean YAML manually to ensure proper format
 const yaml = [
-  `version: ${version}`,
-  'files:',
-  `  - url: ${data.path}`,
-  `    sha512: ${data.sha512}`,
-  `    size: ${data.size}`,
-  `path: ${data.path}`,
-  `sha512: ${data.sha512}`,
-  `releaseDate: '${data.releaseDate}'`,
-  'stagingPercentage: 0',
-  `size: ${data.size}`
+  `version: ${feedData.version}`,
+  `files:`,
+  `  - url: ${feedData.files[0].url}`,
+  `    sha512: ${feedData.files[0].sha512}`,
+  `    size: ${feedData.files[0].size}`,
+  `path: ${feedData.path}`,
+  `sha512: ${feedData.sha512}`,
+  `releaseDate: '${feedData.releaseDate}'`,
+  `stagingPercentage: ${feedData.stagingPercentage}`,
+  `size: ${feedData.size}`
 ].join('\n');
 
 fs.writeFileSync(feedFile, yaml + '\n', 'utf8');
