@@ -79,3 +79,5 @@ jobs:
     needs: pre-check
     steps:
       - run: Write-Output "Health check placeholder"
+
+# Cache refresh trigger - fix phantom L403 error
