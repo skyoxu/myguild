@@ -119,6 +119,23 @@ jobs:
           THRESHOLD_CF_USERS: ${{ env.THRESHOLD_CF_USERS }}
           THRESHOLD_CF_SESSIONS: ${{ env.THRESHOLD_CF_SESSIONS }}
 
+      - name: Verify feed file exists
+        run: |
+          $feedFile = "${{ inputs.feed_file || 'dist/latest.yml' }}"
+          if (-not (Test-Path "$feedFile")) {
+            Write-Output "❌ Feed file not found: $feedFile"
+            Write-Output "Available files in dist/:"
+            if (Test-Path "dist/") { Get-ChildItem "dist/" -Name }
+            Write-Output "Attempting to regenerate feed file..."
+            $env:VERSION = "${{ steps.version.outputs.latest_version }}"
+            node scripts/ci/create-electron-feeds.mjs
+            if (-not (Test-Path "$feedFile")) {
+              Write-Output "❌ Failed to generate feed file after retry"
+              exit 1
+            }
+          }
+          Write-Output "✅ Feed file verified: $feedFile"
+
       - name: Patch staging percentage
         id: staging
         run: node scripts/ci/release-ramp-patch-staging.mjs
