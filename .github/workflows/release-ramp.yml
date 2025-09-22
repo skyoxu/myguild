@@ -59,7 +59,7 @@ jobs:
       actions: read
 
     outputs:
-      stage: ${{ inputs.stage }}
+      stage: ${{ inputs.stage || '5' }}
       health_passed: ${{ steps.health_check.outcome == 'success' }}
       rollback_executed: ${{ steps.rollback.outcome == 'success' }}
 
@@ -86,13 +86,13 @@ jobs:
       - name: Validate inputs and manifest
         run: node scripts/ci/release-ramp-validate-inputs.mjs
         env:
-          FEED_FILE: ${{ inputs.feed_file }}
+          FEED_FILE: ${{ inputs.feed_file || 'dist/latest.yml' }}
 
       - name: Append context summary
         run: node scripts/ci/release-ramp-summary.mjs
         env:
-          STAGE: ${{ inputs.stage }}
-          FEED_FILE: ${{ inputs.feed_file }}
+          STAGE: ${{ inputs.stage || '5' }}
+          FEED_FILE: ${{ inputs.feed_file || 'dist/latest.yml' }}
           APP_VERSION: ${{ env.APP_VERSION }}
           PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
@@ -104,18 +104,18 @@ jobs:
         id: staging
         run: node scripts/ci/release-ramp-patch-staging.mjs
         env:
-          FEED_FILE: ${{ inputs.feed_file }}
-          STAGE: ${{ inputs.stage }}
+          FEED_FILE: ${{ inputs.feed_file || 'dist/latest.yml' }}
+          STAGE: ${{ inputs.stage || '5' }}
 
       - name: Wait for health signals
-        if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
+        if: ${{ (inputs.stage || '5') != '5' && !(inputs.skip_health_check || false) }}
         run: node scripts/ci/release-ramp-wait-window.mjs
         env:
-          STAGE: ${{ inputs.stage }}
+          STAGE: ${{ inputs.stage || '5' }}
 
       - name: Health check
         id: health_check
-        if: ${{ inputs.stage != '5' && !inputs.skip_health_check }}
+        if: ${{ (inputs.stage || '5') != '5' && !(inputs.skip_health_check || false) }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: node scripts/ci/release-ramp-health-check.mjs
@@ -125,7 +125,7 @@ jobs:
         if: failure() && steps.health_check.outputs.health_exit_code == '42'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-          FEED_FILE: ${{ inputs.feed_file }}
+          FEED_FILE: ${{ inputs.feed_file || 'dist/latest.yml' }}
           PREV_GA_VERSION: ${{ env.PREV_GA_VERSION }}
         run: node scripts/ci/release-ramp-rollback.mjs
 
@@ -133,8 +133,8 @@ jobs:
         id: commit
         run: node scripts/ci/git-conditional-commit-single-file.mjs
         env:
-          FILE_PATH: ${{ inputs.feed_file }}
-          MESSAGE: 'Release ramp: ${{ inputs.feed_file }} to ${{ inputs.stage }}% staging'
+          FILE_PATH: ${{ inputs.feed_file || 'dist/latest.yml' }}
+          MESSAGE: 'Release ramp: ${{ inputs.feed_file || 'dist/latest.yml' }} to ${{ inputs.stage || '5' }}% staging'
 
       - name: Push changes
         if: steps.commit.outputs.committed == 'true'
@@ -143,7 +143,7 @@ jobs:
       - name: Ramp summary
         run: node scripts/ci/release-ramp-append-summary.mjs
         env:
-          STAGE: ${{ inputs.stage }}
+          STAGE: ${{ inputs.stage || '5' }}
           HEALTH_RESULT: ${{ steps.health_check.outputs.health_result }}
           HEALTH_STATUS: ${{ steps.health_check.outputs.health_status }}
 
