@@ -13,7 +13,10 @@ import {
 describe('CloudEvents 1.0 Core Implementation - ADR-0004', () => {
   describe('mkEvent - constructor', () => {
     it('creates a basic CloudEvents 1.0 compliant event', () => {
-      const event = mkEvent({ source: 'app://test/source', type: 'test.event.created' });
+      const event = mkEvent({
+        source: 'app://test/source',
+        type: 'test.event.created',
+      });
       expect(event).toHaveProperty('id');
       expect(event).toHaveProperty('source', 'app://test/source');
       expect(event).toHaveProperty('type', 'test.event.created');
@@ -51,10 +54,30 @@ describe('CloudEvents 1.0 Core Implementation - ADR-0004', () => {
 
     it('fails when required fields are missing', () => {
       const badCases = [
-        { source: 'app://x', type: 't.x', specversion: '1.0', time: new Date().toISOString() },
-        { id: '123', type: 't.x', specversion: '1.0', time: new Date().toISOString() },
-        { id: '123', source: 'app://x', specversion: '1.0', time: new Date().toISOString() },
-        { id: '123', source: 'app://x', type: 't.x', time: new Date().toISOString() },
+        {
+          source: 'app://x',
+          type: 't.x',
+          specversion: '1.0',
+          time: new Date().toISOString(),
+        },
+        {
+          id: '123',
+          type: 't.x',
+          specversion: '1.0',
+          time: new Date().toISOString(),
+        },
+        {
+          id: '123',
+          source: 'app://x',
+          specversion: '1.0',
+          time: new Date().toISOString(),
+        },
+        {
+          id: '123',
+          source: 'app://x',
+          type: 't.x',
+          time: new Date().toISOString(),
+        },
         { id: '123', source: 'app://x', type: 't.x', specversion: '1.0' },
       ];
       badCases.forEach((evt, idx) => {
@@ -129,4 +152,3 @@ describe('CloudEvents 1.0 Core Implementation - ADR-0004', () => {
     });
   });
 });
-

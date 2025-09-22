@@ -1,7 +1,7 @@
 ﻿/**
- * 轻量 Sentry Performance 包装（可选存在）：
- * - 避免在未配置 Sentry 时抛错
- * - 仅在渲染进程使用 '@sentry/electron/renderer'
+ *  Sentry Performance
+ * -  Sentry
+ * -  '@sentry/electron/renderer'
  */
 
 export type Txn = { finish: () => void };

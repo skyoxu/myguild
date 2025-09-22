@@ -16,7 +16,9 @@ if (!summaryPath) {
 let content = process.env.SUMMARY_MD_CONTENT || '';
 const file = process.env.SUMMARY_FILE;
 if (!content && file) {
-  try { content = fs.readFileSync(file, 'utf8'); } catch {}
+  try {
+    content = fs.readFileSync(file, 'utf8');
+  } catch {}
 }
 
 if (!content) {
@@ -25,4 +27,3 @@ if (!content) {
 
 fs.appendFileSync(summaryPath, content + '\n', 'utf8');
 console.log('Summary appended.');
-

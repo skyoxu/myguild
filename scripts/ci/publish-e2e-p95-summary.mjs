@@ -30,7 +30,9 @@ if (durations.length === 0) {
   process.exit(0);
 }
 durations.sort((a, b) => a - b);
-const avg = Math.round((durations.reduce((a, b) => a + b, 0) / durations.length) * 100) / 100;
+const avg =
+  Math.round((durations.reduce((a, b) => a + b, 0) / durations.length) * 100) /
+  100;
 function pct(p) {
   const idx = Math.floor((durations.length - 1) * p);
   return durations[idx] | 0;
@@ -55,4 +57,3 @@ const sum = process.env.GITHUB_STEP_SUMMARY;
 if (sum) appendFileSync(sum, lines.join('\n') + '\n');
 else console.log(lines.join('\n'));
 process.exit(0);
-

@@ -7,7 +7,7 @@
   "version": "0.2.0",
   "_trigger_ci": "Trigger CI/CD pipeline activation",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p electron && tsc -b && vite build && node scripts/ci/postbuild-electron-commonjs.mjs",
@@ -19,6 +19,7 @@
     "lint:workflows": "node scripts/ci/validate-all-workflows.cjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "format:observability": "prettier \"src/shared/observability/**/*.{ts,tsx}\" --write",
     "test": "vitest",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
@@ -65,6 +66,7 @@
     "overlay:check": "git diff --exit-code -- scripts/overlay-map.json",
     "observability:test": "node scripts/verify-observability.js",
     "test:observability": "npm run observability:test",
+    "obs:maintain": "node scripts/ci/englishify-observability.mjs && node scripts/ci/normalize-observability-eol.mjs && npm run format:observability",
     "ci:gate:sentry-up": "node scripts/verify-observability.js",
     "ci:gate:workflow": "node scripts/ci/workflow-consistency-check.mjs",
     "pr:performance": "node scripts/pr-integration.mjs analyze",
@@ -73,6 +75,7 @@
     "guard:encoding": "node scripts/ci/check-workflows-encoding.mjs",
     "guard:bom": "node scripts/ci/check-bom.mjs",
     "guard:workflow-deps": "node scripts/ci/workflow-dependency-check.cjs",
+    "guard:entry": "node scripts/ci/check-electron-entry.cjs",
     "guard:electron": "node scripts/scan_electron_safety.mjs",
     "test:e2e:arch-check": "node scripts/e2e-architecture-check.mjs",
     "test:e2e:framerate": "playwright test --project=framerate-stability",
@@ -128,7 +131,7 @@
     "quality:bundle:build": "node scripts/quality/bundle-analyzer.mjs",
     "quality:deps": "node scripts/quality/dependency-security.mjs",
     "quality:perf": "node scripts/quality/performance-gates.mjs",
-    "guard:ci": "npm run guard:ci-self-check && npm run typecheck && npm run lint && npm run lint:baseline && npm run lint:workflows && npm run guard:encoding && npm run guard:bom && npm run guard:workflow-deps && npm run test:unit && npm run security:audit:gate && npm run guard:electron && npm run test:e2e:arch-check && npm run test:e2e:framerate && npm run guard:framerate && npm run test:e2e:scene-transition && npm run guard:scene-transition && npm run guard:cloudevents && npm run guard:sentry && npm run test:e2e && npm run collect:traces && npm run guard:quality && npm run guard:health && npm run guard:base && npm run guard:version && npm run docs:score:gate && npm run guard:adr && npm run guard:csp && npm run guard:bundle && npm run guard:web-vitals:hybrid && npm run guard:performance && npm run guard:db && npm run db:checkpoint:truncate && npm run observability:test && npm run pr:performance && npm run quality:bundle:build && npm run quality:deps && npm run quality:perf",
+    "guard:ci": "npm run obs:maintain && npm run guard:ci-self-check && npm run typecheck && npm run lint && npm run lint:baseline && npm run lint:workflows && npm run guard:encoding && npm run guard:bom && npm run guard:workflow-deps && npm run guard:entry && npm run test:unit && npm run security:audit:gate && npm run guard:electron && npm run test:e2e:arch-check && npm run test:e2e:framerate && npm run guard:framerate && npm run test:e2e:scene-transition && npm run guard:scene-transition && npm run guard:cloudevents && npm run guard:sentry && npm run test:e2e && npm run collect:traces && npm run guard:quality && npm run guard:health && npm run guard:base && npm run guard:version && npm run docs:score:gate && npm run guard:adr && npm run guard:csp && npm run guard:bundle && npm run guard:web-vitals:hybrid && npm run guard:performance && npm run guard:db && npm run db:checkpoint:truncate && npm run observability:test && npm run pr:performance && npm run quality:bundle:build && npm run quality:deps && npm run quality:perf",
     "sanitize:ascii": "node scripts/sanitize-ascii.mjs"
   },
   "dependencies": {

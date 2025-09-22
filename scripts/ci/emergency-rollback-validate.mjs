@@ -11,7 +11,9 @@ if (!fs.existsSync('artifacts/manifest.json')) {
   process.exit(1);
 }
 let manifest = {};
-try { manifest = JSON.parse(fs.readFileSync('artifacts/manifest.json', 'utf8')); } catch (e) {
+try {
+  manifest = JSON.parse(fs.readFileSync('artifacts/manifest.json', 'utf8'));
+} catch (e) {
   console.error('Invalid manifest JSON');
   process.exit(1);
 }
@@ -21,4 +23,3 @@ if (!version || !manifest[version]) {
   process.exit(1);
 }
 console.log(`Rollback target validated: ${version}`);
-

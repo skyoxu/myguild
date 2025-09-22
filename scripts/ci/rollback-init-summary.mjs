@@ -12,7 +12,10 @@ const md = [
   `- Target version: ${process.env.TARGET_VERSION || ''}`,
   `- Feed files: ${process.env.FEED_FILES || ''}`,
   `- Triggered by: ${process.env.TRIGGERED_BY || ''}`,
-  ''
+  '',
 ].join('\n');
-if (!s) { console.log(md); } else { fs.appendFileSync(s, md + '\n'); }
-
+if (!s) {
+  console.log(md);
+} else {
+  fs.appendFileSync(s, md + '\n');
+}

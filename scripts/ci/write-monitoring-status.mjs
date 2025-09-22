@@ -14,7 +14,11 @@ const version = process.env.APP_VERSION || 'unknown';
 const pct = process.env.STAGING_PERCENTAGE || '0';
 const status = process.env.HEALTH_STATUS || 'unknown';
 let data = null;
-try { data = JSON.parse(process.env.HEALTH_RESULT || 'null'); } catch { data = null; }
+try {
+  data = JSON.parse(process.env.HEALTH_RESULT || 'null');
+} catch {
+  data = null;
+}
 
 const dir = path.join('.github', 'monitoring');
 fs.mkdirSync(dir, { recursive: true });
@@ -29,9 +33,8 @@ const payload = {
   health_status: status,
   health_data: data,
   workflow_run: process.env.GITHUB_RUN_NUMBER || '',
-  next_check: next.toISOString()
+  next_check: next.toISOString(),
 };
 
 fs.writeFileSync(file, JSON.stringify(payload, null, 2), 'utf8');
 console.log(`Wrote monitoring status to ${file}`);
-

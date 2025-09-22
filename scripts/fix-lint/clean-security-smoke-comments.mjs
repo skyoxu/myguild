@@ -33,4 +33,3 @@ content = content.replace(/\n/g, '\r\n');
 fs.writeFileSync(file, content, { encoding: 'utf8' });
 
 console.log('cleaned');
-

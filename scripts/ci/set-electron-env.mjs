@@ -5,15 +5,27 @@
  * - Fallback to dist-electron/main.js (build-ready) when exe is missing
  * - Export ELECTRON_MAIN_PATH and VITE_E2E_SMOKE to GITHUB_ENV
  */
-import { existsSync, appendFileSync, readFileSync, mkdirSync, appendFile } from 'node:fs';
+import {
+  existsSync,
+  appendFileSync,
+  readFileSync,
+  mkdirSync,
+  appendFile,
+} from 'node:fs';
 import path from 'node:path';
 
-function stripBOM(s) { return s.replace(/^\uFEFF/, ''); }
+function stripBOM(s) {
+  return s.replace(/^\uFEFF/, '');
+}
 
 function log(msg) {
-  const dir = path.join('logs', new Date().toISOString().slice(0,10), 'ci');
-  try { mkdirSync(dir, { recursive: true }); } catch {}
-  try { appendFile(path.join(dir, 'set-electron-env.log'), msg + '\n', () => {}); } catch {}
+  const dir = path.join('logs', new Date().toISOString().slice(0, 10), 'ci');
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch {}
+  try {
+    appendFile(path.join(dir, 'set-electron-env.log'), msg + '\n', () => {});
+  } catch {}
   console.log(msg);
 }
 
@@ -29,9 +41,13 @@ try {
     log(`[set-electron-env] Found packaged exe: ${exePath}`);
   } else if (existsSync(fallbackMain)) {
     resolved = fallbackMain;
-    log(`[set-electron-env] Packaged exe missing; fallback to: ${fallbackMain}`);
+    log(
+      `[set-electron-env] Packaged exe missing; fallback to: ${fallbackMain}`
+    );
   } else {
-    log(`[set-electron-env] Neither packaged exe nor fallback main found. Expected one of:\n - ${exePath}\n - ${fallbackMain}`);
+    log(
+      `[set-electron-env] Neither packaged exe nor fallback main found. Expected one of:\n - ${exePath}\n - ${fallbackMain}`
+    );
     process.exit(1);
   }
 

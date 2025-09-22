@@ -17,11 +17,12 @@ function removeBOM(filePath) {
     const buffer = readFileSync(filePath);
 
     // 检查是否有 UTF-8 BOM
-    if (buffer.length >= 3 &&
-        buffer[0] === 0xEF &&
-        buffer[1] === 0xBB &&
-        buffer[2] === 0xBF) {
-
+    if (
+      buffer.length >= 3 &&
+      buffer[0] === 0xef &&
+      buffer[1] === 0xbb &&
+      buffer[2] === 0xbf
+    ) {
       // 移除前 3 个字节（BOM）
       const cleanBuffer = buffer.slice(3);
       writeFileSync(filePath, cleanBuffer);
@@ -37,9 +38,20 @@ function removeBOM(filePath) {
 /**
  * 递归扫描目录中的文件
  */
-function scanDirectory(dir, extensions = ['.json', '.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs']) {
+function scanDirectory(
+  dir,
+  extensions = ['.json', '.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs']
+) {
   const files = [];
-  const excludeDirs = ['.git', 'node_modules', '.next', 'dist', 'build', '.vscode', '.idea'];
+  const excludeDirs = [
+    '.git',
+    'node_modules',
+    '.next',
+    'dist',
+    'build',
+    '.vscode',
+    '.idea',
+  ];
 
   try {
     const items = readdirSync(dir);
@@ -48,7 +60,11 @@ function scanDirectory(dir, extensions = ['.json', '.js', '.ts', '.tsx', '.jsx',
       const fullPath = join(dir, item);
       const stat = statSync(fullPath);
 
-      if (stat.isDirectory() && !excludeDirs.includes(item) && !item.startsWith('.')) {
+      if (
+        stat.isDirectory() &&
+        !excludeDirs.includes(item) &&
+        !item.startsWith('.')
+      ) {
         files.push(...scanDirectory(fullPath, extensions));
       } else if (stat.isFile() && extensions.some(ext => item.endsWith(ext))) {
         files.push(fullPath);

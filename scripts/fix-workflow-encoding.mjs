@@ -19,17 +19,19 @@ const affectedFiles = [
   'build-and-test.yml',
   'pr-performance-check.yml',
   'security-unified.yml',
-  'validate-workflows.yml'
+  'validate-workflows.yml',
 ];
 
 /**
  * 检查文件是否有BOM
  */
 function hasBOM(buffer) {
-  return buffer.length >= 3 &&
-         buffer[0] === 0xEF &&
-         buffer[1] === 0xBB &&
-         buffer[2] === 0xBF;
+  return (
+    buffer.length >= 3 &&
+    buffer[0] === 0xef &&
+    buffer[1] === 0xbb &&
+    buffer[2] === 0xbf
+  );
 }
 
 /**
@@ -55,7 +57,9 @@ function convertCRLFtoLF(content) {
 function backupFile(filePath) {
   const backupPath = `${filePath}.backup-${Date.now()}`;
   fs.copyFileSync(filePath, backupPath);
-  console.log(`✅ 已备份: ${path.basename(filePath)} -> ${path.basename(backupPath)}`);
+  console.log(
+    `✅ 已备份: ${path.basename(filePath)} -> ${path.basename(backupPath)}`
+  );
   return backupPath;
 }
 
@@ -89,7 +93,9 @@ async function validateYAML(filePath) {
     console.log(`✅ YAML语法验证通过: ${path.basename(filePath)}`);
     return true;
   } catch (error) {
-    console.error(`❌ YAML语法验证失败: ${path.basename(filePath)} - ${error.message}`);
+    console.error(
+      `❌ YAML语法验证失败: ${path.basename(filePath)} - ${error.message}`
+    );
     return false;
   }
 }
@@ -182,7 +188,9 @@ async function main() {
   successful.forEach(r => console.log(`   ✅ ${r.fileName}`));
   failed.forEach(r => console.log(`   ❌ ${r.fileName}`));
 
-  console.log(`\n🎯 修复完成: ${successful.length}/${results.length} 个文件成功`);
+  console.log(
+    `\n🎯 修复完成: ${successful.length}/${results.length} 个文件成功`
+  );
 
   if (failed.length > 0) {
     console.log('\n⚠️  部分文件修复失败，请手动检查：');

@@ -178,6 +178,72 @@ export default tseslint.config([
       'no-case-declarations': 'off', // 关闭
       'no-empty': 'off', // 关闭
       'no-useless-escape': 'off', // 关闭
+      // Renderer import guard: prevent renderer/shared code from importing main-only modules
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'electron',
+              message: 'Renderer must not import electron; use preload + IPC.',
+            },
+            {
+              name: '@sentry/electron/main',
+              message: 'Renderer must use @sentry/electron/renderer.',
+            },
+            {
+              name: 'fs',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'path',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'child_process',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'net',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'node:fs',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'node:path',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+            {
+              name: 'node:child_process',
+              message: 'Node built-ins are disallowed in renderer.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['./sentry-main', '../sentry-main', '**/sentry-main'],
+              message:
+                'Renderer must not import main-side observability modules.',
+            },
+            {
+              group: ['./release-health', '../release-health'],
+              message: 'Renderer must not import main-side release health.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Exceptions: allow main-side observability modules within src to import electron/main APIs
+  {
+    files: [
+      'src/shared/observability/**/*.{ts,tsx}',
+      'src/main/**/*.{ts,tsx}',
+      'src/preload/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 

@@ -24,7 +24,8 @@ const failures = [];
 
 for (const file of files) {
   const content = fs.readFileSync(file, 'utf8');
-  const hasTopLevelPwsh = /(^|\n)defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(content);
+  const hasTopLevelPwsh =
+    /(^|\n)defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(content);
 
   // If no top-level pwsh, ensure each windows-latest job has pwsh defaults nearby
   if (!hasTopLevelPwsh) {
@@ -32,8 +33,12 @@ for (const file of files) {
     let m;
     while ((m = reWin.exec(content))) {
       const region = content.slice(m.index, m.index + 2000);
-      const hasPwshDefault = /defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(region);
-      if (!hasPwshDefault) failures.push(`${file}: windows-latest job missing defaults.run.shell: pwsh`);
+      const hasPwshDefault =
+        /defaults:\s*[\r\n]+\s*run:\s*[\r\n]+\s*shell:\s*pwsh/i.test(region);
+      if (!hasPwshDefault)
+        failures.push(
+          `${file}: windows-latest job missing defaults.run.shell: pwsh`
+        );
     }
   }
 
@@ -46,7 +51,10 @@ for (const file of files) {
       let hasBash = false;
       for (let j = i; j < Math.min(lines.length, i + 20); j++) {
         const lj = lines[j];
-        if (/^\s*shell:\s*bash\b/i.test(lj)) { hasBash = true; break; }
+        if (/^\s*shell:\s*bash\b/i.test(lj)) {
+          hasBash = true;
+          break;
+        }
         if (/^-\s*name:\s*/.test(lj.trim()) && j !== i) break; // next step boundary
       }
       steps.push({ start: i, hasBash });
@@ -55,7 +63,8 @@ for (const file of files) {
   function stepHasBashForLine(idx) {
     let s = null;
     for (const st of steps) {
-      if (st.start <= idx) s = st; else break;
+      if (st.start <= idx) s = st;
+      else break;
     }
     return s ? s.hasBash : false;
   }
@@ -67,7 +76,9 @@ for (const file of files) {
     if (/^if:\s*/.test(trimmed)) continue; // YAML condition line
     if (/(^|\s)if\s*\[|^\s*\[\[/.test(line)) {
       if (!stepHasBashForLine(i)) {
-        failures.push(`${file}:${i + 1}: POSIX test syntax without step-level shell: bash`);
+        failures.push(
+          `${file}:${i + 1}: POSIX test syntax without step-level shell: bash`
+        );
       }
     }
   }
@@ -80,4 +91,3 @@ if (failures.length) {
 } else {
   console.log('Shell guard passed: Windows-only + pwsh policy compliant.');
 }
-

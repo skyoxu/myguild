@@ -31,4 +31,3 @@ if (!outFile) {
 const content = `branches<<EOF\n${branches || 'main'}\nEOF\n`;
 fs.appendFileSync(outFile, content, 'utf8');
 console.log('Branches parsed and set to GITHUB_OUTPUT.');
-

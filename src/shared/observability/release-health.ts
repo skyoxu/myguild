@@ -1,24 +1,24 @@
 ﻿import * as Sentry from '@sentry/electron/main';
 import { app } from 'electron';
 
-// Release Health门槛配置
+// Release Health threshold configuration
 interface ReleaseHealthThresholds {
-  crashFreeSessionsRate: number; // ≥99.5%
-  crashFreeUsersRate: number; // ≥99.8%
-  adoptionRate7d: number; // ≥50% in 7days
-  adoptionRateMin14d: number; // ≥30% in 14days最低线
+  crashFreeSessionsRate: number; // 99.5%
+  crashFreeUsersRate: number; // 99.8%
+  adoptionRate7d: number; // 50% in 7days
+  adoptionRateMin14d: number; // >=30% in 14days minimum
 }
 
 const RELEASE_HEALTH_THRESHOLDS: ReleaseHealthThresholds = {
-  crashFreeSessionsRate: 99.5, // 99.5%无崩溃会话率
-  crashFreeUsersRate: 99.8, // 99.8%无崩溃用户率
-  adoptionRate7d: 50.0, // 7天内50%用户升级
-  adoptionRateMin14d: 30.0, // 14天内30%最低线
+  crashFreeSessionsRate: 99.5, // 99.5% crash-free session rate
+  crashFreeUsersRate: 99.8, // 99.8% crash-free user rate
+  adoptionRate7d: 50.0, // 50% user upgrade in 7 days
+  adoptionRateMin14d: 30.0, // 30% minimum in 14 days
 };
 
 /**
- * Release Health专项配置和监控
- * 实现Dev→CI→Prod闭环和健康门槛监控
+ * Release Health dedicated configuration and monitoring
+ * Implement Dev->CI->Prod closed-loop and health threshold monitoring
  */
 export class ReleaseHealthManager {
   private static instance: ReleaseHealthManager;
@@ -34,52 +34,52 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 初始化Release Health监控
+   * Initialize Release Health monitoring
    */
   initializeReleaseHealth(): void {
-    console.log('🏥 初始化Release Health监控...');
+    console.log('[HEALTH] Initializing Release Health monitoring...');
 
-    // 🎯 开始会话跟踪
+    // Start session tracking
     this.startHealthSession();
 
-    // 🔍 监控关键应用事件
+    // Monitor critical application events
     this.setupAppEventMonitoring();
 
-    // 📊 定期报告健康状态
+    // Regular health status reporting
     this.setupHealthReporting();
 
-    // 🎮 游戏特定健康指标
+    // Game-specific health metrics
     this.setupGameHealthMonitoring();
 
-    // 🚨 Release健康门槛监控
+    // Release health threshold monitoring
     this.setupReleaseHealthGating();
   }
 
   /**
-   * 设置Release健康门槛监控
+   * Setup Release health threshold monitoring
    */
   private setupReleaseHealthGating(): void {
-    console.log('🚨 设置Release健康门槛监控...');
+    console.log('[HEALTH] Setting up Release health threshold monitoring...');
 
-    // 定期检查健康门槛
+    // Regular health threshold checks
     setInterval(
       () => {
         this.checkReleaseHealthThresholds();
       },
       10 * 60 * 1000
-    ); // 每10分钟检查
+    ); // Check every 10 minutes
 
-    // 关键事件触发检查
+    // Critical event trigger checks
     this.setupCriticalEventTriggers();
   }
 
   /**
-   * 检查Release健康门槛
+   * Check Release health thresholds
    */
   private checkReleaseHealthThresholds(): void {
     const currentMetrics = this.calculateCurrentHealthMetrics();
 
-    // 🚨 崩溃率检查
+    // Crash rate checks
     if (
       currentMetrics.crashFreeSessionsRate <
       RELEASE_HEALTH_THRESHOLDS.crashFreeSessionsRate
@@ -102,12 +102,12 @@ export class ReleaseHealthManager {
       });
     }
 
-    // 📈 采用率检查
+    // Adoption rate checks
     this.checkAdoptionRates(currentMetrics);
   }
 
   /**
-   * 检查版本采用率
+   * Check version adoption rate
    */
   private checkAdoptionRates(metrics: any): void {
     const currentRelease = app.getVersion?.() ?? 'unknown';
@@ -139,12 +139,15 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 触发健康告警
+   * Trigger health alert
    */
   private triggerHealthAlert(alertType: string, data: any): void {
-    console.error(`🚨 Release健康门槛触发: ${alertType}`, data);
+    console.error(
+      `[ALERT] Release health threshold triggered: ${alertType}`,
+      data
+    );
 
-    Sentry.captureMessage(`Release健康门槛违规: ${alertType}`, {
+    Sentry.captureMessage(`Release health threshold violation: ${alertType}`, {
       level: data.severity,
       tags: {
         'alert.type': alertType,
@@ -154,23 +157,25 @@ export class ReleaseHealthManager {
       extra: data,
     });
 
-    // 关键阈值触发时可以执行回滚逻辑
+    // Execute rollback logic when critical thresholds are triggered
     if (data.severity === 'critical') {
       this.considerRollback(alertType, data);
     }
   }
 
   /**
-   * 考虑版本回滚
+   * Consider version rollback
    */
   private considerRollback(alertType: string, data: any): void {
-    console.warn('🔄 检测到关键健康问题，考虑版本回滚...');
+    console.warn(
+      '[ROLLBACK] Critical health issue detected, considering version rollback...'
+    );
 
-    // 这里可以集成自动回滚逻辑
-    // 例如：通知CI/CD系统、标记版本为不健康等
+    // Auto rollback logic can be integrated here
+    // Example: notify CI/CD system, mark version as unhealthy, etc.
 
     Sentry.addBreadcrumb({
-      message: '考虑版本回滚',
+      message: 'Consider version rollback',
       category: 'release.health',
       level: 'warning',
       data: {
@@ -182,7 +187,7 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 计算当前健康指标
+   * Calculate current health metrics
    */
   private calculateCurrentHealthMetrics(): any {
     const totalSessions = this.healthMetrics.get('sessions.total') || 1;
@@ -203,20 +208,20 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 计算版本采用率（模拟实现）
+   * Calculate version adoption rate (mock implementation)
    */
   private calculateAdoptionRate(): number {
-    // 这里应该接入实际的用户分析数据
-    // 暂时返回模拟值
+    // Should integrate with actual user analytics data
+    // Return mock values for now
     return Math.random() * 100;
   }
 
   /**
-   * 获取发布后天数
+   * Get days since release
    */
   private getDaysSinceRelease(version: string): number {
-    // 这里应该接入实际的发布时间数据
-    // 暂时返回模拟值
+    // Should integrate with actual release time data
+    // Return mock values for now
     const releaseDate = this.releaseMetrics.get(`release.${version}.date`);
     if (!releaseDate) return 0;
 
@@ -224,29 +229,29 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 设置关键事件触发器
+   *
    */
   private setupCriticalEventTriggers(): void {
-    // 崩溃事件立即检查
+    //
     process.on('uncaughtException', () => {
       this.incrementMetric('crashes.total');
       this.checkReleaseHealthThresholds();
     });
 
-    // 应用启动时记录会话
+    //
     app.on('ready', () => {
       this.incrementMetric('sessions.total');
     });
   }
 
   /**
-   * 开始健康会话（D建议：OTel兼容格式）
+   * DOTel
    */
   private startHealthSession(): void {
     const sessionId = this.generateSessionId();
 
     Sentry.addBreadcrumb({
-      message: '应用健康会话开始',
+      message: '',
       category: 'session',
       level: 'info',
       data: {
@@ -254,14 +259,14 @@ export class ReleaseHealthManager {
         timestamp: new Date().toISOString(),
         platform: process.platform,
         version: app.getVersion?.() ?? 'unknown',
-        // OTel语义字段
+        // OTel
         'service.name': 'guild-manager',
         'service.version': app.getVersion?.() ?? 'unknown',
         'deployment.environment': process.env.NODE_ENV || 'production',
       },
     });
 
-    // 记录会话开始指标
+    //
     this.healthMetrics.set('session.started', 1);
     this.healthMetrics.set('session.start_time', this.sessionStartTime);
     this.healthMetrics.set(
@@ -271,17 +276,17 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 监控应用事件
+   *
    */
   private setupAppEventMonitoring(): void {
-    // 🎯 应用就绪事件
+    //
     app.on('ready', () => {
       const readyTime = Date.now() - this.sessionStartTime;
       this.healthMetrics.set('app.ready_time', readyTime);
 
       Sentry.setTag('app.ready_time', `${readyTime}ms`);
       Sentry.addBreadcrumb({
-        message: '应用启动完成',
+        message: '',
         category: 'app',
         level: 'info',
         data: {
@@ -292,24 +297,24 @@ export class ReleaseHealthManager {
       });
     });
 
-    // 🔄 应用激活事件
+    //
     app.on('activate', () => {
       this.incrementMetric('app.activations');
     });
 
-    // 🎯 窗口创建监控
-    app.on('browser-window-created', (event, window) => {
+    //
+    app.on('browser-window-created', (_event, window) => {
       this.incrementMetric('windows.created');
 
-      // 监控窗口崩溃
+      //
       window.webContents.on(
         'render-process-gone',
-        (event: any, details: any) => {
+        (_event: any, details: any) => {
           this.recordCrashEvent('renderer', { details });
         }
       );
 
-      // 监控窗口无响应
+      //
       window.on('unresponsive', () => {
         this.recordUnresponsiveEvent();
       });
@@ -317,10 +322,10 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 设置健康状态报告
+   *
    */
   private setupHealthReporting(): void {
-    // 📊 每5分钟报告一次健康状态
+    //  5
     setInterval(
       () => {
         this.reportHealthMetrics();
@@ -328,66 +333,66 @@ export class ReleaseHealthManager {
       5 * 60 * 1000
     );
 
-    // 🎯 应用退出时报告最终状态
+    //
     app.on('before-quit', () => {
       this.reportFinalHealthMetrics();
     });
   }
 
   /**
-   * 游戏特定健康监控
+   *
    */
   private setupGameHealthMonitoring(): void {
-    // 🎮 监控游戏会话质量
+    //
     this.monitorGameSessionQuality();
 
-    // 🎯 监控关键游戏流程
+    //
     this.monitorCriticalGameFlows();
 
-    // 📊 监控性能指标
+    //
     this.monitorPerformanceMetrics();
   }
 
   /**
-   * 监控游戏会话质量
+   *
    */
   private monitorGameSessionQuality(): void {
-    // 游戏特定的会话质量监控
+    //
     setInterval(() => {
       const gameMetrics = this.collectGameMetrics();
 
-      // 检查游戏会话完整性
+      //
       if (gameMetrics.sessionIntegrityRate < 99.5) {
-        Sentry.captureMessage('游戏会话完整性低于阈值', 'warning');
+        Sentry.captureMessage('', 'warning');
       }
-    }, 60 * 1000); // 每分钟检查
+    }, 60 * 1000); //
   }
 
   /**
-   * 收集游戏指标
+   *
    */
   private collectGameMetrics(): any {
     return {
-      sessionIntegrityRate: 99.8, // 模拟值
+      sessionIntegrityRate: 99.8, //
       phaserEngineErrors: 0,
       uiGameCommunicationErrors: 0,
     };
   }
 
   /**
-   * 监控关键游戏流程
+   *
    */
   private monitorCriticalGameFlows(): void {
-    // 实现关键业务流程监控
-    // 例如：登录、保存、战斗、交易等
+    //
+    //
 
-    // 这里可以通过EventBus监听游戏事件
-    // 示例：监控启动流程
+    // EventBus
+    //
     this.monitorStartupFlow();
   }
 
   /**
-   * 监控启动流程
+   *
    */
   private monitorStartupFlow(): void {
     const startupStages = [
@@ -399,8 +404,8 @@ export class ReleaseHealthManager {
     const stageTimings: Map<string, number> = new Map();
 
     startupStages.forEach(stage => {
-      // 这里应该集成实际的事件监听
-      // 暂时使用定时器模拟
+      //
+      //
       setTimeout(() => {
         stageTimings.set(stage, Date.now());
 
@@ -412,13 +417,13 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 报告启动性能
+   *
    */
   private reportStartupPerformance(timings: Map<string, number>): void {
     const startupData = Object.fromEntries(timings);
 
     Sentry.addBreadcrumb({
-      message: '启动性能报告',
+      message: '',
       category: 'performance',
       level: 'info',
       data: {
@@ -430,25 +435,25 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 监控性能指标
+   *
    */
   private monitorPerformanceMetrics(): void {
-    // 📊 内存使用监控
+    //
     setInterval(() => {
       const memUsage = process.memoryUsage();
       this.healthMetrics.set('performance.memory.rss', memUsage.rss);
       this.healthMetrics.set('performance.memory.heapUsed', memUsage.heapUsed);
 
-      // 🚨 内存泄漏检测
+      //
       if (memUsage.heapUsed > 500 * 1024 * 1024) {
         // 500MB
-        Sentry.captureMessage('内存使用过高', 'warning');
+        Sentry.captureMessage('', 'warning');
       }
-    }, 30 * 1000); // 每30秒检查
+    }, 30 * 1000); // 30
   }
 
   /**
-   * 记录崩溃事件
+   *
    */
   private recordCrashEvent(type: string, details: any): void {
     this.incrementMetric('crashes.total');
@@ -462,28 +467,28 @@ export class ReleaseHealthManager {
       extra: details,
     });
 
-    // 立即检查健康门槛
+    //
     this.checkReleaseHealthThresholds();
   }
 
   /**
-   * 记录无响应事件
+   *
    */
   private recordUnresponsiveEvent(): void {
     this.incrementMetric('unresponsive.total');
 
-    Sentry.captureMessage('应用无响应', 'warning');
+    Sentry.captureMessage('', 'warning');
   }
 
   /**
-   * 增加指标计数
+   *
    */
   private incrementMetric(key: string): void {
     this.healthMetrics.set(key, (this.healthMetrics.get(key) || 0) + 1);
   }
 
   /**
-   * 报告健康指标（OTel兼容格式）
+   * OTel
    */
   private reportHealthMetrics(): void {
     const metrics = Object.fromEntries(this.healthMetrics);
@@ -491,13 +496,13 @@ export class ReleaseHealthManager {
     const healthSummary = this.calculateCurrentHealthMetrics();
 
     Sentry.addBreadcrumb({
-      message: '健康状态报告',
+      message: '',
       category: 'health',
       level: 'info',
       data: {
         ...metrics,
         sessionDuration: `${Math.round(sessionDuration / 1000)}s`,
-        // OTel语义字段
+        // OTel
         'metric.name': 'app.health.report',
         'metric.unit': 'count',
         'service.health.status': this.determineHealthStatus(healthSummary),
@@ -506,7 +511,7 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 确定健康状态
+   *
    */
   private determineHealthStatus(metrics: any): string {
     if (
@@ -528,7 +533,7 @@ export class ReleaseHealthManager {
   }
 
   /**
-   * 报告最终健康指标
+   *
    */
   private reportFinalHealthMetrics(): void {
     const sessionDuration = Date.now() - this.sessionStartTime;
@@ -540,35 +545,35 @@ export class ReleaseHealthManager {
       ...metrics,
       healthSummary: finalHealthSummary,
       ended_at: new Date().toISOString(),
-      // OTel语义
+      // OTel
       'session.duration': sessionDuration,
       'session.end.reason': 'normal',
     });
 
-    Sentry.captureMessage('会话结束健康报告', 'info');
+    Sentry.captureMessage('', 'info');
   }
 
   /**
-   * 生成会话ID
+   * ID
    */
   private generateSessionId(): string {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
-   * 获取健康门槛配置
+   *
    */
   getHealthThresholds(): ReleaseHealthThresholds {
     return RELEASE_HEALTH_THRESHOLDS;
   }
 
   /**
-   * 获取当前健康状态
+   *
    */
   getCurrentHealth(): any {
     return this.calculateCurrentHealthMetrics();
   }
 }
 
-// 导出单例实例
+//
 export const releaseHealthManager = ReleaseHealthManager.getInstance();

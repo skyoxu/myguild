@@ -17,4 +17,3 @@ if (!fs.existsSync('dist/assets')) {
   process.exit(1);
 }
 console.log('dist/ build artifacts verified');
-

@@ -6,7 +6,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-function val(k, d='') { return process.env[k] ?? d; }
+function val(k, d = '') {
+  return process.env[k] ?? d;
+}
 const report = {
   timestamp: new Date().toISOString(),
   git_sha: val('GIT_SHA'),
@@ -19,11 +21,16 @@ const report = {
   },
   e2e_test: {
     status: val('E2E_STATUS'),
-    executed: val('E2E_EXECUTED', 'true') === 'true'
+    executed: val('E2E_EXECUTED', 'true') === 'true',
   },
 };
 
 mkdirSync('logs', { recursive: true });
-writeFileSync(join('logs', 'unified-security-report.json'), JSON.stringify(report, null, 2), 'utf8');
-console.log('Unified security report written to logs/unified-security-report.json');
-
+writeFileSync(
+  join('logs', 'unified-security-report.json'),
+  JSON.stringify(report, null, 2),
+  'utf8'
+);
+console.log(
+  'Unified security report written to logs/unified-security-report.json'
+);

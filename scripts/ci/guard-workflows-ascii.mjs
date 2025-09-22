@@ -26,7 +26,8 @@ for (const file of list(root)) {
     for (let i = 0; i < ln.length; i++) {
       const code = ln.charCodeAt(i);
       if (code > 127) {
-        if (!failed) console.error('Non-ASCII characters found in workflow files:');
+        if (!failed)
+          console.error('Non-ASCII characters found in workflow files:');
         failed = true;
         console.error(`${file}:${idx + 1}`);
         break;

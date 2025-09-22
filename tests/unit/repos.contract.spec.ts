@@ -34,9 +34,18 @@ class InMemoryRepository<T extends Entity> implements Repository<T> {
   async upsert(entity: T): Promise<void> {
     const existing = this.store.get(entity.id);
     if (existing && existing.version > entity.version) {
-      throw new ConcurrencyError('TestEntity', entity.id, entity.version, existing.version);
+      throw new ConcurrencyError(
+        'TestEntity',
+        entity.id,
+        entity.version,
+        existing.version
+      );
     }
-    const updated = { ...entity, version: entity.version + 1, updatedAt: new Date() } as T;
+    const updated = {
+      ...entity,
+      version: entity.version + 1,
+      updatedAt: new Date(),
+    } as T;
     this.store.set(entity.id, updated);
   }
 
@@ -50,7 +59,9 @@ class InMemoryRepository<T extends Entity> implements Repository<T> {
     if (params?.sortBy) {
       const { sortBy, sortOrder } = params;
       const dir = sortOrder === 'desc' ? -1 : 1;
-      results.sort((a: any, b: any) => (a[sortBy!] < b[sortBy!] ? -dir : a[sortBy!] > b[sortBy!] ? dir : 0));
+      results.sort((a: any, b: any) =>
+        a[sortBy!] < b[sortBy!] ? -dir : a[sortBy!] > b[sortBy!] ? dir : 0
+      );
     }
     if (params?.offset || params?.limit) {
       const start = params.offset ?? 0;
@@ -65,11 +76,16 @@ class InMemoryRepository<T extends Entity> implements Repository<T> {
     this.store.delete(id);
   }
 
-  async count(params?: Omit<RepositoryQueryParams, 'limit' | 'offset'>): Promise<number> {
-    return (await this.list({ ...params, limit: undefined, offset: undefined })).length;
+  async count(
+    params?: Omit<RepositoryQueryParams, 'limit' | 'offset'>
+  ): Promise<number> {
+    return (await this.list({ ...params, limit: undefined, offset: undefined }))
+      .length;
   }
 
-  clear(): void { this.store.clear(); }
+  clear(): void {
+    this.store.clear();
+  }
 }
 
 class InMemoryUnitOfWork implements IUnitOfWork {
@@ -93,21 +109,55 @@ class InMemoryUnitOfWork implements IUnitOfWork {
     this.reset();
     this.active = false;
   }
-  registerClean<T extends AggregateRoot>(e: T): void { this.clean.add(e); }
-  registerDirty<T extends AggregateRoot>(e: T): void { this.dirty.add(e); this.clean.delete(e); }
-  registerNew<T extends AggregateRoot>(e: T): void { this.created.add(e); }
-  registerRemoved<T extends AggregateRoot>(e: T): void {
-    this.removed.add(e); this.clean.delete(e); this.dirty.delete(e); this.created.delete(e);
+  registerClean<T extends AggregateRoot>(e: T): void {
+    this.clean.add(e);
   }
-  hasChanges(): boolean { return !!(this.dirty.size || this.created.size || this.removed.size); }
-  private reset(): void { this.clean.clear(); this.dirty.clear(); this.created.clear(); this.removed.clear(); }
+  registerDirty<T extends AggregateRoot>(e: T): void {
+    this.dirty.add(e);
+    this.clean.delete(e);
+  }
+  registerNew<T extends AggregateRoot>(e: T): void {
+    this.created.add(e);
+  }
+  registerRemoved<T extends AggregateRoot>(e: T): void {
+    this.removed.add(e);
+    this.clean.delete(e);
+    this.dirty.delete(e);
+    this.created.delete(e);
+  }
+  hasChanges(): boolean {
+    return !!(this.dirty.size || this.created.size || this.removed.size);
+  }
+  private reset(): void {
+    this.clean.clear();
+    this.dirty.clear();
+    this.created.clear();
+    this.removed.clear();
+  }
 }
 
-function createTestEntity(id: string, name: string, value: number, category?: string): TestEntity {
-  return { id, name, value, category, version: 1, createdAt: new Date(), updatedAt: new Date() };
+function createTestEntity(
+  id: string,
+  name: string,
+  value: number,
+  category?: string
+): TestEntity {
+  return {
+    id,
+    name,
+    value,
+    category,
+    version: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 }
 
-function createTestAggregate(id: string, name: string, status: 'active' | 'inactive' = 'active'): TestAggregateRoot {
+function createTestAggregate(
+  id: string,
+  name: string,
+  status: 'active' | 'inactive' = 'active'
+): TestAggregateRoot {
   return {
     id,
     name,
@@ -124,8 +174,12 @@ function createTestAggregate(id: string, name: string, status: 'active' | 'inact
 
 describe('Repository<T> contract tests', () => {
   let repository: InMemoryRepository<TestEntity>;
-  beforeEach(() => { repository = new InMemoryRepository<TestEntity>(); });
-  afterEach(() => { repository.clear(); });
+  beforeEach(() => {
+    repository = new InMemoryRepository<TestEntity>();
+  });
+  afterEach(() => {
+    repository.clear();
+  });
 
   describe('Basic CRUD operations', () => {
     it('creates and reads an entity', async () => {
@@ -139,7 +193,12 @@ describe('Repository<T> contract tests', () => {
     it('updates an existing entity', async () => {
       const entity = createTestEntity('test-1', 'Original', 10);
       await repository.upsert(entity);
-      await repository.upsert({ ...entity, name: 'Updated', value: 20, version: 2 });
+      await repository.upsert({
+        ...entity,
+        name: 'Updated',
+        value: 20,
+        version: 2,
+      });
       const got = await repository.getById('test-1');
       expect(got?.name).toBe('Updated');
       expect(got?.value).toBe(20);
@@ -153,7 +212,9 @@ describe('Repository<T> contract tests', () => {
     });
 
     it('throws when removing a non-existing entity', async () => {
-      await expect(repository.remove('non-existent')).rejects.toThrow(EntityNotFoundError);
+      await expect(repository.remove('non-existent')).rejects.toThrow(
+        EntityNotFoundError
+      );
     });
 
     it('getById returns null for non-existing entity', async () => {
@@ -169,7 +230,9 @@ describe('Repository<T> contract tests', () => {
         createTestEntity('3', 'Gamma', 30, 'A'),
         createTestEntity('4', 'Delta', 40, 'B'),
         createTestEntity('5', 'Epsilon', 50, 'A'),
-      ]) { await repository.upsert(e); }
+      ]) {
+        await repository.upsert(e);
+      }
     });
 
     it('lists all entities', async () => {
@@ -196,7 +259,10 @@ describe('Repository<T> contract tests', () => {
 
     it('supports sorting', async () => {
       const asc = await repository.list({ sortBy: 'value', sortOrder: 'asc' });
-      const desc = await repository.list({ sortBy: 'value', sortOrder: 'desc' });
+      const desc = await repository.list({
+        sortBy: 'value',
+        sortOrder: 'desc',
+      });
       expect(asc[0].value).toBe(10);
       expect(desc[0].value).toBe(50);
     });
@@ -226,7 +292,9 @@ describe('Repository<T> contract tests', () => {
       const e = createTestEntity('test-1', 'Concurrent', 100);
       await repository.upsert(e);
       const stale = { ...e, name: 'Stale Update' };
-      await expect(repository.upsert(stale as any)).rejects.toThrow(ConcurrencyError);
+      await expect(repository.upsert(stale as any)).rejects.toThrow(
+        ConcurrencyError
+      );
     });
 
     it('increments version correctly', async () => {
@@ -236,7 +304,7 @@ describe('Repository<T> contract tests', () => {
       await repository.upsert({ ...(v2 as any), name: 'Updated' });
       const v3 = await repository.getById('test-1');
       expect(v2?.version).toBeGreaterThan(1);
-      expect(v3?.version).toBeGreaterThan((v2?.version ?? 1));
+      expect(v3?.version).toBeGreaterThan(v2?.version ?? 1);
     });
   });
 });
@@ -277,4 +345,3 @@ describe('IUnitOfWork contract tests', () => {
     });
   });
 });
-

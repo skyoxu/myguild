@@ -11,9 +11,11 @@ if (!pr) {
   console.log('PR_NUMBER not provided; skipping PR comment.');
   process.exit(0);
 }
-const r = spawnSync('node', ['scripts/pr-integration.mjs', 'comment', pr], { stdio: 'inherit', shell: process.platform === 'win32' });
+const r = spawnSync('node', ['scripts/pr-integration.mjs', 'comment', pr], {
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+});
 if (r.status !== 0) {
   console.log('PR comment failed (non-blocking).');
   process.exit(0);
 }
-

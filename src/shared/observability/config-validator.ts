@@ -1,23 +1,23 @@
 ﻿/**
- * 多环境配置验证器
  *
- * 用于验证development、staging、production环境的配置完整性和正确性
+ *
+ * developmentstagingproduction
  */
 
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-// 支持的环境类型
+//
 export type Environment = 'development' | 'staging' | 'production';
 
-// 配置验证结果
+//
 export interface ConfigValidationResult {
   environment: Environment;
   isValid: boolean;
   timestamp: string;
   validationDuration: number;
   overall: {
-    score: number; // 0-100分
+    score: number; // 0-100
     grade: 'A' | 'B' | 'C' | 'D' | 'F';
     status: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
   };
@@ -35,16 +35,16 @@ export interface ConfigValidationResult {
   warnings: string[];
 }
 
-// 验证章节结果
+//
 export interface ValidationSection {
   name: string;
   passed: boolean;
-  score: number; // 0-100分
+  score: number; // 0-100
   checks: ConfigCheck[];
   summary: string;
 }
 
-// 单项配置检查
+//
 export interface ConfigCheck {
   id: string;
   name: string;
@@ -56,7 +56,7 @@ export interface ConfigCheck {
   recommendation?: string;
 }
 
-// 环境配置定义
+//
 export interface EnvironmentConfigSchema {
   environment: Environment;
   requiredEnvVars: string[];
@@ -96,7 +96,7 @@ export interface EnvironmentConfigSchema {
   };
 }
 
-// 环境配置模板
+//
 const ENVIRONMENT_SCHEMAS: Record<Environment, EnvironmentConfigSchema> = {
   development: {
     environment: 'development',
@@ -212,7 +212,7 @@ const ENVIRONMENT_SCHEMAS: Record<Environment, EnvironmentConfigSchema> = {
 };
 
 /**
- * 多环境配置验证器类
+ *
  */
 export class ConfigValidator {
   private projectRoot: string;
@@ -222,7 +222,7 @@ export class ConfigValidator {
   }
 
   /**
-   * 验证指定环境的配置
+   *
    */
   async validateEnvironment(
     environment: Environment
@@ -258,10 +258,10 @@ export class ConfigValidator {
       warnings: [],
     };
 
-    // 计算总体分数和等级
+    //
     this.calculateOverallScore(result);
 
-    // 生成建议和问题列表
+    //
     this.generateRecommendations(result);
 
     result.validationDuration = Date.now() - startTime;
@@ -273,7 +273,7 @@ export class ConfigValidator {
   }
 
   /**
-   * 验证所有环境配置
+   *
    */
   async validateAllEnvironments(): Promise<ConfigValidationResult[]> {
     const environments: Environment[] = [
@@ -289,7 +289,7 @@ export class ConfigValidator {
         results.push(result);
       } catch (error) {
         console.error(`验证 ${env} 环境时发生错误:`, error);
-        // 创建一个失败的结果
+        //
         results.push(this.createFailedResult(env, error));
       }
     }
@@ -298,14 +298,14 @@ export class ConfigValidator {
   }
 
   /**
-   * 验证环境变量
+   *
    */
   private async validateEnvironmentVariables(
     schema: EnvironmentConfigSchema
   ): Promise<ValidationSection> {
     const checks: ConfigCheck[] = [];
 
-    // 检查必需的环境变量
+    //
     for (const varName of schema.requiredEnvVars) {
       const value = process.env[varName];
       checks.push({
@@ -316,13 +316,13 @@ export class ConfigValidator {
         message: value
           ? `环境变量 ${varName} 已设置`
           : `缺少必需的环境变量 ${varName}`,
-        expectedValue: '非空值',
+        expectedValue: '',
         actualValue: value || 'undefined',
         recommendation: !value ? `请在环境变量中设置 ${varName}` : undefined,
       });
     }
 
-    // 检查.env文件
+    // .env
     const envFiles = ['.env', `.env.${schema.environment}`, '.env.local'];
     for (const envFile of envFiles) {
       const filePath = join(this.projectRoot, envFile);
@@ -340,7 +340,7 @@ export class ConfigValidator {
       });
     }
 
-    // 检查环境变量安全性
+    //
     const sensitiveVars = schema.requiredEnvVars.filter(
       name =>
         name.includes('KEY') ||
@@ -360,17 +360,17 @@ export class ConfigValidator {
             !value.includes('test') &&
             !value.includes('example'),
           severity: 'high',
-          message: '敏感环境变量安全性检查',
-          recommendation: '确保敏感环境变量使用真实值，不包含测试或示例数据',
+          message: '',
+          recommendation: '',
         });
       }
     }
 
-    return this.createValidationSection('环境变量配置', checks);
+    return this.createValidationSection('', checks);
   }
 
   /**
-   * 验证Sentry配置
+   * Sentry
    */
   private async validateSentryConfiguration(
     schema: EnvironmentConfigSchema
@@ -378,52 +378,50 @@ export class ConfigValidator {
     const checks: ConfigCheck[] = [];
     const sentryConfig = schema.sentry;
 
-    // 检查DSN配置
+    // DSN
     if (sentryConfig.dsnRequired) {
       const dsn = process.env.SENTRY_DSN;
       checks.push({
         id: 'sentry_dsn',
-        name: 'Sentry DSN配置',
+        name: 'Sentry DSN',
         passed: !!dsn && dsn.startsWith('https://') && dsn.includes('@'),
         severity: 'critical',
-        message: 'Sentry DSN格式验证',
+        message: 'Sentry DSN',
         expectedValue: 'https://...@...sentry.io/...',
         actualValue: dsn || 'undefined',
-        recommendation: '确保SENTRY_DSN是有效的Sentry项目DSN',
+        recommendation: 'SENTRY_DSNSentryDSN',
       });
     }
 
-    // 检查Release配置
+    // Release
     if (sentryConfig.releaseRequired) {
       const release = process.env.SENTRY_RELEASE;
       checks.push({
         id: 'sentry_release',
-        name: 'Sentry Release配置',
+        name: 'Sentry Release',
         passed: !!release,
         severity: 'high',
-        message: 'Sentry Release版本信息',
-        recommendation: !release
-          ? '建议设置SENTRY_RELEASE以便版本跟踪'
-          : undefined,
+        message: 'Sentry Release',
+        recommendation: !release ? 'SENTRY_RELEASE' : undefined,
       });
     }
 
-    // 检查Environment配置
+    // Environment
     if (sentryConfig.environmentRequired) {
       const sentryEnv = process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV;
       checks.push({
         id: 'sentry_environment',
-        name: 'Sentry Environment配置',
+        name: 'Sentry Environment',
         passed: !!sentryEnv && sentryEnv === schema.environment,
         severity: 'medium',
-        message: 'Sentry环境标识',
+        message: 'Sentry',
         expectedValue: schema.environment,
         actualValue: sentryEnv,
-        recommendation: '确保Sentry环境标识与当前环境一致',
+        recommendation: 'Sentry',
       });
     }
 
-    // 检查Sentry配置文件
+    // Sentry
     const sentryFiles = [
       'src/shared/observability/sentry-main.ts',
       'src/shared/observability/sentry-renderer.ts',
@@ -442,7 +440,7 @@ export class ConfigValidator {
           : undefined,
       });
 
-      // 如果文件存在，检查内容
+      //
       if (existsSync(filePath)) {
         try {
           const content = readFileSync(filePath, 'utf8');
@@ -456,10 +454,8 @@ export class ConfigValidator {
             name: `${file} 内容验证`,
             passed: hasInit && hasDsn,
             severity: 'high',
-            message: 'Sentry配置文件内容检查',
-            recommendation: !(hasInit && hasDsn)
-              ? '确保文件包含Sentry.init调用和DSN配置'
-              : undefined,
+            message: 'Sentry',
+            recommendation: !(hasInit && hasDsn) ? 'Sentry.initDSN' : undefined,
           });
         } catch (error) {
           checks.push({
@@ -468,17 +464,17 @@ export class ConfigValidator {
             passed: false,
             severity: 'medium',
             message: `无法读取 ${file} 文件: ${error}`,
-            recommendation: '检查文件权限和格式',
+            recommendation: '',
           });
         }
       }
     }
 
-    return this.createValidationSection('Sentry配置', checks);
+    return this.createValidationSection('Sentry', checks);
   }
 
   /**
-   * 验证日志配置
+   *
    */
   private async validateLoggingConfiguration(
     schema: EnvironmentConfigSchema
@@ -486,64 +482,60 @@ export class ConfigValidator {
     const checks: ConfigCheck[] = [];
     const loggingConfig = schema.logging;
 
-    // 检查日志级别
+    //
     const logLevel = process.env.LOG_LEVEL || 'info';
     checks.push({
       id: 'logging_level',
-      name: '日志级别配置',
+      name: '',
       passed: this.isValidLogLevel(logLevel, loggingConfig.levelRequired),
       severity: 'medium',
       message: `日志级别检查: ${logLevel}`,
       expectedValue: loggingConfig.levelRequired,
       actualValue: logLevel,
-      recommendation: '确保日志级别适合当前环境',
+      recommendation: '',
     });
 
-    // 检查日志目录
+    //
     const logDir = join(this.projectRoot, 'logs');
     checks.push({
       id: 'logging_directory',
-      name: '日志目录',
+      name: '',
       passed: existsSync(logDir),
       severity: 'medium',
-      message: 'logs/ 目录存在性检查',
-      recommendation: !existsSync(logDir)
-        ? '创建 logs/ 目录用于存储日志文件'
-        : undefined,
+      message: 'logs/ ',
+      recommendation: !existsSync(logDir) ? ' logs/ ' : undefined,
     });
 
-    // 检查结构化日志配置
+    //
     if (loggingConfig.structuredLoggingRequired) {
       const hasStructuredLogging = this.checkStructuredLoggingImplementation();
       checks.push({
         id: 'logging_structured',
-        name: '结构化日志',
+        name: '',
         passed: hasStructuredLogging,
         severity: 'high',
-        message: '结构化日志实现检查',
-        recommendation: !hasStructuredLogging
-          ? '实现结构化日志以提高日志可分析性'
-          : undefined,
+        message: '',
+        recommendation: !hasStructuredLogging ? '' : undefined,
       });
     }
 
-    // 检查PII过滤
+    // PII
     if (loggingConfig.piiFilteringRequired) {
       checks.push({
         id: 'logging_pii_filtering',
-        name: 'PII数据过滤',
-        passed: false, // 需要实际实现检查
+        name: 'PII',
+        passed: false, //
         severity: 'high',
-        message: 'PII数据过滤机制检查',
-        recommendation: '实现PII数据过滤以符合隐私保护要求',
+        message: 'PII',
+        recommendation: 'PII',
       });
     }
 
-    return this.createValidationSection('日志配置', checks);
+    return this.createValidationSection('', checks);
   }
 
   /**
-   * 验证安全配置
+   *
    */
   private async validateSecurityConfiguration(
     schema: EnvironmentConfigSchema
@@ -551,47 +543,47 @@ export class ConfigValidator {
     const checks: ConfigCheck[] = [];
     const securityConfig = schema.security;
 
-    // 检查HTTPS要求
+    // HTTPS
     if (securityConfig.httpsRequired) {
       checks.push({
         id: 'security_https',
-        name: 'HTTPS配置',
+        name: 'HTTPS',
         passed: this.checkHttpsConfiguration(),
         severity: 'critical',
-        message: 'HTTPS安全传输检查',
-        recommendation: '确保生产环境启用HTTPS',
+        message: 'HTTPS',
+        recommendation: 'HTTPS',
       });
     }
 
-    // 检查CORS配置
+    // CORS
     if (securityConfig.corsConfigRequired) {
       checks.push({
         id: 'security_cors',
-        name: 'CORS配置',
+        name: 'CORS',
         passed: this.checkCorsConfiguration(),
         severity: 'high',
-        message: 'CORS跨域配置检查',
-        recommendation: '配置适当的CORS策略',
+        message: 'CORS',
+        recommendation: 'CORS',
       });
     }
 
-    // 检查密钥管理
+    //
     if (securityConfig.secretsManagementRequired) {
       checks.push({
         id: 'security_secrets',
-        name: '密钥管理',
+        name: '',
         passed: this.checkSecretsManagement(),
         severity: 'critical',
-        message: '密钥管理安全检查',
-        recommendation: '使用安全的密钥管理方案',
+        message: '',
+        recommendation: '',
       });
     }
 
-    return this.createValidationSection('安全配置', checks);
+    return this.createValidationSection('', checks);
   }
 
   /**
-   * 验证性能配置
+   *
    */
   private async validatePerformanceConfiguration(
     schema: EnvironmentConfigSchema
@@ -599,39 +591,37 @@ export class ConfigValidator {
     const checks: ConfigCheck[] = [];
     const performanceConfig = schema.performance;
 
-    // 检查内存限制
+    //
     const currentMemory = process.memoryUsage().heapUsed / 1024 / 1024; // MB
     checks.push({
       id: 'performance_memory',
-      name: '内存使用限制',
+      name: '',
       passed: currentMemory < performanceConfig.maxMemoryUsage,
       severity: 'medium',
       message: `当前内存使用: ${currentMemory.toFixed(2)}MB`,
       expectedValue: `< ${performanceConfig.maxMemoryUsage}MB`,
       actualValue: `${currentMemory.toFixed(2)}MB`,
       recommendation:
-        currentMemory >= performanceConfig.maxMemoryUsage
-          ? '优化内存使用或调整限制'
-          : undefined,
+        currentMemory >= performanceConfig.maxMemoryUsage ? '' : undefined,
     });
 
-    // 检查性能监控
+    //
     if (performanceConfig.monitoringRequired) {
       checks.push({
         id: 'performance_monitoring',
-        name: '性能监控',
+        name: '',
         passed: this.checkPerformanceMonitoring(),
         severity: 'high',
-        message: '性能监控配置检查',
-        recommendation: '启用性能监控以跟踪应用性能',
+        message: '',
+        recommendation: '',
       });
     }
 
-    return this.createValidationSection('性能配置', checks);
+    return this.createValidationSection('', checks);
   }
 
   /**
-   * 验证API端点配置
+   * API
    */
   private async validateApiEndpoints(
     schema: EnvironmentConfigSchema
@@ -639,19 +629,19 @@ export class ConfigValidator {
     const checks: ConfigCheck[] = [];
     const apiConfig = schema.apiEndpoints;
 
-    // 检查健康检查端点
+    //
     if (apiConfig.healthCheckRequired) {
       checks.push({
         id: 'api_health_check',
-        name: '健康检查端点',
+        name: '',
         passed: apiConfig.required.includes('/health'),
         severity: 'high',
-        message: '健康检查端点配置',
-        recommendation: '配置 /health 端点用于服务监控',
+        message: '',
+        recommendation: ' /health ',
       });
     }
 
-    // 检查必需的API端点
+    // API
     for (const endpoint of apiConfig.required) {
       checks.push({
         id: `api_endpoint_${endpoint.replace('/', '_')}`,
@@ -663,18 +653,18 @@ export class ConfigValidator {
       });
     }
 
-    return this.createValidationSection('API端点配置', checks);
+    return this.createValidationSection('API', checks);
   }
 
   /**
-   * 验证文件系统配置
+   *
    */
   private async validateFileSystemConfiguration(
     schema: EnvironmentConfigSchema
   ): Promise<ValidationSection> {
     const checks: ConfigCheck[] = [];
 
-    // 检查关键目录
+    //
     const requiredDirectories = ['src', 'logs', '.github/workflows'];
     for (const dir of requiredDirectories) {
       const dirPath = join(this.projectRoot, dir);
@@ -688,7 +678,7 @@ export class ConfigValidator {
       });
     }
 
-    // 检查关键文件
+    //
     const requiredFiles = ['package.json', 'tsconfig.json'];
     for (const file of requiredFiles) {
       const filePath = join(this.projectRoot, file);
@@ -702,10 +692,10 @@ export class ConfigValidator {
       });
     }
 
-    return this.createValidationSection('文件系统配置', checks);
+    return this.createValidationSection('', checks);
   }
 
-  // 辅助方法
+  //
   private createValidationSection(
     name: string,
     checks: ConfigCheck[]
@@ -734,7 +724,7 @@ export class ConfigValidator {
     result.overall.score = avgScore;
     result.overall.grade = this.scoreToGrade(avgScore);
     result.overall.status = this.scoreToStatus(avgScore);
-    result.isValid = avgScore >= 80; // 80分以上认为配置有效
+    result.isValid = avgScore >= 80; // 80
   }
 
   private scoreToGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
@@ -786,13 +776,13 @@ export class ConfigValidator {
       validationDuration: 0,
       overall: { score: 0, grade: 'F', status: 'critical' },
       sections: {} as any,
-      recommendations: ['修复配置验证错误后重试'],
+      recommendations: [''],
       criticalIssues: [`验证过程失败: ${error}`],
       warnings: [],
     };
   }
 
-  // 实际检查方法的简化实现（需要根据具体项目调整）
+  //
   private isValidLogLevel(current: string, required: string): boolean {
     const levels = ['debug', 'info', 'warn', 'error'];
     const currentIndex = levels.indexOf(current);
@@ -801,43 +791,43 @@ export class ConfigValidator {
   }
 
   private checkStructuredLoggingImplementation(): boolean {
-    // 检查是否存在结构化日志实现
+    //
     const loggerFiles = ['src/shared/observability/structured-logger.ts'];
     return loggerFiles.some(file => existsSync(join(this.projectRoot, file)));
   }
 
   private checkHttpsConfiguration(): boolean {
-    // 简化实现，实际需要检查具体的HTTPS配置
+    // HTTPS
     return process.env.NODE_ENV === 'production' ? false : true;
   }
 
   private checkCorsConfiguration(): boolean {
-    // 简化实现，实际需要检查CORS中间件配置
+    // CORS
     return false;
   }
 
   private checkSecretsManagement(): boolean {
-    // 检查是否有适当的密钥管理
+    //
     return !!(
       process.env.SENTRY_DSN && !process.env.SENTRY_DSN.includes('example')
     );
   }
 
   private checkPerformanceMonitoring(): boolean {
-    // 检查性能监控配置
+    //
     return !!process.env.SENTRY_DSN;
   }
 
   private checkApiEndpoint(endpoint: string): boolean {
-    // 简化实现，实际需要检查端点是否已实现
+    //
     return true;
   }
 }
 
-// 导出默认实例
+//
 export const configValidator = new ConfigValidator();
 
-// 便捷函数
+//
 export async function validateCurrentEnvironment(): Promise<ConfigValidationResult> {
   const env = (process.env.NODE_ENV as Environment) || 'development';
   return await configValidator.validateEnvironment(env);

@@ -15,7 +15,8 @@ const COVERAGE_CONFIGS = {
     branches: 60,
     functions: 60,
     lines: 60,
-    description: 'Production temporary thresholds (60% - TODO: restore to 90% after 2 weeks)',
+    description:
+      'Production temporary thresholds (60% - TODO: restore to 90% after 2 weeks)',
   },
 
   // Staging - Semi-strict thresholds

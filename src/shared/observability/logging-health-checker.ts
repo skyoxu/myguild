@@ -1,7 +1,7 @@
 ﻿/**
- * 日志系统健康检查器
  *
- * 全面测试和验证日志系统的各个方面：写入、性能、存储、格式等
+ *
+ *
  */
 
 import {
@@ -12,15 +12,14 @@ import {
   writeFileSync,
   mkdirSync,
 } from 'fs';
-import { join, dirname } from 'path';
-import { promisify } from 'util';
+import { join } from 'path';
 
-// 日志健康检查结果
+//
 export interface LoggingHealthResult {
   timestamp: string;
   overall: {
     healthy: boolean;
-    score: number; // 0-100分
+    score: number; // 0-100
     grade: 'A' | 'B' | 'C' | 'D' | 'F';
     status: 'excellent' | 'good' | 'warning' | 'critical' | 'failure';
   };
@@ -47,18 +46,18 @@ export interface LoggingHealthResult {
   issues: LoggingIssue[];
 }
 
-// 单项健康检查
+//
 export interface HealthCheck {
   name: string;
   passed: boolean;
-  score: number; // 0-100分
+  score: number; // 0-100
   duration: number; // ms
   details: string;
   metrics?: Record<string, any>;
   error?: string;
 }
 
-// 日志问题
+//
 export interface LoggingIssue {
   severity: 'critical' | 'high' | 'medium' | 'low';
   category: 'performance' | 'storage' | 'format' | 'security' | 'reliability';
@@ -66,7 +65,7 @@ export interface LoggingIssue {
   recommendation: string;
 }
 
-// 健康检查选项
+//
 export interface LoggingHealthOptions {
   logDirectory: string;
   performanceTestEntries: number;
@@ -90,7 +89,7 @@ const DEFAULT_HEALTH_OPTIONS: LoggingHealthOptions = {
 };
 
 /**
- * 日志系统健康检查器类
+ *
  */
 export class LoggingHealthChecker {
   private options: LoggingHealthOptions;
@@ -107,10 +106,10 @@ export class LoggingHealthChecker {
   }
 
   /**
-   * 执行完整的日志系统健康检查
+   *
    */
   async performHealthCheck(): Promise<LoggingHealthResult> {
-    this.log('🔍 开始日志系统健康检查...');
+    this.log(' ...');
 
     const result: LoggingHealthResult = {
       timestamp: new Date().toISOString(),
@@ -133,45 +132,42 @@ export class LoggingHealthChecker {
     };
 
     try {
-      // 1. 写入能力测试
+      // 1.
       result.checks.writeCapability = await this.checkWriteCapability();
 
-      // 2. 格式验证测试
+      // 2.
       result.checks.formatValidation = await this.checkFormatValidation();
 
-      // 3. 性能基准测试
+      // 3.
       if (this.options.includePerformanceTests) {
         result.checks.performanceBenchmark =
           await this.checkPerformanceBenchmark();
       } else {
-        result.checks.performanceBenchmark = this.createSkippedCheck(
-          '性能基准测试',
-          '已跳过性能测试'
-        );
+        result.checks.performanceBenchmark = this.createSkippedCheck('', '');
       }
 
-      // 4. 存储管理检查
+      // 4.
       result.checks.storageManagement = await this.checkStorageManagement();
 
-      // 5. 轮转机制检查
+      // 5.
       result.checks.rotationMechanism = await this.checkRotationMechanism();
 
-      // 6. 错误恢复测试
+      // 6.
       result.checks.errorRecovery = await this.checkErrorRecovery();
 
-      // 7. 结构化日志检查
+      // 7.
       result.checks.structuredLogging = await this.checkStructuredLogging();
 
-      // 8. PII过滤检查
+      // 8. PII
       result.checks.piiFiltering = await this.checkPiiFiltering();
 
-      // 9. 级别过滤检查
+      // 9.
       result.checks.levelFiltering = await this.checkLevelFiltering();
 
-      // 10. 异步处理检查
+      // 10.
       result.checks.asyncProcessing = await this.checkAsyncProcessing();
 
-      // 计算整体指标
+      //
       await this.calculateMetrics(result);
       this.calculateOverallHealth(result);
       this.generateRecommendations(result);
@@ -183,7 +179,7 @@ export class LoggingHealthChecker {
         severity: 'critical',
         category: 'reliability',
         message: `健康检查过程失败: ${error}`,
-        recommendation: '检查日志系统配置和权限',
+        recommendation: '',
       });
     }
 
@@ -191,38 +187,38 @@ export class LoggingHealthChecker {
   }
 
   /**
-   * 检查写入能力
+   *
    */
   private async checkWriteCapability(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 确保日志目录存在
+      //
       if (!existsSync(this.logDirectory)) {
         mkdirSync(this.logDirectory, { recursive: true });
       }
 
-      // 测试基础写入
+      //
       const testFile = join(this.logDirectory, 'health-check-write-test.log');
       const testData = `[${new Date().toISOString()}] INFO 日志写入测试 - ${Math.random()}`;
 
       writeFileSync(testFile, testData);
 
-      // 验证写入成功
+      //
       const writtenData = readFileSync(testFile, 'utf8');
       const writeSuccess = writtenData === testData;
 
-      // 测试并发写入
+      //
       const concurrentWrites = await this.testConcurrentWrites();
 
       const duration = Date.now() - startTime;
 
       return {
-        name: '日志写入能力',
+        name: '',
         passed: writeSuccess && concurrentWrites.success,
         score: writeSuccess && concurrentWrites.success ? 100 : 0,
         duration,
-        details: `基础写入: ${writeSuccess ? '✅' : '❌'}, 并发写入: ${concurrentWrites.success ? '✅' : '❌'}`,
+        details: `基础写入: ${writeSuccess ? '' : ''}, 并发写入: ${concurrentWrites.success ? '' : ''}`,
         metrics: {
           basicWrite: writeSuccess,
           concurrentWrites: concurrentWrites.count,
@@ -231,28 +227,28 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '日志写入能力',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '写入测试失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查格式验证
+   *
    */
   private async checkFormatValidation(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
       const testLogs = [
-        { level: 'info', message: '标准信息日志', valid: true },
-        { level: 'error', message: '错误日志测试', valid: true },
-        { level: 'debug', message: '调试日志', valid: true },
-        { level: 'warn', message: '警告日志', valid: true },
+        { level: 'info', message: '', valid: true },
+        { level: 'error', message: '', valid: true },
+        { level: 'debug', message: '', valid: true },
+        { level: 'warn', message: '', valid: true },
       ];
 
       let validFormats = 0;
@@ -275,7 +271,7 @@ export class LoggingHealthChecker {
       const score = Math.round((validFormats / testLogs.length) * 100);
 
       return {
-        name: '日志格式验证',
+        name: '',
         passed: allValid,
         score,
         duration: Date.now() - startTime,
@@ -288,18 +284,18 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '日志格式验证',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '格式验证测试失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查性能基准
+   *
    */
   private async checkPerformanceBenchmark(): Promise<HealthCheck> {
     const startTime = Date.now();
@@ -308,7 +304,7 @@ export class LoggingHealthChecker {
       const testEntries = this.options.performanceTestEntries;
       const testFile = join(this.logDirectory, 'performance-test.log');
 
-      // 写入性能测试
+      //
       const writeStartTime = Date.now();
       const testData = this.generateTestData(testEntries);
 
@@ -321,15 +317,15 @@ export class LoggingHealthChecker {
       const throughput = Math.round(testEntries / (writeDuration / 1000));
       const avgLatency = writeDuration / testEntries;
 
-      // 性能评估
-      const throughputScore = Math.min(100, Math.round(throughput / 100)); // 100 entries/sec = 100分
-      const latencyScore = Math.max(0, 100 - Math.round(avgLatency)); // <1ms = 100分
+      //
+      const throughputScore = Math.min(100, Math.round(throughput / 100)); // 100 entries/sec = 100
+      const latencyScore = Math.max(0, 100 - Math.round(avgLatency)); // <1ms = 100
 
       const overallScore = Math.round((throughputScore + latencyScore) / 2);
       const passed = overallScore >= 70;
 
       return {
-        name: '性能基准测试',
+        name: '',
         passed,
         score: overallScore,
         duration: Date.now() - startTime,
@@ -345,18 +341,18 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '性能基准测试',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '性能测试失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查存储管理
+   *
    */
   private async checkStorageManagement(): Promise<HealthCheck> {
     const startTime = Date.now();
@@ -364,34 +360,34 @@ export class LoggingHealthChecker {
     try {
       if (!existsSync(this.logDirectory)) {
         return {
-          name: '存储管理',
+          name: '',
           passed: false,
           score: 0,
           duration: Date.now() - startTime,
-          details: '日志目录不存在',
+          details: '',
         };
       }
 
-      // 计算目录大小
+      //
       const directorySize = this.calculateDirectorySize(this.logDirectory);
       const sizeMB = directorySize / (1024 * 1024);
 
-      // 检查文件数量
+      //
       const files = readdirSync(this.logDirectory);
       const logFiles = files.filter(f => f.endsWith('.log'));
 
-      // 检查磁盘使用情况
-      const stats = statSync(this.logDirectory);
+      //
+      statSync(this.logDirectory);
 
-      // 评估存储管理
+      //
       const sizeScore = sizeMB <= this.options.storageThresholdMB ? 100 : 50;
-      const fileCountScore = logFiles.length <= 20 ? 100 : 75; // 超过20个日志文件降分
+      const fileCountScore = logFiles.length <= 20 ? 100 : 75; // 20
 
       const overallScore = Math.round((sizeScore + fileCountScore) / 2);
       const passed = overallScore >= 70;
 
       return {
-        name: '存储管理',
+        name: '',
         passed,
         score: overallScore,
         duration: Date.now() - startTime,
@@ -406,30 +402,30 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '存储管理',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '存储检查失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查轮转机制
+   *
    */
   private async checkRotationMechanism(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 检查是否有轮转后的文件
+      //
       const files = readdirSync(this.logDirectory);
       const rotatedFiles = files.filter(
         f => f.includes('.log.') || f.includes('.1') || f.includes('.old')
       );
 
-      // 检查文件创建时间分布
+      //
       const logFiles = files.filter(f => f.endsWith('.log'));
       let hasTimeBasedRotation = false;
 
@@ -439,11 +435,11 @@ export class LoggingHealthChecker {
           return statSync(filePath).mtime;
         });
 
-        // 简单检查：如果有多个文件且时间跨度超过1天，可能有轮转
+        // 1
         const timeSpan =
           Math.max(...fileTimes.map(t => t.getTime())) -
           Math.min(...fileTimes.map(t => t.getTime()));
-        hasTimeBasedRotation = timeSpan > 24 * 60 * 60 * 1000; // 1天
+        hasTimeBasedRotation = timeSpan > 24 * 60 * 60 * 1000; // 1
       }
 
       const rotationScore =
@@ -451,11 +447,11 @@ export class LoggingHealthChecker {
       const passed = rotationScore >= 70;
 
       return {
-        name: '日志轮转机制',
+        name: '',
         passed,
         score: rotationScore,
         duration: Date.now() - startTime,
-        details: `轮转文件: ${rotatedFiles.length}个, 时间轮转: ${hasTimeBasedRotation ? '✅' : '❌'}`,
+        details: `轮转文件: ${rotatedFiles.length}个, 时间轮转: ${hasTimeBasedRotation ? '' : ''}`,
         metrics: {
           rotatedFiles: rotatedFiles.length,
           hasTimeBasedRotation,
@@ -464,55 +460,55 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '日志轮转机制',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '轮转检查失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查错误恢复
+   *
    */
   private async checkErrorRecovery(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 测试磁盘满情况恢复（模拟）
-      // 测试权限错误恢复
-      // 测试网络错误恢复（如果有远程日志）
+      //
+      //
+      //
 
       let recoveryTests = 0;
       let passedTests = 0;
 
-      // 1. 测试无效路径恢复
+      // 1.
       try {
         const invalidPath = join(
           this.logDirectory,
           'invalid/deep/path/test.log'
         );
-        // 这应该失败但系统应该能恢复
+        //
         writeFileSync(invalidPath, 'test');
         recoveryTests++;
-      } catch (error) {
-        // 预期的错误，检查是否有恢复机制
+      } catch {
+        //
         recoveryTests++;
-        passedTests++; // 正确处理了错误
+        passedTests++; //
       }
 
-      // 2. 测试大文件写入恢复
+      // 2.
       try {
         const largePath = join(this.logDirectory, 'large-test.log');
         const largeData = 'x'.repeat(10 * 1024 * 1024); // 10MB
         writeFileSync(largePath, largeData);
         recoveryTests++;
-        passedTests++; // 成功写入大文件
-      } catch (error) {
+        passedTests++; //
+      } catch {
         recoveryTests++;
-        // 大文件写入失败，但系统应该能恢复
+        //
       }
 
       const score =
@@ -522,7 +518,7 @@ export class LoggingHealthChecker {
       const passed = score >= 70;
 
       return {
-        name: '错误恢复机制',
+        name: '',
         passed,
         score,
         duration: Date.now() - startTime,
@@ -535,35 +531,35 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '错误恢复机制',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '错误恢复测试失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查结构化日志
+   *
    */
   private async checkStructuredLogging(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 检查结构化日志实现
+      //
       const structuredLoggerPath = join(
         this.projectRoot,
         'src/shared/observability/structured-logger.ts'
       );
       const hasStructuredLogger = existsSync(structuredLoggerPath);
 
-      // 测试JSON格式日志
+      // JSON
       const testEntry = {
         timestamp: new Date().toISOString(),
         level: 'info',
-        message: '结构化日志测试',
+        message: '',
         context: { test: true, id: 123 },
       };
 
@@ -573,7 +569,7 @@ export class LoggingHealthChecker {
       try {
         JSON.parse(jsonLog);
         isValidJson = true;
-      } catch (e) {
+      } catch {
         isValidJson = false;
       }
 
@@ -581,11 +577,11 @@ export class LoggingHealthChecker {
       const passed = score >= 70;
 
       return {
-        name: '结构化日志',
+        name: '',
         passed,
         score,
         duration: Date.now() - startTime,
-        details: `结构化日志器: ${hasStructuredLogger ? '✅' : '❌'}, JSON格式: ${isValidJson ? '✅' : '❌'}`,
+        details: `结构化日志器: ${hasStructuredLogger ? '' : ''}, JSON格式: ${isValidJson ? '' : ''}`,
         metrics: {
           hasStructuredLogger,
           isValidJson,
@@ -594,24 +590,24 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '结构化日志',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '结构化日志检查失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查PII过滤
+   * PII
    */
   private async checkPiiFiltering(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 测试PII数据过滤
+      // PII
       const piiTestData = [
         { input: 'email: user@example.com', shouldFilter: true },
         { input: 'phone: 13800138000', shouldFilter: true },
@@ -623,7 +619,7 @@ export class LoggingHealthChecker {
       const testResults: any[] = [];
 
       for (const test of piiTestData) {
-        // 简化的PII检测（实际应该使用更复杂的算法）
+        // PII
         const filtered = this.applyPiiFiltering(test.input);
         const isCorrect = test.shouldFilter
           ? filtered !== test.input
@@ -643,7 +639,7 @@ export class LoggingHealthChecker {
       const passed = score >= 80;
 
       return {
-        name: 'PII数据过滤',
+        name: 'PII',
         passed,
         score,
         duration: Date.now() - startTime,
@@ -656,18 +652,18 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: 'PII数据过滤',
+        name: 'PII',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: 'PII过滤检查失败',
+        details: 'PII',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查级别过滤
+   *
    */
   private async checkLevelFiltering(): Promise<HealthCheck> {
     const startTime = Date.now();
@@ -700,7 +696,7 @@ export class LoggingHealthChecker {
       const passed = score >= 90;
 
       return {
-        name: '日志级别过滤',
+        name: '',
         passed,
         score,
         duration: Date.now() - startTime,
@@ -714,24 +710,24 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '日志级别过滤',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '级别过滤检查失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
   /**
-   * 检查异步处理
+   *
    */
   private async checkAsyncProcessing(): Promise<HealthCheck> {
     const startTime = Date.now();
 
     try {
-      // 测试异步日志处理能力
+      //
       const asyncTests = [];
       const testEntries = 100;
 
@@ -748,7 +744,7 @@ export class LoggingHealthChecker {
       const passed = score >= 90;
 
       return {
-        name: '异步处理',
+        name: '',
         passed,
         score,
         duration: Date.now() - startTime,
@@ -762,17 +758,17 @@ export class LoggingHealthChecker {
       };
     } catch (error) {
       return {
-        name: '异步处理',
+        name: '',
         passed: false,
         score: 0,
         duration: Date.now() - startTime,
-        details: '异步处理检查失败',
+        details: '',
         error: String(error),
       };
     }
   }
 
-  // 辅助方法
+  //
 
   private async testConcurrentWrites(): Promise<{
     success: boolean;
@@ -808,7 +804,7 @@ export class LoggingHealthChecker {
   }
 
   private validateLogFormat(logLine: string): boolean {
-    // 简化的日志格式验证
+    //
     const logRegex = /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] \w+ .+$/;
     return logRegex.test(logLine);
   }
@@ -839,7 +835,7 @@ export class LoggingHealthChecker {
   }
 
   private applyPiiFiltering(text: string): string {
-    // 简化的PII过滤实现
+    // PII
     return text
       .replace(/\b[\w._%+-]+@[\w.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
       .replace(/\b1[3-9]\d{9}\b/g, '[PHONE]')
@@ -898,7 +894,7 @@ export class LoggingHealthChecker {
 
     result.metrics.memoryUsage = process.memoryUsage().heapUsed;
 
-    // 计算错误率
+    //
     const totalChecks = Object.values(result.checks).length;
     const failedChecks = Object.values(result.checks).filter(
       c => !c.passed
@@ -936,7 +932,7 @@ export class LoggingHealthChecker {
     const recommendations: string[] = [];
     const issues: LoggingIssue[] = [];
 
-    for (const [key, check] of Object.entries(result.checks)) {
+    for (const [_key, check] of Object.entries(result.checks)) {
       if (!check.passed) {
         if (check.score < 50) {
           issues.push({
@@ -956,25 +952,23 @@ export class LoggingHealthChecker {
       }
     }
 
-    // 基于分数生成通用建议
+    //
     if (result.overall.score < 70) {
-      recommendations.push(
-        '日志系统需要紧急修复，建议优先解决Critical和High级别问题'
-      );
+      recommendations.push('CriticalHigh');
     } else if (result.overall.score < 90) {
-      recommendations.push('日志系统基本健康，建议优化性能和配置');
+      recommendations.push('');
     } else {
-      recommendations.push('日志系统健康状况良好，建议定期监控和维护');
+      recommendations.push('');
     }
 
-    // 性能相关建议
+    //
     if (result.metrics.throughput < 100) {
-      recommendations.push('考虑实现异步日志写入以提高性能');
+      recommendations.push('');
     }
 
     if (result.metrics.storageUsed > 50 * 1024 * 1024) {
       // 50MB
-      recommendations.push('实现日志轮转机制以管理存储空间');
+      recommendations.push('');
     }
 
     result.recommendations = recommendations;
@@ -988,10 +982,10 @@ export class LoggingHealthChecker {
   }
 }
 
-// 导出默认实例
+//
 export const loggingHealthChecker = new LoggingHealthChecker();
 
-// 便捷函数
+//
 export async function performQuickHealthCheck(): Promise<LoggingHealthResult> {
   return await loggingHealthChecker.performHealthCheck();
 }

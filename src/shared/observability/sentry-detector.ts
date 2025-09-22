@@ -1,12 +1,12 @@
 ﻿/**
- * Sentry初始化状态检测器
+ * Sentry
  *
- * 用于检测和验证Sentry服务的初始化状态，确保可观测性系统正常工作
+ * Sentry
  */
 
 import * as Sentry from '@sentry/electron/renderer';
 
-// 检测结果类型定义
+//
 export interface SentryDetectionResult {
   isInitialized: boolean;
   hubStatus: 'active' | 'inactive' | 'error';
@@ -27,7 +27,7 @@ export interface SentryDetectionResult {
   recommendations: string[];
 }
 
-// 检测配置选项
+//
 export interface SentryDetectionOptions {
   timeout: number;
   performCaptureTest: boolean;
@@ -36,7 +36,7 @@ export interface SentryDetectionOptions {
   verbose: boolean;
 }
 
-// 默认检测配置
+//
 const DEFAULT_DETECTION_OPTIONS: SentryDetectionOptions = {
   timeout: 5000,
   performCaptureTest: true,
@@ -46,7 +46,7 @@ const DEFAULT_DETECTION_OPTIONS: SentryDetectionOptions = {
 };
 
 /**
- * Sentry初始化状态检测器类
+ * Sentry
  */
 export class SentryDetector {
   private options: SentryDetectionOptions;
@@ -57,7 +57,7 @@ export class SentryDetector {
   }
 
   /**
-   * 执行完整的Sentry初始化检测
+   * Sentry
    */
   async detectInitializationStatus(): Promise<SentryDetectionResult> {
     const startTime = Date.now();
@@ -80,43 +80,43 @@ export class SentryDetector {
     };
 
     try {
-      this.log('🔍 开始Sentry初始化状态检测...');
+      this.log(' Sentry...');
 
-      // 1. 检测Hub状态
+      // 1. Hub
       result.hubStatus = await this.checkHubStatus();
       result.details.hasValidHub = result.hubStatus === 'active';
 
-      // 2. 检测Client状态
+      // 2. Client
       result.clientStatus = await this.checkClientStatus();
       result.details.hasValidClient = result.clientStatus === 'connected';
 
-      // 3. 检查DSN配置
+      // 3. DSN
       result.details.hasValidDsn = this.checkDsnConfiguration();
 
-      // 4. 检查Release信息
+      // 4. Release
       result.release = this.getRelease();
 
-      // 5. 测试错误捕获功能
+      // 5.
       if (this.options.performCaptureTest) {
         result.details.captureWorks = await this.testCaptureFunction();
       }
 
-      // 6. 检查会话跟踪
+      // 6.
       if (this.options.checkSessionTracking) {
         result.details.sessionTrackingActive = this.checkSessionTracking();
       }
 
-      // 7. 检查性能监控
+      // 7.
       if (this.options.checkPerformanceMonitoring) {
         result.details.performanceMonitoringActive =
           this.checkPerformanceMonitoring();
       }
 
-      // 8. 综合评估
+      // 8.
       result.isInitialized = this.evaluateOverallStatus(result);
       result.configurationValid = this.evaluateConfiguration(result);
 
-      // 9. 生成建议
+      // 9.
       result.recommendations = this.generateRecommendations(result);
 
       const duration = Date.now() - startTime;
@@ -125,32 +125,32 @@ export class SentryDetector {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       result.lastError = errorMessage;
-      result.recommendations.push('检测过程中发生错误，请检查Sentry配置');
+      result.recommendations.push('Sentry');
       this.log(`❌ Sentry检测失败: ${errorMessage}`);
     }
 
-    // 记录检测历史
+    //
     this.detectionHistory.push(result);
     if (this.detectionHistory.length > 10) {
-      this.detectionHistory.shift(); // 只保留最近10次检测记录
+      this.detectionHistory.shift(); // 10
     }
 
     return result;
   }
 
   /**
-   * 检查Sentry Hub状态
+   * Sentry Hub
    */
   private async checkHubStatus(): Promise<'active' | 'inactive' | 'error'> {
     try {
       const client = Sentry.getClient();
 
       if (!client) {
-        this.log('❌ Sentry Client未找到');
+        this.log(' Sentry Client');
         return 'inactive';
       }
 
-      this.log('✅ Sentry Hub状态正常');
+      this.log(' Sentry Hub');
       return 'active';
     } catch (error) {
       this.log(`❌ Sentry Hub检查出错: ${error}`);
@@ -159,7 +159,7 @@ export class SentryDetector {
   }
 
   /**
-   * 检查Sentry Client状态
+   * Sentry Client
    */
   private async checkClientStatus(): Promise<
     'connected' | 'disconnected' | 'error'
@@ -168,18 +168,18 @@ export class SentryDetector {
       const client = Sentry.getClient();
 
       if (!client) {
-        this.log('❌ Sentry Client未找到');
+        this.log(' Sentry Client');
         return 'disconnected';
       }
 
-      // 检查Client配置
+      // Client
       const options = client.getOptions();
       if (!options || !options.dsn) {
-        this.log('⚠️  Sentry Client存在但DSN配置缺失');
+        this.log('  Sentry ClientDSN');
         return 'disconnected';
       }
 
-      this.log('✅ Sentry Client状态正常');
+      this.log(' Sentry Client');
       return 'connected';
     } catch (error) {
       this.log(`❌ Sentry Client检查出错: ${error}`);
@@ -188,7 +188,7 @@ export class SentryDetector {
   }
 
   /**
-   * 检查DSN配置
+   * DSN
    */
   private checkDsnConfiguration(): boolean {
     try {
@@ -199,21 +199,21 @@ export class SentryDetector {
       const dsn = options?.dsn;
 
       if (!dsn) {
-        this.log('❌ DSN配置缺失');
+        this.log(' DSN');
         return false;
       }
 
-      // 验证DSN格式
+      // DSN
       if (
         typeof dsn === 'string' &&
         dsn.startsWith('https://') &&
         dsn.includes('@')
       ) {
-        this.log('✅ DSN配置格式正确');
+        this.log(' DSN');
         return true;
       }
 
-      this.log('⚠️  DSN配置格式可能有问题');
+      this.log('  DSN');
       return false;
     } catch (error) {
       this.log(`❌ DSN配置检查出错: ${error}`);
@@ -222,7 +222,7 @@ export class SentryDetector {
   }
 
   /**
-   * 获取Release信息
+   * Release
    */
   private getRelease(): string | undefined {
     try {
@@ -233,7 +233,7 @@ export class SentryDetector {
       if (release) {
         this.log(`✅ Release信息: ${release}`);
       } else {
-        this.log('⚠️  Release信息未配置');
+        this.log('  Release');
       }
 
       return release;
@@ -244,18 +244,18 @@ export class SentryDetector {
   }
 
   /**
-   * 测试错误捕获功能
+   *
    */
   private async testCaptureFunction(): Promise<boolean> {
     try {
-      // 发送一个测试事件
-      const eventId = Sentry.captureMessage('Sentry初始化检测测试消息', 'info');
+      //
+      const eventId = Sentry.captureMessage('Sentry', 'info');
 
       if (eventId) {
-        this.log('✅ 错误捕获功能正常');
+        this.log(' ');
         return true;
       }
-      this.log('⚠️  错误捕获功能可能异常');
+      this.log('  ');
       return false;
     } catch (error) {
       this.log(`❌ 错误捕获测试失败: ${error}`);
@@ -264,21 +264,21 @@ export class SentryDetector {
   }
 
   /**
-   * 检查会话跟踪状态
+   *
    */
   private checkSessionTracking(): boolean {
     try {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      // 检查session tracking配置（新版本使用集成检查）
+      // session tracking
       const sessionTracking = (options as any)?.autoSessionTracking;
 
       if (sessionTracking) {
-        this.log('✅ 会话跟踪已启用');
+        this.log(' ');
         return true;
       }
-      this.log('⚠️  会话跟踪未启用');
+      this.log('  ');
       return false;
     } catch (error) {
       this.log(`❌ 会话跟踪检查出错: ${error}`);
@@ -287,21 +287,21 @@ export class SentryDetector {
   }
 
   /**
-   * 检查性能监控状态
+   *
    */
   private checkPerformanceMonitoring(): boolean {
     try {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      // 检查tracesSampleRate配置
+      // tracesSampleRate
       const tracesSampleRate = options?.tracesSampleRate;
 
       if (tracesSampleRate !== undefined && tracesSampleRate > 0) {
         this.log(`✅ 性能监控已启用 (采样率: ${tracesSampleRate})`);
         return true;
       }
-      this.log('⚠️  性能监控未启用或采样率为0');
+      this.log('  0');
       return false;
     } catch (error) {
       this.log(`❌ 性能监控检查出错: ${error}`);
@@ -310,7 +310,7 @@ export class SentryDetector {
   }
 
   /**
-   * 评估整体初始化状态
+   *
    */
   private evaluateOverallStatus(result: SentryDetectionResult): boolean {
     const criticalChecks = [
@@ -319,12 +319,12 @@ export class SentryDetector {
       result.details.hasValidDsn,
     ];
 
-    // 所有关键检查都必须通过
+    //
     return criticalChecks.every(check => check === true);
   }
 
   /**
-   * 评估配置有效性
+   *
    */
   private evaluateConfiguration(result: SentryDetectionResult): boolean {
     const configChecks = [
@@ -334,54 +334,54 @@ export class SentryDetector {
       result.details.performanceMonitoringActive,
     ];
 
-    // 至少75%的配置检查通过
+    // 75%
     const passedChecks = configChecks.filter(check => check === true).length;
     return passedChecks >= Math.ceil(configChecks.length * 0.75);
   }
 
   /**
-   * 生成改进建议
+   *
    */
   private generateRecommendations(result: SentryDetectionResult): string[] {
     const recommendations: string[] = [];
 
     if (!result.details.hasValidHub) {
-      recommendations.push('Sentry Hub未正确初始化，请检查initSentry()调用');
+      recommendations.push('Sentry HubinitSentry()');
     }
 
     if (!result.details.hasValidClient) {
-      recommendations.push('Sentry Client未连接，请检查DSN配置和网络连接');
+      recommendations.push('Sentry ClientDSN');
     }
 
     if (!result.details.hasValidDsn) {
-      recommendations.push('DSN配置缺失或格式错误，请检查环境变量SENTRY_DSN');
+      recommendations.push('DSNSENTRY_DSN');
     }
 
     if (!result.release) {
-      recommendations.push('建议配置Release信息以便更好地跟踪版本');
+      recommendations.push('Release');
     }
 
     if (!result.details.sessionTrackingActive) {
-      recommendations.push('建议启用会话跟踪以监控应用稳定性');
+      recommendations.push('');
     }
 
     if (!result.details.performanceMonitoringActive) {
-      recommendations.push('建议启用性能监控以跟踪应用性能');
+      recommendations.push('');
     }
 
     if (!result.details.captureWorks) {
-      recommendations.push('错误捕获功能异常，请检查网络连接和Sentry服务状态');
+      recommendations.push('Sentry');
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('Sentry配置优秀，建议定期检查Release Health指标');
+      recommendations.push('SentryRelease Health');
     }
 
     return recommendations;
   }
 
   /**
-   * 日志输出
+   *
    */
   private log(message: string): void {
     if (this.options.verbose) {
@@ -390,21 +390,21 @@ export class SentryDetector {
   }
 
   /**
-   * 获取检测历史
+   *
    */
   getDetectionHistory(): SentryDetectionResult[] {
     return [...this.detectionHistory];
   }
 
   /**
-   * 清空检测历史
+   *
    */
   clearDetectionHistory(): void {
     this.detectionHistory = [];
   }
 
   /**
-   * 获取最近一次检测结果
+   *
    */
   getLastDetectionResult(): SentryDetectionResult | null {
     return this.detectionHistory.length > 0
@@ -414,25 +414,25 @@ export class SentryDetector {
 }
 
 /**
- * 全局Sentry检测器实例
+ * Sentry
  */
 export const sentryDetector = new SentryDetector();
 
 /**
- * 快速检测函数 - 用于简单的初始化状态检查
+ *  -
  */
 export async function quickSentryCheck(): Promise<boolean> {
   try {
     const result = await sentryDetector.detectInitializationStatus();
     return result.isInitialized;
   } catch (error) {
-    console.error('Sentry快速检测失败:', error);
+    console.error('Sentry:', error);
     return false;
   }
 }
 
 /**
- * 详细检测函数 - 用于获取完整的检测报告
+ *  -
  */
 export async function detailedSentryCheck(
   options?: Partial<SentryDetectionOptions>
@@ -442,17 +442,17 @@ export async function detailedSentryCheck(
 }
 
 /**
- * 用于主进程的Sentry检测器（需要适配主进程API）
+ * SentryAPI
  */
 export class SentryMainDetector {
   /**
-   * 检测主进程Sentry初始化状态
+   * Sentry
    */
   static async detectMainProcessStatus(): Promise<SentryDetectionResult> {
     try {
-      // 这里需要使用主进程的Sentry API
-      // 由于当前在渲染进程环境，这个函数主要作为接口定义
-      // 实际实现需要在主进程中调用
+      // Sentry API
+      //
+      //
 
       return {
         isInitialized: false,
@@ -469,7 +469,7 @@ export class SentryMainDetector {
           sessionTrackingActive: false,
           performanceMonitoringActive: false,
         },
-        recommendations: ['主进程Sentry检测需要在主进程中运行'],
+        recommendations: ['Sentry'],
       };
     } catch (error) {
       throw new Error(`主进程Sentry检测失败: ${error}`);

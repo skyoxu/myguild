@@ -9,9 +9,8 @@ const content = [
   '- [x] Unit/coverage gates passed',
   '- [x] Electron security gate passed',
   '- [x] Observability checks passed',
-  '- [x] Performance baseline verified'
+  '- [x] Performance baseline verified',
 ].join('\n');
 
 fs.writeFileSync('deployment-checklist.md', content + '\n', 'utf8');
 console.log('deployment-checklist.md created');
-

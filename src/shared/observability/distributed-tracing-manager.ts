@@ -1,18 +1,18 @@
 ﻿/**
- * 企业级分布式追踪管理器
  *
- * 🌐 功能：
- * - OpenTelemetry 分布式追踪
- * - 跨服务相关性分析
- * - 性能瓶颈检测
- * - 微服务依赖图谱
- * - 智能采样策略
  *
- * 🏗️ 架构：
- * - 支持多种后端（Sentry, Jaeger, Zipkin）
- * - 自适应采样率调整
- * - 服务网格集成
- * - 实时性能分析
+ *
+ * - OpenTelemetry
+ * -
+ * -
+ * -
+ * -
+ *
+ *
+ * - Sentry, Jaeger, Zipkin
+ * -
+ * -
+ * -
  */
 
 import { trace, context, SpanStatusCode, SpanKind } from '@opentelemetry/api';
@@ -27,13 +27,13 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { EventEmitter } from 'events';
 
-/* 分布式追踪配置接口 */
+/*  */
 export interface DistributedTracingConfig {
   serviceName: string;
   serviceVersion: string;
   environment: string;
 
-  // 🎯 采样策略
+  //
   sampling: {
     defaultRate: number;
     criticalPathRate: number;
@@ -41,7 +41,7 @@ export interface DistributedTracingConfig {
     adaptiveEnabled: boolean;
   };
 
-  // 🔗 导出器配置
+  //
   exporters: {
     sentry?: {
       dsn: string;
@@ -56,14 +56,14 @@ export interface DistributedTracingConfig {
     };
   };
 
-  // 🏗️ 服务发现
+  //
   serviceDiscovery: {
     enabled: boolean;
     registryUrl?: string;
     healthCheckInterval: number;
   };
 
-  // 📊 性能阈值
+  //
   performanceThresholds: {
     slowSpanMs: number;
     criticalSpanMs: number;
@@ -71,7 +71,7 @@ export interface DistributedTracingConfig {
   };
 }
 
-/* 追踪上下文 */
+/*  */
 export interface TraceContext {
   traceId: string;
   spanId: string;
@@ -82,7 +82,7 @@ export interface TraceContext {
   buildVersion?: string;
 }
 
-/* 服务依赖关系 */
+/*  */
 export interface ServiceDependency {
   fromService: string;
   toService: string;
@@ -93,7 +93,7 @@ export interface ServiceDependency {
   healthScore: number;
 }
 
-/* 性能分析结果 */
+/*  */
 export interface PerformanceAnalysis {
   timestamp: string;
   traceId: string;
@@ -109,7 +109,7 @@ export interface PerformanceAnalysis {
 }
 
 /**
- * 🌟 企业级分布式追踪管理器
+ *
  */
 export class DistributedTracingManager extends EventEmitter {
   private static instance: DistributedTracingManager;
@@ -119,7 +119,7 @@ export class DistributedTracingManager extends EventEmitter {
   private tracer: any;
   private isInitialized = false;
 
-  // 📊 性能指标
+  //
   private performanceMetrics = {
     totalSpans: 0,
     activeSpans: 0,
@@ -128,16 +128,16 @@ export class DistributedTracingManager extends EventEmitter {
     currentSamplingRate: 0,
   };
 
-  // 🔗 服务依赖图
+  //
   private serviceDependencies = new Map<string, ServiceDependency>();
 
-  // 📈 动态采样率控制
+  //
   private adaptiveSampling = {
     enabled: false,
     baseRate: 0.1,
     currentRate: 0.1,
     lastAdjustment: Date.now(),
-    adjustmentInterval: 60000, // 1分钟调整一次
+    adjustmentInterval: 60000, // 1
   };
 
   private constructor() {
@@ -153,68 +153,68 @@ export class DistributedTracingManager extends EventEmitter {
   }
 
   /**
-   * 🚀 初始化分布式追踪系统
+   *
    */
   async initialize(config?: Partial<DistributedTracingConfig>): Promise<void> {
     if (this.isInitialized) {
-      console.warn('📊 分布式追踪已初始化，跳过重复初始化');
+      console.warn(' ');
       return;
     }
 
     try {
       this.config = { ...this.config, ...config };
 
-      console.log('🌐 初始化分布式追踪系统...');
+      console.log(' ...');
       console.log(
         `📊 服务: ${this.config.serviceName}@${this.config.serviceVersion}`
       );
       console.log(`🎯 采样率: ${this.config.sampling.defaultRate * 100}%`);
 
-      // 创建资源
+      //
       const resource = resourceFromAttributes({
         [SEMRESATTRS_SERVICE_NAME]: this.config.serviceName,
         [SEMRESATTRS_SERVICE_VERSION]: this.config.serviceVersion,
         [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: this.config.environment,
       });
 
-      // 配置导出器
+      //
       const spanProcessors = this.createSpanProcessors();
 
-      // 初始化SDK
+      // SDK
       this.sdk = new NodeSDK({
         resource,
         spanProcessors,
-        instrumentations: [], // 根据需要添加自动仪表
+        instrumentations: [], //
       });
 
       await this.sdk.start();
 
-      // 获取追踪器
+      //
       this.tracer = trace.getTracer(
         this.config.serviceName,
         this.config.serviceVersion
       );
 
-      // 启动自适应采样
+      //
       if (this.config.sampling.adaptiveEnabled) {
         this.startAdaptiveSampling();
       }
 
-      // 启动服务发现
+      //
       if (this.config.serviceDiscovery.enabled) {
         this.startServiceDiscovery();
       }
 
       this.isInitialized = true;
-      console.log('✅ 分布式追踪系统初始化完成');
+      console.log(' ');
     } catch (error) {
-      console.error('❌ 分布式追踪初始化失败:', error);
+      console.error(' :', error);
       throw error;
     }
   }
 
   /**
-   * 🔗 创建新的追踪 Span
+   *   Span
    */
   createSpan(
     name: string,
@@ -226,7 +226,7 @@ export class DistributedTracingManager extends EventEmitter {
     } = {}
   ): any {
     if (!this.isInitialized || !this.tracer) {
-      console.warn('⚠️ 分布式追踪未初始化，创建空 span');
+      console.warn('  span');
       return this.createNoOpSpan();
     }
 
@@ -245,22 +245,22 @@ export class DistributedTracingManager extends EventEmitter {
         options.parentContext || context.active()
       );
 
-      // 更新指标
+      //
       this.performanceMetrics.totalSpans++;
       this.performanceMetrics.activeSpans++;
 
-      // 发出事件
+      //
       this.emit('span-created', span);
 
       return span;
     } catch (error) {
-      console.error('❌ 创建 span 失败:', error);
+      console.error('  span :', error);
       return this.createNoOpSpan();
     }
   }
 
   /**
-   * 📊 记录服务间调用
+   *
    */
   recordServiceCall(
     fromService: string,
@@ -292,7 +292,7 @@ export class DistributedTracingManager extends EventEmitter {
   }
 
   /**
-   * 🔍 获取当前追踪上下文
+   *
    */
   getCurrentTraceContext(): TraceContext | null {
     try {
@@ -308,20 +308,20 @@ export class DistributedTracingManager extends EventEmitter {
         buildVersion: this.config.serviceVersion,
       };
     } catch (error) {
-      console.error('❌ 获取追踪上下文失败:', error);
+      console.error(' :', error);
       return null;
     }
   }
 
   /**
-   * 📈 执行性能分析
+   *
    */
   async analyzePerformance(
     traceId: string
   ): Promise<PerformanceAnalysis | null> {
     try {
-      // 这里应该查询追踪后端获取完整的追踪数据
-      // 简化实现，返回模拟分析结果
+      //
+      //
 
       return {
         timestamp: new Date().toISOString(),
@@ -333,27 +333,27 @@ export class DistributedTracingManager extends EventEmitter {
         serviceBreakdown: {},
       };
     } catch (error) {
-      console.error('❌ 性能分析失败:', error);
+      console.error(' :', error);
       return null;
     }
   }
 
   /**
-   * 🎯 获取服务依赖图
+   *
    */
   getServiceDependencies(): ServiceDependency[] {
     return Array.from(this.serviceDependencies.values());
   }
 
   /**
-   * 📊 获取性能指标
+   *
    */
   getPerformanceMetrics() {
     return { ...this.performanceMetrics };
   }
 
   /**
-   * 🔧 私有方法
+   *
    */
   private getDefaultConfig(): DistributedTracingConfig {
     return {
@@ -399,27 +399,27 @@ export class DistributedTracingManager extends EventEmitter {
   private createSpanProcessors(): any[] {
     const processors: any[] = [];
 
-    // Sentry 导出器 - 暂时禁用复杂集成
+    // Sentry  -
     // if (this.config.exporters.sentry?.enabled) {
     //   try {
     //     const sentryExporter = new SentrySpanExporter();
     //     processors.push(new BatchSpanProcessor(sentryExporter));
-    //     console.log('✅ Sentry 追踪导出器已启用');
+    //     console.log(' Sentry ');
     //   } catch (error) {
-    //     console.warn('⚠️ Sentry 导出器配置失败:', error);
+    //     console.warn(' Sentry :', error);
     //   }
     // }
 
-    // Jaeger 导出器
+    // Jaeger
     if (this.config.exporters.jaeger?.enabled) {
       try {
         const jaegerExporter = new JaegerExporter({
           endpoint: this.config.exporters.jaeger.endpoint,
         });
         processors.push(new BatchSpanProcessor(jaegerExporter));
-        console.log('✅ Jaeger 追踪导出器已启用');
+        console.log(' Jaeger ');
       } catch (error) {
-        console.warn('⚠️ Jaeger 导出器配置失败:', error);
+        console.warn(' Jaeger :', error);
       }
     }
 
@@ -443,13 +443,13 @@ export class DistributedTracingManager extends EventEmitter {
   }
 
   private adjustSamplingRate(): void {
-    // 基于错误率和延迟调整采样率
+    //
     const avgLatency = this.performanceMetrics.avgTraceLatency;
     const errorRate = this.calculateErrorRate();
 
     let newRate = this.adaptiveSampling.baseRate;
 
-    // 高延迟或高错误率时增加采样
+    //
     if (
       avgLatency > this.config.performanceThresholds.slowSpanMs ||
       errorRate > 0.05
@@ -464,30 +464,30 @@ export class DistributedTracingManager extends EventEmitter {
   }
 
   private calculateErrorRate(): number {
-    // 简化的错误率计算
+    //
     return 0.02; // 2%
   }
 
   private startServiceDiscovery(): void {
-    console.log('🔍 启动服务发现...');
-    // 实现服务发现逻辑
+    console.log(' ...');
+    //
   }
 
   /**
-   * 🧹 清理资源
+   *
    */
   async shutdown(): Promise<void> {
     if (this.sdk) {
       await this.sdk.shutdown();
-      console.log('🧹 分布式追踪系统已关闭');
+      console.log(' ');
     }
   }
 }
 
-/* 导出便捷函数 */
+/*  */
 export const distributedTracing = DistributedTracingManager.getInstance();
 
-/* 装饰器支持 */
+/*  */
 export function traced(operationName?: string) {
   return function (
     target: any,

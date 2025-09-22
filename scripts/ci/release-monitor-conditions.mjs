@@ -42,4 +42,3 @@ if (staging === '0' || staging === '100') {
 setOutput('should_monitor', 'true');
 setOutput('staging_percentage', staging);
 console.log(`Monitoring enabled; stagingPercentage=${staging}%`);
-

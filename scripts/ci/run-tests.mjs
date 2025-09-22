@@ -56,7 +56,10 @@ function runCmd(cmd, args) {
 const args = parseArgs(process.argv);
 const TEST_TYPE = String(args.test_type || '').trim();
 const TIMEOUT_MS = String(args.timeout || '300000').trim();
-const FAIL_FAST = String(args.fail_fast || 'true').trim().toLowerCase() === 'true';
+const FAIL_FAST =
+  String(args.fail_fast || 'true')
+    .trim()
+    .toLowerCase() === 'true';
 const REPORTER = String(args.reporter || 'default').trim();
 const SHARD = String(args.shard || '').trim();
 const GREP = String(args.grep || '').trim();
@@ -74,12 +77,16 @@ const logPath = path.join(logsRoot, `run-tests-${TEST_TYPE}.log`);
 
 function log(msg) {
   const line = `${msg}\n`;
-  try { fs.appendFileSync(logPath, line, 'utf8'); } catch {}
+  try {
+    fs.appendFileSync(logPath, line, 'utf8');
+  } catch {}
   process.stdout.write(line);
 }
 
 log(`[run-tests] Start type=${TEST_TYPE}`);
-log(`[run-tests] Timeout=${TIMEOUT_MS}ms, FailFast=${FAIL_FAST}, Reporter=${REPORTER}`);
+log(
+  `[run-tests] Timeout=${TIMEOUT_MS}ms, FailFast=${FAIL_FAST}, Reporter=${REPORTER}`
+);
 
 // Ensure Electron build for e2e/security/smoke
 if (['e2e', 'security', 'smoke'].includes(TEST_TYPE)) {
@@ -143,8 +150,12 @@ log(`[run-tests] Executing: npm run ${npmScript} ${extra.join(' ')}`.trim());
 const r = runCmd('npm', ['run', npmScript, ...extra]);
 
 // Persist child output to logs and console
-try { fs.appendFileSync(logPath, (r.stdout || ''), 'utf8'); } catch {}
-try { fs.appendFileSync(logPath, (r.stderr || ''), 'utf8'); } catch {}
+try {
+  fs.appendFileSync(logPath, r.stdout || '', 'utf8');
+} catch {}
+try {
+  fs.appendFileSync(logPath, r.stderr || '', 'utf8');
+} catch {}
 if (r.stdout) process.stdout.write(r.stdout);
 if (r.stderr) process.stderr.write(r.stderr);
 

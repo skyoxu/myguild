@@ -5,7 +5,13 @@
  * - For steps inside Windows jobs that use POSIX test syntax, add `shell: bash` at step level.
  * - Writes a summary to logs/YYYY-MM-DD/workflows/autofix.log
  */
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  statSync,
+  mkdirSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const root = '.github/workflows';
@@ -59,11 +65,15 @@ function fixFile(file) {
     const region = lines.slice(h, end);
 
     // Detect Windows job
-    const winRunIdxRel = region.findIndex(l => /^\s+runs-on:\s*windows-latest\b/.test(l));
+    const winRunIdxRel = region.findIndex(l =>
+      /^\s+runs-on:\s*windows-latest\b/.test(l)
+    );
     if (winRunIdxRel === -1) continue;
 
     const regionText = region.join('\n');
-    const hasPwsh = /\n\s+defaults:\s*\n\s+run:\s*\n\s+shell:\s*pwsh\b/.test(regionText) || /\n\s+shell:\s*pwsh\b/.test(regionText);
+    const hasPwsh =
+      /\n\s+defaults:\s*\n\s+run:\s*\n\s+shell:\s*pwsh\b/.test(regionText) ||
+      /\n\s+shell:\s*pwsh\b/.test(regionText);
     if (!hasPwsh) {
       // Insert defaults after runs-on line
       const absIdx = h + winRunIdxRel + 1;
@@ -89,18 +99,39 @@ function fixFile(file) {
             // find next step or end
             let stepEnd = end;
             for (let k = sIdx + 1; k < end; k++) {
-              if (leadingSpaces(lines[k]) <= stepsIndent && /^\s*-\s*/.test(lines[k].trim())) { stepEnd = k; break; }
-              if (leadingSpaces(lines[k]) === stepsIndent + 2 && /^-\s*/.test(lines[k].trim())) { stepEnd = k; break; }
+              if (
+                leadingSpaces(lines[k]) <= stepsIndent &&
+                /^\s*-\s*/.test(lines[k].trim())
+              ) {
+                stepEnd = k;
+                break;
+              }
+              if (
+                leadingSpaces(lines[k]) === stepsIndent + 2 &&
+                /^-\s*/.test(lines[k].trim())
+              ) {
+                stepEnd = k;
+                break;
+              }
             }
             const stepBlock = lines.slice(stepStart, stepEnd).join('\n');
             // Skip if shell already specified in step
-            if (/\n\s+shell:\s*\w+/.test('\n' + stepBlock)) { sIdx = stepEnd - 1; continue; }
+            if (/\n\s+shell:\s*\w+/.test('\n' + stepBlock)) {
+              sIdx = stepEnd - 1;
+              continue;
+            }
             // Extract run content
             let runLineRel = -1;
             for (let rIdx = stepStart; rIdx < stepEnd; rIdx++) {
-              if (/^\s+run:\s*/.test(lines[rIdx])) { runLineRel = rIdx; break; }
+              if (/^\s+run:\s*/.test(lines[rIdx])) {
+                runLineRel = rIdx;
+                break;
+              }
             }
-            if (runLineRel === -1) { sIdx = stepEnd - 1; continue; }
+            if (runLineRel === -1) {
+              sIdx = stepEnd - 1;
+              continue;
+            }
             const runIndent = leadingSpaces(lines[runLineRel]);
             // Collect run content
             let posixFound = false;
@@ -113,13 +144,18 @@ function fixFile(file) {
               for (let r = runLineRel + 1; r < stepEnd; r++) {
                 if (leadingSpaces(lines[r]) <= runIndent) break;
                 const t = lines[r];
-                if (/(\bif\s*\[|\[\[|\]\]|\bthen\b|\bfi\b)/.test(t)) { posixFound = true; break; }
+                if (/(\bif\s*\[|\[\[|\]\]|\bthen\b|\bfi\b)/.test(t)) {
+                  posixFound = true;
+                  break;
+                }
               }
             }
             if (posixFound) {
               const shellLine = ' '.repeat(runIndent) + 'shell: bash';
               insertions.push({ index: runLineRel, lines: [shellLine] });
-              changes.push(`added step-level shell: bash at line ${runLineRel + 1}`);
+              changes.push(
+                `added step-level shell: bash at line ${runLineRel + 1}`
+              );
             }
             sIdx = stepEnd - 1;
           }
@@ -166,4 +202,3 @@ function main() {
 }
 
 main();
-

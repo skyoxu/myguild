@@ -6,7 +6,9 @@ import fs from 'node:fs';
 
 const s = process.env.GITHUB_STEP_SUMMARY;
 let report = null;
-try { report = JSON.parse(fs.readFileSync('logs/soft-gate-report.json', 'utf8')); } catch {}
+try {
+  report = JSON.parse(fs.readFileSync('logs/soft-gate-report.json', 'utf8'));
+} catch {}
 
 const overall = report?.overallScore ?? 75;
 const total = report?.summary?.totalGates ?? 0;
@@ -25,7 +27,7 @@ const lines = [
   `| Success | ${success} |`,
   `| Warning | ${warning} |`,
   `| Error | ${error} |`,
-  ''
+  '',
 ];
 
 if (report?.feedback?.length) {
@@ -39,7 +41,13 @@ if (report?.recommendations?.length) {
   lines.push('');
 }
 
-lines.push('---', '*Soft gates provide feedback but do not block merge (ADR-0005)*');
+lines.push(
+  '---',
+  '*Soft gates provide feedback but do not block merge (ADR-0005)*'
+);
 const md = lines.join('\n') + '\n';
-if (!s) { console.log(md); } else { fs.appendFileSync(s, md, 'utf8'); }
-
+if (!s) {
+  console.log(md);
+} else {
+  fs.appendFileSync(s, md, 'utf8');
+}

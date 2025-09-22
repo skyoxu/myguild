@@ -1,23 +1,23 @@
 ﻿/**
- * Web Vitals监控系统 - Electron环境适配
+ * Web Vitals - Electron
  *
- * 监控核心Web性能指标：
- * - LCP (Largest Contentful Paint): 最大内容绘制
- * - INP (Interaction to Next Paint): 交互到下一次绘制
- * - CLS (Cumulative Layout Shift): 累积布局偏移
- * - FCP (First Contentful Paint): 首次内容绘制
- * - TTFB (Time to First Byte): 首字节时间
+ * Web
+ * - LCP (Largest Contentful Paint):
+ * - INP (Interaction to Next Paint):
+ * - CLS (Cumulative Layout Shift):
+ * - FCP (First Contentful Paint):
+ * - TTFB (Time to First Byte):
  */
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
 
-// 性能阈值配置
+//
 export const PERFORMANCE_THRESHOLDS = {
-  LCP: { good: 2500, needs_improvement: 4000 }, // LCP: ≤2.5s好，≤4s需改进
-  INP: { good: 200, needs_improvement: 500 }, // INP: ≤200ms好，≤500ms需改进
-  CLS: { good: 0.1, needs_improvement: 0.25 }, // CLS: ≤0.1好，≤0.25需改进
-  FCP: { good: 1800, needs_improvement: 3000 }, // FCP: ≤1.8s好，≤3s需改进
-  TTFB: { good: 800, needs_improvement: 1800 }, // TTFB: ≤0.8s好，≤1.8s需改进
+  LCP: { good: 2500, needs_improvement: 4000 }, // LCP: 2.5s4s
+  INP: { good: 200, needs_improvement: 500 }, // INP: 200ms500ms
+  CLS: { good: 0.1, needs_improvement: 0.25 }, // CLS: 0.10.25
+  FCP: { good: 1800, needs_improvement: 3000 }, // FCP: 1.8s3s
+  TTFB: { good: 800, needs_improvement: 1800 }, // TTFB: 0.8s1.8s
 } as const;
 
 export interface WebVitalsData {
@@ -45,7 +45,7 @@ export interface WebVitalsMetrics {
   customTimings: Record<string, number>;
 }
 
-// 自定义用户计时标记
+//
 export interface UserTiming {
   name: string;
   startTime: number;
@@ -59,12 +59,12 @@ class WebVitalsMonitor {
   private isInitialized = false;
   private userTimings: UserTiming[] = [];
 
-  // P95性能目标 (ms)
+  // P95 (ms)
   private readonly PERFORMANCE_TARGETS = {
-    interaction_p95: 100, // 交互P95 ≤100ms
-    event_p95: 50, // 事件P95 ≤50ms
-    route_change_p95: 200, // 路由切换P95 ≤200ms
-    data_fetch_p95: 300, // 数据获取P95 ≤300ms
+    interaction_p95: 100, // P95 100ms
+    event_p95: 50, // P95 50ms
+    route_change_p95: 200, // P95 200ms
+    data_fetch_p95: 300, // P95 300ms
   };
 
   constructor() {
@@ -76,25 +76,25 @@ class WebVitalsMonitor {
     if (this.isInitialized || typeof window === 'undefined') return;
 
     try {
-      // 监控核心Web Vitals指标
+      // Web Vitals
       onCLS(this.onCLS.bind(this), { reportAllChanges: true });
       onFCP(this.onFCP.bind(this));
-      onINP(this.onINP.bind(this)); // 使用INP替代FID
+      onINP(this.onINP.bind(this)); // INPFID
       onLCP(this.onLCP.bind(this), { reportAllChanges: true });
       onTTFB(this.onTTFB.bind(this));
 
-      // INP需要单独处理，因为web-vitals v4可能还在实验阶段
+      // INPweb-vitals v4
       this.initializeINP();
 
       this.isInitialized = true;
-      console.log('[WebVitals] 监控系统初始化完成');
+      console.log('[WebVitals] ');
     } catch (error) {
-      console.error('[WebVitals] 初始化失败:', error);
+      console.error('[WebVitals] :', error);
     }
   }
 
   private initializeINP() {
-    // INP监控 - 手动实现以确保兼容性
+    // INP -
     if ('PerformanceEventTiming' in window) {
       const observer = new PerformanceObserver(list => {
         const entries = list.getEntries() as PerformanceEventTiming[];
@@ -129,7 +129,7 @@ class WebVitalsMonitor {
   }
 
   private setupCustomPerformanceObserver() {
-    // 监控自定义性能标记
+    //
     if ('PerformanceObserver' in window) {
       const observer = new PerformanceObserver(list => {
         const entries = list.getEntries();
@@ -149,7 +149,7 @@ class WebVitalsMonitor {
               type: 'measure',
             });
 
-            // 记录自定义时间到metrics
+            // metrics
             this.metrics.customTimings[entry.name] = entry.duration;
           }
         }
@@ -254,26 +254,26 @@ class WebVitalsMonitor {
       try {
         callback(this.metrics);
       } catch (error) {
-        console.error('[WebVitals] 回调函数执行错误:', error);
+        console.error('[WebVitals] :', error);
       }
     });
   }
 
-  // 公开方法
+  //
 
   /**
-   * 订阅性能指标更新
+   *
    */
   public subscribe(callback: (metrics: WebVitalsMetrics) => void): () => void {
     this.callbacks.push(callback);
 
-    // 如果有已收集的指标，立即触发回调
+    //
     if (Object.keys(this.metrics).length > 1) {
-      // customTimings总是存在
+      // customTimings
       callback(this.metrics);
     }
 
-    // 返回取消订阅函数
+    //
     return () => {
       const index = this.callbacks.indexOf(callback);
       if (index > -1) {
@@ -283,14 +283,14 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 获取当前性能指标
+   *
    */
   public getMetrics(): WebVitalsMetrics {
     return { ...this.metrics };
   }
 
   /**
-   * 标记自定义性能时间点
+   *
    */
   public mark(name: string) {
     if ('performance' in window && 'mark' in performance) {
@@ -299,7 +299,7 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 测量两个标记之间的时间
+   *
    */
   public measure(name: string, startMark?: string, endMark?: string) {
     if ('performance' in window && 'measure' in performance) {
@@ -314,12 +314,12 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 记录交互事件性能
+   *
    */
   public recordInteraction(name: string, duration: number) {
     this.metrics.customTimings[`interaction_${name}`] = duration;
 
-    // 检查是否超出P95目标
+    // P95
     if (duration > this.PERFORMANCE_TARGETS.interaction_p95) {
       console.warn(
         `[WebVitals] 交互"${name}"耗时${duration}ms，超出P95目标${this.PERFORMANCE_TARGETS.interaction_p95}ms`
@@ -328,12 +328,12 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 记录事件处理性能
+   *
    */
   public recordEvent(name: string, duration: number) {
     this.metrics.customTimings[`event_${name}`] = duration;
 
-    // 检查是否超出P95目标
+    // P95
     if (duration > this.PERFORMANCE_TARGETS.event_p95) {
       console.warn(
         `[WebVitals] 事件"${name}"处理耗时${duration}ms，超出P95目标${this.PERFORMANCE_TARGETS.event_p95}ms`
@@ -342,27 +342,27 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 记录路由切换性能
+   *
    */
   public recordRouteChange(from: string, to: string, duration: number) {
     const routeName = `route_${from}_to_${to}`;
     this.metrics.customTimings[routeName] = duration;
 
-    // 检查是否超出P95目标
+    // P95
     if (duration > this.PERFORMANCE_TARGETS.route_change_p95) {
       console.warn(
-        `[WebVitals] 路由切换"${from} → ${to}"耗时${duration}ms，超出P95目标${this.PERFORMANCE_TARGETS.route_change_p95}ms`
+        `[WebVitals] 路由切换"${from}  ${to}"耗时${duration}ms，超出P95目标${this.PERFORMANCE_TARGETS.route_change_p95}ms`
       );
     }
   }
 
   /**
-   * 记录数据获取性能
+   *
    */
   public recordDataFetch(endpoint: string, duration: number) {
     this.metrics.customTimings[`fetch_${endpoint}`] = duration;
 
-    // 检查是否超出P95目标
+    // P95
     if (duration > this.PERFORMANCE_TARGETS.data_fetch_p95) {
       console.warn(
         `[WebVitals] 数据获取"${endpoint}"耗时${duration}ms，超出P95目标${this.PERFORMANCE_TARGETS.data_fetch_p95}ms`
@@ -371,7 +371,7 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 获取性能总结报告
+   *
    */
   public getPerformanceSummary() {
     const { lcp, inp, cls, fcp, ttfb } = this.metrics;
@@ -393,25 +393,25 @@ class WebVitalsMonitor {
   }
 
   /**
-   * 重置性能指标
+   *
    */
   public reset() {
     this.metrics = { customTimings: {} };
     this.userTimings = [];
-    console.log('[WebVitals] 性能指标已重置');
+    console.log('[WebVitals] ');
   }
 
   /**
-   * 销毁监控器
+   *
    */
   public destroy() {
     this.callbacks = [];
     this.reset();
-    console.log('[WebVitals] 监控器已销毁');
+    console.log('[WebVitals] ');
   }
 }
 
-// 全局单例
+//
 let webVitalsMonitor: WebVitalsMonitor | null = null;
 
 export const getWebVitalsMonitor = (): WebVitalsMonitor => {

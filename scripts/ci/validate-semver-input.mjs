@@ -10,4 +10,3 @@ if (!re.test(version)) {
   process.exit(1);
 }
 console.log(`Version format valid: ${version}`);
-

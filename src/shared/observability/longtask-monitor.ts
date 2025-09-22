@@ -1,7 +1,7 @@
 ﻿/**
- * 渲染线程长任务监控（Long Tasks / Event Loop blocking）
- * - 使用 PerformanceObserver 订阅 'longtask'
- * - 聚合上报到控制台（后续可接入 Sentry Performance）
+ * Long Tasks / Event Loop blocking
+ * -  PerformanceObserver  'longtask'
+ * -  Sentry Performance
  */
 
 export type LongTaskSample = {
@@ -11,7 +11,7 @@ export type LongTaskSample = {
 };
 
 export interface LongTaskMonitorOptions {
-  thresholdMs?: number; // 仅上报超过该阈值的任务（默认 50ms）
+  thresholdMs?: number; //  50ms
   onReport?: (samples: LongTaskSample[]) => void;
 }
 

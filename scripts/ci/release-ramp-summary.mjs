@@ -14,12 +14,15 @@ const md = [
   `- Feed File: ${process.env.FEED_FILE || ''}`,
   `- App Version: ${process.env.APP_VERSION || ''}`,
   `- Previous GA: ${process.env.PREV_GA_VERSION || ''}`,
-  `- Sentry: ${(process.env.SENTRY_ORG || '')}/${(process.env.SENTRY_PROJECT || '')}`,
+  `- Sentry: ${process.env.SENTRY_ORG || ''}/${process.env.SENTRY_PROJECT || ''}`,
   '',
   'Thresholds:',
   `- Crash-Free Users: ${process.env.THRESHOLD_CF_USERS || ''}`,
   `- Crash-Free Sessions: ${process.env.THRESHOLD_CF_SESSIONS || ''}`,
-  ''
+  '',
 ].join('\n');
-if (!s) { console.log(md); } else { fs.appendFileSync(s, md + '\n'); }
-
+if (!s) {
+  console.log(md);
+} else {
+  fs.appendFileSync(s, md + '\n');
+}

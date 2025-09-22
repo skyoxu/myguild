@@ -1,15 +1,15 @@
-﻿/**
- * 监控指标集成入口
- * 统一初始化和管理所有Sentry监控指标系统
+/**
+ * Observability aggregator
+ * Unifies initialization and management of Sentry and metrics.
  *
- * 按您的要求实现：
- * - Electron 主/渲染进程同时开启 Sentry
- * - autoSessionTracking: true (Release Health)
- * - tracesSampleRate: 0.2 (20%性能采样)
- * - 关键指标用 Metrics 上报（关卡加载时长、战斗回合耗时等）
+ * Key behaviors:
+ * - Split by process: main vs renderer responsibilities
+ * - Release Health enabled (autoSessionTracking: true)
+ * - Default tracesSampleRate: 0.2 (20% tracing)
+ * - Game metrics: level load time, battle round duration, etc.
  */
 
-// 主进程相关导入
+// Main-process exports
 export {
   initSentryMain,
   sendBusinessMetric,
@@ -21,18 +21,18 @@ export {
   integrateObservabilityMetrics,
 } from './sentry-main';
 
-// 渲染进程相关导入
+// Renderer-process exports
+export { initSentryRenderer, sendGameMetric } from './sentry-renderer';
+// Backward-compatible API: expose renderer game metric reporters via game-metrics
 export {
-  initSentryRenderer,
-  sendGameMetric,
-  reportLevelLoadTime,
-  reportBattleRoundTime,
-} from './sentry-renderer';
+  recordLevelLoadTime as reportLevelLoadTime,
+  recordBattleRoundTime as reportBattleRoundTime,
+} from './game-metrics';
 
-// Release Health 相关导入
+// Release Health exports
 export { ReleaseHealthManager, releaseHealthManager } from './release-health';
 
-// 游戏指标管理器导入
+// Game metrics exports
 export {
   GameMetricsManager,
   gameMetrics,
@@ -47,7 +47,7 @@ export {
 } from './game-metrics';
 
 /**
- * 监控系统配置接口
+ * Unified monitoring config interface
  */
 export interface MonitoringConfig {
   enableMainProcess: boolean;
@@ -62,7 +62,7 @@ export interface MonitoringConfig {
 }
 
 /**
- * 默认监控配置
+ * Default configuration
  */
 export const DEFAULT_MONITORING_CONFIG: MonitoringConfig = {
   enableMainProcess: true,
@@ -72,124 +72,126 @@ export const DEFAULT_MONITORING_CONFIG: MonitoringConfig = {
   enableGameMetrics: true,
   sentryDsn: process.env.SENTRY_DSN,
   environment: (process.env.NODE_ENV as any) || 'production',
-  tracesSampleRate: 0.2, // 按您要求设置20%
-  autoSessionTracking: true, // 按您要求启用Release Health
+  tracesSampleRate: 0.2, // 20% tracing by default
+  autoSessionTracking: true, // Enable Release Health by default
 };
 
 /**
- * 主进程监控系统初始化
+ * Initialize main-process monitoring
  */
 export async function initializeMainProcessMonitoring(
   config: Partial<MonitoringConfig> = {}
 ): Promise<boolean> {
   const finalConfig = { ...DEFAULT_MONITORING_CONFIG, ...config };
 
-  console.log('🔧 初始化主进程监控系统...', finalConfig);
+  console.log('[observability:main] Initializing...', finalConfig);
 
   try {
     let allSuccessful = true;
 
-    // 1. 初始化Sentry主进程
+    // 1) Init Sentry (main)
     if (finalConfig.enableMainProcess) {
       const { initSentryMain } = await import('./sentry-main');
       const sentryResult = await initSentryMain();
       if (!sentryResult) {
-        console.warn('⚠️ Sentry主进程初始化失败');
+        console.warn('[observability:main] Sentry main init failed');
         allSuccessful = false;
       }
     }
 
-    // 2. 初始化Release Health管理
+    // 2) Init Release Health (main)
     if (finalConfig.enableReleaseHealth) {
       const { releaseHealthManager } = await import('./release-health');
       releaseHealthManager.initializeReleaseHealth();
-      console.log('✅ Release Health管理器已启动');
+      console.log('[observability:main] Release Health initialized');
     }
 
-    // 3. 启动系统指标收集
+    // 3) Start system metrics collection
     if (finalConfig.enableSystemMetrics) {
       const { startSystemMetricsCollection } = await import('./sentry-main');
       startSystemMetricsCollection();
-      console.log('✅ 系统指标收集已启动');
+      console.log('[observability:main] System metrics collection started');
     }
 
-    // 4. 集成可观测性指标
+    // 4) Integrate aggregated observability metrics
     if (finalConfig.enableMainProcess) {
       const { integrateObservabilityMetrics } = await import('./sentry-main');
       await integrateObservabilityMetrics();
-      console.log('✅ 可观测性指标集成完成');
+      console.log(
+        '[observability:main] Observability metrics aggregation completed'
+      );
     }
 
     console.log(
-      `${allSuccessful ? '✅' : '⚠️'} 主进程监控系统初始化${allSuccessful ? '成功' : '部分成功'}`
+      `[observability:main] Initialization ${allSuccessful ? 'succeeded' : 'partially succeeded'}`
     );
     return allSuccessful;
   } catch (error) {
-    console.error('❌ 主进程监控系统初始化异常:', error);
+    console.error('[observability:main] Initialization error:', error);
     return false;
   }
 }
 
 /**
- * 渲染进程监控系统初始化
+ * Initialize renderer-process monitoring
  */
 export async function initializeRendererProcessMonitoring(
   config: Partial<MonitoringConfig> = {}
 ): Promise<boolean> {
   const finalConfig = { ...DEFAULT_MONITORING_CONFIG, ...config };
 
-  console.log('🔧 初始化渲染进程监控系统...', finalConfig);
+  console.log('[observability:renderer] Initializing...', finalConfig);
 
   try {
     let allSuccessful = true;
 
-    // 1. 初始化Sentry渲染进程
+    // 1) Init Sentry (renderer)
     if (finalConfig.enableRendererProcess) {
       const { initSentryRenderer } = await import('./sentry-renderer');
       const sentryResult = await initSentryRenderer();
       if (!sentryResult) {
-        console.warn('⚠️ Sentry渲染进程初始化失败');
+        console.warn('[observability:renderer] Sentry renderer init failed');
         allSuccessful = false;
       }
     }
 
-    // 2. 初始化游戏指标管理器
+    // 2) Init game metrics manager
     if (finalConfig.enableGameMetrics) {
       const { gameMetrics } = await import('./game-metrics');
       gameMetrics.initialize();
-      console.log('✅ 游戏指标管理器已启动');
+      console.log('[observability:renderer] Game metrics manager initialized');
     }
 
     console.log(
-      `${allSuccessful ? '✅' : '⚠️'} 渲染进程监控系统初始化${allSuccessful ? '成功' : '部分成功'}`
+      `[observability:renderer] Initialization ${allSuccessful ? 'succeeded' : 'partially succeeded'}`
     );
     return allSuccessful;
   } catch (error) {
-    console.error('❌ 渲染进程监控系统初始化异常:', error);
+    console.error('[observability:renderer] Initialization error:', error);
     return false;
   }
 }
 
 /**
- * 完整监控系统初始化（用于主进程）
+ * Initialize complete monitoring sequence (main only here; renderer initializes in renderer entry)
  */
 export async function initializeCompleteMonitoring(
   config: Partial<MonitoringConfig> = {}
 ): Promise<{ main: boolean; renderer: boolean }> {
-  console.log('🚀 启动完整监控系统初始化...');
+  console.log('[observability] Starting complete monitoring initialization...');
 
-  // 只在主进程中初始化主进程监控
+  // Only initialize main monitoring here
   const mainResult = await initializeMainProcessMonitoring(config);
 
-  // 渲染进程监控需要在渲染进程中单独初始化
+  // Renderer monitoring is initialized in the renderer entry
   return {
     main: mainResult,
-    renderer: false, // 将在渲染进程中单独设置
+    renderer: false, // Initialized elsewhere
   };
 }
 
 /**
- * 验证监控系统状态
+ * Validate monitoring status (shallow)
  */
 export function validateMonitoringStatus(): {
   sentry: boolean;
@@ -198,10 +200,10 @@ export function validateMonitoringStatus(): {
   systemMetrics: boolean;
 } {
   try {
-    // 检查Sentry状态（需要实际调用Sentry API）
-    const sentryStatus = true; // 简化实现，实际应检查Sentry客户端状态
+    // TODO: read real Sentry client status if needed
+    const sentryStatus = true;
 
-    // 检查Release Health状态
+    // Release Health status (presence check only)
     let releaseHealthStatus = false;
     try {
       const { releaseHealthManager } = require('./release-health');
@@ -210,7 +212,7 @@ export function validateMonitoringStatus(): {
       releaseHealthStatus = false;
     }
 
-    // 检查游戏指标状态
+    // Game metrics status (presence check only)
     let gameMetricsStatus = false;
     try {
       const { gameMetrics } = require('./game-metrics');
@@ -219,7 +221,7 @@ export function validateMonitoringStatus(): {
       gameMetricsStatus = false;
     }
 
-    // 系统指标状态（主进程特有）
+    // System metrics status (placeholder)
     const systemMetricsStatus =
       typeof process !== 'undefined' && !!process.memoryUsage;
 
@@ -230,7 +232,10 @@ export function validateMonitoringStatus(): {
       systemMetrics: systemMetricsStatus,
     };
   } catch (error) {
-    console.warn('⚠️ 监控状态验证失败:', error);
+    console.warn(
+      '[observability] Status validation failed:',
+      (error as any)?.message ?? error
+    );
     return {
       sentry: false,
       releaseHealth: false,
@@ -241,7 +246,7 @@ export function validateMonitoringStatus(): {
 }
 
 /**
- * 获取监控系统摘要
+ * Get monitoring summary (placeholder)
  */
 export function getMonitoringSummary(): {
   config: MonitoringConfig;
@@ -255,12 +260,12 @@ export function getMonitoringSummary(): {
   };
 }
 
-// 便捷的全局初始化函数
+// Global init placeholder
 export const initMonitoring = {
   main: initializeMainProcessMonitoring,
   renderer: initializeRendererProcessMonitoring,
   complete: initializeCompleteMonitoring,
 };
 
-// 导出类型定义
+// Domain types placeholder
 export type { GameMetricDefinition } from './game-metrics';

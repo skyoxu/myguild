@@ -17,7 +17,9 @@ function hasJq() {
 
 function has(cmd) {
   try {
-    execSync(`powershell -NoProfile -Command "Get-Command ${cmd} -ErrorAction SilentlyContinue | Out-Null"`);
+    execSync(
+      `powershell -NoProfile -Command "Get-Command ${cmd} -ErrorAction SilentlyContinue | Out-Null"`
+    );
     return true;
   } catch {
     return false;
@@ -33,12 +35,16 @@ try {
   if (has('choco')) {
     execSync('choco install jq -y --no-progress', { stdio: 'inherit' });
   } else if (has('winget')) {
-    execSync('winget install stedolan.jq --accept-source-agreements --accept-package-agreements', { stdio: 'inherit' });
+    execSync(
+      'winget install stedolan.jq --accept-source-agreements --accept-package-agreements',
+      { stdio: 'inherit' }
+    );
   } else {
-    console.log('Neither choco nor winget available. Please preinstall jq or add a custom installer step.');
+    console.log(
+      'Neither choco nor winget available. Please preinstall jq or add a custom installer step.'
+    );
   }
 } catch (e) {
   console.log(`jq installation attempt failed: ${(e && e.message) || e}`);
 }
 process.exit(0);
-

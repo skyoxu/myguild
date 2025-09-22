@@ -11,11 +11,19 @@ import assert from 'node:assert';
 
 const token = process.env.ADMIN_TOKEN || process.env.GITHUB_TOKEN;
 const repoEnv = process.env.GITHUB_REPOSITORY || '';
-const owner = process.env.REPO_OWNER || (repoEnv.includes('/') ? repoEnv.split('/')[0] : '');
-const repo = process.env.REPO_NAME || (repoEnv.includes('/') ? repoEnv.split('/')[1] : '');
-const requiredContext = process.env.REQUIRED_CONTEXT || 'Validate Workflows & Guards / Enforce UTF-8 + LF for workflows';
+const owner =
+  process.env.REPO_OWNER ||
+  (repoEnv.includes('/') ? repoEnv.split('/')[0] : '');
+const repo =
+  process.env.REPO_NAME || (repoEnv.includes('/') ? repoEnv.split('/')[1] : '');
+const requiredContext =
+  process.env.REQUIRED_CONTEXT ||
+  'Validate Workflows & Guards / Enforce UTF-8 + LF for workflows';
 const branchesEnv = process.env.BRANCHES || 'main';
-const branches = branchesEnv.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+const branches = branchesEnv
+  .split(/\r?\n/)
+  .map(s => s.trim())
+  .filter(Boolean);
 
 async function updateProtection(branch) {
   const url = `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`;
@@ -33,17 +41,19 @@ async function updateProtection(branch) {
   const res = await fetch(url, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
-      'User-Agent': 'workflow-branch-protection-script'
+      'User-Agent': 'workflow-branch-protection-script',
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Failed to update ${branch}: ${res.status} ${res.statusText} - ${text}`);
+    throw new Error(
+      `Failed to update ${branch}: ${res.status} ${res.statusText} - ${text}`
+    );
   }
 }
 
@@ -68,4 +78,3 @@ async function main() {
 }
 
 main();
-

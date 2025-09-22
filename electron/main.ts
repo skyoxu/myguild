@@ -10,6 +10,11 @@ import {
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+// Import compiled CJS from dist-electron after build (relative to dist-electron/main.js)
+// Defer loading monitoring module to runtime to pick the correct path (src vs dist-electron)
+let initializeMainProcessMonitoring:
+  | null
+  | ((config: any) => Promise<boolean>) = null;
 
 console.log(
   '[main.ts] Minimal test switches applied - removed potentially problematic options'
@@ -34,6 +39,38 @@ app.on('web-contents-created', (_e, wc) => {
 
 const APP_SCHEME = 'app';
 
+// Boot logging helper (writes to logs/ci/<date>/main-boot-*.log)
+const BOOT_LOG_PATH = (() => {
+  try {
+    const d = new Date();
+    const dateDir = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ].join('-');
+    const projectRoot = __dirname.endsWith('dist-electron')
+      ? join(__dirname, '..')
+      : process.cwd();
+    const dir = join(projectRoot, 'logs', 'ci', dateDir);
+    mkdirSync(dir, { recursive: true });
+    const stamp = d.toISOString().replace(/[:.]/g, '-');
+    return join(dir, `main-boot-${stamp}.log`);
+  } catch {
+    return null;
+  }
+})();
+
+function bootLog(msg: string): void {
+  try {
+    if (!BOOT_LOG_PATH) return;
+    writeFileSync(BOOT_LOG_PATH, `[${new Date().toISOString()}] ${msg}\n`, {
+      flag: 'a',
+    });
+  } catch {}
+}
+
+bootLog('main.ts loaded (process start)');
+
 // Register custom secure protocol - must be before app ready
 protocol.registerSchemesAsPrivileged([
   {
@@ -47,6 +84,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+bootLog('protocol.registerSchemesAsPrivileged done');
 
 // Security configuration constants (for test verification)
 export const SECURITY_PREFERENCES = {
@@ -117,16 +155,15 @@ function withLiveWindow(
   }
 }
 
-// Mock Sentry initialization
-async function initializeMainProcessMonitoring(options: any): Promise<void> {
-  console.log('[Sentry] Mock initialization with options:', options);
-}
-
 function createSecureBrowserWindow(): BrowserWindow {
+  bootLog('createSecureBrowserWindow() called');
   const win = new BrowserWindow({
     width: 1024,
     height: 768,
-    show: false, // Delay showing until ready-to-show event
+    show:
+      process.env.CI === 'true' || process.env.NODE_ENV === 'test'
+        ? true
+        : false, // In CI/tests show window immediately to unblock firstWindow()
     autoHideMenuBar: true,
     webPreferences: {
       // As suggested in cifix1.txt: ensure preload path is correct in dev/prod environments
@@ -145,10 +182,12 @@ function createSecureBrowserWindow(): BrowserWindow {
       backgroundThrottling: false,
     },
   });
+  bootLog('BrowserWindow constructed');
 
   // will-navigate ONLY blocks external navigation, allows same-origin file://
   win.webContents.on('will-navigate', (event, url) => {
     console.log(`[will-navigate] Navigation attempt: ${url}`);
+    bootLog(`will-navigate: ${url}`);
 
     // Allow local protocols and development server URLs
     const isLocal = url.startsWith('file://') || url.startsWith('app://');
@@ -187,6 +226,7 @@ function createSecureBrowserWindow(): BrowserWindow {
   // As suggested in cifix1.txt: new windows are uniformly controlled by setWindowOpenHandler
   win.webContents.setWindowOpenHandler(({ url }) => {
     console.log(`[setWindowOpenHandler] New window request: ${url}`);
+    bootLog(`setWindowOpenHandler: ${url}`);
 
     // Check if it's a trusted external URL (whitelist domains)
     const trustedDomains = [
@@ -412,33 +452,54 @@ function createWindow(is: any, ses: Electron.Session): void {
     console.log(`[loadURL] Dev env load: ${process.env.VITE_DEV_SERVER_URL}`);
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    // Production environment: use app:// protocol to load page
-    const appUrl = 'app://bundle/index.html';
+    // Production environment: use app:// protocol to load page (map to dist/index.html)
+    const appUrl = 'app://index.html';
     console.log(`[loadURL] Using app:// in production: ${appUrl}`);
     mainWindow.loadURL(appUrl);
   }
 }
 
 app.whenReady().then(async () => {
-  // In CommonJS directly import @electron-toolkit/utils (provide safe fallback to prevent startup failure due to missing dependencies)
+  bootLog('app.whenReady entered');
+  // Quiet ESM import: avoid ERR_REQUIRE_ESM by using real dynamic import via Function shim
   let electronApp: any = { setAppUserModelId: (_: string) => {} };
   let optimizer: any = { watchWindowShortcuts: (_: any) => {} };
   let is: any = { dev: false };
   try {
-    const utils = require('@electron-toolkit/utils');
+    const dynamicImport: (s: string) => Promise<any> = new Function(
+      's',
+      'return import(s)'
+    ) as any;
+    const utils = await dynamicImport('@electron-toolkit/utils');
     electronApp = utils.electronApp ?? electronApp;
     optimizer = utils.optimizer ?? optimizer;
     is = utils.is ?? is;
-  } catch (err) {
-    console.warn(
-      '[main] @electron-toolkit/utils not found; using safe fallback'
-    );
+  } catch {
+    // Silently fall back without logging to keep console clean in CI/production
   }
 
   electronApp.setAppUserModelId('com.electron');
 
   // Initialize Sentry (main) only in production with DSN present
   try {
+    // Load monitoring initializer with runtime path resolution
+    try {
+      const dir = __dirname.replace(/\\+/g, '/');
+      let monitoringPath =
+        '../src/shared/observability/metrics-integration.main';
+      if (dir.endsWith('dist-electron')) {
+        monitoringPath = './src/shared/observability/metrics-integration.main';
+      } else if (dir.endsWith('dist-electron/electron')) {
+        monitoringPath = '../src/shared/observability/metrics-integration.main';
+      }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod = require(monitoringPath);
+      initializeMainProcessMonitoring =
+        mod.initializeMainProcessMonitoring ||
+        (mod.default?.initializeMainProcessMonitoring as any) ||
+        null;
+    } catch {}
+
     const isProd = process.env.NODE_ENV === 'production';
     const hasDsn = !!process.env.SENTRY_DSN;
     const logsDir = join(process.cwd(), 'logs', 'observability');
@@ -454,12 +515,14 @@ app.whenReady().then(async () => {
       writeFileSync(logFile, `init main: prod=true dsn=true rate=${rate}\n`, {
         flag: 'a',
       });
-      await initializeMainProcessMonitoring({
-        tracesSampleRate: rate,
-        autoSessionTracking: true,
-        enableMainProcess: true,
-        enableRendererProcess: false,
-      });
+      if (typeof initializeMainProcessMonitoring === 'function') {
+        await initializeMainProcessMonitoring({
+          tracesSampleRate: rate,
+          autoSessionTracking: true,
+          enableMainProcess: true,
+          enableRendererProcess: false,
+        });
+      }
       writeFileSync(logFile, `initialized=true\n`, { flag: 'a' });
     } else {
       writeFileSync(
@@ -472,6 +535,7 @@ app.whenReady().then(async () => {
 
   // Place in whenReady and before createWindow()
   const ses = session.defaultSession;
+  bootLog('defaultSession obtained');
 
   // As suggested in cifix1.txt: all session operations execute after whenReady
   console.log('[main] Initializing security policies...');
@@ -481,9 +545,11 @@ app.whenReady().then(async () => {
   ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 
   // As suggested in cifix1.txt: use new protocol.handle instead of registerFileProtocol
+  bootLog('protocol.handle registering');
   await protocol.handle(APP_SCHEME, request => {
     try {
       const { pathname } = new URL(request.url);
+      bootLog(`protocol.handle request: ${request.url}`);
 
       // Handle API route requests (fix web-vitals and other API call failures)
       if (pathname.startsWith('/api/')) {
@@ -495,30 +561,73 @@ app.whenReady().then(async () => {
             headers: { 'Content-Type': 'application/json' },
           });
         }
+        if (pathname === '/api/observability-log') {
+          try {
+            const urlObj = new URL(request.url);
+            const fileBase = urlObj.searchParams.get('file') || '';
+            const line = urlObj.searchParams.get('line') || '';
+            const allowed = new Set(['sentry-init-renderer-latest']);
+            if (!allowed.has(fileBase) || !line) {
+              return new Response('Bad Request', { status: 400 });
+            }
+
+            const appPath = app.getAppPath();
+            const projectRoot = appPath.endsWith('dist-electron')
+              ? join(appPath, '..')
+              : appPath;
+            const logsDir = join(projectRoot, 'logs', 'observability');
+            try {
+              if (!existsSync(logsDir)) mkdirSync(logsDir, { recursive: true });
+            } catch {}
+            const file = join(logsDir, `${fileBase}.log`);
+            try {
+              writeFileSync(file, line + '\n', { flag: 'a' });
+            } catch (e) {
+              console.warn('[observability-log] write failed:', e);
+              return new Response('Write Failed', { status: 500 });
+            }
+            return new Response('OK', { status: 200 });
+          } catch (e) {
+            console.warn('[observability-log] handler error:', e);
+            return new Response('Error', { status: 500 });
+          }
+        }
         // Other API paths return 404
         return new Response('API Not Found', { status: 404 });
       }
 
-      // Default load index.html
-      const file = pathname === '/' ? 'index.html' : pathname.slice(1);
+      // Default map: app://index.html -> dist/index.html
+      // Backward-compat: if path starts with "/bundle/", strip the prefix
+      let file = pathname === '/' ? 'index.html' : pathname.slice(1);
+      if (file.startsWith('bundle/')) {
+        file = file.slice('bundle/'.length);
+      }
 
-      // Fix path: in dist-electron environment, go up one level to find project root then join dist
+      // Fix path: handle both dist-electron and dist-electron/electron layouts
       const appPath = app.getAppPath();
-      const projectRoot = appPath.endsWith('dist-electron')
-        ? join(appPath, '..')
-        : appPath;
+      const ap = appPath.replace(/\\+/g, '/');
+      const projectRoot =
+        ap.endsWith('dist-electron') || ap.endsWith('dist-electron/electron')
+          ? join(appPath, '..')
+          : appPath;
       const filePath = join(projectRoot, 'dist', file);
 
       console.log(`[protocol.handle] Request: ${request.url} -> ${filePath}`);
 
       // Use net.fetch to load local file
-      return net.fetch(pathToFileURL(filePath).toString());
+      const fileUrl = pathToFileURL(filePath).toString();
+      bootLog(`protocol.handle fetch: ${fileUrl}`);
+      return net.fetch(fileUrl);
     } catch (error) {
       console.error(`[protocol.handle] Handler error:`, error);
+      bootLog(
+        `[protocol.handle] error: ${String((error as any)?.message ?? error)}`
+      );
       // Return error response
       return new Response('File not found', { status: 404 });
     }
   });
+  bootLog('protocol.handle registered');
 
   // webRequest ONLY intercept subresources, mainFrame handled by will-navigate
   ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
@@ -597,11 +706,13 @@ app.whenReady().then(async () => {
     },
   };
   console.log(
-    '🔒 Security policy initialization completed:',
+    '馃敀 Security policy initialization completed:',
     securityInitEvent
   );
 
+  bootLog('calling createWindow');
   createWindow(is, ses);
+  bootLog('createWindow returned');
 
   // CI test specific: window front IPC handler
   if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
@@ -640,9 +751,18 @@ app.whenReady().then(async () => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      // In CommonJS directly import is tool for activate event
-      const { is } = require('@electron-toolkit/utils');
-      createWindow(is, ses);
+      (async () => {
+        let isLocal: any = { dev: false };
+        try {
+          const dynamicImport: (s: string) => Promise<any> = new Function(
+            's',
+            'return import(s)'
+          ) as any;
+          const utils = await dynamicImport('@electron-toolkit/utils');
+          isLocal = utils.is ?? isLocal;
+        } catch {}
+        createWindow(isLocal, ses);
+      })();
     }
   });
 });

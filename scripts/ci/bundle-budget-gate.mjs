@@ -6,7 +6,13 @@
  * - initial index+vendor 合计: ≤ 400 kB (gzip)
  */
 import { createGzip } from 'node:zlib';
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import {
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const DIST = 'dist';
@@ -102,7 +108,9 @@ async function main() {
     } else {
       console.log('[bundle-budget] OK  ', line, r.file ? `file=${r.file}` : '');
     }
-    summaryLines.push(`${r.name}\t${(r.gzip/1024).toFixed(1)}kB\tlimit ${(r.limit/1024).toFixed(0)}kB\tfile=${r.file || ''}`);
+    summaryLines.push(
+      `${r.name}\t${(r.gzip / 1024).toFixed(1)}kB\tlimit ${(r.limit / 1024).toFixed(0)}kB\tfile=${r.file || ''}`
+    );
   }
 
   // Persist report under logs/ with date/subdir (Windows-friendly, no symlink)
@@ -111,7 +119,8 @@ async function main() {
     const pad = n => String(n).padStart(2, '0');
     const dateDir = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const baseDir = process.env.BUNDLE_BUDGET_LOG_DIR || join('logs', 'bundle-budget');
+    const baseDir =
+      process.env.BUNDLE_BUDGET_LOG_DIR || join('logs', 'bundle-budget');
     const outDir = join(baseDir, dateDir);
     mkdirSync(outDir, { recursive: true });
 

@@ -7,7 +7,10 @@
 import { spawnSync } from 'node:child_process';
 
 function run(cmd, args) {
-  const r = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' });
+  const r = spawnSync(cmd, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
   return r.status ?? 0;
 }
 
@@ -16,4 +19,3 @@ run('npm', ['config', 'delete', 'production']);
 run('npm', ['config', 'delete', 'cache-min']);
 run('npm', ['config', 'set', 'prefer-offline', 'true']);
 console.log('npm config normalized for CI (Windows)');
-

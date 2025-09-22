@@ -22,8 +22,7 @@ const content = {
   timestamp: now,
   environment: 'pr-check',
   commit: process.env.GITHUB_SHA || 'unknown',
-  pr_number: prNumber
+  pr_number: prNumber,
 };
 fs.writeFileSync(file, JSON.stringify(content, null, 2), 'utf8');
 console.log('Generated current.json');
-

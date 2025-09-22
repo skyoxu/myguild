@@ -19,11 +19,10 @@ if (!fs.existsSync(file)) {
     TTFB: 700,
     timestamp: now,
     environment: 'baseline',
-    commit: process.env.GITHUB_SHA || 'unknown'
+    commit: process.env.GITHUB_SHA || 'unknown',
   };
   fs.writeFileSync(file, JSON.stringify(content, null, 2), 'utf8');
   console.log('Created baseline.json');
 } else {
   console.log('baseline.json already exists');
 }
-

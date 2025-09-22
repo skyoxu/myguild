@@ -1,4 +1,4 @@
-﻿// tests/helpers/launch.ts
+// tests/helpers/launch.ts
 import {
   _electron as electron,
   ElectronApplication,
@@ -11,7 +11,12 @@ import { pathToFileURL } from 'node:url';
 import { ensureDomReady } from './ensureDomReady';
 
 // 默认入口路径常量 - dist-electron/package.json 指定 commonjs 类型
-const DEFAULT_ENTRY_PATH = resolve(process.cwd(), 'dist-electron', 'main.js');
+const DEFAULT_ENTRY_PATH = resolve(
+  process.cwd(),
+  'dist-electron',
+  'electron',
+  'main.js'
+);
 
 /**
  * 严格验证Electron入口路径，禁止构建fallback
@@ -123,7 +128,8 @@ export async function launchApp(
   buildApp();
   const main = validateEntryPath(entry);
   const app = await electron.launch({
-    args: [main],
+    // Launch by project root so Electron uses package.json.main; more robust on Windows
+    args: ['.'],
     env: {
       CI: 'true',
       ELECTRON_ENABLE_LOGGING: '1',
@@ -149,7 +155,7 @@ export async function launchAppAndPage(
   buildApp();
   const main = validateEntryPath(entry);
   const app = await electron.launch({
-    args: [main],
+    args: ['.'],
     env: {
       CI: 'true',
       ELECTRON_ENABLE_LOGGING: '1',
@@ -173,10 +179,10 @@ export async function launchAppWithArgs(
   let args: string[];
   if (Array.isArray(entryOrArgs)) {
     const main = validateEntryPath();
-    args = [main, ...entryOrArgs];
+    args = ['.', ...entryOrArgs];
   } else {
     const main = validateEntryPath(entryOrArgs);
-    args = extraArgs ? [main, ...extraArgs] : [main];
+    args = extraArgs ? ['.', ...extraArgs] : ['.'];
   }
   const app = await electron.launch({
     args,
@@ -201,7 +207,7 @@ export async function launchAppWithPage(
   buildApp();
   const main = validateEntryPath(entry);
   const app = await (electronOverride || electron).launch({
-    args: [main],
+    args: ['.'],
     env: {
       CI: 'true',
       SECURITY_TEST_MODE: 'true',

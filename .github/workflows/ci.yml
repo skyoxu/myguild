@@ -131,11 +131,8 @@ jobs:
         run: npm run ci:gate:sentry-up
         timeout-minutes: 2
         continue-on-error: true
-
-      - name: Step
-        run: npm run ci:gate:workflow
-        timeout-minutes: 2
-        continue-on-error: true
+      - name: Renderer import guard
+        run: node scripts/ci/check-renderer-imports.mjs
 
   # ==================== Security Scan Stage ====================
   # Note: Security scans moved to unified gate (security-unified.yml)
@@ -526,6 +523,7 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
+
 
 
 

@@ -16,7 +16,7 @@ const md = [
   '1. Validated prerequisites successfully',
   '2. Executed rollback operations',
   '3. Committed rollback changes',
-  ''
+  '',
 ];
 const all = process.env.ROLLBACK_RESULTS;
 const single = process.env.ROLLBACK_RESULT;
@@ -26,9 +26,15 @@ if (all) {
   md.push('### Single Feed Result', '```json', single, '```');
 }
 if ((process.env.TRIGGERED_BY || '') === 'monitor') {
-  md.push('', 'Note: This rollback was triggered automatically by monitoring systems');
+  md.push(
+    '',
+    'Note: This rollback was triggered automatically by monitoring systems'
+  );
 }
 
 const txt = md.join('\n') + '\n';
-if (!s) { console.log(txt); } else { fs.appendFileSync(s, txt, 'utf8'); }
-
+if (!s) {
+  console.log(txt);
+} else {
+  fs.appendFileSync(s, txt, 'utf8');
+}

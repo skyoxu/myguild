@@ -2,12 +2,20 @@
 // Collect Playwright traces into logs/ with date subfolder (Windows-friendly)
 // Copies test-results/artifacts/**/trace.zip to logs/playwright-traces/YYYY-MM-DD/**/trace.zip
 // Also mirrors test-results/test-results.json when present for correlation
-import { readdirSync, statSync, mkdirSync, existsSync, copyFileSync, writeFileSync } from 'node:fs';
+import {
+  readdirSync,
+  statSync,
+  mkdirSync,
+  existsSync,
+  copyFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 
 const ARTIFACTS_DIR = join('test-results', 'artifacts');
 const RESULTS_JSON = join('test-results', 'test-results.json');
-const LOG_BASE = process.env.PW_TRACE_LOG_DIR || join('logs', 'playwright-traces');
+const LOG_BASE =
+  process.env.PW_TRACE_LOG_DIR || join('logs', 'playwright-traces');
 
 function walk(dir, out = []) {
   let entries = [];
@@ -46,7 +54,9 @@ async function main() {
   const outRoot = join(LOG_BASE, dateDir);
   ensureDir(outRoot);
 
-  const files = walk(ARTIFACTS_DIR).filter(f => f.toLowerCase().endsWith('trace.zip'));
+  const files = walk(ARTIFACTS_DIR).filter(f =>
+    f.toLowerCase().endsWith('trace.zip')
+  );
   const manifest = [];
 
   for (const src of files) {
@@ -56,9 +66,20 @@ async function main() {
     try {
       copyFileSync(src, dst);
       const st = statSync(src);
-      manifest.push({ source: src, target: dst, size: st.size, mtime: st.mtimeMs });
+      manifest.push({
+        source: src,
+        target: dst,
+        size: st.size,
+        mtime: st.mtimeMs,
+      });
     } catch (e) {
-      console.warn('[trace-collect] copy failed:', src, '->', dst, e?.message || e);
+      console.warn(
+        '[trace-collect] copy failed:',
+        src,
+        '->',
+        dst,
+        e?.message || e
+      );
     }
   }
 
@@ -74,16 +95,22 @@ async function main() {
   try {
     writeFileSync(
       manifestPath,
-      JSON.stringify({
-        timestamp: now.toISOString(),
-        source: ARTIFACTS_DIR,
-        output: outRoot,
-        count: manifest.length,
-        entries: manifest,
-      }, null, 2),
+      JSON.stringify(
+        {
+          timestamp: now.toISOString(),
+          source: ARTIFACTS_DIR,
+          output: outRoot,
+          count: manifest.length,
+          entries: manifest,
+        },
+        null,
+        2
+      ),
       'utf-8'
     );
-    console.log(`[trace-collect] Saved manifest: ${manifestPath} (count=${manifest.length})`);
+    console.log(
+      `[trace-collect] Saved manifest: ${manifestPath} (count=${manifest.length})`
+    );
   } catch (e) {
     console.warn('[trace-collect] failed writing manifest:', e?.message || e);
   }

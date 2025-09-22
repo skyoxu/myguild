@@ -30,7 +30,9 @@ try {
     }
     return null;
   }
-  const winUnpacked = existsSync(releaseDir) ? findWinUnpacked(releaseDir) : null;
+  const winUnpacked = existsSync(releaseDir)
+    ? findWinUnpacked(releaseDir)
+    : null;
   if (!winUnpacked) {
     console.error('electron-builder output not found in release/');
     process.exit(1);
@@ -43,4 +45,3 @@ try {
   console.error(`build-electron failed: ${(e && e.message) || e}`);
   process.exit(1);
 }
-

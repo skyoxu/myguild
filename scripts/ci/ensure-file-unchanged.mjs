@@ -11,10 +11,12 @@ if (!target) {
   process.exit(2);
 }
 
-const diff = spawnSync('git', ['diff', '--exit-code', target], { stdio: 'inherit', shell: process.platform === 'win32' });
+const diff = spawnSync('git', ['diff', '--exit-code', target], {
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+});
 if (diff.status !== 0) {
   console.error(`${target} has changes. Please commit the updated file.`);
   process.exit(1);
 }
 console.log(`${target} is up to date.`);
-

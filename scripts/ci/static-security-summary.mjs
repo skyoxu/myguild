@@ -65,15 +65,18 @@ setOutput('high-count', String(high));
 // ADR-0002 thresholds
 if (critical > 0) {
   setOutput('status', 'failed');
-  console.log('[Hard Failure] Found critical security issues, ADR-0002 requires zero');
+  console.log(
+    '[Hard Failure] Found critical security issues, ADR-0002 requires zero'
+  );
   process.exit(1);
 }
 if (high > 3) {
   setOutput('status', 'failed');
-  console.log('[Hard Failure] Found high-level security issues exceeding limit of 3');
+  console.log(
+    '[Hard Failure] Found high-level security issues exceeding limit of 3'
+  );
   process.exit(1);
 }
 setOutput('status', 'pass');
 console.log('Static security scan passes ADR-0002 baseline requirements');
 process.exit(0);
-

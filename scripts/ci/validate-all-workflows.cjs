@@ -234,7 +234,9 @@ async function validateAllWorkflows() {
   // 全局必跑项：scene-transition 项目必须在任一工作流中被执行
   if (!foundSceneTransitionRunner) {
     hasErrors = true;
-    console.log('\n❌ 必跑检查未通过: 未检测到 scene-transition 项目的执行入口');
+    console.log(
+      '\n❌ 必跑检查未通过: 未检测到 scene-transition 项目的执行入口'
+    );
     console.log('   允许的写法示例:');
     console.log('   - npm run test:e2e');
     console.log('   - npm run test:e2e:scene-transition');
@@ -248,7 +250,9 @@ async function validateAllWorkflows() {
     .some(raw => /\bon\s*:\s*[\s\S]*?schedule\s*:/i.test(raw));
   if (anyHasSchedule && !foundScheduledSceneTransition) {
     hasErrors = true;
-    console.log('\n❌ 夜间/周任务检查未通过: 含有 schedule 的工作流未检测到 scene-transition 执行');
+    console.log(
+      '\n❌ 夜间/周任务检查未通过: 含有 schedule 的工作流未检测到 scene-transition 执行'
+    );
     console.log('   请在定时任务工作流中添加以下任一命令:');
     console.log('   - npm run test:e2e:scene-transition');
     console.log("   - npx playwright test --project='scene-transition'");

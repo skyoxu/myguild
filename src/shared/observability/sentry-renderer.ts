@@ -1,4 +1,6 @@
 import * as Sentry from '@sentry/electron/renderer';
+// Static import to avoid mixing dynamic+static and to keep bundling clean
+import { GameMetricsManager } from './game-metrics';
 
 // Read Vite env safely in renderer (fallback to process.env)
 const VITE_ENV: Record<string, any> =
@@ -22,13 +24,20 @@ interface RendererSentryConfig {
   dist?: string;
 }
 
+// Compute renderer sampling rate from Vite env (default 0.02)
+function rendererSampleRate(): number {
+  const raw = (VITE_ENV.VITE_SENTRY_TRACES_SAMPLE_RATE as string) ?? '0.02';
+  const v = Number(raw);
+  if (!isFinite(v) || v < 0 || v > 1) return 0.02;
+  return v;
+}
+
 const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
   production: {
     dsn: (VITE_ENV.VITE_SENTRY_DSN as string) || process.env.SENTRY_DSN || '',
     environment: 'production',
     sampleRate: 1.0,
-    tracesSampleRate:
-      Number(VITE_ENV.VITE_SENTRY_TRACES_SAMPLE_RATE ?? '0.02') || 0,
+    tracesSampleRate: rendererSampleRate(),
     autoSessionTracking: true,
     enableTracing: true,
     release: window.__APP_VERSION__,
@@ -44,8 +53,7 @@ const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
       '',
     environment: 'staging',
     sampleRate: 1.0,
-    tracesSampleRate:
-      Number(VITE_ENV.VITE_SENTRY_TRACES_SAMPLE_RATE ?? '0.05') || 0.05,
+    tracesSampleRate: rendererSampleRate(),
     autoSessionTracking: true,
     enableTracing: true,
     release: window.__APP_VERSION__,
@@ -131,8 +139,8 @@ export function initSentryRenderer(): Promise<boolean> {
         ],
 
         // Privacy filter
-        beforeSend(event, hint) {
-          const filteredEvent = filterRendererPII(event, hint);
+        beforeSend(event, _hint) {
+          const filteredEvent = filterRendererPII(event, _hint);
           return filteredEvent as any;
         },
 
@@ -148,6 +156,13 @@ export function initSentryRenderer(): Promise<boolean> {
           console.log('Sentry renderer initialized');
           setupRendererExtensions(config);
           initializeGameMetrics();
+          // Append effective sampling rate to logs via app:// API (main process writes the file)
+          try {
+            const line = `effective.traces.sampleRate=${config.tracesSampleRate}`;
+            const url = `app://api/observability-log?file=sentry-init-renderer-latest&line=${encodeURIComponent(line)}`;
+            // Fire-and-forget; ignore failures in CI/dev
+            fetch(url).catch(() => void 0);
+          } catch {}
         } else {
           console.error('Sentry renderer initialization verification failed');
         }
@@ -202,7 +217,7 @@ function validateRendererInitialization(): boolean {
 /** PII filter - renderer */
 function filterRendererPII(
   event: Sentry.Event,
-  hint: Sentry.EventHint
+  _hint: Sentry.EventHint
 ): Sentry.Event | null {
   // Remove sensitive fields from requests
   if (event.request?.data) {
@@ -265,9 +280,8 @@ function initializeGameMetrics(): void {
   console.log('Initialize game metrics (renderer)');
 
   // Delay game metrics to avoid impacting first paint
-  setTimeout(async () => {
+  setTimeout(() => {
     try {
-      const { GameMetricsManager } = await import('./game-metrics');
       const metricsManager = GameMetricsManager.getInstance();
       metricsManager.initialize();
     } catch (error) {
@@ -301,6 +315,4 @@ export function sendGameMetric(
   }
 }
 
-// React integration placeholder (kept for future route tracing)
-import React from 'react';
-
+// React integration placeholder removed to avoid unused import warning

@@ -24,26 +24,29 @@ let exitCode = 0;
 
 if (scanResult !== 'success') {
   title = '### Security Gate Hard Failure';
-  msg = '**ADR-0002 Violation**: Static security scan failed baseline requirements\n'
-      + `- Critical security issues: ${critical} (required: 0)\n`
-      + `- High security issues: ${high} (<= 3)\n`
-      + '**This change is hard-blocked from merging until issues are fixed**';
+  msg =
+    '**ADR-0002 Violation**: Static security scan failed baseline requirements\n' +
+    `- Critical security issues: ${critical} (required: 0)\n` +
+    `- High security issues: ${high} (<= 3)\n` +
+    '**This change is hard-blocked from merging until issues are fixed**';
   exitCode = 1;
 } else if (e2eStatus === 'failed') {
   title = '### Security Gate Hard Failure';
-  msg = '**ADR-0002 Violation**: E2E security tests failed\n'
-      + 'Please check Electron security configuration:\n'
-      + '- nodeIntegration=false\n'
-      + '- contextIsolation=true\n'
-      + '- sandbox=true\n'
-      + '**This change is hard-blocked from merging until Electron security is fixed**';
+  msg =
+    '**ADR-0002 Violation**: E2E security tests failed\n' +
+    'Please check Electron security configuration:\n' +
+    '- nodeIntegration=false\n' +
+    '- contextIsolation=true\n' +
+    '- sandbox=true\n' +
+    '**This change is hard-blocked from merging until Electron security is fixed**';
   exitCode = 1;
 } else {
   title = '### Security Gate Passed';
-  msg = '**ADR-0002 Compliant**: All security checks passed\n'
-      + '- Critical security issues: 0\n'
-      + `- High security issues: ${high} (<= 3)\n`
-      + '- E2E security tests: Passed';
+  msg =
+    '**ADR-0002 Compliant**: All security checks passed\n' +
+    '- Critical security issues: 0\n' +
+    `- High security issues: ${high} (<= 3)\n` +
+    '- E2E security tests: Passed';
 }
 
 const gateLabel = eventName === 'pull_request' ? 'Soft' : 'Hard';
@@ -52,8 +55,12 @@ outSummary('');
 outSummary('### Check Summary');
 outSummary('| Check Item | Status | Result |');
 outSummary('|---------|------|------|');
-outSummary(`| Static Security Scan | ${scanResult} | Critical: ${critical}, High: ${high} |`);
-outSummary(`| E2E Security Tests | ${e2eStatus || 'unknown'} | ${gateLabel === 'Soft' ? 'Executed' : 'Executed'} |`);
+outSummary(
+  `| Static Security Scan | ${scanResult} | Critical: ${critical}, High: ${high} |`
+);
+outSummary(
+  `| E2E Security Tests | ${e2eStatus || 'unknown'} | ${gateLabel === 'Soft' ? 'Executed' : 'Executed'} |`
+);
 outSummary(`| E2E Gate | ${gateLabel} | Mode: PR=Soft / Main=Hard |`);
 outSummary('');
 outSummary(title);
@@ -61,4 +68,3 @@ outSummary(msg);
 
 if (exitCode === 1) process.exit(1);
 process.exit(0);
-

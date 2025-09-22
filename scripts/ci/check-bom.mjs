@@ -17,10 +17,12 @@ function checkBOM(filePath) {
   try {
     const buffer = readFileSync(filePath);
     // UTF-8 BOM: EF BB BF
-    return buffer.length >= 3 &&
-           buffer[0] === 0xEF &&
-           buffer[1] === 0xBB &&
-           buffer[2] === 0xBF;
+    return (
+      buffer.length >= 3 &&
+      buffer[0] === 0xef &&
+      buffer[1] === 0xbb &&
+      buffer[2] === 0xbf
+    );
   } catch (error) {
     console.warn(`⚠️ 无法读取文件: ${filePath}`);
     return false;
@@ -33,9 +35,20 @@ function checkBOM(filePath) {
  * @param {string[]} extensions 要检查的文件扩展名
  * @returns {string[]} 文件路径列表
  */
-function scanDirectory(dir, extensions = ['.json', '.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs']) {
+function scanDirectory(
+  dir,
+  extensions = ['.json', '.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs']
+) {
   const files = [];
-  const excludeDirs = ['.git', 'node_modules', '.next', 'dist', 'build', '.vscode', '.idea'];
+  const excludeDirs = [
+    '.git',
+    'node_modules',
+    '.next',
+    'dist',
+    'build',
+    '.vscode',
+    '.idea',
+  ];
 
   try {
     const items = readdirSync(dir);
@@ -44,7 +57,11 @@ function scanDirectory(dir, extensions = ['.json', '.js', '.ts', '.tsx', '.jsx',
       const fullPath = join(dir, item);
       const stat = statSync(fullPath);
 
-      if (stat.isDirectory() && !excludeDirs.includes(item) && !item.startsWith('.')) {
+      if (
+        stat.isDirectory() &&
+        !excludeDirs.includes(item) &&
+        !item.startsWith('.')
+      ) {
         files.push(...scanDirectory(fullPath, extensions));
       } else if (stat.isFile() && extensions.some(ext => item.endsWith(ext))) {
         files.push(fullPath);
@@ -80,7 +97,7 @@ function main() {
     console.error('  1. 使用 VS Code 打开文件');
     console.error('  2. 右下角点击 "UTF-8 with BOM"');
     console.error('  3. 选择 "Save with Encoding" → "UTF-8"');
-    console.error('  4. 或使用命令: sed -i \'1s/^\\xEF\\xBB\\xBF//\' <filename>');
+    console.error("  4. 或使用命令: sed -i '1s/^\\xEF\\xBB\\xBF//' <filename>");
 
     process.exit(1);
   } else {

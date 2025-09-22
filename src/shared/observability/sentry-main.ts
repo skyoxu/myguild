@@ -1,9 +1,9 @@
-﻿import { app, session } from 'electron';
+import { app } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
-// 环境配置类型定义
+// Environment configuration type definition
 interface SentryEnvironmentConfig {
   dsn: string;
   environment: 'development' | 'staging' | 'production';
@@ -15,7 +15,7 @@ interface SentryEnvironmentConfig {
   dist?: string;
 }
 
-// 动态采样策略配置
+// Dynamic sampling strategy configuration
 interface DynamicSamplingConfig {
   baseSampleRate: number;
   errorThreshold: number;
@@ -23,7 +23,7 @@ interface DynamicSamplingConfig {
   criticalTransactions: string[];
 }
 
-// 环境差异化配置 + 动态采样
+// Environment-specific configuration + dynamic sampling
 const SENTRY_CONFIGS: Record<
   string,
   SentryEnvironmentConfig & { dynamicSampling: DynamicSamplingConfig }
@@ -31,14 +31,19 @@ const SENTRY_CONFIGS: Record<
   production: {
     dsn: process.env.SENTRY_DSN || '',
     environment: 'production',
-    sampleRate: 1.0, // 生产环境100%错误采集
-    tracesSampleRate: 0.2, // 按您要求设置为20%性能追踪（基础值）
-    autoSessionTracking: true, // 开启Release Health
+    sampleRate: 1.0, // Production environment 100% error collection
+    // NOTE: tracesSampleRate is not used when tracesSampler is provided; keep for completeness.
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.02') || 0.02,
+    autoSessionTracking: true, // Enable Release Health
     enableTracing: true,
     release: `app@${app.getVersion?.() ?? 'unknown'}+${process.platform}`,
     dist: process.platform,
     dynamicSampling: {
-      baseSampleRate: 0.2, // 基础采样率也更新为0.2
+      // Use environment override (default 0.02) to control base sampling for production.
+      baseSampleRate: (() => {
+        const v = Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.02');
+        return !isFinite(v) || v < 0 || v > 1 ? 0.02 : v;
+      })(),
       errorThreshold: 0.05,
       performanceThreshold: 500,
       criticalTransactions: ['startup', 'game.load', 'ai.decision'],
@@ -48,8 +53,8 @@ const SENTRY_CONFIGS: Record<
   staging: {
     dsn: process.env.SENTRY_DSN_STAGING || process.env.SENTRY_DSN || '',
     environment: 'staging',
-    sampleRate: 1.0, // 预发布环境100%采集
-    tracesSampleRate: 0.3, // 预发布环境30%性能追踪（基础值）
+    sampleRate: 1.0, // Staging environment 100% collection
+    tracesSampleRate: 0.3, // Staging environment 30% performance tracing (base value)
     autoSessionTracking: true,
     enableTracing: true,
     release: `app@${app.getVersion?.() ?? 'unknown'}+${process.platform}`,
@@ -65,8 +70,8 @@ const SENTRY_CONFIGS: Record<
   development: {
     dsn: process.env.SENTRY_DSN_DEV || '',
     environment: 'development',
-    sampleRate: 1.0, // 开发环境100%采集（调试需要）
-    tracesSampleRate: 1.0, // 开发环境100%性能追踪
+    sampleRate: 1.0, // Development environment 100% collection (debugging needs)
+    tracesSampleRate: 1.0, // Development environment 100% performance tracing
     autoSessionTracking: true,
     enableTracing: true,
     release: `app@${app.getVersion?.() ?? 'dev'}+${process.platform}`,
@@ -80,7 +85,7 @@ const SENTRY_CONFIGS: Record<
   },
 };
 
-// 性能监控状态
+// Performance monitoring status
 const performanceStats = {
   avgResponseTime: 0,
   errorRate: 0,
@@ -89,17 +94,17 @@ const performanceStats = {
 };
 
 /**
- * 初始化Sentry主进程监控
- * 企业级配置，支持环境差异化、动态采样、Release Health
+ * Initialize Sentry main process monitoring
+ * Enterprise-level configuration, supporting environment differentiation, dynamic sampling, Release Health
  */
 export function initSentryMain(): Promise<boolean> {
   return new Promise(resolve => {
     try {
-      // 🔧 确定当前环境
+      // [CONFIG] Determine current environment
       const environment = determineEnvironment();
       const config = SENTRY_CONFIGS[environment];
 
-      // 🚨 验证配置完整性
+      // [VALIDATION] Verify configuration integrity
       if (!validateSentryConfig(config)) {
         console.warn('Sentry config validation failed; using degraded mode');
         resolve(false);
@@ -108,21 +113,21 @@ export function initSentryMain(): Promise<boolean> {
 
       console.log(`Initialize Sentry (main) [${environment}]`);
 
-      // 🎯 核心Sentry初始化
+      // [CORE] Core Sentry initialization
       Sentry.init({
         dsn: config.dsn,
         environment: config.environment,
         release: config.release,
         dist: config.dist,
 
-        // 📊 动态采样策略
+        // [METRICS] Dynamic sampling strategy
         sampleRate: config.sampleRate,
         tracesSampler: createDynamicTracesSampler(config.dynamicSampling),
 
-        // 🏥 Release Health配置（自动启用）
-        // enableTracing已在v5+中移除，通过tracesSampleRate启用追踪
+        // [HEALTH] Release Health configuration (auto-enabled)
+        // enableTracing has been removed in v5+, enable tracing through tracesSampleRate
 
-        // 🎮 游戏特定标签
+        // [GAME] Game-specific tags
         initialScope: {
           tags: {
             'app.type': 'electron-game',
@@ -134,7 +139,7 @@ export function initSentryMain(): Promise<boolean> {
             'node.version': process.version,
           },
 
-          // 🎯 默认上下文
+          // [CONTEXT] Default context
           contexts: {
             app: {
               name: 'Guild Manager',
@@ -148,7 +153,7 @@ export function initSentryMain(): Promise<boolean> {
           },
         },
 
-        // 🔧 集成配置
+        // [INTEGRATION] Integration configuration
         integrations: [
           Sentry.httpIntegration({ breadcrumbs: true }),
           Sentry.onUncaughtExceptionIntegration(),
@@ -157,19 +162,19 @@ export function initSentryMain(): Promise<boolean> {
           Sentry.contextLinesIntegration(),
         ],
 
-        // 🚫 隐私保护 - OTel语义兼容的PII过滤
+        // [PRIVACY] Privacy protection - OTel semantic compatible PII filtering
         beforeSend(event, hint) {
           const filteredEvent = filterPIIWithOTelSemantics(event, hint);
           return filteredEvent as any;
         },
 
-        // 📊 面包屑过滤
+        // [BREADCRUMB] Breadcrumb filtering
         beforeBreadcrumb(breadcrumb) {
           return filterSensitiveBreadcrumb(breadcrumb);
         },
       });
 
-      // 🔍 初始化后验证
+      // [VERIFICATION] Post-initialization verification
       setTimeout(() => {
         const isInitialized = validateSentryInitialization();
         if (isInitialized) {
@@ -177,6 +182,18 @@ export function initSentryMain(): Promise<boolean> {
           setupSentryExtensions(config);
           logInitializationEvent(config);
           startPerformanceMonitoring();
+
+          // Append effective sampling rate to observability logs (Windows-friendly path)
+          try {
+            const logsDir = join(process.cwd(), 'logs', 'observability');
+            if (!existsSync(logsDir)) {
+              try { mkdirSync(logsDir, { recursive: true }); } catch {}
+            }
+            const logFile = join(logsDir, 'sentry-init-main-latest.log');
+            const baseRate = config.dynamicSampling.baseSampleRate;
+            const note = `effective.traces.baseSampleRate=${baseRate}`;
+            writeFileSync(logFile, note + '\n', { flag: 'a' });
+          } catch {}
         } else {
           console.error('Sentry main initialization verification failed');
         }
@@ -184,7 +201,7 @@ export function initSentryMain(): Promise<boolean> {
       }, 100);
     } catch (error) {
       console.error('Sentry main initialization error:', error);
-      // 🛡️ 降级处理：即使Sentry失败也不应该影响应用启动
+      // [FALLBACK] Degraded handling: Even if Sentry fails, it should not affect application startup
       setupFallbackLogging();
       resolve(false);
     }
@@ -192,33 +209,33 @@ export function initSentryMain(): Promise<boolean> {
 }
 
 /**
- * 创建动态采样函数（B建议：固定+动态采样）
+ * Create dynamic sampling function (B recommendation: fixed + dynamic sampling)
  */
 function createDynamicTracesSampler(config: DynamicSamplingConfig) {
   return (samplingContext: any) => {
     const { transactionContext } = samplingContext;
     const transactionName = transactionContext?.name || '';
 
-    // 🚨 关键事务强制高采样率
+    // [CRITICAL] Force high sampling rate for critical transactions
     if (
       config.criticalTransactions.some(critical =>
         transactionName.includes(critical)
       )
     ) {
-      return 1.0; // 100%采样关键事务
+      return 1.0; // 100% sampling for critical transactions
     }
 
-    // 📈 异常/低健康版本提升采样率
+    // [ADAPTIVE] Increase sampling rate for abnormal/low health versions
     if (performanceStats.errorRate > config.errorThreshold) {
       return Math.min(1.0, config.baseSampleRate * 2);
     }
 
-    // 🐌 高延迟时自适应下调
+    // [PERFORMANCE] Adaptive down-scaling during high latency
     if (performanceStats.avgResponseTime > config.performanceThreshold) {
       return Math.max(0.01, config.baseSampleRate * 0.5);
     }
 
-    // 🔄 CPU负载自适应调节
+    // [CPU] CPU load adaptive adjustment
     if (performanceStats.cpuUsage > 80) {
       return Math.max(0.01, config.baseSampleRate * 0.3);
     }
@@ -228,58 +245,58 @@ function createDynamicTracesSampler(config: DynamicSamplingConfig) {
 }
 
 /**
- * 启动性能监控（支持自适应采样）
+ * Start performance monitoring (supports adaptive sampling)
  */
 function startPerformanceMonitoring(): void {
   setInterval(() => {
     try {
-      // 更新性能统计
+      // Update performance statistics
       updatePerformanceStats();
     } catch (error) {
       console.warn('Performance monitoring update failed:', error);
     }
-  }, 30000); // 每30秒更新
+  }, 30000); // Update every 30 seconds
 }
 
 /**
- * 更新性能统计
+ * Update performance statistics
  */
 function updatePerformanceStats(): void {
-  // 这里可以接入实际的性能监控逻辑
+  // Here you can integrate actual performance monitoring logic
   performanceStats.lastUpdate = Date.now();
 
-  // 示例：从进程监控获取CPU使用率
+  // Example: Get CPU usage from process monitoring
   if (process.cpuUsage) {
     const usage = process.cpuUsage();
-    performanceStats.cpuUsage = (usage.user + usage.system) / 1000000; // 转换为百分比
+    performanceStats.cpuUsage = (usage.user + usage.system) / 1000000; // Convert to percentage
   }
 }
 
 /**
- * 确定当前运行环境
+ * Determine current runtime environment
  */
 function determineEnvironment(): string {
-  // 环境变量优先
+  // Environment variables take priority
   if (process.env.NODE_ENV) {
     return process.env.NODE_ENV;
   }
 
-  // 开发模式检测
+  // Development mode detection
   if (process.env.ELECTRON_IS_DEV || !app.isPackaged) {
     return 'development';
   }
 
-  // 预发布检测
+  // Pre-release detection
   if (process.env.STAGING || app.getVersion?.()?.includes('beta')) {
     return 'staging';
   }
 
-  // 默认生产环境
+  // Default production environment
   return 'production';
 }
 
 /**
- * 验证Sentry配置
+ * Validate Sentry configuration
  */
 function validateSentryConfig(config: SentryEnvironmentConfig): boolean {
   if (!config.dsn) {
@@ -296,17 +313,17 @@ function validateSentryConfig(config: SentryEnvironmentConfig): boolean {
 }
 
 /**
- * 验证Sentry初始化状态
+ * Validate Sentry initialization status
  */
 function validateSentryInitialization(): boolean {
   try {
-    // 检查Sentry客户端是否可用
+    // Check if Sentry client is available
     const client = Sentry.getClient();
     if (!client) {
       return false;
     }
 
-    // 检查SDK版本兼容性
+    // Check SDK version compatibility
     const options = client.getOptions();
     if (!options.dsn) {
       return false;
@@ -320,35 +337,35 @@ function validateSentryInitialization(): boolean {
 }
 
 /**
- * F建议：PII过滤和Minidump处理（OTel语义兼容）
+ * F recommendation: PII filtering and Minidump handling (OTel semantic compatible)
  */
 function filterPIIWithOTelSemantics(
   event: Sentry.Event,
-  hint: Sentry.EventHint
+  _hint: Sentry.EventHint
 ): Sentry.Event | null {
-  // 🚫 移除PII敏感信息
+  // [PII] Remove PII sensitive information
   if (event.request?.headers) {
     delete event.request.headers['authorization'];
     delete event.request.headers['cookie'];
     delete event.request.headers['x-api-key'];
   }
 
-  // 🚫 过滤用户敏感信息（遵循OTel语义）
+  // [PII] Filter user sensitive information (following OTel semantics)
   if (event.user) {
     delete event.user.email;
     delete event.user.ip_address;
-    // 保留OTel兼容的用户标识
+    // Keep OTel-compatible user identifiers
     if (event.user.id) {
       event.user.id = 'anonymous';
     }
   }
 
-  // 🚫 处理异常信息中的PII
+  // [PII] Handle PII in exception information
   if (event.exception?.values) {
     event.exception.values.forEach(exception => {
-      // 使用OTel异常语义
+      // Use OTel exception semantics
       if (exception.type && (exception as any).message) {
-        // 清理异常消息中的敏感信息
+        // Clean sensitive information in exception messages
         (exception as any).message = sanitizeMessage(
           (exception as any).message
         );
@@ -356,10 +373,10 @@ function filterPIIWithOTelSemantics(
     });
   }
 
-  // 🎯 确保OTel语义字段
+  // [OTEL] Ensure OTel semantic fields
   if (event.contexts) {
     if (event.contexts.trace) {
-      // 保留OTel trace语义
+      // Keep OTel trace semantics
       const traceContext = event.contexts.trace;
       event.tags = event.tags || {};
       if (traceContext.trace_id) {
@@ -375,25 +392,25 @@ function filterPIIWithOTelSemantics(
 }
 
 /**
- * 清理消息中的敏感信息
+ * Clean sensitive information in messages
  */
 function sanitizeMessage(message: string): string {
-  // 移除常见的敏感信息模式
+  // Remove common sensitive information patterns
   return message
     .replace(/password[=:]\s*[^\s]+/gi, 'password=[REDACTED]')
     .replace(/token[=:]\s*[^\s]+/gi, 'token=[REDACTED]')
     .replace(/key[=:]\s*[^\s]+/gi, 'key=[REDACTED]')
     .replace(/secret[=:]\s*[^\s]+/gi, 'secret=[REDACTED]')
-    .replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD_NUMBER]'); // 信用卡号
+    .replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD_NUMBER]'); // Credit card numbers
 }
 
 /**
- * 过滤敏感面包屑
+ * Filter sensitive breadcrumbs
  */
 function filterSensitiveBreadcrumb(
   breadcrumb: Sentry.Breadcrumb
 ): Sentry.Breadcrumb | null {
-  // 🚫 过滤包含敏感信息的面包屑
+  // [FILTER] Filter breadcrumbs containing sensitive information
   if (breadcrumb.category === 'http' && breadcrumb.data?.url) {
     const url = breadcrumb.data.url;
     if (
@@ -405,7 +422,7 @@ function filterSensitiveBreadcrumb(
     }
   }
 
-  // 🚫 过滤用户输入相关面包屑
+  // [FILTER] Filter user input related breadcrumbs
   if (
     breadcrumb.category === 'ui.input' &&
     breadcrumb.message?.includes('password')
@@ -417,47 +434,47 @@ function filterSensitiveBreadcrumb(
 }
 
 /**
- * 设置Sentry扩展功能
+ * Setup Sentry extension features
  */
 function setupSentryExtensions(config: SentryEnvironmentConfig): void {
-  // 🎯 设置用户上下文（非敏感信息）
+  // [USER] Set user context (non-sensitive information)
   Sentry.setUser({
-    id: 'anonymous', // 不使用真实用户ID
+    id: 'anonymous', // Don't use real user ID
     username: 'player',
   });
 
-  // 🏷️ 设置全局标签
+  // [TAGS] Set global tags
   Sentry.setTags({
     'init.success': 'true',
     'init.environment': config.environment,
     'init.timestamp': new Date().toISOString(),
   });
 
-  // 📝 设置Release Health用户反馈
+  // [FEEDBACK] Setup Release Health user feedback
   if (config.environment === 'production') {
     setupUserFeedback();
   }
 }
 
 /**
- * 设置用户反馈机制
+ * Setup user feedback mechanism
  */
 function setupUserFeedback(): void {
-  // 🗣️ 在崩溃时收集用户反馈
+  // [FEEDBACK] Collect user feedback on crashes
   process.on('uncaughtException', error => {
     Sentry.captureException(error);
 
-    // 可选：显示用户反馈对话框
+    // Optional: Show user feedback dialog
     // showUserFeedbackDialog();
   });
 }
 
 /**
- * 记录初始化事件（OTel兼容格式）
+ * Log initialization event (OTel compatible format)
  */
 function logInitializationEvent(config: SentryEnvironmentConfig): void {
   Sentry.addBreadcrumb({
-    message: 'Sentry主进程初始化完成',
+    message: 'Sentry main process initialization complete',
     category: 'observability',
     level: 'info',
     data: {
@@ -467,30 +484,30 @@ function logInitializationEvent(config: SentryEnvironmentConfig): void {
       autoSessionTracking: config.autoSessionTracking,
       platform: process.platform,
       version: app.getVersion?.() ?? 'unknown',
-      // OTel语义字段
+      // OTel semantic fields
       'service.name': 'guild-manager',
       'service.version': app.getVersion?.() ?? 'unknown',
       'deployment.environment': config.environment,
     },
   });
 
-  // 🎯 发送初始化成功事件
-  Sentry.captureMessage('Sentry主进程监控已启用', 'info');
+  // [EVENT] Send initialization success event
+  Sentry.captureMessage('Sentry main process monitoring enabled', 'info');
 }
 
 /**
- * 降级日志记录（D建议：结构化日志JSON格式）
+ * Fallback logging (D recommendation: structured JSON log format)
  */
 function setupFallbackLogging(): void {
   console.log('Setup fallback logging...');
 
-  // 创建本地日志目录
+  // Create local log directory
   const logsDir = join(app.getPath('userData'), 'logs');
   if (!existsSync(logsDir)) {
     mkdirSync(logsDir, { recursive: true });
   }
 
-  // 设置本地错误日志（统一JSON模式）
+  // Setup local error log (unified JSON mode)
   process.on('uncaughtException', error => {
     const logEntry = {
       timestamp: new Date().toISOString(),
@@ -503,7 +520,7 @@ function setupFallbackLogging(): void {
         platform: process.platform,
         version: app.getVersion?.() ?? 'unknown',
       },
-      // OTel语义字段
+      // OTel semantic fields
       trace_id: generateTraceId(),
       span_id: generateSpanId(),
       'exception.type': error.constructor.name,
@@ -519,27 +536,27 @@ function setupFallbackLogging(): void {
 }
 
 /**
- * 生成简单的trace ID（用于降级日志）
+ * Generate simple trace ID (for fallback logging)
  */
 function generateTraceId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
 /**
- * 生成简单的span ID（用于降级日志）
+ * Generate simple span ID (for fallback logging)
  */
 function generateSpanId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
 /**
- * 集成SQLite健康指标到Sentry监控
+ * Integrate SQLite health metrics into Sentry monitoring
  */
 export async function integrateObservabilityMetrics(): Promise<void> {
   try {
     console.log('Integrate observability metrics into Sentry...');
 
-    // 简化的可观测性管理器
+    // Simplified observability manager
     interface ObservabilityConfig {
       dbPath: string;
       sentryDsn?: string;
@@ -556,7 +573,7 @@ export async function integrateObservabilityMetrics(): Promise<void> {
 
       async collectAndExpose(): Promise<void> {
         try {
-          // 简化的指标收集逻辑
+          // Simplified metrics collection logic
           const metrics = {
             timestamp: new Date().toISOString(),
             dbPath: this.config.dbPath,
@@ -573,13 +590,13 @@ export async function integrateObservabilityMetrics(): Promise<void> {
     const observabilityConfig: ObservabilityConfig = {
       dbPath: process.env.DB_PATH || 'data/app.db',
       sentryDsn: process.env.SENTRY_DSN,
-      metricsInterval: 60, // Sentry集成使用较长间隔
+      metricsInterval: 60, // Use a longer interval with Sentry integration
       enabled: true,
     };
 
     const manager = new SimpleObservabilityManager(observabilityConfig);
 
-    // 启动定期指标收集和上报
+    // Start periodic metrics collection and reporting
     setInterval(async () => {
       try {
         await manager.collectAndExpose();
@@ -588,18 +605,21 @@ export async function integrateObservabilityMetrics(): Promise<void> {
       }
     }, observabilityConfig.metricsInterval * 1000);
 
-    // 立即执行一次收集
+    // Execute collection immediately once
     await manager.collectAndExpose();
 
     console.log('SQLite health metrics integrated into Sentry');
   } catch (error) {
-    console.warn('Observability metrics integration failed:', error.message);
-    // 不应该因为监控失败而影响主应用启动
+    console.warn(
+      'Observability metrics integration failed:',
+      (error as Error).message
+    );
+    // Should not affect main application startup due to monitoring failure
   }
 }
 
 /**
- * 向Sentry发送自定义业务指标 - 按您要求的distribution格式
+ * Send custom business metrics to Sentry - in the distribution format as requested
  */
 export function sendBusinessMetric(
   metricName: string,
@@ -608,7 +628,7 @@ export function sendBusinessMetric(
   tags: Record<string, string> = {}
 ): void {
   try {
-    // 发送指标作为面包屑（metrics API已移除）
+    // Send metrics as breadcrumbs (metrics API has been removed)
     Sentry.addBreadcrumb({
       message: `Metric: ${metricName}`,
       level: 'info',
@@ -621,14 +641,17 @@ export function sendBusinessMetric(
       category: 'metrics',
     });
 
-    console.log(`Main-process metric sent: ${metricName}=${value}${unit}`, tags);
+    console.log(
+      `Main-process metric sent: ${metricName}=${value}${unit}`,
+      tags
+    );
   } catch (error) {
-    console.warn('Main-process metric send failed:', error.message);
+    console.warn('Main-process metric send failed:', (error as Error).message);
   }
 }
 
 /**
- * 发送关卡加载时长指标 - 主进程版本
+ * Send level loading time metrics - main process version
  */
 export function reportLevelLoadTimeMain(loadMs: number, levelId: string): void {
   sendBusinessMetric('level.load.ms', loadMs, 'millisecond', {
@@ -638,7 +661,7 @@ export function reportLevelLoadTimeMain(loadMs: number, levelId: string): void {
 }
 
 /**
- * 发送战斗回合耗时指标 - 主进程版本
+ * Send battle round time metrics - main process version
  */
 export function reportBattleRoundTimeMain(
   roundMs: number,
@@ -653,14 +676,14 @@ export function reportBattleRoundTimeMain(
 }
 
 /**
- * 发送系统性能指标
+ * Send system performance metrics
  */
 export function reportSystemMetrics(): void {
   try {
     const memUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
 
-    // 发送内存指标
+    // Send memory metrics
     sendBusinessMetric(
       'system.memory.rss.mb',
       Math.round(memUsage.rss / 1024 / 1024),
@@ -679,7 +702,7 @@ export function reportSystemMetrics(): void {
       }
     );
 
-    // 发送CPU指标
+    // Send CPU metrics
     sendBusinessMetric(
       'system.cpu.user.ms',
       Math.round(cpuUsage.user / 1000),
@@ -698,33 +721,36 @@ export function reportSystemMetrics(): void {
       }
     );
   } catch (error) {
-    console.warn('System performance metric send failed:', error.message);
+    console.warn(
+      'System performance metric send failed:',
+      (error as Error).message
+    );
   }
 }
 
 /**
- * 定期发送系统指标
+ * Send system metrics periodically
  */
 export function startSystemMetricsCollection(): void {
-  // 立即发送一次
+  // Send immediately once
   reportSystemMetrics();
 
-  // 每60秒发送一次系统指标
+  // Send system metrics every 60 seconds
   const metricsInterval = setInterval(() => {
     reportSystemMetrics();
   }, 60000);
 
-  // 在应用退出时清理
+  // Clean up on application exit
   app.on('before-quit', () => {
     clearInterval(metricsInterval);
-    reportSystemMetrics(); // 最后一次上报
+    reportSystemMetrics(); // Final report
   });
 
   console.log('System metrics collection started (every 60s)');
 }
 
 /**
- * 发送数据库健康告警
+ * Send database health alerts
  */
 export function sendDatabaseAlert(
   alertType: string,
@@ -745,8 +771,8 @@ export function sendDatabaseAlert(
 
     console.log(`Database alert sent: ${alertType} - ${message}`);
   } catch (error) {
-    console.warn('Database alert send failed:', error.message);
+    console.warn('Database alert send failed:', (error as Error).message);
   }
 }
 
-// 所有函数已在上方直接导出，无需重复导出
+// All functions have been exported above, no need to re-export

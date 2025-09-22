@@ -39,4 +39,3 @@ describe('Event Bus contracts', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 });
-

@@ -9,6 +9,13 @@ import path from 'node:path';
 fs.mkdirSync('artifacts', { recursive: true });
 const zip = path.join('artifacts', 'build.zip');
 const cmd = process.platform === 'win32' ? 'powershell' : 'pwsh';
-const r = spawnSync(cmd, ['-NoProfile', '-Command', `Compress-Archive -Path dist/* -DestinationPath ${zip} -Force`], { stdio: 'inherit' });
+const r = spawnSync(
+  cmd,
+  [
+    '-NoProfile',
+    '-Command',
+    `Compress-Archive -Path dist/* -DestinationPath ${zip} -Force`,
+  ],
+  { stdio: 'inherit' }
+);
 process.exit(r.status ?? 0);
-

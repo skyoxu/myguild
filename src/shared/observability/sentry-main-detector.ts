@@ -1,13 +1,13 @@
 ﻿/**
- * Sentry主进程初始化状态检测器
+ * Sentry
  *
- * 专门用于Electron主进程的Sentry服务检测和验证
+ * ElectronSentry
  */
 
 import { app } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 
-// 复用检测结果类型
+//
 export interface SentryMainDetectionResult {
   isInitialized: boolean;
   hubStatus: 'active' | 'inactive' | 'error';
@@ -36,7 +36,7 @@ export interface SentryMainDetectionResult {
   };
 }
 
-// 主进程检测配置
+//
 export interface SentryMainDetectionOptions {
   timeout: number;
   performCaptureTest: boolean;
@@ -58,7 +58,7 @@ const DEFAULT_MAIN_DETECTION_OPTIONS: SentryMainDetectionOptions = {
 };
 
 /**
- * Sentry主进程检测器类
+ * Sentry
  */
 export class SentryMainDetector {
   private options: SentryMainDetectionOptions;
@@ -69,7 +69,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 执行主进程Sentry初始化检测
+   * Sentry
    */
   async detectMainProcessStatus(): Promise<SentryMainDetectionResult> {
     const startTime = Date.now();
@@ -98,9 +98,9 @@ export class SentryMainDetector {
     };
 
     try {
-      this.log('🔍 开始主进程Sentry初始化状态检测...');
+      this.log(' Sentry...');
 
-      // 收集性能指标
+      //
       if (this.options.collectPerformanceMetrics) {
         result.performanceMetrics.memoryUsage = process.memoryUsage();
         result.performanceMetrics.electronProcessInfo = {
@@ -112,37 +112,37 @@ export class SentryMainDetector {
         };
       }
 
-      // 1. 检测Hub状态
+      // 1. Hub
       result.hubStatus = await this.checkMainHubStatus();
       result.details.hasValidHub = result.hubStatus === 'active';
 
-      // 2. 检测Client状态
+      // 2. Client
       result.clientStatus = await this.checkMainClientStatus();
       result.details.hasValidClient = result.clientStatus === 'connected';
 
-      // 3. 检查DSN配置
+      // 3. DSN
       result.details.hasValidDsn = this.checkMainDsnConfiguration();
 
-      // 4. 检查Release信息
+      // 4. Release
       result.release = this.getMainRelease();
 
-      // 5. 测试错误捕获功能
+      // 5.
       if (this.options.performCaptureTest) {
         result.details.captureWorks = await this.testMainCaptureFunction();
       }
 
-      // 6. 检查会话跟踪
+      // 6.
       if (this.options.checkSessionTracking) {
         result.details.sessionTrackingActive = this.checkMainSessionTracking();
       }
 
-      // 7. 检查性能监控
+      // 7.
       if (this.options.checkPerformanceMonitoring) {
         result.details.performanceMonitoringActive =
           this.checkMainPerformanceMonitoring();
       }
 
-      // 8. 检查Electron集成
+      // 8. Electron
       if (this.options.checkElectronIntegration) {
         result.details.electronIntegrationActive =
           this.checkElectronIntegration();
@@ -150,11 +150,11 @@ export class SentryMainDetector {
           this.checkNativeErrorHandling();
       }
 
-      // 9. 综合评估
+      // 9.
       result.isInitialized = this.evaluateMainOverallStatus(result);
       result.configurationValid = this.evaluateMainConfiguration(result);
 
-      // 10. 生成建议
+      // 10.
       result.recommendations = this.generateMainRecommendations(result);
 
       const duration = Date.now() - startTime;
@@ -164,13 +164,11 @@ export class SentryMainDetector {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       result.lastError = errorMessage;
-      result.recommendations.push(
-        '主进程检测过程中发生错误，请检查Sentry主进程配置'
-      );
+      result.recommendations.push('Sentry');
       this.log(`❌ 主进程Sentry检测失败: ${errorMessage}`);
     }
 
-    // 记录检测历史
+    //
     this.detectionHistory.push(result);
     if (this.detectionHistory.length > 10) {
       this.detectionHistory.shift();
@@ -180,18 +178,18 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查主进程Sentry Hub状态
+   * Sentry Hub
    */
   private async checkMainHubStatus(): Promise<'active' | 'inactive' | 'error'> {
     try {
       const client = Sentry.getClient();
 
       if (!client) {
-        this.log('❌ 主进程Sentry Client未找到');
+        this.log(' Sentry Client');
         return 'inactive';
       }
 
-      this.log('✅ 主进程Sentry Hub状态正常');
+      this.log(' Sentry Hub');
       return 'active';
     } catch (error) {
       this.log(`❌ 主进程Sentry Hub检查出错: ${error}`);
@@ -200,7 +198,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查主进程Sentry Client状态
+   * Sentry Client
    */
   private async checkMainClientStatus(): Promise<
     'connected' | 'disconnected' | 'error'
@@ -209,17 +207,17 @@ export class SentryMainDetector {
       const client = Sentry.getClient();
 
       if (!client) {
-        this.log('❌ 主进程Sentry Client未找到');
+        this.log(' Sentry Client');
         return 'disconnected';
       }
 
       const options = client.getOptions();
       if (!options || !options.dsn) {
-        this.log('⚠️  主进程Sentry Client存在但DSN配置缺失');
+        this.log('  Sentry ClientDSN');
         return 'disconnected';
       }
 
-      this.log('✅ 主进程Sentry Client状态正常');
+      this.log(' Sentry Client');
       return 'connected';
     } catch (error) {
       this.log(`❌ 主进程Sentry Client检查出错: ${error}`);
@@ -228,7 +226,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查主进程DSN配置
+   * DSN
    */
   private checkMainDsnConfiguration(): boolean {
     try {
@@ -239,7 +237,7 @@ export class SentryMainDetector {
       const dsn = options?.dsn;
 
       if (!dsn) {
-        this.log('❌ 主进程DSN配置缺失');
+        this.log(' DSN');
         return false;
       }
 
@@ -248,11 +246,11 @@ export class SentryMainDetector {
         dsn.startsWith('https://') &&
         dsn.includes('@')
       ) {
-        this.log('✅ 主进程DSN配置格式正确');
+        this.log(' DSN');
         return true;
       }
 
-      this.log('⚠️  主进程DSN配置格式可能有问题');
+      this.log('  DSN');
       return false;
     } catch (error) {
       this.log(`❌ 主进程DSN配置检查出错: ${error}`);
@@ -261,7 +259,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 获取主进程Release信息
+   * Release
    */
   private getMainRelease(): string | undefined {
     try {
@@ -269,7 +267,7 @@ export class SentryMainDetector {
       const options = client?.getOptions();
       let release = options?.release;
 
-      // 如果没有配置release，尝试从app版本获取
+      // releaseapp
       if (!release) {
         release = app.getVersion();
         this.log(`⚠️  使用应用版本作为Release: ${release}`);
@@ -285,20 +283,17 @@ export class SentryMainDetector {
   }
 
   /**
-   * 测试主进程错误捕获功能
+   *
    */
   private async testMainCaptureFunction(): Promise<boolean> {
     try {
-      const eventId = Sentry.captureMessage(
-        '主进程Sentry初始化检测测试消息',
-        'info'
-      );
+      const eventId = Sentry.captureMessage('Sentry', 'info');
 
       if (eventId) {
-        this.log('✅ 主进程错误捕获功能正常');
+        this.log(' ');
         return true;
       }
-      this.log('⚠️  主进程错误捕获功能可能异常');
+      this.log('  ');
       return false;
     } catch (error) {
       this.log(`❌ 主进程错误捕获测试失败: ${error}`);
@@ -307,7 +302,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查主进程会话跟踪状态
+   *
    */
   private checkMainSessionTracking(): boolean {
     try {
@@ -317,10 +312,10 @@ export class SentryMainDetector {
       const sessionTracking = (options as any)?.autoSessionTracking;
 
       if (sessionTracking) {
-        this.log('✅ 主进程会话跟踪已启用');
+        this.log(' ');
         return true;
       }
-      this.log('⚠️  主进程会话跟踪未启用');
+      this.log('  ');
       return false;
     } catch (error) {
       this.log(`❌ 主进程会话跟踪检查出错: ${error}`);
@@ -329,7 +324,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查主进程性能监控状态
+   *
    */
   private checkMainPerformanceMonitoring(): boolean {
     try {
@@ -342,7 +337,7 @@ export class SentryMainDetector {
         this.log(`✅ 主进程性能监控已启用 (采样率: ${tracesSampleRate})`);
         return true;
       }
-      this.log('⚠️  主进程性能监控未启用或采样率为0');
+      this.log('  0');
       return false;
     } catch (error) {
       this.log(`❌ 主进程性能监控检查出错: ${error}`);
@@ -351,14 +346,14 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查Electron集成状态
+   * Electron
    */
   private checkElectronIntegration(): boolean {
     try {
       const client = Sentry.getClient();
       const options = client?.getOptions();
 
-      // 检查是否有Electron相关的集成
+      // Electron
       const integrations = options?.integrations || [];
       const hasElectronIntegrations = integrations.some(
         (integration: any) =>
@@ -367,10 +362,10 @@ export class SentryMainDetector {
       );
 
       if (hasElectronIntegrations) {
-        this.log('✅ Electron集成已正确配置');
+        this.log(' Electron');
         return true;
       }
-      this.log('⚠️  未检测到Electron特定集成');
+      this.log('  Electron');
       return false;
     } catch (error) {
       this.log(`❌ Electron集成检查出错: ${error}`);
@@ -379,21 +374,21 @@ export class SentryMainDetector {
   }
 
   /**
-   * 检查原生错误处理
+   *
    */
   private checkNativeErrorHandling(): boolean {
     try {
-      // 检查是否绑定了原生错误处理器
+      //
       const hasUncaughtExceptionHandler =
         process.listenerCount('uncaughtException') > 0;
       const hasUnhandledRejectionHandler =
         process.listenerCount('unhandledRejection') > 0;
 
       if (hasUncaughtExceptionHandler && hasUnhandledRejectionHandler) {
-        this.log('✅ 原生错误处理已配置');
+        this.log(' ');
         return true;
       }
-      this.log('⚠️  原生错误处理可能未完全配置');
+      this.log('  ');
       return false;
     } catch (error) {
       this.log(`❌ 原生错误处理检查出错: ${error}`);
@@ -402,7 +397,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 评估主进程整体初始化状态
+   *
    */
   private evaluateMainOverallStatus(
     result: SentryMainDetectionResult
@@ -417,7 +412,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 评估主进程配置有效性
+   *
    */
   private evaluateMainConfiguration(
     result: SentryMainDetectionResult
@@ -435,7 +430,7 @@ export class SentryMainDetector {
   }
 
   /**
-   * 生成主进程改进建议
+   *
    */
   private generateMainRecommendations(
     result: SentryMainDetectionResult
@@ -443,64 +438,50 @@ export class SentryMainDetector {
     const recommendations: string[] = [];
 
     if (!result.details.hasValidHub) {
-      recommendations.push(
-        '主进程Sentry Hub未正确初始化，请检查主进程中的initSentryMain()调用'
-      );
+      recommendations.push('Sentry HubinitSentryMain()');
     }
 
     if (!result.details.hasValidClient) {
-      recommendations.push(
-        '主进程Sentry Client未连接，请检查DSN配置和网络连接'
-      );
+      recommendations.push('Sentry ClientDSN');
     }
 
     if (!result.details.hasValidDsn) {
-      recommendations.push(
-        '主进程DSN配置缺失或格式错误，请检查环境变量SENTRY_DSN'
-      );
+      recommendations.push('DSNSENTRY_DSN');
     }
 
     if (!result.release) {
-      recommendations.push('建议配置Release信息，可以使用app.getVersion()');
+      recommendations.push('Releaseapp.getVersion()');
     }
 
     if (!result.details.sessionTrackingActive) {
-      recommendations.push(
-        '建议在主进程中启用autoSessionTracking以监控应用会话'
-      );
+      recommendations.push('autoSessionTracking');
     }
 
     if (!result.details.performanceMonitoringActive) {
-      recommendations.push('建议启用主进程性能监控以跟踪主进程性能');
+      recommendations.push('');
     }
 
     if (!result.details.electronIntegrationActive) {
-      recommendations.push(
-        '建议启用Electron特定集成以更好地捕获Electron相关错误'
-      );
+      recommendations.push('ElectronElectron');
     }
 
     if (!result.details.nativeErrorHandlingActive) {
-      recommendations.push(
-        '建议配置uncaughtException和unhandledRejection处理器'
-      );
+      recommendations.push('uncaughtExceptionunhandledRejection');
     }
 
     if (!result.details.captureWorks) {
-      recommendations.push(
-        '主进程错误捕获功能异常，请检查网络连接和Sentry服务状态'
-      );
+      recommendations.push('Sentry');
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('主进程Sentry配置优秀，建议定期监控主进程性能指标');
+      recommendations.push('Sentry');
     }
 
     return recommendations;
   }
 
   /**
-   * 日志输出
+   *
    */
   private log(message: string): void {
     if (this.options.verbose) {
@@ -509,21 +490,21 @@ export class SentryMainDetector {
   }
 
   /**
-   * 获取检测历史
+   *
    */
   getDetectionHistory(): SentryMainDetectionResult[] {
     return [...this.detectionHistory];
   }
 
   /**
-   * 清空检测历史
+   *
    */
   clearDetectionHistory(): void {
     this.detectionHistory = [];
   }
 
   /**
-   * 获取最近一次检测结果
+   *
    */
   getLastDetectionResult(): SentryMainDetectionResult | null {
     return this.detectionHistory.length > 0
@@ -533,25 +514,25 @@ export class SentryMainDetector {
 }
 
 /**
- * 全局主进程Sentry检测器实例
+ * Sentry
  */
 export const sentryMainDetector = new SentryMainDetector();
 
 /**
- * 快速主进程检测函数
+ *
  */
 export async function quickMainSentryCheck(): Promise<boolean> {
   try {
     const result = await sentryMainDetector.detectMainProcessStatus();
     return result.isInitialized;
   } catch (error) {
-    console.error('主进程Sentry快速检测失败:', error);
+    console.error('Sentry:', error);
     return false;
   }
 }
 
 /**
- * 详细主进程检测函数
+ *
  */
 export async function detailedMainSentryCheck(
   options?: Partial<SentryMainDetectionOptions>

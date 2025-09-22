@@ -54,3 +54,6 @@ reports/
 coverage/
 playwright-report/
 test-results/
+mem0/
+qdrant_storage/
+dist-electron/

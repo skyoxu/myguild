@@ -27,7 +27,7 @@ const r = spawnSync(process.execPath, ['scripts/release/auto-rollback.mjs'], {
   env: { ...process.env, DRY_RUN: 'true' },
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
-  shell: process.platform === 'win32'
+  shell: process.platform === 'win32',
 });
 const exitCode = r.status ?? 1;
 const result = (r.stdout || '').trim() || 'null';
@@ -50,18 +50,24 @@ if (exitCode === 42) {
     if (tokenGh && owner && repo) {
       const body = {
         ref: process.env.GITHUB_REF || 'main',
-        inputs: { reason: 'Continuous monitoring detected health degradation', triggered_by: 'monitor' }
-      };
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/release-emergency-rollback.yml/dispatches`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${tokenGh}`,
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'Content-Type': 'application/json'
+        inputs: {
+          reason: 'Continuous monitoring detected health degradation',
+          triggered_by: 'monitor',
         },
-        body: JSON.stringify(body)
-      });
+      };
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/actions/workflows/release-emergency-rollback.yml/dispatches`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenGh}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        }
+      );
       if (!res.ok) {
         const t = await res.text();
         console.warn(`Dispatch failed: ${res.status} ${res.statusText} - ${t}`);
@@ -69,7 +75,9 @@ if (exitCode === 42) {
         console.log('Emergency rollback workflow dispatched.');
       }
     } else {
-      console.warn('GITHUB_TOKEN or repository info missing; cannot dispatch rollback.');
+      console.warn(
+        'GITHUB_TOKEN or repository info missing; cannot dispatch rollback.'
+      );
     }
   } catch (e) {
     console.warn(`Dispatch error: ${String(e)}`);
@@ -80,4 +88,3 @@ if (exitCode === 42) {
 setOutput('monitor_status', 'error');
 console.log(`Health check error (exit=${exitCode})`);
 process.exit(0);
-

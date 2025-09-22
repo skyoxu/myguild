@@ -16,4 +16,3 @@ console.log('package.json validation passed.');
 console.log(`Name: ${pkg.name}`);
 console.log(`Version: ${pkg.version}`);
 console.log(`ProductName: ${pkg.productName || '(unset)'}`);
-

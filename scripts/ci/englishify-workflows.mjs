@@ -26,12 +26,18 @@ function cleanQuotedSegments(line) {
   return line.replace(/(["'])(.*?)(\1)/g, (m, q, inner, q2) => {
     // Keep ${...} and $env:... tokens intact; only strip non-ASCII from text
     // Split by token-like patterns and clean the rest
-    const parts = inner.split(/(\$\{[^}]+\}|\$env:[A-Za-z0-9_]+|\$\([^)]+\)|\$\w+)/g);
+    const parts = inner.split(
+      /(\$\{[^}]+\}|\$env:[A-Za-z0-9_]+|\$\([^)]+\)|\$\w+)/g
+    );
     const rebuilt = parts
       .map((seg, idx) => {
         if (!seg) return seg;
-        if (seg.match(/^(\$\{[^}]+\}|\$env:[A-Za-z0-9_]+|\$\([^)]+\)|\$\w+)$/)) return seg;
-        const cleaned = seg.replace(/[\u0100-\uFFFF]/g, '').replace(/\s+/g, ' ').trim();
+        if (seg.match(/^(\$\{[^}]+\}|\$env:[A-Za-z0-9_]+|\$\([^)]+\)|\$\w+)$/))
+          return seg;
+        const cleaned = seg
+          .replace(/[\u0100-\uFFFF]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
         return cleaned;
       })
       .join('');
@@ -58,5 +64,7 @@ for (const f of files) {
     changedAny = true;
   }
 }
-console.log('[englishify] done', changedAny ? '(changes applied)' : '(no changes)');
-
+console.log(
+  '[englishify] done',
+  changedAny ? '(changes applied)' : '(no changes)'
+);

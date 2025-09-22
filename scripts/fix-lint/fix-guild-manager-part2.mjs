@@ -13,20 +13,52 @@ const out = [];
 // 1) 将同一行中的“注释 + 代码”拆分为两行
 //    规则：若出现 // 后仍包含代码token（await/const/let/page./expect 等），按最早代码token断开
 const codeTokens = [
-  'await ', 'const ', 'let ', 'var ', 'page.', 'expect(', 'return ', 'if (',
-  'while (', 'switch (', 'for (', 'test(', 'window.', 'document.', 'new ', ');', '.click(', '.toBe', '.toContain', '.locator(',
-  'console.log('
+  'await ',
+  'const ',
+  'let ',
+  'var ',
+  'page.',
+  'expect(',
+  'return ',
+  'if (',
+  'while (',
+  'switch (',
+  'for (',
+  'test(',
+  'window.',
+  'document.',
+  'new ',
+  ');',
+  '.click(',
+  '.toBe',
+  '.toContain',
+  '.locator(',
+  'console.log(',
 ];
 
 function findCommentIndexOutsideStrings(s) {
-  let inS = false, inD = false, inB = false;
+  let inS = false,
+    inD = false,
+    inB = false;
   for (let i = 0; i < s.length - 1; i++) {
     const ch = s[i];
     const nx = s[i + 1];
-    if (ch === '\\') { i++; continue; }
-    if (!inD && !inB && ch === "'" ) { inS = !inS; continue; }
-    if (!inS && !inB && ch === '"') { inD = !inD; continue; }
-    if (!inS && !inD && ch === '`') { inB = !inB; continue; }
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (!inD && !inB && ch === "'") {
+      inS = !inS;
+      continue;
+    }
+    if (!inS && !inB && ch === '"') {
+      inD = !inD;
+      continue;
+    }
+    if (!inS && !inD && ch === '`') {
+      inB = !inB;
+      continue;
+    }
     if (!inS && !inD && !inB && ch === '/' && nx === '/') return i;
   }
   return -1;

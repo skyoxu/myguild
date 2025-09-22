@@ -1,19 +1,19 @@
 ﻿/**
- * 监控指标集成使用示例
  *
- * 此文件展示了如何在您的Electron + React + Phaser游戏中
- * 集成和使用Sentry监控指标系统
  *
- * 按您要求实现的功能：
- * ✅ Electron主/渲染进程同时启用Sentry
- * ✅ autoSessionTracking: true (Release Health)
- * ✅ tracesSampleRate: 0.2 (20%性能采样)
- * ✅ 自定义Metrics上报 - Sentry.metrics.distribution()
- * ✅ 关卡加载时长、战斗回合耗时等关键指标
+ * Electron + React + Phaser
+ * Sentry
+ *
+ *
+ *  Electron/Sentry
+ *  autoSessionTracking: true (Release Health)
+ *  tracesSampleRate: 0.2 (20%)
+ *  Metrics - Sentry.metrics.distribution()
+ *
  */
 
 // ===========================================
-// 1. 在主进程中 (electron/main.ts)
+// 1.  (electron/main.ts)
 // ===========================================
 
 export async function setupMainProcessMonitoring() {
@@ -21,24 +21,24 @@ export async function setupMainProcessMonitoring() {
     './metrics-integration'
   );
 
-  // 初始化主进程监控（包含Release Health和系统指标）
+  // Release Health
   const success = await initializeMainProcessMonitoring({
     enableMainProcess: true,
     enableReleaseHealth: true,
     enableSystemMetrics: true,
-    tracesSampleRate: 0.2, // 20%性能采样
+    tracesSampleRate: 0.2, // 20%
     autoSessionTracking: true, // Release Health
   });
 
   if (success) {
-    console.log('✅ 主进程监控系统启动成功');
+    console.log(' ');
   } else {
-    console.warn('⚠️ 主进程监控系统启动失败');
+    console.warn(' ');
   }
 }
 
 // ===========================================
-// 2. 在渲染进程中 (src/app.tsx)
+// 2.  (src/app.tsx)
 // ===========================================
 
 export async function setupRendererProcessMonitoring() {
@@ -46,23 +46,23 @@ export async function setupRendererProcessMonitoring() {
     './metrics-integration'
   );
 
-  // 初始化渲染进程监控（包含游戏指标）
+  //
   const success = await initializeRendererProcessMonitoring({
     enableRendererProcess: true,
     enableGameMetrics: true,
-    tracesSampleRate: 0.2, // 20%性能采样
+    tracesSampleRate: 0.2, // 20%
     autoSessionTracking: true, // Release Health
   });
 
   if (success) {
-    console.log('✅ 渲染进程监控系统启动成功');
+    console.log(' ');
   } else {
-    console.warn('⚠️ 渲染进程监控系统启动失败');
+    console.warn(' ');
   }
 }
 
 // ===========================================
-// 3. 游戏关卡加载指标示例
+// 3.
 // ===========================================
 
 export class LevelLoader {
@@ -70,19 +70,19 @@ export class LevelLoader {
     const startTime = Date.now();
 
     try {
-      // 模拟关卡资源加载
+      //
       await this.loadLevelAssets(levelId);
       await this.initializeLevelData(levelId);
       await this.setupLevelPhysics();
 
-      // 计算加载时长
+      //
       const loadTime = Date.now() - startTime;
 
-      // 🎯 按您要求的格式发送指标
+      //
       const { recordLevelLoadTime } = await import('./metrics-integration');
       recordLevelLoadTime(loadTime, levelId, difficulty);
 
-      // 记录成功加载
+      //
       const { gameMetrics } = await import('./metrics-integration');
       gameMetrics.recordLevelLoadSuccess(levelId);
 
@@ -91,7 +91,7 @@ export class LevelLoader {
     } catch (error) {
       const loadTime = Date.now() - startTime;
 
-      // 记录加载失败
+      //
       const { gameMetrics } = await import('./metrics-integration');
       gameMetrics.recordLevelLoadFailure(levelId, error.name, error.message);
 
@@ -103,27 +103,27 @@ export class LevelLoader {
   private async loadLevelAssets(levelId: string) {
     const startTime = Date.now();
 
-    // 模拟资源加载...
+    // ...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
 
     const loadTime = Date.now() - startTime;
     const { recordAssetLoadTime } = await import('./metrics-integration');
-    recordAssetLoadTime(loadTime, 'level-assets', 1024 * 1024); // 假设1MB资源
+    recordAssetLoadTime(loadTime, 'level-assets', 1024 * 1024); // 1MB
   }
 
   private async initializeLevelData(levelId: string) {
-    // 模拟数据初始化...
+    // ...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
   }
 
   private async setupLevelPhysics() {
-    // 模拟物理引擎设置...
+    // ...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 300));
   }
 }
 
 // ===========================================
-// 4. 战斗回合指标示例
+// 4.
 // ===========================================
 
 export class BattleManager {
@@ -139,24 +139,24 @@ export class BattleManager {
     const startTime = Date.now();
 
     try {
-      // 模拟AI决策阶段
+      // AI
       const aiDecisionStart = Date.now();
       await this.executeAIDecisions();
       const aiDecisionTime = Date.now() - aiDecisionStart;
 
-      // 记录AI决策时长
+      // AI
       const { recordAIDecisionTime } = await import('./metrics-integration');
       recordAIDecisionTime(aiDecisionTime, 'smart-ai', 'high');
 
-      // 模拟战斗计算
+      //
       await this.processBattleLogic();
 
-      // 模拟动画播放
+      //
       await this.playBattleAnimations();
 
       const roundTime = Date.now() - startTime;
 
-      // 🎯 按您要求的格式发送战斗回合指标
+      //
       const { recordBattleRoundTime } = await import('./metrics-integration');
       recordBattleRoundTime(
         roundTime,
@@ -170,7 +170,7 @@ export class BattleManager {
     } catch (error) {
       const roundTime = Date.now() - startTime;
 
-      // 记录战斗错误
+      //
       const { recordGameError } = await import('./metrics-integration');
       recordGameError('battle-round-error', 'high', 'battle-manager');
 
@@ -180,17 +180,17 @@ export class BattleManager {
   }
 
   private async executeAIDecisions() {
-    // 模拟AI决策过程...
+    // AI...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
   }
 
   private async processBattleLogic() {
-    // 模拟战斗逻辑计算...
+    // ...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 800));
   }
 
   private async playBattleAnimations() {
-    // 模拟动画播放...
+    // ...
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1200));
   }
 
@@ -207,7 +207,7 @@ export class BattleManager {
 }
 
 // ===========================================
-// 5. UI性能监控示例
+// 5. UI
 // ===========================================
 
 export class UIPerformanceMonitor {
@@ -221,7 +221,7 @@ export class UIPerformanceMonitor {
       const result = renderFunction();
       const renderTime = Date.now() - startTime;
 
-      // 记录UI渲染时长
+      // UI
       const { recordUIRenderTime } = require('./metrics-integration');
       recordUIRenderTime(
         renderTime,
@@ -239,7 +239,7 @@ export class UIPerformanceMonitor {
     } catch (error) {
       const renderTime = Date.now() - startTime;
 
-      // 记录UI错误
+      // UI
       const { recordGameError } = require('./metrics-integration');
       recordGameError('ui-render-error', 'medium', componentName);
 
@@ -253,7 +253,7 @@ export class UIPerformanceMonitor {
     return () => {
       const delay = Date.now() - startTime;
 
-      // 记录交互延迟
+      //
       const { gameMetrics } = require('./metrics-integration');
       gameMetrics.recordMetric('UI_INTERACTION_DELAY', delay, {
         action,
@@ -268,7 +268,7 @@ export class UIPerformanceMonitor {
 }
 
 // ===========================================
-// 6. React组件集成示例
+// 6. React
 // ===========================================
 
 export function GameLevelComponent({ levelId }: { levelId: string }) {
@@ -285,10 +285,10 @@ export function GameLevelComponent({ levelId }: { levelId: string }) {
       const loader = new LevelLoader();
       await loader.loadLevel(levelId, 'normal');
 
-      // 测量交互延迟
+      //
       measureDelay();
     } catch (error) {
-      console.error('关卡加载失败:', error);
+      console.error(':', error);
     } finally {
       setLoading(false);
     }
@@ -300,7 +300,7 @@ export function GameLevelComponent({ levelId }: { levelId: string }) {
       <div data-testid="game-level-root">
         <h2>关卡 {levelId}</h2>
         <button onClick={loadLevel} disabled={loading}>
-          {loading ? '加载中...' : '开始关卡'}
+          {loading ? '...' : ''}
         </button>
       </div>
     )
@@ -308,7 +308,7 @@ export function GameLevelComponent({ levelId }: { levelId: string }) {
 }
 
 // ===========================================
-// 7. 系统资源监控示例
+// 7.
 // ===========================================
 
 export class SystemMonitor {
@@ -318,83 +318,81 @@ export class SystemMonitor {
       if (memInfo) {
         const usedMB = Math.round(memInfo.usedJSHeapSize / 1024 / 1024);
 
-        // 记录内存使用
+        //
         const { recordMemoryUsage } = require('./metrics-integration');
         recordMemoryUsage(usedMB, 'renderer-process', 'periodic-check');
 
-        // 内存使用预警
+        //
         if (usedMB > 200) {
-          // 200MB 预警线
+          // 200MB
           console.warn(`⚠️ 渲染进程内存使用${usedMB}MB，请注意内存泄漏`);
 
           const { recordGameError } = require('./metrics-integration');
           recordGameError('high-memory-usage', 'medium', 'renderer-process');
         }
       }
-    }, 60000); // 每分钟检查一次
+    }, 60000); //
   }
 }
 
 // ===========================================
-// 8. 应用启动集成示例
+// 8.
 // ===========================================
 
 export async function initializeGameMonitoring() {
-  console.log('🚀 初始化游戏监控系统...');
+  console.log(' ...');
 
   try {
-    // 根据进程类型初始化不同的监控
+    //
     if (typeof window !== 'undefined') {
-      // 渲染进程
+      //
       await setupRendererProcessMonitoring();
       SystemMonitor.startMemoryMonitoring();
     } else if (typeof process !== 'undefined' && process.type === 'browser') {
-      // 主进程
+      //
       await setupMainProcessMonitoring();
     }
 
-    console.log('✅ 游戏监控系统初始化完成');
+    console.log(' ');
   } catch (error) {
-    console.error('❌ 游戏监控系统初始化失败:', error);
+    console.error(' :', error);
   }
 }
 
 // ===========================================
-// 9. 验收测试示例
+// 9.
 // ===========================================
 
 export async function validateMonitoringIntegration(): Promise<boolean> {
-  console.log('🧪 验证监控集成...');
+  console.log(' ...');
 
   try {
-    // 测试关卡加载指标
+    //
     const loader = new LevelLoader();
     await loader.loadLevel('test-level', 'easy');
 
-    // 测试战斗指标
+    //
     const battle = new BattleManager('test-battle');
     await battle.executeBattleRound(2);
     battle.completeBattle('victory');
 
-    // 测试UI指标
+    // UI
     UIPerformanceMonitor.monitorComponentRender('TestComponent', () => {
       return 'test-result';
     });
 
-    // 验证监控状态
+    //
     const { validateMonitoringStatus } = await import('./metrics-integration');
     const status = validateMonitoringStatus();
 
     const allHealthy = Object.values(status).every(s => s === true);
 
-    console.log('📊 监控状态验证结果:', status);
-    console.log(
-      `${allHealthy ? '✅' : '⚠️'} 监控系统${allHealthy ? '运行正常' : '部分异常'}`
-    );
+    console.log(' :', status);
+    console.log(`${allHealthy ? '' : ''} 监控系统${allHealthy ? '' : ''}`);
 
     return allHealthy;
   } catch (error) {
-    console.error('❌ 监控集成验证失败:', error);
+    console.error(' :', error);
     return false;
   }
 }

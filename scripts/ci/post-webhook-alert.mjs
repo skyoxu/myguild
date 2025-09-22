@@ -18,24 +18,37 @@ const body = {
     {
       color: 'danger',
       fields: [
-        { title: 'App Version', value: process.env.APP_VERSION || 'unknown', short: true },
-        { title: 'Staging %', value: String(process.env.STAGING_PERCENTAGE || ''), short: true },
+        {
+          title: 'App Version',
+          value: process.env.APP_VERSION || 'unknown',
+          short: true,
+        },
+        {
+          title: 'Staging %',
+          value: String(process.env.STAGING_PERCENTAGE || ''),
+          short: true,
+        },
         { title: 'Status', value: 'Health degradation detected', short: false },
-        { title: 'Action', value: 'Emergency rollback triggered', short: false }
+        {
+          title: 'Action',
+          value: 'Emergency rollback triggered',
+          short: false,
+        },
       ],
-      text: 'Continuous monitoring detected health issues. Emergency rollback has been initiated.'
-    }
-  ]
+      text: 'Continuous monitoring detected health issues. Emergency rollback has been initiated.',
+    },
+  ],
 };
 
 fetch(url, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body)
-}).then(r => {
-  if (!r.ok) console.warn(`Webhook failed: ${r.status} ${r.statusText}`);
-  else console.log('Webhook sent');
-}).catch(e => {
-  console.warn(`Webhook error: ${String(e)}`);
-});
-
+  body: JSON.stringify(body),
+})
+  .then(r => {
+    if (!r.ok) console.warn(`Webhook failed: ${r.status} ${r.statusText}`);
+    else console.log('Webhook sent');
+  })
+  .catch(e => {
+    console.warn(`Webhook error: ${String(e)}`);
+  });

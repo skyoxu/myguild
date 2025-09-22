@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-import { readdirSync, statSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  readdirSync,
+  statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { join, basename } from 'node:path';
 
 const root = '.github/workflows';
@@ -48,7 +54,11 @@ function run() {
       // Fix top-level name line with mojibake
       if (/^name:\s/.test(line) && /[\u0100-\uFFFF]/.test(line)) {
         const fixed = fixNameLine(f, line);
-        if (fixed !== line) { lines[i] = fixed; changed = true; continue; }
+        if (fixed !== line) {
+          lines[i] = fixed;
+          changed = true;
+          continue;
+        }
       }
       // Clean comment lines (only text, keep '# ' prefix)
       if (/^\s*#/.test(line) && /[\u0100-\uFFFF]/.test(line)) {
@@ -61,7 +71,10 @@ function run() {
         }
       }
       // Clean echo/Write-Host/Add-Content/curl JSON free-text (keep logic)
-      if (/\becho\b|Write-Host|Add-Content/.test(line) && /[\u0100-\uFFFF]/.test(line)) {
+      if (
+        /\becho\b|Write-Host|Add-Content/.test(line) &&
+        /[\u0100-\uFFFF]/.test(line)
+      ) {
         lines[i] = sanitizeEchoText(line);
         changed = true;
         continue;
@@ -72,9 +85,12 @@ function run() {
       log.push(`cleaned: ${f}`);
     }
   }
-  writeFileSync(join('logs', ymd, 'workflows', 'cleanup-i18n.log'), log.join('\n') || 'no changes', 'utf8');
+  writeFileSync(
+    join('logs', ymd, 'workflows', 'cleanup-i18n.log'),
+    log.join('\n') || 'no changes',
+    'utf8'
+  );
   console.log(`workflow cleanup done. files changed: ${log.length}`);
 }
 
 run();
-

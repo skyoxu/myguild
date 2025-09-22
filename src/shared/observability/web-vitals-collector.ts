@@ -1,11 +1,11 @@
 ﻿/**
- * Web Vitals数据收集器
+ * Web Vitals
  *
- * 功能：
- * 1. 收集Web Vitals数据
- * 2. 上报到Sentry和其他监控服务
- * 3. 本地存储和批量上报
- * 4. 7天滚动窗口基线对比
+ *
+ * 1. Web Vitals
+ * 2. Sentry
+ * 3.
+ * 4. 7
  */
 
 import * as Sentry from '@sentry/browser';
@@ -21,8 +21,8 @@ export interface WebVitalsCollectorConfig {
   batchSize: number;
   flushInterval: number; // ms
   storageKey: string;
-  baselineWindow: number; // 天数
-  regressionThreshold: number; // 百分比，超过基线多少视为回归
+  baselineWindow: number; //
+  regressionThreshold: number; //
 }
 
 export interface WebVitalsDataPoint {
@@ -83,10 +83,10 @@ class WebVitalsCollector {
     enabled: true,
     sentryEnabled: true,
     batchSize: 10,
-    flushInterval: 30000, // 30秒
+    flushInterval: 30000, // 30
     storageKey: 'web-vitals-data',
-    baselineWindow: 7, // 7天
-    regressionThreshold: 15, // 超过基线15%视为回归
+    baselineWindow: 7, // 7
+    regressionThreshold: 15, // 15%
   };
 
   constructor(config: Partial<WebVitalsCollectorConfig> = {}) {
@@ -100,24 +100,24 @@ class WebVitalsCollector {
 
   private initialize() {
     try {
-      // 订阅Web Vitals数据更新
+      // Web Vitals
       this.unsubscribe = this.monitor.subscribe(metrics => {
         this.collectData(metrics);
       });
 
-      // 设置定时刷新
+      //
       this.setupFlushTimer();
 
-      // 监听页面卸载事件，确保数据上报
+      //
       this.setupUnloadHandler();
 
-      // 清理旧数据
+      //
       this.cleanupOldData();
 
       this.isEnabled = true;
-      console.log('[WebVitalsCollector] 数据收集器初始化完成');
+      console.log('[WebVitalsCollector] ');
     } catch (error) {
-      console.error('[WebVitalsCollector] 初始化失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
   }
 
@@ -138,12 +138,12 @@ class WebVitalsCollector {
 
     this.dataBuffer.push(dataPoint);
 
-    // 达到批量大小时立即刷新
+    //
     if (this.dataBuffer.length >= this.config.batchSize) {
       this.flush();
     }
 
-    // 检查回归
+    //
     this.checkRegression(dataPoint);
   }
 
@@ -160,7 +160,7 @@ class WebVitalsCollector {
       },
     };
 
-    // 连接信息
+    //
     if ('connection' in navigator && navigator.connection) {
       const conn = navigator.connection as any;
       context.connection = {
@@ -170,7 +170,7 @@ class WebVitalsCollector {
       };
     }
 
-    // 导航信息
+    //
     if ('navigation' in performance) {
       const nav = performance.navigation;
       context.navigation = {
@@ -181,7 +181,7 @@ class WebVitalsCollector {
       };
     }
 
-    // 内存信息
+    //
     if ('memory' in performance) {
       const mem = (performance as any).memory;
       context.memory = {
@@ -194,9 +194,9 @@ class WebVitalsCollector {
   }
 
   private getUserId(): string | undefined {
-    // 尝试从多个来源获取用户ID
+    // ID
     try {
-      // 从localStorage获取
+      // localStorage
       const userId =
         localStorage.getItem('userId') ||
         localStorage.getItem('user_id') ||
@@ -204,7 +204,7 @@ class WebVitalsCollector {
 
       if (userId) return userId;
 
-      // 从cookies获取（如果有的话）
+      // cookies
       const match = document.cookie.match(/user_id=([^;]+)/);
       if (match) return match[1];
 
@@ -227,7 +227,7 @@ class WebVitalsCollector {
   }
 
   private setupUnloadHandler() {
-    // 页面卸载时确保数据上报
+    //
     const handleUnload = () => {
       if (this.dataBuffer.length > 0) {
         this.flushSync();
@@ -237,9 +237,9 @@ class WebVitalsCollector {
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('pagehide', handleUnload);
 
-    // Electron环境下也监听应用关闭
+    // Electron
     if (window.electronAPI) {
-      // 如果有暴露的API，可以监听应用关闭事件
+      // API
     }
   }
 
@@ -254,29 +254,29 @@ class WebVitalsCollector {
       this.saveToLocalStorage(data),
       this.sendToCustomEndpoint(data),
     ]).catch(error => {
-      console.error('[WebVitalsCollector] 数据上报失败:', error);
-      // 失败时重新放回缓冲区
+      console.error('[WebVitalsCollector] :', error);
+      //
       this.dataBuffer.unshift(...data);
     });
   }
 
   private flushSync() {
-    // 同步上报，用于页面卸载时
+    //
     if (this.dataBuffer.length === 0) return;
 
     const data = JSON.stringify(this.dataBuffer);
 
     try {
-      // 使用sendBeacon确保数据发送
+      // sendBeacon
       if ('sendBeacon' in navigator) {
-        const endpoint = '/api/web-vitals'; // 根据实际API调整
+        const endpoint = '/api/web-vitals'; // API
         navigator.sendBeacon(endpoint, data);
       }
 
-      // 同时保存到localStorage作为备份
+      // localStorage
       this.saveToLocalStorageSync(this.dataBuffer);
     } catch (error) {
-      console.error('[WebVitalsCollector] 同步上报失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
 
     this.dataBuffer = [];
@@ -287,7 +287,7 @@ class WebVitalsCollector {
 
     try {
       data.forEach(point => {
-        // 发送核心Web Vitals到Sentry
+        // Web VitalsSentry
         if (point.metrics.lcp) {
           this.sendMetricToSentry('LCP', point.metrics.lcp, point);
         }
@@ -304,7 +304,7 @@ class WebVitalsCollector {
           this.sendMetricToSentry('TTFB', point.metrics.ttfb, point);
         }
 
-        // 发送自定义时间测量
+        //
         Object.entries(point.metrics.customTimings).forEach(([name, value]) => {
           Sentry.addBreadcrumb({
             category: 'performance',
@@ -315,7 +315,7 @@ class WebVitalsCollector {
         });
       });
     } catch (error) {
-      console.error('[WebVitalsCollector] Sentry上报失败:', error);
+      console.error('[WebVitalsCollector] Sentry:', error);
       throw error;
     }
   }
@@ -325,7 +325,7 @@ class WebVitalsCollector {
     metric: WebVitalsData,
     point: WebVitalsDataPoint
   ) {
-    // 发送性能指标到Sentry
+    // Sentry
     Sentry.addBreadcrumb({
       category: 'performance',
       message: `Web Vital: ${name}`,
@@ -344,7 +344,7 @@ class WebVitalsCollector {
       },
     });
 
-    // 对于差评级的指标，作为性能问题上报
+    //
     if (metric.rating === 'poor') {
       Sentry.captureMessage(`Poor ${name}: ${metric.value}`, {
         level: 'warning',
@@ -361,7 +361,7 @@ class WebVitalsCollector {
   }
 
   private async sendToCustomEndpoint(data: WebVitalsDataPoint[]) {
-    // 发送到自定义API端点（可选）
+    // API
     try {
       const endpoint = '/api/web-vitals';
       await fetch(endpoint, {
@@ -370,8 +370,8 @@ class WebVitalsCollector {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      // 自定义端点失败不影响其他上报
-      console.warn('[WebVitalsCollector] 自定义端点上报失败:', error);
+      //
+      console.warn('[WebVitalsCollector] :', error);
     }
   }
 
@@ -380,12 +380,12 @@ class WebVitalsCollector {
       const existing = this.getStoredData();
       const combined = [...existing, ...data];
 
-      // 保留最近1000条记录
+      // 1000
       const trimmed = combined.slice(-1000);
 
       localStorage.setItem(this.config.storageKey, JSON.stringify(trimmed));
     } catch (error) {
-      console.error('[WebVitalsCollector] 本地存储失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
   }
 
@@ -396,7 +396,7 @@ class WebVitalsCollector {
       const trimmed = combined.slice(-1000);
       localStorage.setItem(this.config.storageKey, JSON.stringify(trimmed));
     } catch (error) {
-      console.error('[WebVitalsCollector] 同步本地存储失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
   }
 
@@ -423,7 +423,7 @@ class WebVitalsCollector {
         );
       }
     } catch (error) {
-      console.error('[WebVitalsCollector] 数据清理失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
   }
 
@@ -434,7 +434,7 @@ class WebVitalsCollector {
 
       const regressions: RegressionAlert[] = [];
 
-      // 检查LCP回归
+      // LCP
       if (dataPoint.metrics.lcp && baseline.lcp_p95) {
         const regression = this.calculateRegression(
           dataPoint.metrics.lcp.value,
@@ -452,7 +452,7 @@ class WebVitalsCollector {
         }
       }
 
-      // 检查INP回归
+      // INP
       if (dataPoint.metrics.inp && baseline.inp_p95) {
         const regression = this.calculateRegression(
           dataPoint.metrics.inp.value,
@@ -470,7 +470,7 @@ class WebVitalsCollector {
         }
       }
 
-      // 检查CLS回归
+      // CLS
       if (dataPoint.metrics.cls && baseline.cls_p95) {
         const regression = this.calculateRegression(
           dataPoint.metrics.cls.value,
@@ -488,12 +488,12 @@ class WebVitalsCollector {
         }
       }
 
-      // 上报回归告警
+      //
       if (regressions.length > 0) {
         this.reportRegressions(regressions);
       }
     } catch (error) {
-      console.error('[WebVitalsCollector] 回归检测失败:', error);
+      console.error('[WebVitalsCollector] :', error);
     }
   }
 
@@ -511,7 +511,7 @@ class WebVitalsCollector {
         regression
       );
 
-      // 上报到Sentry
+      // Sentry
       if (this.config.sentryEnabled) {
         Sentry.captureMessage(`Web Vitals回归: ${regression.metric}`, {
           level: regression.severity === 'critical' ? 'error' : 'warning',
@@ -526,10 +526,10 @@ class WebVitalsCollector {
     });
   }
 
-  // 公开方法
+  //
 
   /**
-   * 获取性能基线
+   *
    */
   public getBaseline(): WebVitalsBaseline | null {
     try {
@@ -541,7 +541,7 @@ class WebVitalsCollector {
   }
 
   /**
-   * 计算并更新性能基线
+   *
    */
   public updateBaseline(): WebVitalsBaseline | null {
     try {
@@ -551,7 +551,7 @@ class WebVitalsCollector {
       const recentData = data.filter(point => point.timestamp > cutoff);
 
       if (recentData.length < 10) {
-        console.warn('[WebVitalsCollector] 数据量不足，无法计算基线');
+        console.warn('[WebVitalsCollector] ');
         return null;
       }
 
@@ -587,11 +587,11 @@ class WebVitalsCollector {
         `${this.config.storageKey}-baseline`,
         JSON.stringify(baseline)
       );
-      console.log('[WebVitalsCollector] 性能基线已更新:', baseline);
+      console.log('[WebVitalsCollector] :', baseline);
 
       return baseline;
     } catch (error) {
-      console.error('[WebVitalsCollector] 基线计算失败:', error);
+      console.error('[WebVitalsCollector] :', error);
       return null;
     }
   }
@@ -605,7 +605,7 @@ class WebVitalsCollector {
   }
 
   /**
-   * 获取性能统计报告
+   *
    */
   public getPerformanceReport(): {
     baseline: WebVitalsBaseline | null;
@@ -615,11 +615,11 @@ class WebVitalsCollector {
       avgLCP: number;
       avgINP: number;
       avgCLS: number;
-      goodRating: number; // 百分比
+      goodRating: number; //
     };
   } {
     const data = this.getStoredData();
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 最近24小时
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24
     const recent = data.filter(point => point.timestamp > cutoff);
 
     const lcpValues = recent
@@ -659,7 +659,7 @@ class WebVitalsCollector {
   }
 
   /**
-   * 启动收集器
+   *
    */
   public start() {
     if (!this.isEnabled && this.config.enabled) {
@@ -668,7 +668,7 @@ class WebVitalsCollector {
   }
 
   /**
-   * 停止收集器
+   *
    */
   public stop() {
     this.isEnabled = false;
@@ -683,23 +683,23 @@ class WebVitalsCollector {
       this.flushTimer = null;
     }
 
-    // 最后刷新一次数据
+    //
     this.flush();
 
-    console.log('[WebVitalsCollector] 收集器已停止');
+    console.log('[WebVitalsCollector] ');
   }
 
   /**
-   * 销毁收集器
+   *
    */
   public destroy() {
     this.stop();
     this.dataBuffer = [];
-    console.log('[WebVitalsCollector] 收集器已销毁');
+    console.log('[WebVitalsCollector] ');
   }
 }
 
-// 全局单例
+//
 let webVitalsCollector: WebVitalsCollector | null = null;
 
 export const getWebVitalsCollector = (

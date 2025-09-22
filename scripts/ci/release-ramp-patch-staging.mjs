@@ -38,30 +38,41 @@ if (!fs.existsSync(feed)) {
 
 console.log('✅ Feed file exists, proceeding with staging patch...');
 
-const r = spawnSync(process.execPath, ['scripts/release/patch-staging-percentage.mjs', feed, stage], {
-  encoding: 'utf8',
-  stdio: 'pipe'
-});
+const r = spawnSync(
+  process.execPath,
+  ['scripts/release/patch-staging-percentage.mjs', feed, stage],
+  {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  }
+);
 
 // Enhanced error reporting
 if (r.status !== 0) {
   console.error('❌ Script failed with status:', r.status);
   console.error('📤 stdout:', r.stdout || '(empty)');
   console.error('📥 stderr:', r.stderr || '(empty)');
-  console.error('🔧 Command:', `node scripts/release/patch-staging-percentage.mjs "${feed}" "${stage}"`);
+  console.error(
+    '🔧 Command:',
+    `node scripts/release/patch-staging-percentage.mjs "${feed}" "${stage}"`
+  );
 
   // Additional diagnostics
   console.log('🔍 Additional diagnostics:');
   console.log(`- Feed file size: ${fs.statSync(feed).size} bytes`);
-  console.log(`- Target script exists: ${fs.existsSync('scripts/release/patch-staging-percentage.mjs')}`);
+  console.log(
+    `- Target script exists: ${fs.existsSync('scripts/release/patch-staging-percentage.mjs')}`
+  );
 
   process.exit(r.status ?? 1);
 }
 
 const outFile = process.env.GITHUB_OUTPUT;
 if (outFile) {
-  fs.appendFileSync(outFile, `staging_result=${JSON.stringify(r.stdout?.trim() || '')}\n`);
+  fs.appendFileSync(
+    outFile,
+    `staging_result=${JSON.stringify(r.stdout?.trim() || '')}\n`
+  );
 }
 
 console.log('✅ Staging percentage patched successfully');
-

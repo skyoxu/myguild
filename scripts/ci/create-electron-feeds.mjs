@@ -9,7 +9,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const version = process.env.VERSION;
-if (!version) { console.error('VERSION is required'); process.exit(1); }
+if (!version) {
+  console.error('VERSION is required');
+  process.exit(1);
+}
 
 const manifestFile = path.join('artifacts', 'manifest.json');
 if (!fs.existsSync(manifestFile)) {
@@ -32,14 +35,14 @@ const feedData = {
     {
       url: data.path,
       sha512: data.sha512,
-      size: data.size
-    }
+      size: data.size,
+    },
   ],
   path: data.path,
   sha512: data.sha512,
   releaseDate: data.releaseDate,
   stagingPercentage: 0,
-  size: data.size
+  size: data.size,
 };
 
 // Generate clean YAML manually to ensure proper format
@@ -53,9 +56,8 @@ const yaml = [
   `sha512: ${feedData.sha512}`,
   `releaseDate: '${feedData.releaseDate}'`,
   `stagingPercentage: ${feedData.stagingPercentage}`,
-  `size: ${feedData.size}`
+  `size: ${feedData.size}`,
 ].join('\n');
 
 fs.writeFileSync(feedFile, yaml + '\n', 'utf8');
 console.log(`Created feed file: ${feedFile}`);
-

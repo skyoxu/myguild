@@ -6,7 +6,13 @@
  * - Emits per-file stats, writes a Markdown Step Summary when available
  * - Also saves a JSON + Markdown report under logs/workflow-encoding/YYYY-MM-DD/
  */
-import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  readdirSync,
+  readFileSync,
+  statSync,
+  mkdirSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 function list(dir) {
@@ -37,7 +43,8 @@ try {
     const lfOnlyCount = (txt.replace(/\r\n/g, '').match(/\n/g) || []).length;
     const crOnlyCount = (txt.replace(/\r\n/g, '').match(/\r/g) || []).length;
     const hasFFFD = txt.includes('\uFFFD');
-    const hasBOM = buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf;
+    const hasBOM =
+      buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf;
 
     // Violations
     let violated = false;
@@ -46,16 +53,28 @@ try {
       violated = true;
     }
     if (crlfCount > 0 || crOnlyCount > 0) {
-      console.error(`[encoding-guard] FAIL: Non-LF EOL detected in ${f} (CRLF=${crlfCount}, CR-only=${crOnlyCount})`);
+      console.error(
+        `[encoding-guard] FAIL: Non-LF EOL detected in ${f} (CRLF=${crlfCount}, CR-only=${crOnlyCount})`
+      );
       violated = true;
     }
     if (hasFFFD) {
-      console.error(`[encoding-guard] FAIL: Replacement character (\\uFFFD) in ${f}`);
+      console.error(
+        `[encoding-guard] FAIL: Replacement character (\\uFFFD) in ${f}`
+      );
       violated = true;
     }
 
     failed ||= violated;
-    results.push({ file: f, hasBOM, crlfCount, lfOnlyCount, crOnlyCount, hasFFFD, violated });
+    results.push({
+      file: f,
+      hasBOM,
+      crlfCount,
+      lfOnlyCount,
+      crOnlyCount,
+      hasFFFD,
+      violated,
+    });
   }
 } catch (e) {
   console.error(`[encoding-guard] ERROR: ${e.message}`);
@@ -74,31 +93,51 @@ try {
   const summaryLines = [];
   summaryLines.push(`## Workflow Encoding/EOL Report (${checked} files)`);
   summaryLines.push('');
-  summaryLines.push('| File | BOM | CRLF | CR-only | LF-only | FFFD | Status |');
+  summaryLines.push(
+    '| File | BOM | CRLF | CR-only | LF-only | FFFD | Status |'
+  );
   summaryLines.push('| --- | --- | ---: | ---: | ---: | --- | --- |');
   for (const r of results) {
-    summaryLines.push(`| ${r.file} | ${r.hasBOM ? 'yes' : 'no'} | ${r.crlfCount} | ${r.crOnlyCount} | ${r.lfOnlyCount} | ${r.hasFFFD ? 'yes' : 'no'} | ${r.violated ? 'FAIL' : 'OK'} |`);
+    summaryLines.push(
+      `| ${r.file} | ${r.hasBOM ? 'yes' : 'no'} | ${r.crlfCount} | ${r.crOnlyCount} | ${r.lfOnlyCount} | ${r.hasFFFD ? 'yes' : 'no'} | ${r.violated ? 'FAIL' : 'OK'} |`
+    );
   }
   summaryLines.push('');
   if (results.some(r => r.crlfCount > 0 || r.crOnlyCount > 0)) {
     summaryLines.push('### How to fix EOL on Windows');
-    summaryLines.push('- Prefer LF in repo: add `.gitattributes` → `*.yml text eol=lf`');
+    summaryLines.push(
+      '- Prefer LF in repo: add `.gitattributes` → `*.yml text eol=lf`'
+    );
     summaryLines.push('- Convert in-place (PowerShell):');
-    summaryLines.push('  - `Get-ChildItem -Recurse .github/workflows -Filter *.yml | % { (Get-Content $_ -Raw).Replace("`r`n","`n") | Set-Content -NoNewline -Encoding UTF8 $_ }`');
+    summaryLines.push(
+      '  - `Get-ChildItem -Recurse .github/workflows -Filter *.yml | % { (Get-Content $_ -Raw).Replace("`r`n","`n") | Set-Content -NoNewline -Encoding UTF8 $_ }`'
+    );
     summaryLines.push('- Git config options:');
-    summaryLines.push('  - `git config --global core.autocrlf false` (or use `.gitattributes` to enforce LF per path)');
+    summaryLines.push(
+      '  - `git config --global core.autocrlf false` (or use `.gitattributes` to enforce LF per path)'
+    );
   }
 
   const md = summaryLines.join('\n');
-  const json = JSON.stringify({ timestamp: now.toISOString(), checked, failed, results }, null, 2);
+  const json = JSON.stringify(
+    { timestamp: now.toISOString(), checked, failed, results },
+    null,
+    2
+  );
   writeFileSync(join(outDir, `summary-${ts}.md`), md, 'utf8');
   writeFileSync(join(outDir, `report-${ts}.json`), json, 'utf8');
 
   if (process.env.GITHUB_STEP_SUMMARY) {
-    writeFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n', { encoding: 'utf8', flag: 'a' });
+    writeFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n', {
+      encoding: 'utf8',
+      flag: 'a',
+    });
   }
 } catch (e) {
-  console.warn('[encoding-guard] Failed to write summary/report:', e?.message || e);
+  console.warn(
+    '[encoding-guard] Failed to write summary/report:',
+    e?.message || e
+  );
 }
 
 if (!checked) {
