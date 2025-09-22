@@ -101,12 +101,12 @@ export function initSentryMain(): Promise<boolean> {
 
       // 🚨 验证配置完整性
       if (!validateSentryConfig(config)) {
-        console.warn('🟡 Sentry配置验证失败，使用降级模式');
+        console.warn('Sentry config validation failed; using degraded mode');
         resolve(false);
         return;
       }
 
-      console.log(`🔍 初始化Sentry主进程监控 [${environment}]`);
+      console.log(`Initialize Sentry (main) [${environment}]`);
 
       // 🎯 核心Sentry初始化
       Sentry.init({
@@ -173,17 +173,17 @@ export function initSentryMain(): Promise<boolean> {
       setTimeout(() => {
         const isInitialized = validateSentryInitialization();
         if (isInitialized) {
-          console.log('✅ Sentry主进程初始化成功');
+          console.log('Sentry main initialized');
           setupSentryExtensions(config);
           logInitializationEvent(config);
           startPerformanceMonitoring();
         } else {
-          console.error('❌ Sentry主进程初始化验证失败');
+          console.error('Sentry main initialization verification failed');
         }
         resolve(isInitialized);
       }, 100);
     } catch (error) {
-      console.error('💥 Sentry主进程初始化异常:', error);
+      console.error('Sentry main initialization error:', error);
       // 🛡️ 降级处理：即使Sentry失败也不应该影响应用启动
       setupFallbackLogging();
       resolve(false);
@@ -236,7 +236,7 @@ function startPerformanceMonitoring(): void {
       // 更新性能统计
       updatePerformanceStats();
     } catch (error) {
-      console.warn('性能监控更新失败:', error);
+      console.warn('Performance monitoring update failed:', error);
     }
   }, 30000); // 每30秒更新
 }
@@ -283,12 +283,12 @@ function determineEnvironment(): string {
  */
 function validateSentryConfig(config: SentryEnvironmentConfig): boolean {
   if (!config.dsn) {
-    console.warn('🟡 未配置Sentry DSN，跳过初始化');
+    console.warn('Sentry DSN not configured; skip initialization');
     return false;
   }
 
   if (!config.dsn.startsWith('https://')) {
-    console.error('❌ Sentry DSN格式无效');
+    console.error('Invalid Sentry DSN');
     return false;
   }
 
@@ -314,7 +314,7 @@ function validateSentryInitialization(): boolean {
 
     return true;
   } catch (error) {
-    console.error('Sentry初始化验证异常:', error);
+    console.error('Sentry verification error:', error);
     return false;
   }
 }
@@ -482,7 +482,7 @@ function logInitializationEvent(config: SentryEnvironmentConfig): void {
  * 降级日志记录（D建议：结构化日志JSON格式）
  */
 function setupFallbackLogging(): void {
-  console.log('🔄 设置降级日志记录...');
+  console.log('Setup fallback logging...');
 
   // 创建本地日志目录
   const logsDir = join(app.getPath('userData'), 'logs');
@@ -537,7 +537,7 @@ function generateSpanId(): string {
  */
 export async function integrateObservabilityMetrics(): Promise<void> {
   try {
-    console.log('🔗 集成可观测性指标到Sentry...');
+    console.log('Integrate observability metrics into Sentry...');
 
     // 简化的可观测性管理器
     interface ObservabilityConfig {
@@ -563,9 +563,9 @@ export async function integrateObservabilityMetrics(): Promise<void> {
             enabled: this.config.enabled,
           };
 
-          console.log('📊 观测性指标收集完成:', metrics);
+          console.log('Observability metrics collected:', metrics);
         } catch (error) {
-          console.warn('⚠️ 指标收集异常:', error);
+          console.warn('Metrics collection error:', error);
         }
       }
     }
@@ -584,16 +584,16 @@ export async function integrateObservabilityMetrics(): Promise<void> {
       try {
         await manager.collectAndExpose();
       } catch (error) {
-        console.warn('⚠️ 可观测性指标收集失败:', error);
+        console.warn('Observability metrics collection failed:', error);
       }
     }, observabilityConfig.metricsInterval * 1000);
 
     // 立即执行一次收集
     await manager.collectAndExpose();
 
-    console.log('✅ SQLite健康指标已集成到Sentry监控');
+    console.log('SQLite health metrics integrated into Sentry');
   } catch (error) {
-    console.warn('⚠️ 可观测性指标集成失败:', error.message);
+    console.warn('Observability metrics integration failed:', error.message);
     // 不应该因为监控失败而影响主应用启动
   }
 }
@@ -621,9 +621,9 @@ export function sendBusinessMetric(
       category: 'metrics',
     });
 
-    console.log(`📊 主进程指标已发送: ${metricName}=${value}${unit}`, tags);
+    console.log(`Main-process metric sent: ${metricName}=${value}${unit}`, tags);
   } catch (error) {
-    console.warn('⚠️ 主进程指标发送失败:', error.message);
+    console.warn('Main-process metric send failed:', error.message);
   }
 }
 
@@ -698,7 +698,7 @@ export function reportSystemMetrics(): void {
       }
     );
   } catch (error) {
-    console.warn('⚠️ 系统性能指标发送失败:', error.message);
+    console.warn('System performance metric send failed:', error.message);
   }
 }
 
@@ -720,7 +720,7 @@ export function startSystemMetricsCollection(): void {
     reportSystemMetrics(); // 最后一次上报
   });
 
-  console.log('📊 系统指标收集已启动（每60秒）');
+  console.log('System metrics collection started (every 60s)');
 }
 
 /**
@@ -743,9 +743,9 @@ export function sendDatabaseAlert(
       extra,
     });
 
-    console.log(`🚨 数据库告警已发送: ${alertType} - ${message}`);
+    console.log(`Database alert sent: ${alertType} - ${message}`);
   } catch (error) {
-    console.warn('⚠️ 数据库告警发送失败:', error.message);
+    console.warn('Database alert send failed:', error.message);
   }
 }
 

@@ -55,6 +55,37 @@ jobs:
       - run: npm run build
         env:
           NODE_ENV: ${{ needs.prepare.outputs.environment }}
+      - name: Check Sentry credentials (optional)
+        id: sentry_check
+        run: node scripts/ci/sentry-verify.mjs
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      - name: Compute release version
+        id: rel
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          $version = if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            ($env:GITHUB_REF.Split('/')[-1]).TrimStart('v')
+          } else { $pkg.version }
+          Write-Output "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Create Sentry release and upload sourcemaps
+        if: ${{ steps.sentry_check.outputs.token_present == 'true' && (github.ref_type == 'tag' || github.ref == 'refs/heads/main') }}
+        shell: pwsh
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          $REL = "vitegame@${{ steps.rel.outputs.version }}"
+          echo "Sentry release: $REL"
+          node_modules/.bin/sentry-cli releases new "$REL"
+          node_modules/.bin/sentry-cli releases set-commits "$REL" --auto
+          # Upload renderer sourcemaps from Vite build output
+          node_modules/.bin/sentry-cli sourcemaps upload --org "$env:SENTRY_ORG" --project "$env:SENTRY_PROJECT" --release "$REL" --rewrite --url-prefix "~/" dist
+          node_modules/.bin/sentry-cli releases finalize "$REL"
       - run: node scripts/ci/archive-build-artifacts.mjs
       - uses: actions/upload-artifact@v4
         with:

@@ -1,76 +1,8 @@
-﻿import { app, BrowserWindow, session, protocol, net, shell } from 'electron';
-import { join } from 'path';
-import { pathToFileURL } from 'url';
-import { secureAutoUpdater } from './security/auto-updater';
-import { CSPManager } from './security/csp-policy';
-import { securityPolicyManager } from './security/permissions';
-
-/**
- * 定时器集中管理系统 - 防止"对象已销毁"崩溃
- */
-const timers = new Set<NodeJS.Timeout>();
-
-/**
- * 安全定时器包装器 - 自动管理生命周期
- */
-function safeSetTimeout(fn: () => void, delay: number): NodeJS.Timeout {
-  const timer = setTimeout(() => {
-    timers.delete(timer);
-    fn();
-  }, delay);
-  timers.add(timer);
-  return timer;
-}
-
-/**
- * 清理所有活跃定时器
- */
-function clearAllTimers() {
-  timers.forEach(timer => clearTimeout(timer));
-  timers.clear();
-}
-
-/**
- * 安全窗口操作包装器 - 防止访问已销毁对象
- */
-function withLiveWindow(
-  win: BrowserWindow | null,
-  fn: (w: BrowserWindow) => void
-) {
-  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
-    fn(win);
-  }
-}
-
-// CI 下为稳态，需在 app ready 之前禁用 GPU 加速
-//（必须在 ready 之前调用，否则无效）
-if (process.env.CI === 'true') {
-  app.disableHardwareAcceleration();
-  // CI环境性能优化 - 防止后台节流
-  app.commandLine.appendSwitch('disable-renderer-backgrounding');
-  app.commandLine.appendSwitch('disable-background-timer-throttling');
-  app.commandLine.appendSwitch(
-    'disable-features',
-    'CalculateNativeWinOcclusion'
+﻿'[main.ts] Minimal test switches applied - removed potentially problematic options'
   );
 }
 
-// ✅ Minimal test environment switches - only essential ones to avoid startup issues
-if (
-  process.env.SECURITY_TEST_MODE === 'true' ||
-  process.env.E2E_AUTO_START === '1'
-) {
-  // Only renderer stability switches that are essential for navigation tests
-  app.commandLine.appendSwitch('disable-background-timer-throttling');
-  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
-  app.commandLine.appendSwitch('disable-renderer-backgrounding');
-
-  console.log(
-    '📋 [main.ts] Minimal test switches applied - removed potentially problematic options'
-  );
-}
-
-// ✅ 添加关键崩溃和加载失败日志（按cifix1.txt建议）
+// 添加关键崩溃和加载失败日志（按cifix1.txt建议）
 app.on('render-process-gone', (_e, _wc, d) => {
   console.error('[main] render-process-gone:', d.reason, d.exitCode);
 });
@@ -116,26 +48,26 @@ function createSecureBrowserWindow() {
     show: false, // 延迟显示，等ready-to-show事件
     autoHideMenuBar: true,
     webPreferences: {
-      // ✅ 按cifix1.txt建议：确保preload路径在dev/prod环境均正确
+      // 按cifix1.txt建议：确保preload路径在dev/prod环境均正确
       preload: join(__dirname, 'preload.js'), // dev/prod环境：都在dist-electron目录下
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
-      // ✅ 安全基线：禁用webview标签防止潜在安全风险
+      // 安全基线：禁用webview标签防止潜在安全风险
       webviewTag: false,
-      // ✅ 安全基线：明确禁止加载不安全内容
+      // 安全基线：明确禁止加载不安全内容
       allowRunningInsecureContent: false,
-      // ✅ 安全基线：生产环境禁用开发者工具
+      // 安全基线：生产环境禁用开发者工具
       devTools: process.env.NODE_ENV !== 'production',
-      // ✅ 关键：避免CI后台节流影响交互响应性
+      // 关键：避免CI后台节流影响交互响应性
       backgroundThrottling: false,
     },
   });
 
-  // ✅ will-navigate ONLY blocks external navigation, allows same-origin file://
+  // will-navigate ONLY blocks external navigation, allows same-origin file://
   win.webContents.on('will-navigate', (event, url) => {
-    console.log(`🔄 [will-navigate] Navigation attempt: ${url}`);
+    console.log(`[will-navigate] Navigation attempt: ${url}`);
 
     // Allow local protocols and development server URLs
     const isLocal = url.startsWith('file://') || url.startsWith('app://');
@@ -149,13 +81,13 @@ function createSecureBrowserWindow() {
       isDevServer ||
       (process.env.NODE_ENV === 'development' && isLocalhost)
     ) {
-      console.log(`✅ [will-navigate] Allow local navigation: ${url}`);
+      console.log(`[will-navigate] Allow local navigation: ${url}`);
       return; // Allow navigation to proceed
     }
 
     // Block external navigation (prevents chrome-error pages)
     event.preventDefault();
-    console.log(`🚫 [will-navigate] Block external navigation: ${url}`);
+    console.log(`[will-navigate] Block external navigation: ${url}`);
 
     // Optional: open external URLs in system browser
     if (url.startsWith('https://') || url.startsWith('http://')) {
@@ -171,9 +103,9 @@ function createSecureBrowserWindow() {
     }
   });
 
-  // ✅ 按cifix1.txt建议：新窗口统一用setWindowOpenHandler控制
+  // 按cifix1.txt建议：新窗口统一用setWindowOpenHandler控制
   win.webContents.setWindowOpenHandler(({ url }) => {
-    console.log(`🔍 [setWindowOpenHandler] 新窗口请求: ${url}`);
+    console.log(`[setWindowOpenHandler] New window request: ${url}`);
 
     // 检查是否为受信任的外部URL（白名单域名）
     const trustedDomains = [
@@ -195,30 +127,30 @@ function createSecureBrowserWindow() {
       (url.startsWith('https://') || url.startsWith('http://'))
     ) {
       console.log(
-        `🌐 [setWindowOpenHandler] 通过shell.openExternal打开受信任链接: ${url}`
+        `[setWindowOpenHandler] via shell.openExternal打开受信任链接: ${url}`
       );
       shell.openExternal(url);
     } else {
-      console.log(`🚫 [setWindowOpenHandler] 阻止不受信任的链接: ${url}`);
+      console.log(`[setWindowOpenHandler] Block untrusted external link: ${url}`);
     }
 
     // 总是拒绝新窗口创建，受信任的链接通过系统浏览器打开
     return { action: 'deny' };
   });
 
-  // ✅ 增强的错误恢复机制：阻止chrome-error页面出现
+  // 增强的错误恢复机制：阻止chrome-error页面出现
   win.webContents.on(
     'did-fail-load',
     (_, errorCode, errorDescription, validatedURL, isMainFrame) => {
       if (isMainFrame && errorCode !== 0) {
         console.log(
-          `🔄 [did-fail-load] 主框架加载失败 (${errorCode}): ${errorDescription}, URL: ${validatedURL}`
+          `[did-fail-load] [did-fail-load] Main frame load failed
         );
 
         // 检查是否是chrome-error页面，立即阻止
         if (validatedURL && validatedURL.startsWith('chrome-error://')) {
           console.log(
-            `🚫 [did-fail-load] 检测到chrome-error页面，立即重定向到安全页面`
+            `[did-fail-load] Detected chrome-error page, redirecting to safe page`
           );
 
           // 立即加载安全的本地页面
@@ -234,7 +166,7 @@ function createSecureBrowserWindow() {
         // 生产环境通过 app:// 协议重新加载
         if (!process.env.VITE_DEV_SERVER_URL) {
           const appUrl = 'app://bundle/index.html';
-          console.log(`🔄 [did-fail-load] 尝试重新加载: ${appUrl}`);
+          console.log(`[did-fail-load] Reloading: ${appUrl}`);
           win.loadURL(appUrl);
         }
       }
@@ -253,16 +185,16 @@ function configureTestMode(_window: any): void {
 
   // 注意：权限和网络请求处理已在defaultSession全局设置
   // 此处仅记录测试模式配置已应用
-  console.log('🧪 测试模式已启用 - 安全策略通过defaultSession全局应用');
+  console.log('[test-mode] Enabled - security policies applied via defaultSession
 }
 
 function createWindow(is: any, ses: Electron.Session): void {
   // 创建浏览器窗口
   const mainWindow = createSecureBrowserWindow();
 
-  // ✅ 添加窗口关闭时的定时器清理逻辑
+  // 添加窗口关闭时的定时器清理逻辑
   mainWindow.on('closed', () => {
-    console.log('🧹 [窗口关闭] 清理所有活跃定时器');
+    console.log('[window] Clearing all active timers');
     clearAllTimers();
   });
 
@@ -313,10 +245,10 @@ function createWindow(is: any, ses: Electron.Session): void {
   }
 
   mainWindow.once('ready-to-show', () => {
-    console.log('🪟 [ready-to-show] 窗口内容就绪，开始显示');
+    console.log('[ready-to-show] Window ready; showing now');
     mainWindow.show();
 
-    // ✅ CI环境优化：确保窗口完全前置，避免后台节流影响交互响应性
+    // CI环境优化：确保窗口完全前置，避免后台节流影响交互响应性
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
       // 强制窗口前置：多重保障
       mainWindow.focus();
@@ -331,29 +263,29 @@ function createWindow(is: any, ses: Electron.Session): void {
         });
       }, 100);
 
-      console.log('🧪 [CI优化] 窗口前置完成，准备接收交互');
+      console.log('[CI] Window brought to front; ready');
     } else {
       // 生产环境：标准前置逻辑
       mainWindow.focus();
     }
   });
 
-  // ✅ 按cifix1.txt建议：添加窗口级render-process-gone监听器
+  // 按cifix1.txt建议：添加窗口级render-process-gone监听器
   mainWindow.webContents.on('render-process-gone', (_e, d) => {
     console.error('[window] render-process-gone:', d.reason, d.exitCode);
   });
 
-  // ✅ Remove duplicate will-navigate listener to avoid conflicts
+  // Remove duplicate will-navigate listener to avoid conflicts
   // Navigation is already handled in createSecureBrowserWindow()
 
-  // ✅ 移除重复的did-fail-load监听器，避免重复恢复尝试
+  // 移除重复的did-fail-load监听器，避免重复恢复尝试
   // 错误恢复已在createSecureBrowserWindow()中实现
 
   // 应用统一安全策略已通过上述代码实现（权限控制、导航限制、窗口打开处理）
 
   // CSP策略：开发环境使用webRequest注入，生产环境依赖index.html meta标签
   if (is.dev) {
-    // ✅ 按cifix1.txt建议：使用传入的session参数，避免访问mainWindow.webContents.session
+    // 按cifix1.txt建议：使用传入的session参数，避免访问mainWindow.webContents.session
     // 开发环境：动态注入CSP以支持热更新和开发工具
     ses.webRequest.onHeadersReceived(async (details: any, callback: any) => {
       // 为每次导航生成唯一nonce
@@ -379,38 +311,38 @@ function createWindow(is: any, ses: Electron.Session): void {
 
   // 添加页面加载状态监听
   mainWindow.webContents.on('did-start-loading', () => {
-    console.log('🔄 [did-start-loading] 开始加载页面');
+    console.log('[did-start-loading] Start loading page');
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('✅ [did-finish-load] 页面加载完成');
+    console.log('[did-finish-load] 页面加载完成');
   });
 
   mainWindow.webContents.on(
     'did-fail-load',
     (_, errorCode, errorDescription, validatedURL) => {
       console.log(
-        `❌ [did-fail-load] 页面加载失败: ${errorCode} - ${errorDescription} - ${validatedURL}`
+        `[did-fail-load] 页面加载失败: ${errorCode} - ${errorDescription} - ${validatedURL}`
       );
     }
   );
 
-  // ✅ 启用 app:// 协议：开发环境仍用VITE服务器，生产环境用app://协议
+  // 启用 app:// 协议：开发环境仍用VITE服务器，生产环境用app://协议
   const isDev = !!process.env.VITE_DEV_SERVER_URL;
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     console.log(
-      `📂 [loadURL] 开发环境加载: ${process.env.VITE_DEV_SERVER_URL}`
+      `[loadURL] Dev env load: ${process.env.VITE_DEV_SERVER_URL}`
     );
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    // ✅ 生产环境：使用 app:// 协议加载页面
+    // 生产环境：使用 app:// 协议加载页面
     const appUrl = 'app://bundle/index.html';
-    console.log(`📂 [loadURL] 生产环境使用app://协议: ${appUrl}`);
+    console.log(`[loadURL] Using app:// in production: ${appUrl}`);
     mainWindow.loadURL(appUrl);
   }
 }
 
-// ❌ 移除（会在 app 未 ready 时访问 session）
+// 移除（会在 app 未 ready 时访问 session）
 // 权限控制移到 whenReady 内部处理
 
 app.whenReady().then(async () => {
@@ -424,29 +356,58 @@ app.whenReady().then(async () => {
     optimizer = utils.optimizer ?? optimizer;
     is = utils.is ?? is;
   } catch (err) {
-    console.warn('[main] @electron-toolkit/utils 未找到，使用安全回退。');
+    console.warn('[main] @electron-toolkit/utils not found; using safe fallback');
   }
 
   electronApp.setAppUserModelId('com.electron');
 
-  // ✅ 放在 whenReady 内、且在 createWindow() 之前
+  // Initialize Sentry (main) only in production with DSN present
+  try {
+    const isProd = process.env.NODE_ENV === 'production';
+    const hasDsn = !!process.env.SENTRY_DSN;
+    const logsDir = joinPath(process.cwd(), 'logs', 'observability');
+    if (!existsSync(logsDir)) {
+      try { mkdirSync(logsDir, { recursive: true }); } catch {}
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const logFile = joinPath(logsDir, `sentry-init-main-${stamp}.log`);
+    if (isProd && hasDsn) {
+      const rate = Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.02');
+      writeFileSync(logFile, `init main: prod=true dsn=true rate=${rate}\n`, { flag: 'a' });
+      await initializeMainProcessMonitoring({
+        tracesSampleRate: rate,
+        autoSessionTracking: true,
+        enableMainProcess: true,
+        enableRendererProcess: false,
+      });
+      writeFileSync(logFile, `initialized=true\n`, { flag: 'a' });
+    } else {
+      writeFileSync(
+        logFile,
+        `init main skipped: prod=${isProd} dsn=${hasDsn}\n`,
+        { flag: 'a' }
+      );
+    }
+  } catch {}
+
+  // 放在 whenReady 内、且在 createWindow() 之前
   const ses = session.defaultSession;
 
-  // ✅ 按cifix1.txt建议：所有session操作在whenReady后执行
-  console.log('🔒 [main] 开始初始化安全策略...');
+  // 按cifix1.txt建议：所有session操作在whenReady后执行
+  console.log('[main] Initializing security policies...');
 
   // 2.1 权限：默认拒绝（全局一票否决，可按 overlay 放白名单）
   ses.setPermissionCheckHandler(() => false);
   ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 
-  // ✅ 按cifix1.txt建议：使用新的protocol.handle替代registerFileProtocol
+  // 按cifix1.txt建议：使用新的protocol.handle替代registerFileProtocol
   await protocol.handle(APP_SCHEME, request => {
     try {
       const { pathname } = new URL(request.url);
 
-      // ✅ 处理API路由请求（修复web-vitals等API调用失败）
+      // 处理API路由请求（修复web-vitals等API调用失败）
       if (pathname.startsWith('/api/')) {
-        console.log(`🔍 [protocol.handle] API请求: ${pathname}`);
+        console.log(`[protocol.handle] API request: ${pathname}`);
         if (pathname === '/api/web-vitals') {
           // 返回空的JSON响应，避免阻塞React渲染
           return new Response(JSON.stringify({}), {
@@ -461,25 +422,25 @@ app.whenReady().then(async () => {
       // 默认加载index.html
       const file = pathname === '/' ? 'index.html' : pathname.slice(1);
 
-      // ✅ 修复路径：在dist-electron环境中，向上一级找到项目根目录再拼接dist
+      // 修复路径：在dist-electron环境中，向上一级找到项目根目录再拼接dist
       const appPath = app.getAppPath();
       const projectRoot = appPath.endsWith('dist-electron')
         ? join(appPath, '..')
         : appPath;
       const filePath = join(projectRoot, 'dist', file);
 
-      console.log(`🔍 [protocol.handle] 请求: ${request.url} -> ${filePath}`);
+      console.log(`[protocol.handle] Request: ${request.url} -> ${filePath}`);
 
       // 使用net.fetch加载本地文件
       return net.fetch(pathToFileURL(filePath).toString());
     } catch (error) {
-      console.error(`🚨 [protocol.handle] 协议处理错误:`, error);
+      console.error(`[protocol.handle] Handler error:`, error);
       // 返回错误响应
       return new Response('File not found', { status: 404 });
     }
   });
 
-  // ✅ webRequest ONLY intercept subresources, mainFrame handled by will-navigate
+  // webRequest ONLY intercept subresources, mainFrame handled by will-navigate
   ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
     // Skip mainFrame processing entirely - let will-navigate handle it
     if (details.resourceType === 'mainFrame') {
@@ -499,7 +460,7 @@ app.whenReady().then(async () => {
 
     if (!isSubresourceAllowed) {
       console.log(
-        `🚫 [webRequest] Block subresource: ${details.url} (${details.resourceType})`
+        `[webRequest] Block subresource: ${details.url} (${details.resourceType})`
       );
     }
 
@@ -510,7 +471,7 @@ app.whenReady().then(async () => {
   ses.webRequest.onHeadersReceived((details, cb) => {
     const h = details.responseHeaders ?? {};
 
-    // ✅ 强安全CSP基线：移除unsafe-inline，阻断XSS与外部代码混入
+    // 强安全CSP基线：移除unsafe-inline，阻断XSS与外部代码混入
     h['Content-Security-Policy'] = [
       "default-src 'self'; " +
         "script-src 'self'; " +
@@ -521,12 +482,12 @@ app.whenReady().then(async () => {
         "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
     ];
 
-    // ✅ 现代跨源安全头：COOP/COEP/CORP (web.dev/MDN推荐)
+    // 现代跨源安全头：COOP/COEP/CORP (web.dev/MDN推荐)
     h['Cross-Origin-Opener-Policy'] = ['same-origin'];
     h['Cross-Origin-Embedder-Policy'] = ['require-corp'];
     h['Cross-Origin-Resource-Policy'] = ['same-origin'];
 
-    // ✅ 权限策略：默认禁用敏感权限
+    // 权限策略：默认禁用敏感权限
     h['Permissions-Policy'] = [
       'geolocation=(), microphone=(), camera=(), notifications=()',
     ];
@@ -559,7 +520,7 @@ app.whenReady().then(async () => {
 
   createWindow(is, ses);
 
-  // ✅ CI测试专用：窗口前置IPC处理程序
+  // CI测试专用：窗口前置IPC处理程序
   if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
     const { ipcMain } = require('electron');
     ipcMain.handle('window:bring-to-front', () => {
@@ -571,7 +532,7 @@ app.whenReady().then(async () => {
         targetWindow.show();
         targetWindow.focus();
         targetWindow.moveTop();
-        console.log('🧪 [IPC] 窗口前置请求处理完成');
+        console.log('[IPC] Window bring-to-front handled');
         return true;
       }
       return false;
@@ -580,18 +541,18 @@ app.whenReady().then(async () => {
 
   // 初始化安全自动更新器（仅在非测试环境）
   if (process.env.NODE_ENV !== 'test' && process.env.CI !== 'true') {
-    // 异步初始化auto-updater
+    // Initialize auto-updater asynchronously
     secureAutoUpdater
       .initialize()
       .then(() => {
         // 延迟检查更新，避免阻塞应用启动 - 使用安全定时器防护
         safeSetTimeout(() => {
-          console.log('🔄 正在检查应用更新...');
+          console.log('[auto-update] Checking for app updates...');
           secureAutoUpdater.checkForUpdates();
         }, 3000);
       })
       .catch(error => {
-        console.error('🚨 初始化自动更新器失败:', error);
+        console.error('[auto-update] Initialization failed:', error);
       });
   }
 
@@ -609,3 +570,7 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+
+
+

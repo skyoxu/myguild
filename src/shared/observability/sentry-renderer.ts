@@ -1,4 +1,8 @@
-﻿import * as Sentry from '@sentry/electron/renderer';
+import * as Sentry from '@sentry/electron/renderer';
+
+// Read Vite env safely in renderer (fallback to process.env)
+const VITE_ENV: Record<string, any> =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
 
 declare global {
   interface Window {
@@ -6,7 +10,7 @@ declare global {
   }
 }
 
-// 环境差异化配置
+// Renderer Sentry config (environment-scoped)
 interface RendererSentryConfig {
   dsn: string;
   environment: 'development' | 'staging' | 'production';
@@ -20,10 +24,11 @@ interface RendererSentryConfig {
 
 const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
   production: {
-    dsn: process.env.SENTRY_DSN || '',
+    dsn: (VITE_ENV.VITE_SENTRY_DSN as string) || process.env.SENTRY_DSN || '',
     environment: 'production',
     sampleRate: 1.0,
-    tracesSampleRate: 0.2, // 按您要求设置为20%
+    tracesSampleRate:
+      Number(VITE_ENV.VITE_SENTRY_TRACES_SAMPLE_RATE ?? '0.02') || 0,
     autoSessionTracking: true,
     enableTracing: true,
     release: window.__APP_VERSION__,
@@ -31,10 +36,16 @@ const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
   },
 
   staging: {
-    dsn: process.env.SENTRY_DSN_STAGING || process.env.SENTRY_DSN || '',
+    dsn:
+      (VITE_ENV.VITE_SENTRY_DSN_STAGING as string) ||
+      (VITE_ENV.VITE_SENTRY_DSN as string) ||
+      process.env.SENTRY_DSN_STAGING ||
+      process.env.SENTRY_DSN ||
+      '',
     environment: 'staging',
     sampleRate: 1.0,
-    tracesSampleRate: 0.3,
+    tracesSampleRate:
+      Number(VITE_ENV.VITE_SENTRY_TRACES_SAMPLE_RATE ?? '0.05') || 0.05,
     autoSessionTracking: true,
     enableTracing: true,
     release: window.__APP_VERSION__,
@@ -42,10 +53,15 @@ const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
   },
 
   development: {
-    dsn: process.env.SENTRY_DSN_DEV || '',
+    // Keep disabled by default in development
+    dsn:
+      (VITE_ENV.VITE_SENTRY_DSN_DEV as string) ||
+      (VITE_ENV.MODE === 'development'
+        ? ''
+        : (VITE_ENV.VITE_SENTRY_DSN as string) || ''),
     environment: 'development',
     sampleRate: 1.0,
-    tracesSampleRate: 1.0, // 开发环境100%追踪
+    tracesSampleRate: 1.0,
     autoSessionTracking: true,
     enableTracing: true,
     release: window.__APP_VERSION__,
@@ -54,38 +70,38 @@ const RENDERER_SENTRY_CONFIGS: Record<string, RendererSentryConfig> = {
 };
 
 /**
- * 初始化Sentry渲染进程监控
- * 企业级配置，支持环境差异化、性能追踪、自定义指标
+ * Initialize Sentry for renderer process (production-focused).
+ * Supports dynamic sampling and auto session tracking (Release Health).
  */
 export function initSentryRenderer(): Promise<boolean> {
   return new Promise(resolve => {
     try {
-      // 🔧 确定当前环境
+      // Resolve environment
       const environment = determineEnvironment();
       const config = RENDERER_SENTRY_CONFIGS[environment];
 
       if (!validateRendererConfig(config)) {
-        console.warn('🟡 Sentry渲染进程配置验证失败');
+        console.warn('Sentry renderer config invalid; skip initialization');
         resolve(false);
         return;
       }
 
-      console.log(`🔍 初始化Sentry渲染进程监控 [${environment}]`);
+      console.log(`Initialize Sentry (renderer) [${environment}]`);
 
-      // 🎯 核心Sentry初始化
+      // Sentry init
       Sentry.init({
         dsn: config.dsn,
         environment: config.environment,
         release: config.release,
         dist: config.dist,
 
-        // 📊 性能追踪配置 - 按您要求设置
+        // Sampling
         sampleRate: config.sampleRate,
         tracesSampleRate: config.tracesSampleRate,
         autoSessionTracking: config.autoSessionTracking,
         enableTracing: config.enableTracing,
 
-        // 🎮 渲染进程特定标签
+        // Renderer-specific tags/contexts
         initialScope: {
           tags: {
             'process.type': 'renderer',
@@ -107,14 +123,14 @@ export function initSentryRenderer(): Promise<boolean> {
           },
         },
 
-        // 🔧 渲染进程集成
+        // Integrations
         integrations: [
           Sentry.browserTracingIntegration(),
           Sentry.httpClientIntegration(),
           Sentry.captureConsoleIntegration(),
         ],
 
-        // 🚫 隐私保护
+        // Privacy filter
         beforeSend(event, hint) {
           const filteredEvent = filterRendererPII(event, hint);
           return filteredEvent as any;
@@ -125,39 +141,37 @@ export function initSentryRenderer(): Promise<boolean> {
         },
       });
 
-      // 🔍 初始化后验证
+      // Post-init verification
       setTimeout(() => {
         const isInitialized = validateRendererInitialization();
         if (isInitialized) {
-          console.log('✅ Sentry渲染进程初始化成功');
+          console.log('Sentry renderer initialized');
           setupRendererExtensions(config);
           initializeGameMetrics();
         } else {
-          console.error('❌ Sentry渲染进程初始化验证失败');
+          console.error('Sentry renderer initialization verification failed');
         }
         resolve(isInitialized);
       }, 100);
     } catch (error) {
-      console.error('💥 Sentry渲染进程初始化异常:', error);
+      console.error('Sentry renderer initialization error:', error);
       resolve(false);
     }
   });
 }
 
-/**
- * 确定当前运行环境
- */
+/** Determine current environment */
 function determineEnvironment(): string {
   if (process.env.NODE_ENV) {
     return process.env.NODE_ENV;
   }
 
-  // 开发模式检测
+  // Dev hints
   if (process.env.ELECTRON_IS_DEV) {
     return 'development';
   }
 
-  // 预发布检测
+  // Staging hints
   if (process.env.STAGING || window.__APP_VERSION__?.includes('beta')) {
     return 'staging';
   }
@@ -165,38 +179,32 @@ function determineEnvironment(): string {
   return 'production';
 }
 
-/**
- * 验证渲染进程配置
- */
+/** Validate renderer config */
 function validateRendererConfig(config: RendererSentryConfig): boolean {
   if (!config.dsn) {
-    console.warn('🟡 未配置渲染进程Sentry DSN');
+    console.warn('Renderer Sentry DSN is not provided');
     return false;
   }
   return true;
 }
 
-/**
- * 验证渲染进程初始化
- */
+/** Validate renderer initialization */
 function validateRendererInitialization(): boolean {
   try {
     const client = Sentry.getClient();
     return !!client && !!client.getOptions().dsn;
   } catch (error) {
-    console.error('渲染进程Sentry初始化验证异常:', error);
+    console.error('Renderer Sentry verification error:', error);
     return false;
   }
 }
 
-/**
- * PII过滤 - 渲染进程
- */
+/** PII filter - renderer */
 function filterRendererPII(
   event: Sentry.Event,
   hint: Sentry.EventHint
 ): Sentry.Event | null {
-  // 过滤用户输入敏感信息
+  // Remove sensitive fields from requests
   if (event.request?.data) {
     const data = event.request.data;
     if (typeof data === 'object' && data !== null) {
@@ -206,7 +214,7 @@ function filterRendererPII(
     }
   }
 
-  // 过滤DOM中的敏感信息
+  // Remove potentially sensitive DOM extras
   if (event.extra) {
     delete event.extra.userInputs;
     delete event.extra.formData;
@@ -215,13 +223,11 @@ function filterRendererPII(
   return event;
 }
 
-/**
- * 面包屑过滤 - 渲染进程
- */
+/** Breadcrumb filter - renderer */
 function filterRendererBreadcrumb(
   breadcrumb: Sentry.Breadcrumb
 ): Sentry.Breadcrumb | null {
-  // 过滤UI事件中的敏感信息
+  // Hide sensitive UI input breadcrumbs
   if (
     breadcrumb.category === 'ui.input' &&
     breadcrumb.message?.includes('password')
@@ -232,20 +238,18 @@ function filterRendererBreadcrumb(
   return breadcrumb;
 }
 
-/**
- * 设置渲染进程扩展功能
- */
+/** Setup renderer extensions */
 function setupRendererExtensions(config: RendererSentryConfig): void {
-  // 设置渲染进程标签
+  // Set renderer tags
   Sentry.setTags({
     'renderer.init.success': 'true',
     'renderer.config.environment': config.environment,
     'renderer.tracesSampleRate': config.tracesSampleRate.toString(),
   });
 
-  // 记录渲染进程初始化
+  // Add init breadcrumb
   Sentry.addBreadcrumb({
-    message: 'Sentry渲染进程监控启用',
+    message: 'Sentry renderer monitoring initialized',
     category: 'observability.renderer',
     level: 'info',
     data: {
@@ -256,36 +260,30 @@ function setupRendererExtensions(config: RendererSentryConfig): void {
   });
 }
 
-/**
- * 初始化游戏指标系统
- */
+/** Initialize game metrics (renderer) */
 function initializeGameMetrics(): void {
-  console.log('🎮 初始化游戏指标系统...');
+  console.log('Initialize game metrics (renderer)');
 
-  // 延迟加载游戏指标管理器，避免循环依赖
+  // Delay game metrics to avoid impacting first paint
   setTimeout(async () => {
     try {
       const { GameMetricsManager } = await import('./game-metrics');
       const metricsManager = GameMetricsManager.getInstance();
       metricsManager.initialize();
     } catch (error) {
-      console.warn('⚠️ 游戏指标系统初始化失败:', error);
+      console.warn('Game metrics initialization failed:', error);
     }
   }, 1000);
 }
 
-/**
- * 发送自定义业务指标 - 渲染进程版本
- * 按您要求的格式实现
- */
+/** Send custom game metric (renderer) */
 export function sendGameMetric(
   metricName: string,
   value: number,
   tags: Record<string, string> = {}
 ): void {
   try {
-    // 使用您要求的distribution格式
-    // Metrics API has changed, use addBreadcrumb instead
+    // Use breadcrumb for lightweight metrics
     Sentry.addBreadcrumb({
       message: `metric.${metricName}`,
       level: 'info',
@@ -297,39 +295,12 @@ export function sendGameMetric(
       },
     });
 
-    console.log(`📊 游戏指标已发送: ${metricName}=${value}`, tags);
+    console.log(`game metric sent: ${metricName}=${value}`, tags);
   } catch (error) {
-    console.warn('⚠️ 游戏指标发送失败:', error.message);
+    console.warn('sendGameMetric failed:', (error as any)?.message || error);
   }
 }
 
-/**
- * 发送关卡加载时长指标 - 按您的示例实现
- */
-export function reportLevelLoadTime(loadMs: number, levelId: string): void {
-  sendGameMetric('level.load.ms', loadMs, { levelId });
-}
+// React integration placeholder (kept for future route tracing)
+import React from 'react';
 
-/**
- * 发送战斗回合耗时指标
- */
-export function reportBattleRoundTime(
-  roundMs: number,
-  battleType: string,
-  round: number
-): void {
-  sendGameMetric('battle.round.ms', roundMs, {
-    battleType,
-    round: round.toString(),
-  });
-}
-
-// 导出React集成所需的依赖
-import React, { useEffect } from 'react';
-// React Router integration disabled due to API compatibility issues
-// import {
-//   useLocation,
-//   useNavigationType,
-//   createRoutesFromChildren,
-//   matchRoutes,
-// } from 'react-router-dom';

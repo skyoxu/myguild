@@ -36,6 +36,9 @@ on:
 env:
   NODE_VERSION_MATRIX: '18.x, 20.x, 22.x'
   COVERAGE_THRESHOLD: 90
+  # Disable Sentry ingestion in CI/PR by default (free SaaS safe defaults)
+  SENTRY_DSN: ''
+  SENTRY_TRACES_SAMPLE_RATE: '0'
 
 permissions:
   contents: read
@@ -211,6 +214,53 @@ jobs:
         env:
           COVERAGE_MODE: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
           NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
+
+  sonarcloud-analysis:
+    name: SonarCloud Analysis (free tier)
+    runs-on: ubuntu-latest
+    needs: unit-tests-core
+    if: ${{ secrets.SONAR_TOKEN != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests with coverage (lcov)
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2.3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Provide org/project via args from Secrets; config file handles paths/exclusions
+          args: >-
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+      - name: Wait for Quality Gate
+        uses: SonarSource/sonarcloud-quality-gate-action@v1.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          timeout-minutes: 10
+      - name: Sonar summary
+        if: always()
+        run: |
+          {
+            echo "## SonarCloud Summary";
+            echo "- Status: ${{ job.status }}";
+            echo "- Project: ${{ secrets.SONAR_PROJECT_KEY || 'not-set' }}";
+            echo "- Organization: ${{ secrets.SONAR_ORG || 'not-set' }}";
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build-verification-core:
     name: Build Verification (windows-latest)
@@ -476,8 +526,6 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
-
 
 
 

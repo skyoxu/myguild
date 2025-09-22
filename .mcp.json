@@ -80,7 +80,9 @@
         "LLM_API_KEY": "${OPENAI_API_KEY}",
         "LLM_CHOICE": "gpt-4o-mini",
         "EMBEDDING_MODEL_CHOICE": "text-embedding-3-small",
-        "DATABASE_URL": "sqlite:///C:/buildgame/mcp-mem0/mem0.db"
+        "VECTOR_STORE": "qdrant",
+        "QDRANT_PATH": "C:/buildgame/vitegame/qdrant_storage",
+        "USER": "claude-user"
       }
     }
   }

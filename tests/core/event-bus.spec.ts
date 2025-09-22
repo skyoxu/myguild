@@ -1,9 +1,9 @@
-﻿import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { AppEvent } from '../../src/core/events/types';
 import { InMemoryEventBus } from '../../src/core/events/bus';
 
-describe('04 事件总线', () => {
-  it('事件名应满足 <domain>.<action>', async () => {
+describe('Event Bus contracts', () => {
+  it('event type should follow <domain>.<action>', async () => {
     const bus = new InMemoryEventBus();
     await expect(
       bus.publish({ type: 'guild.create', name: 'A' } as AppEvent)
@@ -13,7 +13,7 @@ describe('04 事件总线', () => {
     ).rejects.toThrow();
   });
 
-  it('订阅后仅收到对应类型事件（FIFO）', async () => {
+  it('multiple subscribers receive events in FIFO order', async () => {
     const bus = new InMemoryEventBus();
     const order: string[] = [];
     const a = vi.fn((e: AppEvent) => order.push('a:' + e.type));
@@ -21,7 +21,7 @@ describe('04 事件总线', () => {
 
     bus.subscribe('guild.create', a as any);
     bus.subscribe('guild.create', b as any);
-    bus.subscribe('inventory.add', vi.fn()); // 不应被触发
+    bus.subscribe('inventory.add', vi.fn()); // irrelevant topic
 
     await bus.publish({ type: 'guild.create', name: 'A' } as AppEvent);
 
@@ -30,7 +30,7 @@ describe('04 事件总线', () => {
     expect(order).toEqual(['a:guild.create', 'b:guild.create']);
   });
 
-  it('可取消订阅', async () => {
+  it('unsubscribe detaches handler', async () => {
     const bus = new InMemoryEventBus();
     const handler = vi.fn();
     const sub = bus.subscribe('guild.create', handler as any);
@@ -39,3 +39,4 @@ describe('04 事件总线', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 });
+
