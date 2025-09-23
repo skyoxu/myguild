@@ -45,10 +45,11 @@ function writeOutput(name, value) {
   }
 }
 
-function runCmd(cmd, args) {
+function runCmd(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, {
     encoding: 'utf8',
     shell: process.platform === 'win32',
+    timeout: typeof opts.timeout === 'number' ? opts.timeout : undefined,
   });
   return r;
 }
@@ -92,10 +93,14 @@ log(
 if (['e2e', 'security', 'smoke'].includes(TEST_TYPE)) {
   if (!fs.existsSync(path.join('dist-electron', 'electron', 'main.js'))) {
     log('[run-tests] dist-electron/electron/main.js missing, building once...');
-    const build = runCmd('npm', ['run', 'build']);
+    const buildTimeout = Number(process.env.RUN_TESTS_BUILD_TIMEOUT_MS || '600000');
+    const build = runCmd('npm', ['run', 'build'], { timeout: buildTimeout });
     fs.appendFileSync(logPath, (build.stdout || '') + (build.stderr || ''));
     if (build.status !== 0) {
       log('[run-tests] Build failed');
+      if (build.error && String(build.error.message || '').includes('ETIMEDOUT')) {
+        log(`[run-tests] Build timeout after ${buildTimeout}ms`);
+      }
       if (FAIL_FAST) {
         writeOutput('result', 'failure');
         writeOutput('report_path', '');

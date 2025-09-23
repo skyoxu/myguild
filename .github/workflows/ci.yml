@@ -426,6 +426,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/npm-install
 
+      - name: Pre-build Electron artifacts (timeout 8m)
+        run: npm run build
+        timeout-minutes: 8
+
       # Windows runner does not require xvfb for Electron
       - name: Validate
         run: |
@@ -438,6 +442,7 @@ jobs:
           test-type: security
         env:
           CI: true
+          RUN_TESTS_BUILD_TIMEOUT_MS: '600000'
           # Windows runner does not require xvfb for Electron
       - name: Run Snyk scan (non-blocking)
         run: node scripts/ci/run-snyk-scan.mjs
@@ -542,7 +547,6 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
 
 
 
