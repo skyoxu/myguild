@@ -238,7 +238,9 @@ jobs:
           NODE_ENV: test
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarcloud-github-action@v2.3
+        uses: SonarSource/sonarqube-scan-action@v4.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           # Provide org/project via args from Secrets; config file handles paths/exclusions
           args: >-
@@ -246,7 +248,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
       - name: Wait for Quality Gate
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarcloud-quality-gate-action@v1.1.0
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
         with:
           timeout-minutes: 10
       - name: Sonar summary
