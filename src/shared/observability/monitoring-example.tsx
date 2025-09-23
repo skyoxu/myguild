@@ -10,8 +10,6 @@
  * - Replace placeholder imports with actual implementations when ready.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- documentation examples only */
-
 // ===========================================
 // 1) Main process setup (electron/main.ts)
 // ===========================================
@@ -62,7 +60,9 @@ export class LevelLoaderExample {
     // recordLevelLoadTime(elapsed, levelId, difficulty);
     // gameMetrics.recordLevelLoadSuccess(levelId);
 
-    console.log(`[example] Level ${levelId} loaded in ${elapsed}ms (${difficulty})`);
+    console.log(
+      `[example] Level ${levelId} loaded in ${elapsed}ms (${difficulty})`
+    );
   }
 }
 
