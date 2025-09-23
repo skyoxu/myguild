@@ -121,8 +121,8 @@ function buildApp(): void {
 }
 
 /**
- * ✅ Unified Electron app launch function - returns {app, page} structure
- * Official recommendation: app.firstWindow() → page, all DOM operations execute on Page
+ * Unified Electron app launch function - returns {app, page} structure
+ * Official recommendation: app.firstWindow() -> page, all DOM operations execute on Page
  */
 export async function launchApp(
   entry?: string
@@ -143,13 +143,13 @@ export async function launchApp(
       VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
   });
-  const page = await app.firstWindow(); // ← This is the renderer process Page
+  const page = await app.firstWindow(); // This is the renderer process Page
   return { app, page };
 }
 
 /**
- * ✅ New recommended approach: Launch Electron app and return app and page objects
- * Per user requirements: app.firstWindow() → page, all DOM operations execute on Page
+ * New recommended approach: Launch Electron app and return app and page objects
+ * Per user requirements: app.firstWindow() -> page, all DOM operations execute on Page
  */
 export async function launchAppAndPage(
   entry?: string
@@ -169,7 +169,7 @@ export async function launchAppAndPage(
       VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
   });
-  const page = await app.firstWindow(); // ← This is the renderer process Page
+  const page = await app.firstWindow(); // This is the renderer process Page
   return { app, page };
 }
 
@@ -249,12 +249,12 @@ export async function launchAppWithPage(
 }
 
 export async function prepareWindowForInteraction(page: Page): Promise<Page> {
-  // ✅ Following ciinfo.md rules: Use document.readyState instead of domcontentloaded
+  // Following ciinfo.md rules: Use document.readyState instead of domcontentloaded
   await page.waitForFunction(() => document.readyState === 'complete', {
     timeout: 15000,
   });
 
-  // ✅ Additionally wait for React app-root element to finish rendering
+  // Additionally wait for React app-root element to finish rendering
   await page.waitForFunction(
     () => {
       const appRoot = document.querySelector('[data-testid="app-root"]');
@@ -280,7 +280,7 @@ export async function prepareWindowForInteraction(page: Page): Promise<Page> {
 }
 
 /**
- * ✅ Unified DOM operation helper: navigation/external link red-line assertion
+ * Unified DOM operation helper: navigation/external link red-line assertion
  * Fixes user-mentioned location/document undefined issues
  * All DOM operations execute on Page to avoid main process context errors
  */
@@ -307,7 +307,7 @@ export async function attemptAndAssertBlocked(
 }
 
 /**
- * ✅ location.href navigation test helper
+ * location.href navigation test helper
  * Original: attemptAndAssertBlocked(firstWindow, () => { location.href = url })
  * Fixed to: await page.evaluate((u) => { location.href = u; }, url);
  */
@@ -327,7 +327,7 @@ export async function testLocationNavigation(
 }
 
 /**
- * ✅ Dynamic link click test helper
+ * Dynamic link click test helper
  * Original: document.createElement / append / click
  * Fixed to: await page.evaluate executes in Page context
  */
@@ -353,7 +353,7 @@ export async function testDynamicLinkClick(
 }
 
 /**
- * ✅ window.open test helper
+ * window.open test helper
  */
 export async function testWindowOpen(
   page: Page,
@@ -379,7 +379,7 @@ export async function testWindowOpen(
 }
 
 /**
- * ✅ Form submit navigation test helper
+ * Form submit navigation test helper
  */
 export async function testFormSubmitNavigation(
   page: Page,

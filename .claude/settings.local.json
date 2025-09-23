@@ -218,7 +218,11 @@
       "Bash(FEED_FILE=dist/latest.yml STAGE=5 node scripts/ci/release-ramp-patch-staging.mjs)",
       "Bash(C:UsersweiruanAppDataLocalMicrosoftWinGetPackagesrhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbweactionlint.exe .github/workflows/ci.yml)",
       "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/ci.yml)",
-      "Bash(where.exe actionlint:*)"
+      "Bash(where.exe actionlint:*)",
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/pr-gatekeeper.yml)",
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/branch-protection-encoding-guard.yml)",
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/validate-workflows.yml)",
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/security-unified.yml)"
     ],
     "deny": [],
     "ask": [],

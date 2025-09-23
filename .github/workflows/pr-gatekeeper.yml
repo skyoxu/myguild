@@ -24,7 +24,10 @@ jobs:
   # Primary job for GitHub Actions status check
   windows-ci-gatekeeper:
     name: Windows CI Status Check
-    runs-on: ubuntu-latest # Using Ubuntu runner for efficiency
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 15 # Optimized timeout for 10-minute security gate plus buffer
 
     # Only run on non-draft PRs
@@ -36,7 +39,7 @@ jobs:
 
       - name: Ensure logs directory exists
         run: |
-          mkdir -p logs/ci
+          New-Item -ItemType Directory -Force -Path "logs/ci" | Out-Null
 
       - name: Wait for "Unified Security Gate" check
         run: node scripts/ci/wait-for-check.mjs
@@ -50,32 +53,35 @@ jobs:
 
       - name: Generate and post PR summary
         run: |
-          {
-            echo "## PR Status Summary"
-            echo "### Windows CI Status"
-            echo "- **Status**: Windows-focused CI (Build and Test)"
-            echo "- **Environment**: Windows CI with security gates"
-            echo ""
-            echo "### Details"
-            echo "- **Focus**: Windows-focused CI"
-            echo "- **Security**: Unified security gate validation"
-            echo "- **Priority**: P2 - Critical CI validation"
-            echo "---"
-            echo "*This gatekeeper ensures Windows CI completion before PR merge*"
-          } >> "$GITHUB_STEP_SUMMARY"
+          $summary = @()
+          $summary += "## PR Status Summary"
+          $summary += "### Windows CI Status"
+          $summary += "- **Status**: Windows-focused CI (Build and Test)"
+          $summary += "- **Environment**: Windows CI with security gates"
+          $summary += ""
+          $summary += "### Details"
+          $summary += "- **Focus**: Windows-focused CI"
+          $summary += "- **Security**: Unified security gate validation"
+          $summary += "- **Priority**: P2 - Critical CI validation"
+          $summary += "---"
+          $summary += "*This gatekeeper ensures Windows CI completion before PR merge*"
+          $summary -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
   # ==================== Health Check Job ====================
   workflow-health-check:
     name: Workflow Health Check
-    runs-on: ubuntu-latest # Using Ubuntu runner for health check
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     timeout-minutes: 2
 
     steps:
       - name: Health status report
         run: |
-          {
-            echo "## Workflow Health Status"
-            echo "- **Version**: v1.0"
-            echo "- **Health Check Time**: UTC"
-            echo "- **Priority**: P2 - Critical validation"
-          } >> "$GITHUB_STEP_SUMMARY"
+          $summary = @()
+          $summary += "## Workflow Health Status"
+          $summary += "- **Version**: v1.0"
+          $summary += "- **Health Check Time**: UTC"
+          $summary += "- **Priority**: P2 - Critical validation"
+          $summary -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8

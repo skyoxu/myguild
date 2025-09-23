@@ -1,14 +1,14 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { launchAppWithPage } from '../helpers/launch';
 
-test('能用统一 helper 启动应用', async () => {
+test('launchAppWithPage returns app and page (DOM ready)', async () => {
   const { app, page } = await launchAppWithPage();
   await page.waitForLoadState('domcontentloaded');
   expect(await page.evaluate(() => document.readyState)).toBe('complete');
   await app.close();
 });
 
-test('launchApp 使用正确的 _electron 导入（避免解构错误）', async () => {
+test('launchAppWithPage uses correct _electron integration (smoke)', async () => {
   const { app, page } = await launchAppWithPage();
   expect(app).toBeDefined();
   expect(page).toBeDefined();
@@ -18,8 +18,8 @@ test('launchApp 使用正确的 _electron 导入（避免解构错误）', async
   await app.close();
 });
 
-test('launchApp 正确设置环境变量', async () => {
-  // 项目无差别执行，不使用 test.skip；非 smoke 项目降级为空校验
+test('launchAppWithPage exposes testMode flag when configured', async () => {
+  // Non-smoke projects skip the specific assertion and just sanity-check
   if (test.info().project.name !== 'electron-smoke-tests') {
     expect(true).toBe(true);
     return;
@@ -33,7 +33,7 @@ test('launchApp 正确设置环境变量', async () => {
   await app.close();
 });
 
-test('launchApp 使用构建产物启动（dist-electron/main.js）', async () => {
+test('launchAppWithPage uses built Electron main entry', async () => {
   const { app, page } = await launchAppWithPage();
   await page.waitForLoadState('domcontentloaded');
   const url = page.url();

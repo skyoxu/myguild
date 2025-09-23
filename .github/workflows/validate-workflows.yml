@@ -25,7 +25,10 @@ concurrency:
 jobs:
   actionlint:
     name: Lint workflow YAML (actionlint)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint
@@ -44,7 +47,10 @@ jobs:
 
   needs-guard:
     name: Check jobs/needs consistency
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +62,10 @@ jobs:
 
   encoding-guard:
     name: Enforce UTF-8 + LF for workflows
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +92,10 @@ jobs:
 
   shell-guard:
     name: Enforce Windows-only shell policy
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: [actionlint, actionlint-windows, encoding-guard, encoding-guard-windows]
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +107,10 @@ jobs:
 
   ascii-guard:
     name: ASCII Guard for Workflows
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     needs: [actionlint, actionlint-windows, encoding-guard, encoding-guard-windows]
     steps:
       - uses: actions/checkout@v4

@@ -14,7 +14,10 @@ permissions:
 jobs:
   protect:
     name: Set required checks for encoding-guard
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - name: Parse branches
         id: parse
@@ -28,4 +31,3 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           BRANCHES: ${{ steps.parse.outputs.branches }}
           REQUIRED_CONTEXT: Validate Workflows & Guards / Enforce UTF-8 + LF for workflows
-
