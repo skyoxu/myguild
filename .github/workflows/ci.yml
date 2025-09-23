@@ -304,6 +304,13 @@ jobs:
         run: npm run build
       - name: Validate
         run: node scripts/ci/verify-dist-build.mjs
+      - name: Upload dist-electron artifact
+        if: ${{ success() && hashFiles('dist-electron/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-electron
+          path: dist-electron/**
+          retention-days: 1
 
   release-health-gate:
     name: Release Health Gate
@@ -410,8 +417,8 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: quality-gates
-    timeout-minutes: 30
+    needs: [quality-gates, build-verification-core]
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -426,9 +433,23 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/npm-install
 
+      - name: Download dist-electron artifact (if available)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: dist-electron
+          path: dist-electron
+
       - name: Pre-build Electron artifacts (timeout 8m)
         run: npm run build
         timeout-minutes: 8
+
+      - name: Assert electron main entry exists
+        run: |
+          if (!(Test-Path 'dist-electron/electron/main.js')) {
+            Write-Error 'Missing dist-electron/electron/main.js after build or artifact download.'
+            exit 1
+          }
 
       # Windows runner does not require xvfb for Electron
       - name: Validate
@@ -443,6 +464,7 @@ jobs:
         env:
           CI: true
           RUN_TESTS_BUILD_TIMEOUT_MS: '600000'
+        timeout-minutes: 20
           # Windows runner does not require xvfb for Electron
       - name: Run Snyk scan (non-blocking)
         run: node scripts/ci/run-snyk-scan.mjs
@@ -547,6 +569,5 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
 
 
