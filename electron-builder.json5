@@ -22,7 +22,7 @@
   ],
   asarUnpack: ['**/*.node'],
   extraMetadata: {
-    main: 'dist-electron/main.js',
+    main: 'dist-electron/electron/main.js',
   },
   // extraResources: [
   //   {
