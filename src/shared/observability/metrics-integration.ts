@@ -206,6 +206,7 @@ export function validateMonitoringStatus(): {
     // Release Health status (presence check only)
     let releaseHealthStatus = false;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- presence check only; avoids bundler static include
       const { releaseHealthManager } = require('./release-health');
       releaseHealthStatus = !!releaseHealthManager;
     } catch {
@@ -215,6 +216,7 @@ export function validateMonitoringStatus(): {
     // Game metrics status (presence check only)
     let gameMetricsStatus = false;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- presence check only; avoids bundler static include
       const { gameMetrics } = require('./game-metrics');
       gameMetricsStatus = !!gameMetrics;
     } catch {

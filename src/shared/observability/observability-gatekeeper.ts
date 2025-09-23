@@ -689,6 +689,7 @@ export class ObservabilityGatekeeper {
       arch: process.arch,
       electronVersion: process.versions.electron,
       memoryTotal: process.memoryUsage().heapTotal,
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- node built-in used only in main-side system info
       cpuCount: require('os').cpus().length,
     };
   }
