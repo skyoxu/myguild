@@ -1,18 +1,21 @@
-﻿/**
- * 就地验收测试 - 防止"对象已销毁"崩溃
+/**
+ * In-place acceptance test - Prevent "Object has been destroyed" crashes
  *
- * 验证窗口关闭后，延时回调不会触发主进程崩溃
- * 测试场景：模拟快速窗口关闭的竞态条件
+ * Verifies that delayed callbacks do not trigger main process crashes after window closure
+ * Test scenario: Simulates race conditions from rapid window closure
  */
 import { test, expect, _electron as electron } from '@playwright/test';
+import { assertElectronEntry } from '../../helpers/electronEntry';
 
-test('窗口关闭后，延时回调不会触发崩溃', async () => {
-  console.log('🔬 [防崩溃测试] 启动测试 - 验证延时回调安全防护');
+test('window closure should not trigger crash from delayed callbacks', async () => {
+  console.log(
+    '🔬 [Crash Prevention Test] Starting test - Verifying delayed callback safety protection'
+  );
 
-  // 1. 启动 Electron 应用
+  // 1. Launch Electron application
   const app = await electron.launch({
-    args: [process.env.ELECTRON_MAIN_PATH ?? 'dist-electron/main.js'],
-    // 在测试环境中启用日志以便观察定时器行为
+    args: [assertElectronEntry()],
+    // Enable logging in test environment to observe timer behavior
     env: {
       ...process.env,
       NODE_ENV: 'test',
@@ -20,33 +23,43 @@ test('窗口关闭后，延时回调不会触发崩溃', async () => {
     },
   });
 
-  // 2. 获取主窗口
+  // 2. Get main window
   const page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
 
-  console.log('✅ [防崩溃测试] 应用启动完成，窗口已就绪');
+  console.log(
+    '✅ [Crash Prevention Test] Application started successfully, window ready'
+  );
 
-  // 3. 主进程此时已安排了一个 setTimeout(..., 100)，我们立刻关闭窗口以模拟竞态
-  console.log('🚀 [防崩溃测试] 立即关闭窗口，模拟定时器竞态条件');
+  // 3. Main process has scheduled a setTimeout(..., 100), we immediately close window to simulate race condition
+  console.log(
+    '🚀 [Crash Prevention Test] Immediately closing window, simulating timer race condition'
+  );
   await page.close();
 
-  // 4. 等待足够时间确保原定时器应该触发（如果没有防护的话）
+  // 4. Wait sufficient time to ensure original timer should trigger (if there was no protection)
   await new Promise(resolve => setTimeout(resolve, 200));
 
-  // 5. 只要主进程没有抛出"Object has been destroyed"，应用就能被正常关闭
-  console.log('🧪 [防崩溃测试] 验证应用正常关闭（无"对象已销毁"错误）');
+  // 5. As long as main process doesn't throw "Object has been destroyed", application should close normally
+  console.log(
+    '🧪 [Crash Prevention Test] Verifying application closes normally (no "Object has been destroyed" error)'
+  );
   await app.close();
 
-  // 6. 如果能到达这里，说明防护生效
+  // 6. If we reach here, protection is working
   expect(true).toBeTruthy();
-  console.log('✅ [防崩溃测试] 测试通过 - 延时回调防护正常工作');
+  console.log(
+    '✅ [Crash Prevention Test] Test passed - Delayed callback protection working normally'
+  );
 });
 
-test('多窗口场景下的定时器清理', async () => {
-  console.log('🔬 [多窗口防崩溃测试] 启动测试 - 验证多窗口定时器清理');
+test('timer cleanup in multi-window scenario', async () => {
+  console.log(
+    '🔬 [Multi-Window Crash Prevention Test] Starting test - Verifying multi-window timer cleanup'
+  );
 
   const app = await electron.launch({
-    args: [process.env.ELECTRON_MAIN_PATH ?? 'dist-electron/main.js'],
+    args: [assertElectronEntry()],
     env: {
       ...process.env,
       NODE_ENV: 'test',
@@ -54,31 +67,35 @@ test('多窗口场景下的定时器清理', async () => {
     },
   });
 
-  // 获取第一个窗口
+  // Get first window
   const firstWindow = await app.firstWindow();
   await firstWindow.waitForLoadState('domcontentloaded');
 
-  console.log('✅ [多窗口防崩溃测试] 第一个窗口就绪');
+  console.log('✅ [Multi-Window Crash Prevention Test] First window ready');
 
-  // 立即关闭第一个窗口
+  // Immediately close first window
   await firstWindow.close();
-  console.log('🚀 [多窗口防崩溃测试] 第一个窗口已关闭');
+  console.log('🚀 [Multi-Window Crash Prevention Test] First window closed');
 
-  // 等待确保定时器清理完成
+  // Wait to ensure timer cleanup is complete
   await new Promise(resolve => setTimeout(resolve, 150));
 
-  // 正常关闭应用
+  // Close application normally
   await app.close();
 
   expect(true).toBeTruthy();
-  console.log('✅ [多窗口防崩溃测试] 测试通过 - 多窗口场景防护正常');
+  console.log(
+    '✅ [Multi-Window Crash Prevention Test] Test passed - Multi-window scenario protection working normally'
+  );
 });
 
-test('长延时回调的防护验证', async () => {
-  console.log('🔬 [长延时防崩溃测试] 启动测试 - 验证长延时回调防护');
+test('long-delay callback protection verification', async () => {
+  console.log(
+    '🔬 [Long-Delay Crash Prevention Test] Starting test - Verifying long-delay callback protection'
+  );
 
   const app = await electron.launch({
-    args: [process.env.ELECTRON_MAIN_PATH ?? 'dist-electron/main.js'],
+    args: [assertElectronEntry()],
     env: {
       ...process.env,
       NODE_ENV: 'test',
@@ -89,19 +106,27 @@ test('长延时回调的防护验证', async () => {
   const page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
 
-  console.log('✅ [长延时防崩溃测试] 应用启动完成');
+  console.log(
+    '✅ [Long-Delay Crash Prevention Test] Application started successfully'
+  );
 
-  // 模拟自动更新器的长延时场景（3秒）
-  // 在定时器触发前关闭窗口
-  console.log('🚀 [长延时防崩溃测试] 在长延时触发前关闭窗口');
+  // Simulate auto-updater long-delay scenario (3 seconds)
+  // Close window before timer triggers
+  console.log(
+    '🚀 [Long-Delay Crash Prevention Test] Closing window before long-delay triggers'
+  );
   await page.close();
 
-  // 等待原本的长延时时间，确保防护机制工作
-  console.log('⏳ [长延时防崩溃测试] 等待长延时周期...');
+  // Wait for the original long-delay period, ensuring protection mechanism works
+  console.log(
+    '⏳ [Long-Delay Crash Prevention Test] Waiting for long-delay period...'
+  );
   await new Promise(resolve => setTimeout(resolve, 500));
 
   await app.close();
 
   expect(true).toBeTruthy();
-  console.log('✅ [长延时防崩溃测试] 测试通过 - 长延时回调防护正常');
+  console.log(
+    '✅ [Long-Delay Crash Prevention Test] Test passed - Long-delay callback protection working normally'
+  );
 });

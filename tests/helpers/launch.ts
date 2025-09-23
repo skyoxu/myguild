@@ -10,7 +10,7 @@ import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { ensureDomReady } from './ensureDomReady';
 
-// 默认入口路径常量 - dist-electron/package.json 指定 commonjs 类型
+// Default entry path constant - dist-electron/package.json specifies commonjs type
 const DEFAULT_ENTRY_PATH = resolve(
   process.cwd(),
   'dist-electron',
@@ -19,8 +19,8 @@ const DEFAULT_ENTRY_PATH = resolve(
 );
 
 /**
- * 严格验证Electron入口路径，禁止构建fallback
- * 只接受显式传入的entry参数或ELECTRON_MAIN_PATH环境变量
+ * Strictly validate Electron entry path, no build fallback allowed
+ * Only accepts explicitly passed entry parameter or ELECTRON_MAIN_PATH environment variable
  */
 function validateEntryPath(entry?: string): string {
   const entryPath =
@@ -38,11 +38,11 @@ function validateEntryPath(entry?: string): string {
   return entryPath;
 }
 
-// 构建缓存机制：避免CI环境中重复构建
+// Build cache mechanism: avoid repeated builds in CI environment
 const BUILD_CACHE_FILE = resolve(process.cwd(), '.e2e-build-cache');
 
 /**
- * 检查CI缓存是否有效
+ * Check if CI cache is valid
  */
 function isBuildCacheValid(): boolean {
   if (process.env.CI !== 'true') return false;
@@ -52,21 +52,26 @@ function isBuildCacheValid(): boolean {
 
     const cacheInfo = JSON.parse(readFileSync(BUILD_CACHE_FILE, 'utf-8'));
     const distPathCjs = resolve(process.cwd(), 'dist-electron', 'main.cjs');
-    const distPathJs = resolve(process.cwd(), 'dist-electron', 'main.js');
+    const distPathJs = resolve(
+      process.cwd(),
+      'dist-electron',
+      'electron',
+      'main.js'
+    );
 
-    // 检查构建产物是否存在且缓存时间戳有效
+    // Check if build artifacts exist and cache timestamp is valid
     return (
       (existsSync(distPathCjs) || existsSync(distPathJs)) &&
       cacheInfo.timestamp &&
       Date.now() - cacheInfo.timestamp < 1000 * 60 * 10
-    ); // 10分钟有效期
+    ); // 10 minute validity period
   } catch {
     return false;
   }
 }
 
 /**
- * 标记构建缓存完成
+ * Mark build cache as completed
  */
 function markBuildCacheCompleted(): void {
   if (process.env.CI === 'true') {
@@ -88,10 +93,10 @@ function markBuildCacheCompleted(): void {
 
 /**
  * Build application before launching to ensure latest code is used.
- * 优化：CI环境中只构建一次，后续复用
+ * Optimization: Build only once in CI environment, reuse afterwards
  */
 function buildApp(): void {
-  // CI环境构建优化：检查跨进程缓存
+  // CI environment build optimization: check cross-process cache
   if (isBuildCacheValid()) {
     console.log('[launch] CI mode: reusing existing build (cached)');
     return;
@@ -103,11 +108,11 @@ function buildApp(): void {
       stdio: 'inherit',
       env: {
         ...process.env,
-        VITE_E2E_SMOKE: 'true', // 确保构建时注入环境变量
+        VITE_E2E_SMOKE: 'true', // Ensure environment variable is injected during build
       },
     });
 
-    // 标记构建完成（仅CI环境缓存）
+    // Mark build completed (CI environment cache only)
     markBuildCacheCompleted();
   } catch (e) {
     console.error('[launch] build failed before E2E launch');
@@ -116,13 +121,13 @@ function buildApp(): void {
 }
 
 /**
- * ✅ 统一Electron应用启动函数 - 返回{app, page}结构
- * 官方推荐：app.firstWindow() → page，所有DOM操作在Page上执行
+ * ✅ Unified Electron app launch function - returns {app, page} structure
+ * Official recommendation: app.firstWindow() → page, all DOM operations execute on Page
  */
 export async function launchApp(
   entry?: string
 ): Promise<{ app: ElectronApplication; page: Page }> {
-  // 在buildApp之前设置CI环境变量以启用缓存
+  // Set CI environment variable before buildApp to enable caching
   process.env.CI = 'true';
 
   buildApp();
@@ -135,21 +140,21 @@ export async function launchApp(
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // 运行时环境变量
+      VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
   });
-  const page = await app.firstWindow(); // ← 这是渲染进程 Page
+  const page = await app.firstWindow(); // ← This is the renderer process Page
   return { app, page };
 }
 
 /**
- * ✅ 新推荐姿势：启动Electron应用并返回app和page对象
- * 按用户要求：app.firstWindow() → page，所有DOM操作在Page上执行
+ * ✅ New recommended approach: Launch Electron app and return app and page objects
+ * Per user requirements: app.firstWindow() → page, all DOM operations execute on Page
  */
 export async function launchAppAndPage(
   entry?: string
 ): Promise<{ app: ElectronApplication; page: Page }> {
-  // 在buildApp之前设置CI环境变量以启用缓存
+  // Set CI environment variable before buildApp to enable caching
   process.env.CI = 'true';
 
   buildApp();
@@ -161,10 +166,10 @@ export async function launchAppAndPage(
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // 运行时环境变量
+      VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
   });
-  const page = await app.firstWindow(); // ← 这是渲染进程 Page
+  const page = await app.firstWindow(); // ← This is the renderer process Page
   return { app, page };
 }
 
@@ -172,7 +177,7 @@ export async function launchAppWithArgs(
   entryOrArgs?: string | string[],
   extraArgs?: string[]
 ): Promise<ElectronApplication> {
-  // 在buildApp之前设置CI环境变量以启用缓存
+  // Set CI environment variable before buildApp to enable caching
   process.env.CI = 'true';
 
   buildApp();
@@ -191,7 +196,7 @@ export async function launchAppWithArgs(
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // 运行时环境变量
+      VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
   });
   return app;
@@ -201,7 +206,7 @@ export async function launchAppWithPage(
   electronOverride?: typeof electron,
   entry?: string
 ): Promise<{ app: ElectronApplication; page: Page }> {
-  // 在buildApp之前设置CI环境变量以启用缓存
+  // Set CI environment variable before buildApp to enable caching
   process.env.CI = 'true';
 
   buildApp();
@@ -212,7 +217,7 @@ export async function launchAppWithPage(
       CI: 'true',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // 运行时环境变量
+      VITE_E2E_SMOKE: 'true', // Runtime environment variable
     },
     cwd: process.cwd(),
     timeout: 45000,
@@ -244,12 +249,12 @@ export async function launchAppWithPage(
 }
 
 export async function prepareWindowForInteraction(page: Page): Promise<Page> {
-  // ✅ 按照ciinfo.md规则：使用document.readyState而不是domcontentloaded
+  // ✅ Following ciinfo.md rules: Use document.readyState instead of domcontentloaded
   await page.waitForFunction(() => document.readyState === 'complete', {
     timeout: 15000,
   });
 
-  // ✅ 额外等待React app-root元素渲染完成
+  // ✅ Additionally wait for React app-root element to finish rendering
   await page.waitForFunction(
     () => {
       const appRoot = document.querySelector('[data-testid="app-root"]');
@@ -275,9 +280,9 @@ export async function prepareWindowForInteraction(page: Page): Promise<Page> {
 }
 
 /**
- * ✅ 统一DOM操作Helper：导航/外链红线断言
- * 修正用户提到的location/document未定义问题
- * 所有DOM操作在Page上执行，避免主进程上下文错误
+ * ✅ Unified DOM operation helper: navigation/external link red-line assertion
+ * Fixes user-mentioned location/document undefined issues
+ * All DOM operations execute on Page to avoid main process context errors
  */
 export async function attemptAndAssertBlocked(
   page: Page,
@@ -288,23 +293,23 @@ export async function attemptAndAssertBlocked(
 
   try {
     await navigationAction(testUrl);
-    await page.waitForTimeout(1000); // 等待可能的导航
+    await page.waitForTimeout(1000); // Wait for possible navigation
     const currentUrl = page.url();
 
-    // 断言：URL应该保持不变（导航被阻止）
+    // Assert: URL should remain unchanged (navigation blocked)
     return currentUrl === originalUrl;
   } catch (error) {
     console.log(
       `[attemptAndAssertBlocked] Navigation blocked as expected: ${error}`
     );
-    return true; // 异常说明导航被阻止，这是期望的
+    return true; // Exception indicates navigation was blocked, which is expected
   }
 }
 
 /**
- * ✅ location.href导航测试Helper
- * 原: attemptAndAssertBlocked(firstWindow, () => { location.href = url })
- * 修正为: await page.evaluate((u) => { location.href = u; }, url);
+ * ✅ location.href navigation test helper
+ * Original: attemptAndAssertBlocked(firstWindow, () => { location.href = url })
+ * Fixed to: await page.evaluate((u) => { location.href = u; }, url);
  */
 export async function testLocationNavigation(
   page: Page,
@@ -322,9 +327,9 @@ export async function testLocationNavigation(
 }
 
 /**
- * ✅ 动态链接点击测试Helper
- * 原: document.createElement / append / click
- * 修正为: await page.evaluate在Page上下文中执行
+ * ✅ Dynamic link click test helper
+ * Original: document.createElement / append / click
+ * Fixed to: await page.evaluate executes in Page context
  */
 export async function testDynamicLinkClick(
   page: Page,
@@ -339,7 +344,7 @@ export async function testDynamicLinkClick(
         a.target = '_blank';
         document.body.appendChild(a);
         a.click();
-        // 清理DOM
+        // Clean up DOM
         document.body.removeChild(a);
       }, testUrl);
     },
@@ -348,14 +353,14 @@ export async function testDynamicLinkClick(
 }
 
 /**
- * ✅ window.open测试Helper
+ * ✅ window.open test helper
  */
 export async function testWindowOpen(
   page: Page,
   url: string
 ): Promise<boolean> {
   try {
-    // 监听可能的 popup 事件
+    // Listen for possible popup events
     const [popup] = await Promise.all([
       page.waitForEvent('popup', { timeout: 1000 }).catch(() => null),
       page.evaluate(targetUrl => {
@@ -363,18 +368,18 @@ export async function testWindowOpen(
       }, url),
     ]);
 
-    // 如果走主进程 setWindowOpenHandler({action:'deny'}) 的话，这里应为 null
+    // If using main process setWindowOpenHandler({action:'deny'}), this should be null
     return popup === null;
   } catch (error) {
     console.log(
       `[testWindowOpen] Error during window.open test: ${error.message}`
     );
-    return true; // 如果出错，认为是被阻止了
+    return true; // If error occurs, consider it blocked
   }
 }
 
 /**
- * ✅ 表单提交导航测试Helper
+ * ✅ Form submit navigation test helper
  */
 export async function testFormSubmitNavigation(
   page: Page,
@@ -390,7 +395,7 @@ export async function testFormSubmitNavigation(
         form.target = '_blank';
         document.body.appendChild(form);
         form.submit();
-        // 清理DOM
+        // Clean up DOM
         document.body.removeChild(form);
       }, testUrl);
     },
