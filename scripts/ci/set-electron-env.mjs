@@ -33,7 +33,7 @@ try {
   const pkg = JSON.parse(stripBOM(readFileSync('package.json', 'utf8')));
   const productName = pkg.productName || pkg.name || 'App';
   const exePath = `dist/win-unpacked/${productName}.exe`;
-  const fallbackMain = 'dist-electron/main.js';
+  const fallbackMain = 'dist-electron/electron/main.js';
 
   let resolved = '';
   if (existsSync(exePath)) {
