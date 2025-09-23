@@ -160,7 +160,7 @@ jobs:
           Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
       - name: Cache Playwright browsers
         if: steps.changes-e2e.outputs.any_changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v4.2.4
         with:
           path: ~\AppData\Local\ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
