@@ -41,9 +41,11 @@ on:
   workflow_dispatch:
 
 # Concurrency control: only one instance per branch
+# Differential concurrency strategy: main branch ensures complete security test execution, feature branches maintain fast feedback
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only use cancellation mechanism on non-main branches, ensuring main branch security tests execute completely
+  cancel-in-progress: ${{ !contains(github.ref, 'refs/heads/main') }}
 
 env:
   NODE_VERSION: '20.x'
