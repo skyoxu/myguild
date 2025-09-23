@@ -358,6 +358,19 @@ jobs:
           path: dist/win-unpacked/
         continue-on-error: true
 
+      - name: Fallback build if artifact missing
+        run: |
+          # Check if we have the expected executable or main.js
+          if [ ! -f "dist/win-unpacked/ViteGame.exe" ] && [ ! -f "dist-electron/electron/main.js" ]; then
+            echo "No pre-built artifact found, building Electron main process..."
+            echo "Building TypeScript for Electron main process..."
+            npx tsc -p electron
+            echo "Building Vite renderer process..."
+            npx vite build
+          else
+            echo "Pre-built artifact or fallback main.js found, skipping build"
+          fi
+
       - name: Verify and set Electron entry path
         run: |
           # electron-builder uses asar; verify executable instead of main.js

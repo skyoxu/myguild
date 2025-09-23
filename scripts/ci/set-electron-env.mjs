@@ -35,20 +35,65 @@ try {
   const exePath = `dist/win-unpacked/${productName}.exe`;
   const fallbackMain = 'dist-electron/electron/main.js';
 
+  // Additional fallback paths for CI environments
+  const developmentMain = pkg.main || 'dist-electron/electron/main.js';
+  const alternativePaths = [
+    'dist-electron/main.js',
+    'electron/main.js',
+    'dist/electron/main.js'
+  ];
+
   let resolved = '';
+
+  // Priority 1: Packaged executable (production)
   if (existsSync(exePath)) {
     resolved = exePath;
     log(`[set-electron-env] Found packaged exe: ${exePath}`);
-  } else if (existsSync(fallbackMain)) {
+  }
+  // Priority 2: Built main.js in expected location
+  else if (existsSync(fallbackMain)) {
     resolved = fallbackMain;
-    log(
-      `[set-electron-env] Packaged exe missing; fallback to: ${fallbackMain}`
-    );
-  } else {
-    log(
-      `[set-electron-env] Neither packaged exe nor fallback main found. Expected one of:\n - ${exePath}\n - ${fallbackMain}`
-    );
-    process.exit(1);
+    log(`[set-electron-env] Using built main.js: ${fallbackMain}`);
+  }
+  // Priority 3: Package.json main entry
+  else if (developmentMain && existsSync(developmentMain)) {
+    resolved = developmentMain;
+    log(`[set-electron-env] Using package.json main: ${developmentMain}`);
+  }
+  // Priority 4: Try alternative common paths
+  else {
+    let found = false;
+    for (const altPath of alternativePaths) {
+      if (existsSync(altPath)) {
+        resolved = altPath;
+        found = true;
+        log(`[set-electron-env] Using alternative path: ${altPath}`);
+        break;
+      }
+    }
+
+    if (!found) {
+      log(`[set-electron-env] No Electron entry found. Checked paths:`);
+      log(` - ${exePath} (packaged exe)`);
+      log(` - ${fallbackMain} (built main)`);
+      log(` - ${developmentMain} (package.json main)`);
+      alternativePaths.forEach(p => log(` - ${p} (alternative)`));
+
+      // In CI environments, try to provide helpful debugging info
+      log(`[set-electron-env] Current directory contents:`);
+      try {
+        const { readdirSync } = await import('node:fs');
+        const contents = readdirSync('.', { withFileTypes: true });
+        contents.forEach(item => {
+          const type = item.isDirectory() ? 'DIR' : 'FILE';
+          log(`  ${type}: ${item.name}`);
+        });
+      } catch (e) {
+        log(`  Error listing directory: ${e.message}`);
+      }
+
+      process.exit(1);
+    }
   }
 
   const envFile = process.env.GITHUB_ENV;
