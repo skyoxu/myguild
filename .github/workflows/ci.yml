@@ -213,13 +213,17 @@ jobs:
           NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
 
   sonarcloud-analysis:
-    name: SonarCloud Analysis (free tier)
-    runs-on: ubuntu-latest
+    name: SonarCloud Analysis (Windows)
+    runs-on: windows-latest
     needs: unit-tests-core
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+    permissions:
+      contents: read
+      pull-requests: read
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    timeout-minutes: 15
+      SONAR_HOST_URL: https://sonarcloud.io
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -230,6 +234,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Setup Java (for SonarScanner)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Install dependencies
         run: npm ci
       - name: Run tests with coverage (lcov)
@@ -238,17 +247,24 @@ jobs:
           NODE_ENV: test
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
         with:
-          # Provide org/project via args from Secrets; config file handles paths/exclusions
           args: >-
-            "-Dsonar.organization=${{ secrets.SONAR_ORG }}"
-            "-Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}"
-      - name: Wait for Quality Gate
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
+            -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts
+      - name: Wait for Quality Gate (SonarCloud)
         if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           timeout-minutes: 10
       - name: Sonar summary
@@ -259,7 +275,8 @@ jobs:
             echo "- Status: ${{ job.status }}";
             echo "- Project: ${{ secrets.SONAR_PROJECT_KEY || 'not-set' }}";
             echo "- Organization: ${{ secrets.SONAR_ORG || 'not-set' }}";
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "- Runner: $env:RUNNER_OS";
+          } >> $env:GITHUB_STEP_SUMMARY
 
   build-verification-core:
     name: Build Verification (windows-latest)
@@ -525,7 +542,6 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
 
 
 
