@@ -48,7 +48,7 @@ jobs:
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5.0.0
         with:
           node-version: '20'
       - name: Step
@@ -60,7 +60,7 @@ jobs:
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5.0.0
         with:
           node-version: '20'
       - name: Check workflow encodings and EOL
@@ -75,7 +75,7 @@ jobs:
     needs: [actionlint, actionlint-windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5.0.0
         with:
           node-version: '20'
       - name: Check workflow encodings and EOL (Windows)
@@ -87,7 +87,7 @@ jobs:
     needs: [actionlint, actionlint-windows, encoding-guard, encoding-guard-windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5.0.0
         with:
           node-version: '20'
       - name: Check pwsh defaults on Windows jobs and POSIX test misuse
@@ -99,7 +99,7 @@ jobs:
     needs: [actionlint, actionlint-windows, encoding-guard, encoding-guard-windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5.0.0
         with:
           node-version: '20'
       - name: Check non-ASCII characters in workflow files

@@ -91,7 +91,7 @@ jobs:
           Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -257,7 +257,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -340,7 +340,7 @@ jobs:
           Write-Host "[config-check] E2E_SECURITY_TIMEOUT_MS=$val (valid)"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -449,7 +449,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'

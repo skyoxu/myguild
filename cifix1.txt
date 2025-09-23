@@ -1,20 +1,32 @@
-检查结果总结
+actions/setup-node@v4 内部依赖问题：虽然我们已经修复了 build-and-test.yml 中的直接 actions/cache 使用，但问题的真正根源是 actions/setup-node@v4
+  内部使用了已弃用的 actions/cache@v4.0.2 版本。
 
-  ESLint 警告/错误
+  📊 影响范围
 
-  scripts/ci/clean-file-caches.cjs
-  - 警告：Unused eslint-disable directive (no problems were reported from 'no-console')
+  经过系统调查发现：
+  - 24个工作流文件 使用 actions/setup-node@v4 并启用了 cache: 'npm' 功能
+  - 每当启用缓存功能时，setup-node@v4 内部会调用弃用的 actions/cache@v4.0.2
+  - 包括 ci.yml、security-unified.yml、build-and-test.yml 等关键工作流
 
-  src/shared/observability/config-validator.main.ts
-  - 警告：Method 'validateSentryConfiguration' has too many lines (87). Maximum allowed is 80
-  - 警告：'schema' is defined but never used
-  - 警告：'endpoint' is defined but never used
+  🔍 专家分析验证
 
-  src/shared/observability/dashboard-config-manager.ts
-  - 警告：Method 'createPerformanceDashboard' has too many lines (84). Maximum allowed is 80
+  Zen MCP 专家分析与我的调查结果完全一致：
+  - ✅ 传递依赖问题：setup-node@v4 是真正的罪魁祸首
+  - ✅ 解决方案确认：升级到 setup-node@v5.0.0 可解决问题
+  - ✅ 风险评估：v5.0.0 无破坏性 API 变更，升级安全
 
-  src/shared/observability/monitoring-example.tsx
-  - 错误：Delete ⏎ (Prettier格式错误 - 文件末尾多了换行符)
+  🚀 推荐解决方案
 
-  src/shared/observability/observability-gatekeeper.ts
-  - 警告：A require() style import is forbidden
+  方案A（推荐）：批量升级到 actions/setup-node@v5.0.0
+
+  优势：
+  - ✅ 彻底解决：v5.0.0 包含 @actions/cache@v4.0.3+，完全消除弃用警告
+  - ✅ 向后兼容：API 无破坏性变更，安全升级
+  - ✅ 一次性修复：解决所有 24 个文件的问题
+  - ✅ 性能保持：继续享受 npm 缓存带来的构建速度提升
+
+  实施计划：
+  1. 创建批量替换脚本：actions/setup-node@v4 → actions/setup-node@v5.0.0
+  2. 优先测试关键工作流：ci.yml, build-and-test.yml
+  3. 一次性提交所有更改确保一致性
+  4. 监控 CI 运行确认警告消失
