@@ -365,11 +365,9 @@ jobs:
         run: |
           # Check if we have the expected executable or main.js
           if [ ! -f "dist/win-unpacked/ViteGame.exe" ] && [ ! -f "dist-electron/electron/main.js" ]; then
-            echo "No pre-built artifact found, building Electron main process..."
-            echo "Building TypeScript for Electron main process..."
-            npx tsc -p electron
-            echo "Building Vite renderer process..."
-            npx vite build
+            echo "No pre-built artifact found, running complete build process..."
+            echo "Running npm run build (includes TypeScript, Vite, and post-build steps)..."
+            npm run build
           else
             echo "Pre-built artifact or fallback main.js found, skipping build"
           fi
