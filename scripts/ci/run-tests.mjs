@@ -91,7 +91,7 @@ log(
 // Ensure Electron build for e2e/security/smoke
 if (['e2e', 'security', 'smoke'].includes(TEST_TYPE)) {
   if (!fs.existsSync(path.join('dist-electron', 'electron', 'main.js'))) {
-    log('[run-tests] dist-electron/main.js missing, building once...');
+    log('[run-tests] dist-electron/electron/main.js missing, building once...');
     const build = runCmd('npm', ['run', 'build']);
     fs.appendFileSync(logPath, (build.stdout || '') + (build.stderr || ''));
     if (build.status !== 0) {
