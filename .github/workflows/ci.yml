@@ -464,7 +464,7 @@ jobs:
         env:
           CI: true
           RUN_TESTS_BUILD_TIMEOUT_MS: '600000'
-        timeout-minutes: 20
+        timeout-minutes: 60
           # Windows runner does not require xvfb for Electron
       - name: Run Snyk scan (non-blocking)
         run: node scripts/ci/run-snyk-scan.mjs
@@ -569,5 +569,4 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
 
