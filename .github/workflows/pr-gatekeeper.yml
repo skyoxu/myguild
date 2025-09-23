@@ -25,7 +25,7 @@ jobs:
   windows-ci-gatekeeper:
     name: Windows CI Status Check
     runs-on: ubuntu-latest # Using Ubuntu runner for efficiency
-    timeout-minutes: 35 # Extended timeout to accommodate security gate duration
+    timeout-minutes: 15 # Optimized timeout for 10-minute security gate plus buffer
 
     # Only run on non-draft PRs
     if: github.event.pull_request.draft == false
@@ -46,7 +46,7 @@ jobs:
           TARGET_JOB_NAME: Unified Security Gate
           TARGET_WORKFLOW_NAME: Security Gate (Unified)
           OPTIONAL: 'true' # Skip if security workflow not triggered (path filters/draft PR etc)
-          TIMEOUT_MS: '1800000'
+          TIMEOUT_MS: '600000'
 
       - name: Generate and post PR summary
         run: |
