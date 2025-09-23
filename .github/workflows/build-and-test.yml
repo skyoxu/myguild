@@ -130,7 +130,7 @@ jobs:
             Write-Host "Build artifacts downloaded successfully:"
             Write-Host "   - dist/ directory exists"
             Write-Host "   - dist-electron/ directory exists"
-            if (Test-Path -LiteralPath 'dist-electron/main.js') {
+            if (Test-Path -LiteralPath 'dist-electron/electron/main.js') {
               Write-Host "   - main.js entry point found"
             } else {
               Write-Error "[FAIL] main.js entry point not found in dist-electron/"
