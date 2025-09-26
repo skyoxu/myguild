@@ -669,7 +669,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist-electron
-          path: .
+          path: _artifacts
       - name: Download web dist artifact
         if: steps.changes-e2e.outputs.any_changed == 'true'
         continue-on-error: true
@@ -682,7 +682,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           $missing = 0
-          if (!(Test-Path -LiteralPath 'dist-electron/electron/main.js')) { $missing = 1 }
+          if (!(Test-Path -LiteralPath '_artifacts/dist-electron/electron/main.js')) { $missing = 1 }
           if (!(Test-Path -LiteralPath 'dist/index.html')) { $missing = 1 }
           if ($missing -eq 1) {
             Write-Host 'Artifacts incomplete, running npm run build to generate dist and dist-electron.'
