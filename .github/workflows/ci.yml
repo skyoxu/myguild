@@ -508,8 +508,10 @@ jobs:
     needs: [quality-gates]
     timeout-minutes: 20
     if: |
-      contains(github.event.head_commit.message, '[skip-extended]') == false &&
-      github.event_name != 'schedule'
+      (
+        (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[skip-extended]') == false) ||
+        (github.event_name != 'pull_request' && contains(github.event.head_commit.message, '[skip-extended]') == false)
+      ) && github.event_name != 'schedule'
 
     strategy:
       fail-fast: false
@@ -768,7 +770,8 @@ jobs:
     needs: [build-verification-core]
     timeout-minutes: 15
     if: |
-      contains(github.event.head_commit.message, '[skip-perf]') == false
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[skip-perf]') == false) ||
+      (github.event_name != 'pull_request' && contains(github.event.head_commit.message, '[skip-perf]') == false)
 
     steps:
       - name: Checkout code
