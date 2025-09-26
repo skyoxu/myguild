@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 性能测试工具类
  *
  * 实现P95采样方法论，解决单点性能测试抖动问题
@@ -200,8 +200,24 @@ export class PerformanceTestUtils {
       console.log(`  阈值: ${threshold}ms`);
     }
 
-    // P95断言
-    expect(stats.p95).toBeLessThanOrEqual(threshold);
+    // P95断言（支持软门禁：PR 场景仅记录不拉红）
+    const gateMode = (process?.env?.PERF_GATE_MODE || '')
+      .toString()
+      .toLowerCase();
+    if (gateMode === 'soft') {
+      const ok = stats.p95 <= threshold;
+      const msg = `[perf-soft-gate] ${testName} p95=${stats.p95.toFixed(2)}ms (threshold=${threshold}ms, samples=${stats.sampleCount}) -> ${ok ? 'OK' : 'EXCEEDS'}`;
+      // 软门禁：打印结果供日志收集，不触发断言失败
+      if (!ok) {
+        // 使用 console.warn 便于在 CI Summary 中醒目
+        // 同时保持测试通过，不影响 PR 体验
+        console.warn(msg);
+      } else {
+        console.log(msg);
+      }
+    } else {
+      expect(stats.p95).toBeLessThanOrEqual(threshold);
+    }
 
     return stats;
   }
