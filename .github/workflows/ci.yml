@@ -720,8 +720,8 @@ jobs:
         with:
           name: perf-logs
           path: |
-            logs/perf/**
-            logs/e2e/**
+            test-results/**
+            logs/playwright-traces/
           if-no-files-found: warn
           retention-days: 7
       - name: Skip E2E Perf (no changes)
