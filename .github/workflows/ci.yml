@@ -462,10 +462,14 @@ jobs:
           }
           # Re-add bin path (covers fresh install)
           if (Test-Path $bin) { "$bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
-          # Print version and info to logs
+          # Print version, and only run 'info' when token is available (PR/fork will skip)
           try {
             & "sentry-cli" --version 2>&1 | Tee-Object -FilePath (Join-Path $logDir 'sentry-cli.version.log')
-            & "sentry-cli" info 2>&1 | Tee-Object -FilePath (Join-Path $logDir 'sentry-cli.info.log')
+            if ('${{ secrets.SENTRY_AUTH_TOKEN }}' -ne '') {
+              & "sentry-cli" info 2>&1 | Tee-Object -FilePath (Join-Path $logDir 'sentry-cli.info.log')
+            } else {
+              Write-Host "SENTRY_AUTH_TOKEN not available; skipping 'sentry-cli info' in this context."
+            }
           } catch {
             Write-Host "sentry-cli invocation failed: $($_.Exception.Message)"; Get-ChildItem $bin -Force | Format-List *; throw
           }
