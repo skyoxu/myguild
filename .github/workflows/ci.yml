@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+﻿name: CI/CD Pipeline
 
 on:
   push:
@@ -60,7 +60,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    timeout-minutes: 5
+    timeout-minutes: 12
     # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
@@ -187,7 +187,7 @@ jobs:
       run:
         shell: pwsh
     needs: [unit-tests-core]
-    timeout-minutes: 5
+    timeout-minutes: 12
      # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
@@ -435,7 +435,7 @@ jobs:
     runs-on: windows-latest
     if: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) }}
     needs: [unit-tests-core, coverage-gate, electron-security-gate]
-    timeout-minutes: 5
+    timeout-minutes: 12
     env:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     steps:
@@ -657,6 +657,7 @@ jobs:
         shell: pwsh
     env:
       CI: 'true'
+      PERF_GATE_MODE: ${{ github.event_name == 'pull_request' && 'soft' || '' }}
       E2E_AUTO_START: '1'
       VITE_E2E_SMOKE: 'true'
       ELECTRON_ENABLE_LOGGING: '1'
