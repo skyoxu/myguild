@@ -449,11 +449,25 @@ function createWindow(is: any, ses: Electron.Session): void {
   // Enable app:// protocol: development environment still uses VITE server, production environment uses app:// protocol
   const isDev = !!process.env.VITE_DEV_SERVER_URL;
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    console.log(`[loadURL] Dev env load: ${process.env.VITE_DEV_SERVER_URL}`);
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    // Append E2E flags when requested (PR E2E smoke)
+    let devUrl = process.env.VITE_DEV_SERVER_URL;
+    if (process.env.E2E_AUTO_START === '1') {
+      try {
+        const u = new URL(devUrl);
+        u.searchParams.set('auto-start', '1');
+        u.searchParams.set('e2e-smoke', '1');
+        devUrl = u.toString();
+      } catch {}
+    }
+    console.log(`[loadURL] Dev env load: ${devUrl}`);
+    mainWindow.loadURL(devUrl);
   } else {
     // Production environment: use app:// protocol to load page (map to dist/index.html)
-    const appUrl = 'app://index.html';
+    const base = 'app://index.html';
+    const appUrl =
+      process.env.E2E_AUTO_START === '1'
+        ? `${base}?auto-start=1&e2e-smoke=1`
+        : base;
     console.log(`[loadURL] Using app:// in production: ${appUrl}`);
     mainWindow.loadURL(appUrl);
   }
