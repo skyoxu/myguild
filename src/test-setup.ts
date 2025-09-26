@@ -1,22 +1,22 @@
-﻿/*
- * Vitest 全局测试配置
- * 支持 TDD 开发模式
- * 已修复: ReferenceError window is not defined
+/*
+ * Vitest global test setup
+ * Supports TDD development workflow
+ * Fixes: ReferenceError window is not defined (when window is absent)
  */
 
 import '@testing-library/jest-dom';
 import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
-// 每个测试后清理 DOM
+// Cleanup DOM after each test
 afterEach(() => {
   cleanup();
 });
 
-// 只在存在 window 时才 mock
-const g: any = globalThis;
+// Only mock when window exists
+const g: any = globalThis as any;
 if (typeof g.window !== 'undefined') {
-  // 全局模拟配置
+  // Global mocks
   Object.defineProperty(g.window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -30,7 +30,7 @@ if (typeof g.window !== 'undefined') {
     })),
   });
 
-  // Electron 环境模拟
+  // Electron environment mock
   Object.defineProperty(g.window, 'electronAPI', {
     value: {
       platform: 'test',
@@ -41,14 +41,16 @@ if (typeof g.window !== 'undefined') {
   });
 }
 
-// ResizeObserver 模拟 (某些UI组件需要)
+// ResizeObserver mock (some UI components require it)
+// @ts-expect-error jsdom polyfill for ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// HTMLCanvasElement 模拟 (Phaser 3游戏引擎需要)
+// HTMLCanvasElement mock (required by Phaser 3 game engine)
+// @ts-expect-error jsdom polyfill for HTMLCanvasElement
 global.HTMLCanvasElement = vi.fn().mockImplementation(() => ({
   getContext: vi.fn(() => ({
     fillRect: vi.fn(),
@@ -70,10 +72,11 @@ global.HTMLCanvasElement = vi.fn().mockImplementation(() => ({
   removeEventListener: vi.fn(),
 }));
 
-// Canvas context 类型模拟
+// CanvasRenderingContext2D mock
+// @ts-expect-error jsdom polyfill for CanvasRenderingContext2D
 global.CanvasRenderingContext2D = vi.fn().mockImplementation(() => ({}));
 
-// 扩展 expect 匹配器
+// Extend expect matchers
 expect.extend({
   toBeWithinThreshold(
     received: number,
@@ -84,18 +87,19 @@ expect.extend({
     if (pass) {
       return {
         message: () =>
-          `期望 ${received} 不在阈值 ${threshold} 内接近 ${expected}`,
+          `Expected ${received} not to be within threshold ${threshold} of ${expected}`,
         pass: true,
       };
     }
     return {
-      message: () => `期望 ${received} 在阈值 ${threshold} 内接近 ${expected}`,
+      message: () =>
+        `Expected ${received} to be within threshold ${threshold} of ${expected}`,
       pass: false,
     };
   },
 });
 
-// 类型扩展
+// Type augmentation
 declare global {
   namespace Vi {
     interface AsymmetricMatchersContaining {
@@ -104,8 +108,8 @@ declare global {
   }
 }
 
-// 测试环境变量配置
+// Test environment variables
 process.env.NODE_ENV = 'test';
 process.env.VITE_ENV = 'test';
 
-console.log('🧪 Vitest 测试环境已初始化');
+console.log('🧪 Vitest test environment initialized');

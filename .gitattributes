@@ -1,12 +1,33 @@
-# Normalize text files and enforce LF endings
-* text=auto eol=lf
+# Enforce LF for text files to cooperate with ASCII/LF gates
+# Prevent BOM characters and ensure UTF-8 encoding without BOM
+* text=auto eol=lf -bom
 
-# Workflows and YAML must be UTF-8 with LF
-.github/workflows/*.yml text eol=lf working-tree-encoding=UTF-8
-.github/workflows/*.yaml text eol=lf working-tree-encoding=UTF-8
-*.yml text eol=lf working-tree-encoding=UTF-8
-*.yaml text eol=lf working-tree-encoding=UTF-8
+# Common text files - UTF-8 without BOM
+*.js text eol=lf -bom
+*.mjs text eol=lf -bom
+*.cjs text eol=lf -bom
+*.ts text eol=lf -bom
+*.tsx text eol=lf -bom
+*.json text eol=lf -bom
+*.yml text eol=lf -bom
+*.yaml text eol=lf -bom
+*.md text eol=lf -bom
+*.css text eol=lf -bom
+*.scss text eol=lf -bom
 
-# Ensure shell scripts use LF
-*.sh text eol=lf
+# GitHub Actions workflows - critical for automation
+.github/workflows/*.yml text eol=lf -bom
+.github/workflows/*.yaml text eol=lf -bom
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.jar binary
+*.exe binary
+*.dll binary
+*.pdf binary
 

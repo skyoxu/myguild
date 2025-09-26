@@ -1,14 +1,11 @@
-﻿/**
- * 游戏设置面板组件
- * 提供游戏配置选项和系统设置
- */
+﻿/*\r\n * Game Settings Panel\r\n * Provides configuration UI for graphics, audio, gameplay, controls, and UI.\r\n */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useGameEvents } from '../../hooks/useGameEvents';
 import './GameSettingsPanel.css';
 
 export interface GameSettings {
-  // 图形设置
+  //
   graphics: {
     quality: 'low' | 'medium' | 'high';
     fullscreen: boolean;
@@ -16,7 +13,7 @@ export interface GameSettings {
     showFPS: boolean;
   };
 
-  // 音频设置
+  //
   audio: {
     masterVolume: number; // 0-100
     musicVolume: number; // 0-100
@@ -24,16 +21,16 @@ export interface GameSettings {
     muted: boolean;
   };
 
-  // 游戏设置
+  //
   gameplay: {
     difficulty: 'easy' | 'medium' | 'hard';
     autoSave: boolean;
-    autoSaveInterval: number; // 秒
+    autoSaveInterval: number; //
     showNotifications: boolean;
     showTutorials: boolean;
   };
 
-  // 控制设置
+  //
   controls: {
     keyboardControls: {
       moveUp: string;
@@ -46,7 +43,7 @@ export interface GameSettings {
     mouseSensitivity: number; // 0-100
   };
 
-  // 界面设置
+  //
   ui: {
     theme: 'dark' | 'light' | 'auto';
     language: string;
@@ -75,7 +72,7 @@ const defaultSettings: GameSettings = {
   gameplay: {
     difficulty: 'medium',
     autoSave: true,
-    autoSaveInterval: 300, // 5分钟
+    autoSaveInterval: 300, // 5
     showNotifications: true,
     showTutorials: true,
   },
@@ -116,13 +113,31 @@ export function GameSettingsPanel({
     'graphics' | 'audio' | 'gameplay' | 'controls' | 'ui'
   >('graphics');
   const [hasChanges, setHasChanges] = useState(false);
-  const [isKeyBinding, setIsKeyBinding] = useState<string | null>(null);
+
+  function labelForAction(action: string): string {
+    switch (action) {
+      case 'moveUp':
+        return 'Move Up';
+      case 'moveDown':
+        return 'Move Down';
+      case 'moveLeft':
+        return 'Move Left';
+      case 'moveRight':
+        return 'Move Right';
+      case 'action':
+        return 'Action';
+      case 'pause':
+        return 'Pause';
+      default:
+        return action;
+    }
+  }
 
   const gameEvents = useGameEvents({
     context: 'game-settings-panel',
   });
 
-  // 加载设置
+  //
   const loadSettings = useCallback(() => {
     try {
       const savedSettings = localStorage.getItem('guild-game-settings');
@@ -135,14 +150,14 @@ export function GameSettingsPanel({
     }
   }, []);
 
-  // 保存设置
+  //
   const saveSettings = useCallback(() => {
     try {
       localStorage.setItem('guild-game-settings', JSON.stringify(settings));
       onSettingsChange?.(settings);
       setHasChanges(false);
 
-      // 发布设置变更事件
+      //
       gameEvents.publish({
         type: 'game.ui.notification.shown',
         data: {
@@ -162,15 +177,15 @@ export function GameSettingsPanel({
     }
   }, [settings, onSettingsChange, gameEvents]);
 
-  // 重置设置
+  //
   const resetSettings = useCallback(() => {
-    if (confirm('确定要重置所有设置为默认值吗？')) {
+    if (confirm('Reset all settings to defaults?')) {
       setSettings(defaultSettings);
       setHasChanges(true);
     }
   }, []);
 
-  // 更新设置的辅助函数
+  //
   const updateSettings = useCallback(
     <K extends keyof GameSettings>(
       category: K,
@@ -189,7 +204,7 @@ export function GameSettingsPanel({
     []
   );
 
-  // 键盘绑定处理
+  //
   const handleKeyBinding = useCallback((controlKey: string) => {
     setIsKeyBinding(controlKey);
 
@@ -223,14 +238,14 @@ export function GameSettingsPanel({
     document.addEventListener('keydown', handleKeyPress);
   }, []);
 
-  // 加载初始设置
+  //
   useEffect(() => {
     if (isVisible) {
       loadSettings();
     }
   }, [isVisible, loadSettings]);
 
-  // 标签页配置
+  //
   const tabs = [
     { id: 'graphics', name: '图形', icon: '🎮' },
     { id: 'audio', name: '音频', icon: '🔊' },
@@ -315,7 +330,7 @@ export function GameSettingsPanel({
       data-testid="game-settings-panel"
     >
       <div className="game-settings-panel__dialog">
-        {/* 侧边栏标签 */}
+        {/*  */}
         <div className="game-settings-panel__sidebar">
           <h2 className="game-settings-panel__sidebar-title">游戏设置</h2>
 
@@ -333,9 +348,9 @@ export function GameSettingsPanel({
           ))}
         </div>
 
-        {/* 主内容区域 */}
+        {/*  */}
         <div className="game-settings-panel__main">
-          {/* 头部 */}
+          {/*  */}
           <div className="game-settings-panel__header">
             <h3 className="game-settings-panel__header-title">
               {tabs.find(tab => tab.id === activeTab)?.icon}{' '}
@@ -350,9 +365,9 @@ export function GameSettingsPanel({
             </button>
           </div>
 
-          {/* 设置内容 */}
+          {/*  */}
           <div className="game-settings-panel__content">
-            {/* 图形设置 */}
+            {/*  */}
             {activeTab === 'graphics' && (
               <div>
                 {renderSelect(
@@ -382,7 +397,7 @@ export function GameSettingsPanel({
               </div>
             )}
 
-            {/* 音频设置 */}
+            {/*  */}
             {activeTab === 'audio' && (
               <div>
                 {renderCheckbox('静音', settings.audio.muted, checked =>
@@ -403,7 +418,7 @@ export function GameSettingsPanel({
               </div>
             )}
 
-            {/* 游戏设置 */}
+            {/*  */}
             {activeTab === 'gameplay' && (
               <div>
                 {renderSelect(
@@ -449,7 +464,7 @@ export function GameSettingsPanel({
               </div>
             )}
 
-            {/* 控制设置 */}
+            {/*  */}
             {activeTab === 'controls' && (
               <div>
                 <div className="game-settings-panel__controls-section">
@@ -464,19 +479,7 @@ export function GameSettingsPanel({
                         className="game-settings-panel__key-binding-row"
                       >
                         <span className="game-settings-panel__key-binding-label">
-                          {action === 'moveUp'
-                            ? '向上移动'
-                            : action === 'moveDown'
-                              ? '向下移动'
-                              : action === 'moveLeft'
-                                ? '向左移动'
-                                : action === 'moveRight'
-                                  ? '向右移动'
-                                  : action === 'action'
-                                    ? '行动'
-                                    : action === 'pause'
-                                      ? '暂停'
-                                      : action}
+                          {labelForAction(action)}
                         </span>
 
                         <button
@@ -487,7 +490,7 @@ export function GameSettingsPanel({
                               : ''
                           }`}
                         >
-                          {isKeyBinding === action ? '按键...' : key}
+                          {isKeyBinding === action ? 'Press key...' : key}
                         </button>
                       </div>
                     )
@@ -502,7 +505,7 @@ export function GameSettingsPanel({
               </div>
             )}
 
-            {/* 界面设置 */}
+            {/*  */}
             {activeTab === 'ui' && (
               <div>
                 {renderSelect(
@@ -547,7 +550,7 @@ export function GameSettingsPanel({
             )}
           </div>
 
-          {/* 底部按钮 */}
+          {/*  */}
           <div className="game-settings-panel__footer">
             <button
               onClick={resetSettings}
