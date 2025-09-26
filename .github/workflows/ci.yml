@@ -245,15 +245,53 @@ jobs:
         run: npm run test:coverage
         env:
           NODE_ENV: test
-      - name: Prepare logs directory
+      - name: Check SonarCloud project readiness
+        id: sonar_ready
         if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $projectKey = "${{ secrets.SONAR_PROJECT_KEY }}"
+          if ([string]::IsNullOrWhiteSpace($projectKey)) {
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "reason=missing_projectKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
+          }
+          $pair = "$env:SONAR_TOKEN:"
+          $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+          $headers = @{ Authorization = "Basic $b64" }
+          try {
+            $resp = Invoke-RestMethod -Headers $headers -Uri "$env:SONAR_HOST_URL/api/project_branches/list?project=$projectKey" -Method GET -ErrorAction Stop
+          } catch {
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "reason=api_error" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
+          }
+          $branches = $resp.branches
+          if (-not $branches -or $branches.Count -eq 0) {
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "reason=no_branches" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
+          }
+          $main = $branches | Where-Object { $_.isMain -eq $true }
+          if (-not $main) {
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "reason=no_main_branch" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
+          }
+          "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "reason=ok" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Prepare logs directory
+        if: ${{ env.SONAR_TOKEN != '' && steps.sonar_ready.outputs.ready == 'true' }}
         run: |
           $date = Get-Date -Format yyyyMMdd
           $logDir = Join-Path -Path "logs" -ChildPath (Join-Path $date "sonarcloud")
           New-Item -ItemType Directory -Force -Path $logDir | Out-Null
           echo "LOG_DIR=$logDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Download SonarScanner CLI (Windows)
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && steps.sonar_ready.outputs.ready == 'true' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $Version = '5.0.1.3006'
@@ -269,7 +307,7 @@ jobs:
           # Persist for later steps
           echo "SCANNER_BIN=$BinDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: SonarCloud Scan (CLI)
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && steps.sonar_ready.outputs.ready == 'true' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -293,7 +331,7 @@ jobs:
           $p = Start-Process -FilePath "sonar-scanner.bat" -ArgumentList $args -RedirectStandardOutput "$logDir/scan.log" -RedirectStandardError "$logDir/scan.err.log" -NoNewWindow -PassThru -Wait
           if ($p.ExitCode -ne 0) { Get-Content "$logDir/scan.err.log"; throw "sonar-scanner failed with code $($p.ExitCode)" }
       - name: Wait for Quality Gate (Windows API Poll)
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && steps.sonar_ready.outputs.ready == 'true' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -344,6 +382,7 @@ jobs:
             echo "- Project: ${{ secrets.SONAR_PROJECT_KEY || 'not-set' }}";
             echo "- Organization: ${{ secrets.SONAR_ORG || 'not-set' }}";
             echo "- Runner: $env:RUNNER_OS";
+            echo "- Ready: ${{ steps.sonar_ready.outputs.ready || 'n/a' }} (${{ steps.sonar_ready.outputs.reason || 'n/a' }})";
           } >> $env:GITHUB_STEP_SUMMARY
 
   build-verification-core:
@@ -460,6 +499,9 @@ jobs:
   extended-tests-matrix:
     name: Extended Tests Matrix
     runs-on: windows-latest
+    permissions:
+      contents: read
+      pull-requests: read
     defaults:
       run:
         shell: pwsh
@@ -588,6 +630,9 @@ jobs:
   e2e-perf-smoke:
     name: E2E Perf Smoke
     runs-on: windows-latest
+    permissions:
+      contents: read
+      pull-requests: read
     needs: [build-verification-core, unit-tests-core]
     defaults:
       run:
@@ -630,12 +675,18 @@ jobs:
           path: .
       - name: Verify downloaded artifacts or build
         if: steps.changes-e2e.outputs.any_changed == 'true'
+        working-directory: ${{ github.workspace }}
         run: |
           $missing = 0
           if (!(Test-Path -LiteralPath 'dist-electron/electron/main.js')) { $missing = 1 }
           if (!(Test-Path -LiteralPath 'dist/index.html')) { $missing = 1 }
           if ($missing -eq 1) {
             Write-Host 'Artifacts incomplete, running npm run build to generate dist and dist-electron.'
+            if (!(Test-Path -LiteralPath 'package.json')) { Write-Error 'package.json not found in workspace'; exit 1 }
+            $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+            if (-not $pkg.scripts -or -not ($pkg.scripts.PSObject.Properties.Name -contains 'build')) { Write-Error 'No "build" script in package.json; cannot build fallback.'; exit 1 }
+            # Ensure dependencies are installed before build (idempotent)
+            if (-not (Test-Path -LiteralPath 'node_modules')) { npm ci }
             npm run build
           } else {
             Write-Host 'Artifacts present: dist/ and dist-electron/ found.'
@@ -645,10 +696,12 @@ jobs:
         run: npx playwright install
       - name: Run E2E perf smoke
         if: steps.changes-e2e.outputs.any_changed == 'true'
+        working-directory: ${{ github.workspace }}
         run: npm run test:e2e:perf-smoke
       - name: Collect Playwright traces to logs/
         if: always() && steps.changes-e2e.outputs.any_changed == 'true'
-        run: npm run collect:traces
+        working-directory: ${{ github.workspace }}
+        run: node scripts/ci/collect-playwright-traces.mjs
       - name: Upload Playwright traces (logs/playwright-traces)
         if: always() && steps.changes-e2e.outputs.any_changed == 'true'
         uses: actions/upload-artifact@v4
@@ -767,4 +820,3 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-
