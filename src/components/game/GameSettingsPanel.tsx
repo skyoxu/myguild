@@ -113,6 +113,7 @@ export function GameSettingsPanel({
     'graphics' | 'audio' | 'gameplay' | 'controls' | 'ui'
   >('graphics');
   const [hasChanges, setHasChanges] = useState(false);
+  const [isKeyBinding, setIsKeyBinding] = useState<string | null>(null);
 
   function labelForAction(action: string): string {
     switch (action) {
