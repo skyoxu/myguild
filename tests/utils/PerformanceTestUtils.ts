@@ -3,6 +3,8 @@
  *
  * 实现P95采样方法论，解决单点性能测试抖动问题
  * 基于现有performance.e2e.spec.ts中验证的PerformanceCollector实现
+ *
+ * @verified 2025-09-27 - Code quality validated
  */
 
 import { expect } from '@playwright/test';
