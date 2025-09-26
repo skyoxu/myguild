@@ -42,7 +42,6 @@ if (typeof g.window !== 'undefined') {
 }
 
 // ResizeObserver mock (some UI components require it)
-// @ts-expect-error jsdom polyfill for ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
@@ -50,7 +49,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 // HTMLCanvasElement mock (required by Phaser 3 game engine)
-// @ts-expect-error jsdom polyfill for HTMLCanvasElement
 global.HTMLCanvasElement = vi.fn().mockImplementation(() => ({
   getContext: vi.fn(() => ({
     fillRect: vi.fn(),
@@ -73,7 +71,6 @@ global.HTMLCanvasElement = vi.fn().mockImplementation(() => ({
 }));
 
 // CanvasRenderingContext2D mock
-// @ts-expect-error jsdom polyfill for CanvasRenderingContext2D
 global.CanvasRenderingContext2D = vi.fn().mockImplementation(() => ({}));
 
 // Extend expect matchers
