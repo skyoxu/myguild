@@ -528,6 +528,7 @@ jobs:
       - name: Step
         uses: tj-actions/changed-files@v44
         id: changed-files
+        continue-on-error: true
         with:
           files: |
             src/**
@@ -654,6 +655,7 @@ jobs:
       - name: Detect changes for E2E
         id: changes-e2e
         uses: tj-actions/changed-files@v44
+        continue-on-error: true
         with:
           files: |
             src/**
