@@ -1,206 +1,41 @@
-Run npm run test:e2e:scene-transition
+阈值与门禁切换（第 5～7 天）
 
-> gamedev-vitegame@0.2.0 test:e2e:scene-transition
-> playwright test --project=scene-transition
+覆盖率
 
-[dotenv@17.2.1] injecting env (2) from .env.cache-bust -- tip: 📡 version env with Radar: https://dotenvx.com/radar
-[playwright-config] E2E_SECURITY_TIMEOUT_MS=300000
-[playwright-config] PW_CACHE_BUST=git:207febb2-pkg:1758555595-pw:1758548919-node:22.16
+将 PR/非 main 的 COVERAGE_MODE 提升至 staging（80%）—你已同意一周后执行；执行前确认行/语句≥80% 且非依赖 exclude 掺水。
 
-Running 27 tests using 1 worker
-[dotenv@17.2.1] injecting env (0) from .env.cache-bust -- tip: ⚙️  suppress all logs with { quiet: true }
-[playwright-config] E2E_SECURITY_TIMEOUT_MS=300000
-[playwright-config] PW_CACHE_BUST=git:207febb2-pkg:1758555595-pw:1758548919-node:22.16
-🚀 开始启动 Electron 应用...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-✅ Electron 应用启动成功，耗时: 995ms
-✅ URL协议验证通过: app://index.html/
-viewportSize() 返回 undefined，跳过尺寸验证
-·🔒 开始安全基线验证测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-ℹ️ 未检测到contextBridge API，请确认是否需要IPC通信
-·🛡️ 开始CSP策略验证测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-·⚙️ 开始进程分离验证测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-·⏱️ 开始启动时间性能测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-应用启动时间: 1238ms
-·🎯 开始窗口响应性测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-UI响应时间: 49ms
-·🔄 开始应用稳定性测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-·🧠 开始内存泄漏检查测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-内存使用情况: { used: 5412656, total: 7670216, limit: 4294705152 }
-·[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-✅ Perf测试URL协议验证通过: app://index.html/
-[CI] window prepared for interaction (using document.readyState)
-·interaction_response P95采样统计:
-  样本数量: 30
-  P95值: 21.00ms
-  平均值: 18.10ms
-  最小值: 16.00ms
-  最大值: 22.00ms
-  阈值: 200ms
-·🔍 开始协议验证测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-📋 当前URL: app://index.html/
-×[dotenv@17.2.1] injecting env (0) from .env.cache-bust -- tip: ⚙️  enable debug logging with { debug: true }
-[playwright-config] E2E_SECURITY_TIMEOUT_MS=300000
-[playwright-config] PW_CACHE_BUST=git:207febb2-pkg:1758555595-pw:1758548919-node:22.16
-🔍 开始协议验证测试...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-📋 当前URL: app://index.html/
-F[dotenv@17.2.1] injecting env (0) from .env.cache-bust -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
-[playwright-config] E2E_SECURITY_TIMEOUT_MS=300000
-[playwright-config] PW_CACHE_BUST=git:207febb2-pkg:1758555595-pw:1758548919-node:22.16
-🔄 测试应用重启后协议一致性...
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-✅ 协议一致性验证通过:
-   - 第一次: app://index.html/
-   - 第二次: app://index.html/
-·[launch] CI mode: reusing existing build (cached)
-[launch] using Electron entry: D:\a\myguild\myguild\dist-electron\electron\main.js
-✅ Electron基线测试URL协议验证通过: app://index.html/
-✅ 应用启动正常，标题: "Guild Manager - Vite + React + TS"
-··✅ Electron CSP策略验证通过: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://o.sentry.io; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
-·🔍 暴露的 API 键: []
-⚠️ 沙盒模式下预加载脚本功能受限，这是Electron的已知限制
-🔍 全部window键(前20个): [
-  'window',      'self',
-  'document',    'name',
-  'location',    'customElements',
-  'history',     'navigation',
-  'locationbar', 'menubar',
-  'personalbar', 'scrollbars',
-  'statusbar',   'toolbar',
-  'status',      'closed',
-  'frames',      'length',
-  'top',         'opener'
-]
-🔍 electronAPI类型: undefined
-🔍 electronAPI内容: undefined
-🔍 customAPI状态: false
-🔍 customAPI内容: undefined
-📋 沙盒模式安全性优先，预加载API功能降级是可接受的权衡
-·✅ 安全三开关硬断言验证通过 - 主进程侧确认
-📋 安全配置详情: {
-  nodeIntegration: false,
-  contextIsolation: true,
-  sandbox: true,
-  webSecurity: true
-}
-·[CI] window prepared for interaction (using document.readyState)
-✅ 交互响应时间: 44ms
-·📊 JS 堆内存使用: 5.31 MB
-··✅ 应用状态检查通过: { isReady: true, isPackaged: false, windowCount: 1 }
-·📁 构建产物验证: {
-  appName: 'ViteGame',
-  appVersion: '0.2.0',
-  isReady: true,
-  isPackaged: false,
-  processVersion: '37.2.4',
-  nodeVersion: '22.17.1',
-  platform: 'win32',
-  arch: 'x64',
-  nodeEnv: 'unknown',
-  checkedAt: '2025-09-23T15:34:48.997Z'
-}
-·📦 应用信息: { version: '0.2.0', name: 'ViteGame', ready: true }
-·
+E2E 安全门禁
 
-  1) [electron-smoke-tests] › tests\e2e\smoke\protocol-validation.spec.ts:12:3 › 协议验证专项测试 › URL协议自检断言 - 验收脚本 
+当“PR 安全 smoke 连续 3 次绿”时，将“PR 安全 smoke”由软门禁切换为硬门禁（仍保留增强/红线为软门，先观测）。
 
-    Error: expect(received).toMatch(expected)
+main 分支：保持“完整安全套件为硬门禁”；在完整集连续 2 次绿后，再考虑把更多增强/红线纳入 PR 硬门禁。
 
-    Expected pattern: /\.(html|js)$/
-    Received string:  "app://index.html/"
+第 2 周（扩展与收紧）
 
-      28 |
-      29 |     // 额外验证：URL应该包含预期的文件路径
-    > 30 |     expect(url).toMatch(/\.(html|js)$/);
-         |                 ^
-      31 |
-      32 |     console.log('✅ 协议验证断言全部通过');
-      33 |     console.log(`   - URL协议正确: ${url.split('://')[0]}://`);
-        at D:\a\myguild\myguild\tests\e2e\smoke\protocol-validation.spec.ts:30:17
+动作
 
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+補测 hooks/observability 核心函数，逐步从 coverage.exclude 中纳回；维持 ≥80% 稳定一周后再考虑 90%（main）。
 
-    Error: expect(received).toMatch(expected)
+配置 Snyk（加 SNYK_TOKEN），把 Snyk 变成“可选→必需”检查（先 PR 软门，再 main 硬门）。
 
-    Expected pattern: /\.(html|js)$/
-    Received string:  "app://index.html/"
+冷启动 P95 软门禁上线（仅告警），稳定后转硬门禁。
 
-      28 |
-      29 |     // 额外验证：URL应该包含预期的文件路径
-    > 30 |     expect(url).toMatch(/\.(html|js)$/);
-         |                 ^
-      31 |
-      32 |     console.log('✅ 协议验证断言全部通过');
-      33 |     console.log(`   - URL协议正确: ${url.split('://')[0]}://`);
-        at D:\a\myguild\myguild\tests\e2e\smoke\protocol-validation.spec.ts:30:17
+触发条件
 
-    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results\artifacts\smoke-protocol-validation-协议验证专项测试-URL协议自检断言---验收脚本-electron-smoke-tests-retry1\trace.zip
-    Usage:
+覆盖率 ≥80% 连续 1 周；Snyk 无高危；E2E perf 与安全 smoke 稳定；完整安全集 main 上 2 次绿。
 
-        npx playwright show-trace test-results\artifacts\smoke-protocol-validation-协议验证专项测试-URL协议自检断言---验收脚本-electron-smoke-tests-retry1\trace.zip
+就绪检查清单（每次切换前自检）
 
-    ────────────────────────────────────────────────────────────────────────────────────────────────
+日志与报表：Job Summary 内有 coverage 摘要、E2E P95 摘要、安全门禁摘要。
 
-  1 failed
-    [electron-smoke-tests] › tests\e2e\smoke\protocol-validation.spec.ts:12:3 › 协议验证专项测试 › URL协议自检断言 - 验收脚本 
-  4 did not run
-  22 passed (35.7s)
-Error:   1) [electron-smoke-tests] › tests\e2e\smoke\protocol-validation.spec.ts:12:3 › 协议验证专项测试 › URL协议自检断言 - 验收脚本 
-    Error: expect(received).toMatch(expected)
+波动率：E2E（perf+安全 smoke）失败率 <10%、无“基本 DOM 不存在”类流程性错误。
 
-    Expected pattern: /\.(html|js)$/
-    Received string:  "app://index.html/"
+静态扫描：Critical=0、High=期望阈值（按 ADR）。
 
-      28 |
-      29 |     // 额外验证：URL应该包含预期的文件路径
-    > 30 |     expect(url).toMatch(/\.(html|js)$/);
-         |                 ^
-      31 |
-      32 |     console.log('✅ 协议验证断言全部通过');
-      33 |     console.log(`   - URL协议正确: ${url.split('://')[0]}://`);
-        at D:\a\myguild\myguild\tests\e2e\smoke\protocol-validation.spec.ts:30:17
-Error:   1) [electron-smoke-tests] › tests\e2e\smoke\protocol-validation.spec.ts:12:3 › 协议验证专项测试 › URL协议自检断言 - 验收脚本 
+排期同步：在 PR 模板/ADR 里记录本周/下周要切换的门禁与阈值，避免团队预期错位。
 
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-    Error: expect(received).toMatch(expected)
+需要我配合的快速事项
 
-    Expected pattern: /\.(html|js)$/
-    Received string:  "app://index.html/"
+我可以在一周后直接把 CI 的 COVERAGE_MODE 提升到 staging（80%）并起 PR；
 
-      28 |
-      29 |     // 额外验证：URL应该包含预期的文件路径
-    > 30 |     expect(url).toMatch(/\.(html|js)$/);
-         |                 ^
-      31 |
-      32 |     console.log('✅ 协议验证断言全部通过');
-      33 |     console.log(`   - URL协议正确: ${url.split('://')[0]}://`);
-        at D:\a\myguild\myguild\tests\e2e\smoke\protocol-validation.spec.ts:30:17
-Notice:   1 failed
-    [electron-smoke-tests] › tests\e2e\smoke\protocol-validation.spec.ts:12:3 › 协议验证专项测试 › URL协议自检断言 - 验收脚本 
-  4 did not run
-  22 passed (35.7s)
-Error: Process completed with exit code 1.
+也可以先把“PR 安全 smoke”切换为硬门禁的变更准备好，等你说“稳定了”再合入。

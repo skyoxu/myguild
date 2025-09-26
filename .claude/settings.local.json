@@ -222,7 +222,10 @@
       "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/pr-gatekeeper.yml)",
       "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/branch-protection-encoding-guard.yml)",
       "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/validate-workflows.yml)",
-      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/security-unified.yml)"
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/security-unified.yml)",
+      "Bash(start https://github.com/skyoxu/myguild/pull/new/fix/configuration-updates)",
+      "Bash(gh pr view:*)",
+      "Bash(\"C:\\Users\\weiruan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\rhysd.actionlint_Microsoft.Winget.Source_8wekyb3d8bbwe\\actionlint.exe\" .github/workflows/build-and-test.yml)"
     ],
     "deny": [],
     "ask": [],
