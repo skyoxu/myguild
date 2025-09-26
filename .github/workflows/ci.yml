@@ -53,10 +53,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ==================== Fast Gate (pre-check) ====================
+  fast-gate:
+    name: Fast Gate (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright (Windows)
+        run: npx playwright install
+      - name: Run guard:fast (tiny e2e)
+        run: node scripts/ci/guard-fast.mjs
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-gate-logs
+          path: logs/**
+          if-no-files-found: warn
+  # ==================== Node 22 Smoke (non-blocking) ====================
+  node22-smoke:
+    name: Node 22 Smoke (non-blocking)
+    runs-on: windows-latest
+    needs: fast-gate
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright (Windows)
+        run: npx playwright install
+      - name: Run guard:fast (tiny e2e)
+        env:
+          FAST_EXTRA_SMOKE: 'false'
+        run: node scripts/ci/guard-fast.mjs
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node22-smoke-logs
+          path: logs/**
+          if-no-files-found: warn
   # ==================== Guardian Self-Check ====================
   workflow-guardian:
     name: Workflow Guardian Check
     runs-on: windows-latest
+    needs: fast-gate
     defaults:
       run:
         shell: pwsh
@@ -99,7 +156,7 @@ jobs:
       run:
         shell: pwsh
     timeout-minutes: 10
-    needs: workflow-guardian
+    needs: [workflow-guardian, fast-gate]
     # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
@@ -145,7 +202,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: workflow-guardian
+    needs: [workflow-guardian, fast-gate]
     timeout-minutes: 15
      # P0: ensure devDependencies installed for job
     env:
@@ -183,7 +240,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: unit-tests-core
+    needs: [unit-tests-core, fast-gate]
     timeout-minutes: 5
      # P0: ensure devDependencies installed for job
     env:
@@ -213,9 +270,9 @@ jobs:
           NODE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'test' }}
 
   sonarcloud-analysis:
-    name: SonarCloud Analysis (Windows)
+    name: SonarCloud Analysis (Windows, CLI)
     runs-on: windows-latest
-    needs: unit-tests-core
+    needs: [unit-tests-core, fast-gate]
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
     permissions:
       contents: read
@@ -245,28 +302,96 @@ jobs:
         run: npm run test:coverage
         env:
           NODE_ENV: test
-      - name: SonarCloud Scan
+      - name: Prepare logs directory
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarcloud-github-action@v2
+        run: |
+          $date = Get-Date -Format yyyyMMdd
+          $logDir = Join-Path -Path "logs" -ChildPath (Join-Path $date "sonarcloud")
+          New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+          echo "LOG_DIR=$logDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Download SonarScanner CLI (Windows)
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Version = '5.0.1.3006'
+          $Zip = "sonar-scanner-cli-$Version-windows.zip"
+          $Url = "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$Zip"
+          Invoke-WebRequest -Uri $Url -OutFile $Zip
+          Expand-Archive -Path $Zip -DestinationPath . -Force
+          Remove-Item $Zip -Force
+          $ScannerRoot = Join-Path (Get-Location) "sonar-scanner-$Version-windows"
+          $BinDir = Join-Path $ScannerRoot 'bin'
+          # Add to PATH for subsequent steps
+          "$BinDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # Persist for later steps
+          echo "SCANNER_BIN=$BinDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: SonarCloud Scan (CLI)
+        if: ${{ env.SONAR_TOKEN != '' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >-
-            -Dsonar.organization=${{ secrets.SONAR_ORG }}
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
-            -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts
-      - name: Wait for Quality Gate (SonarCloud)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $date = Get-Date -Format yyyyMMdd
+          $logDir = "$env:LOG_DIR"
+          if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
+          $args = @(
+            "-Dsonar.organization=${{ secrets.SONAR_ORG }}",
+            "-Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}",
+            "-Dsonar.host.url=$env:SONAR_HOST_URL",
+            "-Dsonar.login=$env:SONAR_TOKEN",
+            "-Dsonar.javascript.lcov.reportPaths=coverage/lcov.info",
+            "-Dsonar.sources=src",
+            "-Dsonar.tests=tests",
+            "-Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts"
+          )
+          Write-Host "Running: sonar-scanner $($args -join ' ')"
+          # Run and tee output to logs
+          $p = Start-Process -FilePath "sonar-scanner.bat" -ArgumentList $args -RedirectStandardOutput "$logDir/scan.log" -RedirectStandardError "$logDir/scan.err.log" -NoNewWindow -PassThru -Wait
+          if ($p.ExitCode -ne 0) { Get-Content "$logDir/scan.err.log"; throw "sonar-scanner failed with code $($p.ExitCode)" }
+      - name: Wait for Quality Gate (Windows API Poll)
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
         env:
-          SONAR_HOST_URL: https://sonarcloud.io
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $logDir = "$env:LOG_DIR"
+          $reportPath = Join-Path (Get-Location) '.scannerwork\report-task.txt'
+          if (-not (Test-Path $reportPath)) { throw ".scannerwork/report-task.txt not found; sonar-scanner may have failed." }
+          $report = Get-Content $reportPath | ForEach-Object {
+            $kv = $_ -split '=',2
+            [PSCustomObject]@{ Key = $kv[0]; Value = $kv[1] }
+          } | Group-Object -Property Key -AsHashTable -AsString
+          $ceTaskId = $report['ceTaskId'].Value
+          $projectKey = $report['projectKey'].Value
+          if (-not $ceTaskId) { throw "ceTaskId missing in report-task.txt" }
+          $pair = "$env:SONAR_TOKEN:"
+          $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+          $headers = @{ Authorization = "Basic $b64" }
+          # Poll background task until completed
+          $maxAttempts = 60
+          for ($i=0; $i -lt $maxAttempts; $i++) {
+            $task = Invoke-RestMethod -Headers $headers -Uri "$env:SONAR_HOST_URL/api/ce/task?id=$ceTaskId" -Method GET
+            $task | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $logDir 'ce-task.json') -Encoding utf8
+            $status = $task.task.status
+            Write-Host "Compute Engine Task Status: $status (attempt $($i+1)/$maxAttempts)"
+            if ($status -in @('SUCCESS','FAILED','CANCELED')) { break }
+            Start-Sleep -Seconds 3
+          }
+          if ($status -ne 'SUCCESS') { throw "SonarCloud compute task status=$status" }
+          $qg = Invoke-RestMethod -Headers $headers -Uri "$env:SONAR_HOST_URL/api/qualitygates/project_status?projectKey=$projectKey" -Method GET
+          $qg | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $logDir 'quality-gate.json') -Encoding utf8
+          $qStatus = $qg.projectStatus.status
+          Write-Host "Quality Gate: $qStatus"
+          if ($qStatus -ne 'OK') { throw "Quality Gate failed: $qStatus" }
+      - name: Upload Sonar logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          timeout-minutes: 10
+          name: logs-sonarcloud-${{ github.run_id }}
+          path: |
+            logs/**
       - name: Sonar summary
         if: always()
         run: |
@@ -284,7 +409,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: unit-tests-core
+    needs: [unit-tests-core, fast-gate]
     timeout-minutes: 10
     # P0: ensure devDependencies installed for job
     env:
@@ -312,10 +437,18 @@ jobs:
           path: dist-electron/**
           retention-days: 1
 
+      - name: Upload web dist artifact
+        if: ${{ success() && hashFiles('dist/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-web
+          path: dist/**
+          retention-days: 1
+
   release-health-gate:
     name: Release Health Gate
     runs-on: windows-latest
-    needs: [unit-tests-core, coverage-gate, electron-security-gate]
+    needs: [unit-tests-core, coverage-gate, electron-security-gate, fast-gate]
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -327,6 +460,33 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         uses: ./.github/actions/npm-install
+      - name: Ensure sentry-cli available (Windows)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $date = Get-Date -Format yyyyMMdd
+          $logDir = Join-Path -Path "logs" -ChildPath (Join-Path $date "sentry")
+          New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+          echo "SENTRY_LOG_DIR=$logDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Add local node_modules/.bin to PATH for subsequent steps
+          $bin = Join-Path (Get-Location) "node_modules/.bin"
+          if (Test-Path $bin) { "$bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
+          # Verify binary exists; if missing, install @sentry/cli explicitly
+          $cliCmd = if ($env:RUNNER_OS -eq 'Windows') { 'sentry-cli.cmd' } else { 'sentry-cli' }
+          $cliPath1 = Join-Path $bin $cliCmd
+          if (-not (Test-Path $cliPath1)) {
+            Write-Host "@sentry/cli not found in node_modules/.bin, installing devDependency..."
+            npm install -D @sentry/cli
+          }
+          # Re-add bin path (covers fresh install)
+          if (Test-Path $bin) { "$bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
+          # Print version and info to logs
+          try {
+            & "sentry-cli" --version 2>&1 | Tee-Object -FilePath (Join-Path $logDir 'sentry-cli.version.log')
+            & "sentry-cli" info 2>&1 | Tee-Object -FilePath (Join-Path $logDir 'sentry-cli.info.log')
+          } catch {
+            Write-Host "sentry-cli invocation failed: $($_.Exception.Message)"; Get-ChildItem $bin -Force | Format-List *; throw
+          }
       - name: Check Sentry token
         id: sentry_check
         run: node scripts/ci/sentry-verify.mjs
@@ -345,6 +505,13 @@ jobs:
         if: steps.sentry_check.outputs.token_present == 'true'
         shell: pwsh
         run: node scripts/ci/release-health-gate.mjs
+      - name: Upload Sentry logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-sentry-${{ github.run_id }}
+          path: |
+            logs/**
 
   # ==================== Extended Tests Matrix ====================
   extended-tests-matrix:
@@ -353,7 +520,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: quality-gates
+    needs: [quality-gates, fast-gate]
     timeout-minutes: 20
     if: |
       contains(github.event.head_commit.message, '[skip-extended]') == false &&
@@ -417,7 +584,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [quality-gates, build-verification-core]
+    needs: [quality-gates, build-verification-core, fast-gate]
     timeout-minutes: 60
 
     steps:
@@ -447,8 +614,8 @@ jobs:
       - name: Assert electron main entry exists
         run: |
           if (!(Test-Path 'dist-electron/electron/main.js')) {
-            Write-Error 'Missing dist-electron/electron/main.js after build or artifact download.'
-            exit 1
+          Write-Error 'Missing dist-electron/electron/main.js after build or artifact download.'
+          exit 1
           }
 
       # Windows runner does not require xvfb for Electron
@@ -473,11 +640,99 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       - name: License summary
         run: node scripts/ci/run-license-summary.mjs
+
+  # ==================== E2E Perf Smoke (merged from build-and-test) ====================
+  e2e-perf-smoke:
+    name: E2E Perf Smoke
+    runs-on: windows-latest
+    needs: [build-verification-core, unit-tests-core, fast-gate]
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CI: 'true'
+      VITE_E2E_SMOKE: 'true'
+      ELECTRON_ENABLE_LOGGING: '1'
+      ELECTRON_DISABLE_GPU: '1'
+      E2E_SECURITY_TIMEOUT_MS: 300000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Detect changes for E2E
+        id: changes-e2e
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            src/**
+            tests/e2e/**
+            playwright.config.ts
+      - name: Install deps (npm ci)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm ci
+      - name: Download dist-electron artifact
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-electron
+          path: .
+      - name: Download web dist artifact
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-web
+          path: .
+      - name: Verify downloaded artifacts or build
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: |
+          $missing = 0
+          if (!(Test-Path -LiteralPath 'dist-electron/electron/main.js')) { $missing = 1 }
+          if (!(Test-Path -LiteralPath 'dist/index.html')) { $missing = 1 }
+          if ($missing -eq 1) {
+            Write-Host 'Artifacts incomplete, running npm run build to generate dist and dist-electron.'
+            npm run build
+          } else {
+            Write-Host 'Artifacts present: dist/ and dist-electron/ found.'
+          }
+      - name: Install Playwright (Windows)
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: npx playwright install
+      - name: Run E2E perf smoke
+        if: steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm run test:e2e:perf-smoke
+      - name: Collect Playwright traces to logs/
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        run: npm run collect:traces
+      - name: Upload Playwright traces (logs/playwright-traces)
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: logs/playwright-traces/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Upload perf logs
+        if: always() && steps.changes-e2e.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-logs
+          path: |
+            logs/perf/**
+            logs/e2e/**
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Skip E2E Perf (no changes)
+        if: steps.changes-e2e.outputs.any_changed != 'true'
+        run: |
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "E2E perf smoke skipped: no relevant changes (src/**, tests/e2e/**, playwright.config.ts)."
   # ==================== Observability Verification ====================
   observability-verification:
     name: Observability Verification
     runs-on: windows-latest
-    needs: unit-tests-core
+    needs: [unit-tests-core, fast-gate]
     timeout-minutes: 10
 
     steps:
@@ -514,7 +769,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: build-verification-core
+    needs: [build-verification-core, fast-gate]
     timeout-minutes: 15
     if: |
       contains(github.event.head_commit.message, '[skip-perf]') == false
@@ -549,6 +804,7 @@ jobs:
         build-verification-core,
         electron-security-gate,
         observability-verification,
+        fast-gate,
       ]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
