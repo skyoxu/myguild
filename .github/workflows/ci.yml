@@ -657,6 +657,7 @@ jobs:
         shell: pwsh
     env:
       CI: 'true'
+      E2E_AUTO_START: '1'
       VITE_E2E_SMOKE: 'true'
       ELECTRON_ENABLE_LOGGING: '1'
       ELECTRON_DISABLE_GPU: '1'
