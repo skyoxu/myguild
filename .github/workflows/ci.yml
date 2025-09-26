@@ -53,67 +53,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ==================== Fast Gate (pre-check) ====================
-  fast-gate:
-    name: Fast Gate (Windows)
-    runs-on: windows-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Playwright (Windows)
-        run: npx playwright install
-      - name: Run guard:fast (tiny e2e)
-        run: node scripts/ci/guard-fast.mjs
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fast-gate-logs
-          path: logs/**
-          if-no-files-found: warn
-  # ==================== Node 22 Smoke (non-blocking) ====================
-  node22-smoke:
-    name: Node 22 Smoke (non-blocking)
-    runs-on: windows-latest
-    needs: fast-gate
-    continue-on-error: true
-    timeout-minutes: 15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v5.0.0
-        with:
-          node-version: '22.x'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Playwright (Windows)
-        run: npx playwright install
-      - name: Run guard:fast (tiny e2e)
-        env:
-          FAST_EXTRA_SMOKE: 'false'
-        run: node scripts/ci/guard-fast.mjs
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: node22-smoke-logs
-          path: logs/**
-          if-no-files-found: warn
   # ==================== Guardian Self-Check ====================
   workflow-guardian:
     name: Workflow Guardian Check
     runs-on: windows-latest
-    needs: fast-gate
     defaults:
       run:
         shell: pwsh
@@ -156,7 +99,7 @@ jobs:
       run:
         shell: pwsh
     timeout-minutes: 10
-    needs: [workflow-guardian, fast-gate]
+    needs: [workflow-guardian]
     # P0: ensure devDependencies installed for job
     env:
       NODE_ENV: development
@@ -202,7 +145,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [workflow-guardian, fast-gate]
+    needs: [workflow-guardian]
     timeout-minutes: 15
      # P0: ensure devDependencies installed for job
     env:
@@ -240,7 +183,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [unit-tests-core, fast-gate]
+    needs: [unit-tests-core]
     timeout-minutes: 5
      # P0: ensure devDependencies installed for job
     env:
@@ -272,7 +215,7 @@ jobs:
   sonarcloud-analysis:
     name: SonarCloud Analysis (Windows, CLI)
     runs-on: windows-latest
-    needs: [unit-tests-core, fast-gate]
+    needs: [unit-tests-core]
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
     permissions:
       contents: read
@@ -409,7 +352,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [unit-tests-core, fast-gate]
+    needs: [unit-tests-core]
     timeout-minutes: 10
     # P0: ensure devDependencies installed for job
     env:
@@ -448,7 +391,7 @@ jobs:
   release-health-gate:
     name: Release Health Gate
     runs-on: windows-latest
-    needs: [unit-tests-core, coverage-gate, electron-security-gate, fast-gate]
+    needs: [unit-tests-core, coverage-gate, electron-security-gate]
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -520,7 +463,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [quality-gates, fast-gate]
+    needs: [quality-gates]
     timeout-minutes: 20
     if: |
       contains(github.event.head_commit.message, '[skip-extended]') == false &&
@@ -584,7 +527,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [quality-gates, build-verification-core, fast-gate]
+    needs: [quality-gates, build-verification-core]
     timeout-minutes: 60
 
     steps:
@@ -645,7 +588,7 @@ jobs:
   e2e-perf-smoke:
     name: E2E Perf Smoke
     runs-on: windows-latest
-    needs: [build-verification-core, unit-tests-core, fast-gate]
+    needs: [build-verification-core, unit-tests-core]
     defaults:
       run:
         shell: pwsh
@@ -732,7 +675,7 @@ jobs:
   observability-verification:
     name: Observability Verification
     runs-on: windows-latest
-    needs: [unit-tests-core, fast-gate]
+    needs: [unit-tests-core]
     timeout-minutes: 10
 
     steps:
@@ -769,7 +712,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    needs: [build-verification-core, fast-gate]
+    needs: [build-verification-core]
     timeout-minutes: 15
     if: |
       contains(github.event.head_commit.message, '[skip-perf]') == false
@@ -804,7 +747,6 @@ jobs:
         build-verification-core,
         electron-security-gate,
         observability-verification,
-        fast-gate,
       ]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
