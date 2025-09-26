@@ -54,7 +54,7 @@
     "pretest:e2e": "node scripts/write-cache-bust.js",
     "validate:cache": "node scripts/validate-cache-system.js",
     "test:e2e": "playwright test",
-    "test:e2e:perf-smoke": "playwright test --project=electron-smoke-tests tests/e2e/smoke/perf.spec.ts --workers=1 --retries=0 --reporter=line,json",
+    "test:e2e:perf-smoke": "playwright test --project=electron-smoke-tests tests/e2e/smoke/perf.spec.ts --workers=1 --retries=0 --reporter=line,json --trace=retain-on-failure",
     "test:e2e:smoke": "playwright test --grep @smoke --reporter=line",
     "test:e2e:security": "cross-env PROJECT_NAME=electron-security-audit SECURITY_TEST_MODE=true CI=true playwright test --project=electron-security-audit --reporter=github,line --trace=on-first-retry",
     "test:security:electron": "cross-env PROJECT_NAME=electron-security-audit playwright test --project=electron-security-audit --reporter=line",
