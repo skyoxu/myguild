@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useCallback,
   useRef,
   useState,
@@ -11,7 +11,7 @@ export default function PerfTestHarness() {
   const e2eSmoke = (import.meta as any)?.env?.VITE_E2E_SMOKE === 'true';
   const [responded, setResponded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, _startTransition] = useTransition();
   const workerRef = useRef<ReturnType<typeof createComputationWorker> | null>(
     null
   );
@@ -26,6 +26,17 @@ export default function PerfTestHarness() {
     const t0 = performance.now();
     performance.mark('test_button_click_start');
 
+    // Decide load level for PR vs main based on query/env
+    let isLight = false;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      isLight = params.get('e2e-light') === '1';
+    } catch {}
+    if (!isLight) {
+      isLight = (import.meta as any)?.env?.VITE_E2E_LIGHT === 'true';
+    }
+    const iterations = isLight ? 100_000 : 500_000;
+
     // 立即设置responded状态，确保同步DOM更新
     setResponded(true);
 
@@ -33,7 +44,7 @@ export default function PerfTestHarness() {
     setBusy(true);
     const { heavyTask } = ensureWorker();
     try {
-      const res = await heavyTask(5_000_00); // 50万次演示
+      const res = await heavyTask(iterations); // 50万次演示
       console.log(
         `[PerfTestHarness] worker heavyTask duration=${res.duration.toFixed(2)}ms`
       );

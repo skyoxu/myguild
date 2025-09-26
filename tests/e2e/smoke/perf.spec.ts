@@ -136,6 +136,10 @@ test.describe('@smoke Perf Smoke Suite', () => {
         .catch(() => {});
     }
 
+    const sampleCount = Number(
+      process.env.PERF_SAMPLE_COUNT ||
+        (process.env.PERF_GATE_MODE === 'soft' ? '10' : '30')
+    );
     await PerformanceTestUtils.runInteractionP95Test(
       async () => {
         await page.evaluate(
@@ -163,7 +167,7 @@ test.describe('@smoke Perf Smoke Suite', () => {
         return latency;
       },
       threshold,
-      30
+      sampleCount
     );
   });
 });

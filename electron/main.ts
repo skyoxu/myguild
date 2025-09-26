@@ -451,11 +451,16 @@ function createWindow(is: any, ses: Electron.Session): void {
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     // Append E2E flags when requested (PR E2E smoke)
     let devUrl = process.env.VITE_DEV_SERVER_URL;
-    if (process.env.E2E_AUTO_START === '1') {
+    if (process.env.E2E_AUTO_START === '1' || process.env.E2E_LIGHT === '1') {
       try {
         const u = new URL(devUrl);
-        u.searchParams.set('auto-start', '1');
-        u.searchParams.set('e2e-smoke', '1');
+        if (process.env.E2E_AUTO_START === '1') {
+          u.searchParams.set('auto-start', '1');
+          u.searchParams.set('e2e-smoke', '1');
+        }
+        if (process.env.E2E_LIGHT === '1') {
+          u.searchParams.set('e2e-light', '1');
+        }
         devUrl = u.toString();
       } catch {}
     }
@@ -464,10 +469,11 @@ function createWindow(is: any, ses: Electron.Session): void {
   } else {
     // Production environment: use app:// protocol to load page (map to dist/index.html)
     const base = 'app://index.html';
-    const appUrl =
-      process.env.E2E_AUTO_START === '1'
-        ? `${base}?auto-start=1&e2e-smoke=1`
-        : base;
+    const query: string[] = [];
+    if (process.env.E2E_AUTO_START === '1')
+      query.push('auto-start=1', 'e2e-smoke=1');
+    if (process.env.E2E_LIGHT === '1') query.push('e2e-light=1');
+    const appUrl = query.length ? `${base}?${query.join('&')}` : base;
     console.log(`[loadURL] Using app:// in production: ${appUrl}`);
     mainWindow.loadURL(appUrl);
   }

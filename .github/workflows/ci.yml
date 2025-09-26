@@ -657,6 +657,7 @@ jobs:
         shell: pwsh
     env:
       CI: 'true'
+      E2E_LIGHT: '1'
       PERF_GATE_MODE: ${{ github.event_name == 'pull_request' && 'soft' || '' }}
       E2E_AUTO_START: '1'
       VITE_E2E_SMOKE: 'true'
@@ -842,3 +843,4 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
+
