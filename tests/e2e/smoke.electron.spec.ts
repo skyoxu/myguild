@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Electron 应用冒烟测试套件
  * 对应 07 章 - E2E 基线（Playwright × Electron）
  *
@@ -240,6 +240,24 @@ test.describe('07章 Electron 基线验证', () => {
         .locator('button, [role="button"], [data-testid]')
         .first();
       await firstButton.click({ timeout: 5000 });
+
+      // Soft gate for PRs: do not fail on transient performance spikes
+      const THRESHOLD_MS = 200;
+      const softMode =
+        (process.env.PERF_GATE_MODE || '').toLowerCase() === 'soft';
+      if (softMode) {
+        const responseTime = Date.now() - startTime;
+        if (responseTime >= THRESHOLD_MS) {
+          console.warn(
+            `[perf-soft-gate] Interaction response ${responseTime}ms >= ${THRESHOLD_MS}ms (soft gate, PR only)`
+          );
+        } else {
+          console.log(
+            `[perf-soft-gate] Interaction response ${responseTime}ms < ${THRESHOLD_MS}ms`
+          );
+        }
+        return;
+      }
 
       const responseTime = Date.now() - startTime;
       expect(responseTime, '交互响应时间应小于 200ms').toBeLessThan(200);

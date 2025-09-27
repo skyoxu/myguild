@@ -53,6 +53,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ==================== Build Artifacts (for E2E reuse) ====================
+  build-artifacts:
+    name: Build Artifacts
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    timeout-minutes: 12
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install deps (npm ci)
+        run: npm ci
+      - name: Build application
+        env:
+          VITE_E2E_SMOKE: 'true'
+        run: npm run build
+      - name: Verify build outputs
+        run: |
+          if ((Test-Path -LiteralPath 'dist') -and (Test-Path -LiteralPath 'dist-electron')) {
+            Write-Host "Build artifacts verified: dist/ and dist-electron/"
+          } else {
+            Write-Error "[FAIL] Build artifacts missing: dist/ or dist-electron/ not found"; exit 1
+          }
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            dist-electron/
+          retention-days: 1
+          compression-level: 6
+          include-hidden-files: false
   # ==================== Guardian Self-Check ====================
   workflow-guardian:
     name: Workflow Guardian Check
@@ -651,7 +690,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    needs: [build-verification-core, unit-tests-core]
+    needs: [build-verification-core, unit-tests-core, build-artifacts]
     defaults:
       run:
         shell: pwsh
@@ -682,36 +721,31 @@ jobs:
       - name: Install deps (npm ci)
         if: steps.changes-e2e.outputs.any_changed == 'true'
         run: npm ci
-      - name: Download dist-electron artifact
-        if: steps.changes-e2e.outputs.any_changed == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-electron
-          path: _artifacts
-      - name: Download web dist artifact
+      - name: Download build artifacts (if available)
         if: steps.changes-e2e.outputs.any_changed == 'true'
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: dist-web
+          name: build-artifacts
           path: .
       - name: Verify downloaded artifacts or build
         if: steps.changes-e2e.outputs.any_changed == 'true'
         working-directory: ${{ github.workspace }}
         run: |
-          $missing = 0
-          if (!(Test-Path -LiteralPath '_artifacts/dist-electron/electron/main.js')) { $missing = 1 }
-          if (!(Test-Path -LiteralPath 'dist/index.html')) { $missing = 1 }
-          if ($missing -eq 1) {
-            Write-Host 'Artifacts incomplete, running npm run build to generate dist and dist-electron.'
+          $hasMain = Test-Path -LiteralPath 'dist-electron/electron/main.js'
+          $hasWeb = Test-Path -LiteralPath 'dist/index.html'
+          if (-not ($hasMain -and $hasWeb)) {
+            Write-Host 'build-artifacts not present; running npm run build to generate dist and dist-electron.'
             if (!(Test-Path -LiteralPath 'package.json')) { Write-Error 'package.json not found in workspace'; exit 1 }
             $pkg = Get-Content package.json -Raw | ConvertFrom-Json
             if (-not $pkg.scripts -or -not ($pkg.scripts.PSObject.Properties.Name -contains 'build')) { Write-Error 'No "build" script in package.json; cannot build fallback.'; exit 1 }
-            # Ensure dependencies are installed before build (idempotent)
             if (-not (Test-Path -LiteralPath 'node_modules')) { npm ci }
             npm run build
+          }
+          if ((Test-Path -LiteralPath 'dist-electron/electron/main.js') -and (Test-Path -LiteralPath 'dist/index.html')) {
+            Write-Host 'Artifacts ready: dist/ and dist-electron/ found.'
           } else {
-            Write-Host 'Artifacts present: dist/ and dist-electron/ found.'
+            Write-Error 'Artifacts missing after build.'; exit 1
           }
       - name: Install Playwright (Windows)
         if: steps.changes-e2e.outputs.any_changed == 'true'
@@ -843,4 +877,3 @@ jobs:
           name: deployment-checklist
           path: deployment-checklist.md
           retention-days: 30
-

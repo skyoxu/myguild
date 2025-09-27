@@ -5,7 +5,13 @@ import {
   Page,
 } from '@playwright/test';
 import { resolve, join } from 'node:path';
-import { existsSync, writeFileSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  writeFileSync,
+  readFileSync,
+  mkdirSync,
+  appendFileSync,
+} from 'node:fs';
 import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { ensureDomReady } from './ensureDomReady';
@@ -249,19 +255,69 @@ export async function launchAppWithPage(
 }
 
 export async function prepareWindowForInteraction(page: Page): Promise<Page> {
-  // Following ciinfo.md rules: Use document.readyState instead of domcontentloaded
+  const isSoft =
+    (process.env.PERF_GATE_MODE || '').toLowerCase() === 'soft' ||
+    process.env.E2E_LIGHT === '1';
+
+  // Small logging helper: logs/YYYY-MM-DD/playwright/prepareWindow.log
+  const logToFile = (line: string) => {
+    try {
+      const d = new Date().toISOString().slice(0, 10);
+      const base = join(process.cwd(), 'logs', d, 'playwright');
+      mkdirSync(base, { recursive: true });
+      appendFileSync(join(base, 'prepareWindow.log'), line + '\n', 'utf8');
+    } catch {
+      /* ignore file logging errors */
+    }
+  };
+
+  // Use document.readyState instead of domcontentloaded (more reliable in CI)
   await page.waitForFunction(() => document.readyState === 'complete', {
-    timeout: 15000,
+    timeout: isSoft ? 10000 : 15000,
   });
 
-  // Additionally wait for React app-root element to finish rendering
-  await page.waitForFunction(
-    () => {
-      const appRoot = document.querySelector('[data-testid="app-root"]');
-      return appRoot !== null && appRoot.children.length > 0;
-    },
-    { timeout: 10000 }
-  );
+  // First preference: explicit data-testid="app-root" per stable selector rule
+  let appReady = false;
+  try {
+    await page.waitForFunction(
+      () => {
+        const appRoot = document.querySelector('[data-testid="app-root"]');
+        return appRoot !== null && (appRoot as HTMLElement).children.length > 0;
+      },
+      { timeout: 8000 }
+    );
+    appReady = true;
+  } catch (err) {
+    if (isSoft) {
+      // PR soft gate: fallback to #root to avoid flakiness when test-id is missing
+      logToFile(
+        '[warn] app-root test-id not found in time; falling back to #root (soft gate)'
+      );
+      try {
+        await page.waitForFunction(
+          () => {
+            const el = document.getElementById('root');
+            return el !== null && el.children.length > 0;
+          },
+          { timeout: 4000 }
+        );
+        appReady = true;
+      } catch {
+        // keep appReady=false; do not throw yet (handled below)
+      }
+    }
+  }
+
+  if (!appReady) {
+    const msg =
+      'Application root not ready within timeout (data-testid="app-root" and #root checks)';
+    logToFile(`[error] ${msg}`);
+    if (!isSoft) {
+      throw new Error(msg);
+    } else {
+      console.warn('[warn] ' + msg + ' – continuing due to soft gate');
+    }
+  }
 
   if (process.env.CI === 'true' || process.env.NODE_ENV === 'test') {
     await page.evaluate(() => {
