@@ -588,7 +588,7 @@ jobs:
             {
               echo "**ADR-0002 Violation**: Static security scan failed baseline requirements"
               echo "- Critical security issues: ${critical_count} (required: 0)"
-              echo "- High security issues:${high_count}(required: 3)"
+              echo "- High security issues: ${high_count} (required: ≤ 3)"
               echo ""
               echo "**This PR is hard-blocked from merging, must fix all security issues**"
             } > /tmp/result_msg.txt
@@ -612,7 +612,7 @@ jobs:
             {
               echo "**ADR-0002 Compliant**: All security checks passed, meets strict security baseline requirements"
               echo "- Critical security issues: 0"
-              echo "- High security issues:${high_count}(3)"
+              echo "- High security issues: ${high_count} (≤ 3)"
               echo "- E2E security tests: Passed"
             } > /tmp/result_msg.txt
             result_message=$(cat /tmp/result_msg.txt)
