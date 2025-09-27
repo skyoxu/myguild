@@ -100,6 +100,7 @@ jobs:
       CI: 'true'
       E2E_LIGHT: '1'
       PERF_GATE_MODE: ${{ github.event_name == 'pull_request' && 'soft' || '' }}
+      PERF_SAMPLE_COUNT: ${{ github.ref == 'refs/heads/main' && '20' || '' }}
       VITE_E2E_SMOKE: 'true'
       ELECTRON_ENABLE_LOGGING: '1'
       ELECTRON_DISABLE_GPU: '1'
@@ -320,5 +321,4 @@ jobs:
         if: steps.changes-e2e.outputs.any_changed != 'true'
         run: |
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "E2E perf smoke skipped: no relevant changes (src/**, tests/e2e/**, playwright.config.ts)."
-
 

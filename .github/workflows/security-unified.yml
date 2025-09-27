@@ -49,6 +49,9 @@ concurrency:
 
 env:
   NODE_VERSION: '20.x'
+  # Soft/hard gate switch for PRs. Default false keeps current behavior.
+  # To enable PR soft gate: set repository variable PR_SOFT_SECURITY_GATE=true
+  PR_SOFT_SECURITY_GATE: ${{ vars.PR_SOFT_SECURITY_GATE || 'false' }}
 
 jobs:
   # Stage 1: Static Security Scan (fast, parallel execution)
@@ -440,9 +443,9 @@ jobs:
   unified-security-gate:
     name: Unified Security Gate
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
+    # defaults:
+    #   run:
+    #     shell: pwsh  # Removed: conflicted with bash steps
     # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
@@ -543,12 +546,20 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            {
-              echo "## Security Notice"
-              echo "This PR uses a SOFT gate for E2E security checks (non-blocking)."
-              echo "Please review smoke results and fix before merging to main where HARD gate applies."
-              echo ""
-            } >> "$GITHUB_STEP_SUMMARY"
+            if [ "${PR_SOFT_SECURITY_GATE}" = "true" ]; then
+              {
+                echo "## Security Notice"
+                echo "This PR uses a SOFT gate for E2E security checks (non-blocking)."
+                echo "Please review smoke results and fix before merging to main where HARD gate applies."
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+            else
+              {
+                echo "## Security Notice"
+                echo "This PR uses a HARD gate for E2E security checks (blocking on failure)."
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
             {
               echo "## Security Notice"
@@ -566,21 +577,29 @@ jobs:
 
           # Generate security gate results summary
           scan_result="${{ needs.security-scan.result }}"
+          scan_status="${{ needs.security-scan.outputs.scan-status }}"
           e2e_status="${{ needs.e2e-security-aggregate.outputs.e2e-status }}"
           critical_count="${{ needs.security-scan.outputs.critical-count }}"
           high_count="${{ needs.security-scan.outputs.high-count }}"
-          
+
+          # Handle empty/null values from prerequisite jobs with proper defaults
+          scan_result="${scan_result:-failed}"
+          scan_status="${scan_status:-failed}"
+          e2e_status="${e2e_status:-failed}"
+          critical_count="${critical_count:-0}"
+          high_count="${high_count:-0}"
+
           # Determine result status and message
-          if [ "$scan_result" != "success" ]; then
+          if [ "$scan_status" != "pass" ] || [ "$scan_result" != "success" ]; then
             result_title="### Security Gate Hard Failure"
             {
               echo "**ADR-0002 Violation**: Static security scan failed baseline requirements"
               echo "- Critical security issues: ${critical_count} (required: 0)"
-              echo "- High security issues:${high_count}(required: 3)"
+              echo "- High security issues: ${high_count} (required: <= 3)"
               echo ""
               echo "**This PR is hard-blocked from merging, must fix all security issues**"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=1
           elif [ "$e2e_status" = "failed" ]; then
             result_title="### Security Gate Hard Failure"
@@ -592,18 +611,18 @@ jobs:
               echo "- sandbox=true"
               echo ""
               echo "**This PR is hard-blocked from merging, must fix Electron security config**"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=1
           else
             result_title="### Security Gate Passed"
             {
               echo "**ADR-0002 Compliant**: All security checks passed, meets strict security baseline requirements"
               echo "- Critical security issues: 0"
-              echo "- High security issues:${high_count}(3)"
+              echo "- High security issues: ${high_count} (<= 3)"
               echo "- E2E security tests: Passed"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=0
           fi
           
@@ -614,9 +633,13 @@ jobs:
             echo "### Check Summary"
             echo "| Check Item | Status | Result |"
             echo "|---------|------|------|"
-            echo "| Static Security Scan | ${{ needs.security-scan.outputs.scan-status }} | Critical: ${critical_count}, High: ${high_count} |"
+            echo "| Static Security Scan | ${scan_status} | Critical: ${critical_count}, High: ${high_count} |"
             echo "| E2E Security Tests | ${e2e_status} | ${{ needs.e2e-security-aggregate.result != 'skipped' && 'Executed' || 'Skipped (Critical issues exist)' }} |"
-            gate_label=$([ "${{ github.event_name }}" = "pull_request" ] && echo "Soft" || echo "Hard")
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${PR_SOFT_SECURITY_GATE}" = "true" ]; then
+              gate_label="Soft"
+            else
+              gate_label="Hard"
+            fi
             echo "| E2E Gate | ${gate_label} | Mode: PR=Soft / Main=Hard |"
             echo ""
             echo "$result_title"
@@ -625,6 +648,10 @@ jobs:
           
           # ADR-0002 mandatory hard failure decision
           if [ "$exit_code" -eq 1 ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${PR_SOFT_SECURITY_GATE}" = "true" ]; then
+              echo "[soft-gate] PR detected and PR_SOFT_SECURITY_GATE=true; not blocking merge."
+              exit 0
+            fi
             exit 1
           fi
 

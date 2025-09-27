@@ -142,6 +142,7 @@ export async function launchApp(
     // Launch by project root so Electron uses package.json.main; more robust on Windows
     args: ['.'],
     env: {
+      ...process.env,
       CI: 'true',
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
@@ -168,11 +169,12 @@ export async function launchAppAndPage(
   const app = await electron.launch({
     args: ['.'],
     env: {
+      ...process.env,
       CI: 'true',
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // Runtime environment variable
+      VITE_E2E_SMOKE: 'true',
     },
   });
   const page = await app.firstWindow(); // This is the renderer process Page
@@ -198,11 +200,12 @@ export async function launchAppWithArgs(
   const app = await electron.launch({
     args,
     env: {
+      ...process.env,
       CI: 'true',
       ELECTRON_ENABLE_LOGGING: '1',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // Runtime environment variable
+      VITE_E2E_SMOKE: 'true',
     },
   });
   return app;
@@ -220,10 +223,11 @@ export async function launchAppWithPage(
   const app = await (electronOverride || electron).launch({
     args: ['.'],
     env: {
+      ...process.env,
       CI: 'true',
       SECURITY_TEST_MODE: 'true',
       E2E_AUTO_START: '1',
-      VITE_E2E_SMOKE: 'true', // Runtime environment variable
+      VITE_E2E_SMOKE: 'true',
     },
     cwd: process.cwd(),
     timeout: 45000,
