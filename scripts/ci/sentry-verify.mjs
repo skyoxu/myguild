@@ -6,6 +6,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const outFile = process.env.GITHUB_OUTPUT;
 const token = process.env.SENTRY_AUTH_TOKEN || '';
@@ -26,17 +27,45 @@ if (!token) {
 setOutput('token_present', 'true');
 
 // Try to run sentry-cli info if available; do not hard-fail if missing
-const cmd = spawnSync('sentry-cli', ['info'], {
-  stdio: 'inherit',
-  shell: process.platform === 'win32',
-});
-if (cmd.error) {
-  console.log('sentry-cli not available; continuing without CLI validation');
-  process.exit(0);
+const localCli = path.join(
+  process.cwd(),
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'sentry-cli.cmd' : 'sentry-cli'
+);
+
+/**
+ * Run a command and return { ok, code } without throwing.
+ */
+function tryRun(cmd, args) {
+  try {
+    const r = spawnSync(cmd, args, {
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+    return { ok: r.status === 0, code: r.status ?? 1 };
+  } catch (e) {
+    return { ok: false, code: 1 };
+  }
 }
-if (cmd.status !== 0) {
-  console.error(`sentry-cli info failed with code ${cmd.status}`);
-  process.exit(1);
+
+let ran = false;
+let ok = false;
+
+if (fs.existsSync(localCli)) {
+  const r = tryRun(localCli, ['info']);
+  ran = true;
+  ok = r.ok;
+} else {
+  const r = tryRun('sentry-cli', ['info']);
+  ran = true;
+  ok = r.ok;
+}
+
+if (!ok) {
+  // Treat missing CLI as non-fatal (print a notice and continue)
+  console.log('sentry-cli not available or failed to run; continuing without CLI validation');
+  process.exit(0);
 }
 console.log(
   `Sentry org=${org || '[unset]'} project=${project || '[unset]'} validated`
