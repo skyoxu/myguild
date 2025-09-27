@@ -26,13 +26,16 @@ test.describe('Protocol Validation Test Suite', () => {
     // Assertion 2: Must not be chrome-error://
     expect(url.startsWith('chrome-error://')).toBeFalsy();
 
-    // Assertion 3: URL should contain expected file extension (tolerating trailing /)
-    expect(url).toMatch(/(\.(html|js))(\/)?$/);
+    // Assertion 3: URL should contain expected file extension (ignore query string, tolerate trailing slash)
+    // Accepts: app://index.html, app://index.html/, app://index.html?auto-start=1
+    expect(url).toMatch(/(\.(html|js))(\/)?(\?.*)?$/);
 
     console.log('[SUCCESS] All protocol validation assertions passed');
     console.log(`   - URL protocol correct: ${url.split('://')[0]}://`);
     console.log(`   - Not chrome-error: ${!url.startsWith('chrome-error://')}`);
-    console.log(`   - Extension match: ${/(\.(html|js))(\/)?$/.test(url)}`);
+    console.log(
+      `   - Extension match: ${/(\.(html|js))(\/)?(\?.*)?$/.test(url)}`
+    );
 
     await electronApp.close();
   });
