@@ -443,9 +443,9 @@ jobs:
   unified-security-gate:
     name: Unified Security Gate
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
+    # defaults:
+    #   run:
+    #     shell: pwsh  # Removed: conflicted with bash steps
     # P0 fix: job-level env vars ensure devDependencies install correctly
     env:
       NODE_ENV: development
