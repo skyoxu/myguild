@@ -581,7 +581,14 @@ jobs:
           e2e_status="${{ needs.e2e-security-aggregate.outputs.e2e-status }}"
           critical_count="${{ needs.security-scan.outputs.critical-count }}"
           high_count="${{ needs.security-scan.outputs.high-count }}"
-          
+
+          # Handle empty/null values from prerequisite jobs with proper defaults
+          scan_result="${scan_result:-failed}"
+          scan_status="${scan_status:-failed}"
+          e2e_status="${e2e_status:-failed}"
+          critical_count="${critical_count:-0}"
+          high_count="${high_count:-0}"
+
           # Determine result status and message
           if [ "$scan_status" != "pass" ] || [ "$scan_result" != "success" ]; then
             result_title="### Security Gate Hard Failure"
@@ -591,8 +598,8 @@ jobs:
               echo "- High security issues: ${high_count} (required: <= 3)"
               echo ""
               echo "**This PR is hard-blocked from merging, must fix all security issues**"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=1
           elif [ "$e2e_status" = "failed" ]; then
             result_title="### Security Gate Hard Failure"
@@ -604,8 +611,8 @@ jobs:
               echo "- sandbox=true"
               echo ""
               echo "**This PR is hard-blocked from merging, must fix Electron security config**"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=1
           else
             result_title="### Security Gate Passed"
@@ -614,8 +621,8 @@ jobs:
               echo "- Critical security issues: 0"
               echo "- High security issues: ${high_count} (<= 3)"
               echo "- E2E security tests: Passed"
-            } > /tmp/result_msg.txt
-            result_message=$(cat /tmp/result_msg.txt)
+            } > "${RUNNER_TEMP:-/tmp}/result_msg.txt"
+            result_message=$(cat "${RUNNER_TEMP:-/tmp}/result_msg.txt")
             exit_code=0
           fi
           
